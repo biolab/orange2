@@ -477,18 +477,14 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.addAction("&Add-ons...", self.menuItemAddOns)
 
         localHelp = 0
-        self.menuHelp = QMenu("&Help", self)
-        if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")): self.menuHelp.addAction("Orange Help", self.menuOpenLocalOrangeHelp)
-        if os.path.exists(os.path.join(self.orangeDir, r"doc/catalog/index.html")): self.menuHelp.addAction("Orange Widget Catalog", self.menuOpenLocalWidgetCatalog)
-        if os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")): self.menuHelp.addAction("Orange Canvas Help", self.menuOpenLocalCanvasHelp)
-
+        self.menuHelp = QMenu("&Help", self) 
+        self.menuHelp.addAction("Orange Online Reference", self.menuOpenOnlineOrangeReference)
+#        if os.path.exists(os.path.join(self.orangeDir, r"doc/catalog/index.html")):
+#            self.menuHelp.addAction("Orange Widget Catalog", self.menuOpenLocalWidgetCatalog)
+#        if os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")):
+#            self.menuHelp.addAction("Orange Canvas Help", self.menuOpenLocalCanvasHelp)
         self.menuHelp.addAction("Orange Online Widget Catalog", self.menuOpenOnlineOrangeHelp)
-        #self.menuHelp.addAction("Orange Canvas Online Help", self.menuOpenOnlineCanvasHelp)
-
-#        if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
-#            self.menuHelp.addSeparator()
-#            self.menuHelp.addAction("Check for updates", self.menuCheckForUpdates)
-            
+        #self.menuHelp.addAction("Orange Canvas Online Help", self.menuOpenOnlineCanvasHelp)            
         self.menuHelp.addSeparator()
         self.menuHelp.addAction("About Orange", self.menuItemAboutOrange)
 
@@ -749,6 +745,10 @@ class OrangeCanvasDlg(QMainWindow):
         import webbrowser
         webbrowser.open(os.path.join(self.orangeDir, "doc/canvas/default.htm"))
 
+    def menuOpenOnlineOrangeReference(self):
+        import webbrowser
+        webbrowser.open("http://orange.biolab.si/doc/reference/")
+        
     def menuOpenOnlineOrangeHelp(self):
         import webbrowser
         webbrowser.open("http://orange.biolab.si/doc/widgets/")
