@@ -339,7 +339,13 @@ PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &we
 		destroy_problem(prob);
 		raiseError("LIBLINEAR error: %s" , error_msg);
 	}
-	//cout << "trainig" << endl;
+	/* The solvers in liblinear use rand() function.
+	 * To make the results reporoducible we set the seed from the data table's
+	 * crc
+	 */
+	PExampleTable extable(examples);
+	srand(extable->checkSum(false));
+
 	model *model = train(prob, param);
 	destroy_problem(prob);
 
