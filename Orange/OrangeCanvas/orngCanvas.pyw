@@ -604,8 +604,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def readRecentFiles(self):
         self.menuRecent.clear()
-        if not self.settings.has_key("RecentFiles"): return
-        recentDocs = self.settings["RecentFiles"]
+        recentDocs = self.settings.get("RecentFiles", [])
 
         # remove missing recent files
         for i in range(len(recentDocs) - 1, -1, -1):
@@ -614,19 +613,23 @@ class OrangeCanvasDlg(QMainWindow):
 
         recentDocs = recentDocs[:9]
         self.settings["RecentFiles"] = recentDocs
-
-        for i in range(len(recentDocs)):
-            shortName = "&" + str(i + 1) + " " + os.path.basename(recentDocs[i])
-            self.menuRecent.addAction(shortName, lambda ind=i: self.openRecentFile(ind + 1))
+        
+        if len(recentDocs) == 0 :
+            self.menuRecent.addAction("None").setEnabled(False)
+        else :            
+            for i in range(len(recentDocs)):
+                shortName = "&" + str(i + 1) + " " + os.path.basename(recentDocs[i])
+                self.menuRecent.addAction(shortName, lambda ind=i: self.openRecentFile(ind),)
 
     def openRecentFile(self, index):
-        if len(self.settings["RecentFiles"]) >= index:
-            self.schema.clear()
-            name = self.settings["RecentFiles"][index - 1]
-            dirname = os.path.dirname(name)
-            os.chdir(dirname)
-            self.schema.loadDocument(name)
-            self.addToRecentMenu(name)
+        if index < len(self.settings["RecentFiles"]):
+            name = self.settings["RecentFiles"][index]
+            if self.schema.saveBeforeClose():
+                self.schema.clear()
+                dirname = os.path.dirname(name)
+                os.chdir(dirname)
+                self.schema.loadDocument(name)
+                self.addToRecentMenu(name)
 
     def addToRecentMenu(self, name):
         recentDocs = []
