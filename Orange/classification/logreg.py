@@ -1046,7 +1046,7 @@ class LibLinearLogRegLearner(Orange.core.LinearLearner):
         if not isinstance(data.domain.class_var, Orange.feature.Discrete):
             raise TypeError("Can only learn a discrete class.")
 
-        if data.domain.has_discrete_attributes() or self.normalization:
+        if data.domain.has_discrete_attributes(False) or self.normalization:
             dc = Orange.data.continuization.DomainContinuizer()
             dc.multinomial_treatment = dc.NValues
             dc.class_treatment = dc.Ignore
