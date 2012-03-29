@@ -200,7 +200,10 @@ class TestMCSVMLearner(testing.LearnerTestCase):
 class TestScoreSVMWeights(testing.MeasureAttributeTestCase):
     MEASURE = ScoreSVMWeights()
     
-
+@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+class TestScoreSVMWeightsWithMCSVM(testing.MeasureAttributeTestCase):
+    MEASURE = ScoreSVMWeights(learner=MultiClassSVMLearner())
+    
 @datasets_driven(datasets=["iris"])
 class TestRFE(testing.DataTestCase):
     @test_on_data
