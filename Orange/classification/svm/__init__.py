@@ -776,7 +776,7 @@ to build a logistic regression model using LIBLINEAR.
         if not isinstance(data.domain.class_var, variable.Discrete):
             raise TypeError("Can only learn a discrete class.")
 
-        if data.domain.has_discrete_attributes() or self.normalization:
+        if data.domain.has_discrete_attributes(False) or self.normalization:
             dc = Orange.data.continuization.DomainContinuizer()
             dc.multinomial_treatment = dc.NValues
             dc.class_treatment = dc.Ignore
@@ -819,7 +819,7 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
         if not isinstance(data.domain.class_var, variable.Discrete):
             raise TypeError("Can only learn a discrete class.")
 
-        if data.domain.has_discrete_attributes() or self.normalization:
+        if data.domain.has_discrete_attributes(False) or self.normalization:
             dc = Orange.data.continuization.DomainContinuizer()
             dc.multinomial_treatment = dc.NValues
             dc.class_treatment = dc.Ignore
@@ -855,7 +855,7 @@ def get_linear_svm_weights(classifier, sum=True):
 
     SVs = classifier.support_vectors
     class_var = SVs.domain.class_var
-    
+
     if classifier.svm_type in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
         weights = []    
         classes = classifier.class_var.values
@@ -868,7 +868,7 @@ def get_linear_svm_weights(classifier, sum=True):
                 n_sv0 = bin_classifier.n_SV[0]
                 SVs = bin_classifier.support_vectors
                 w = {}
-                
+
                 for coef, sv_ind in bin_classifier.coef[0]:
                     SV = SVs[sv_ind]
                     attributes = SVs.domain.attributes + \
@@ -876,7 +876,7 @@ def get_linear_svm_weights(classifier, sum=True):
                     for attr in attributes:
                         if attr.varType == Orange.feature.Type.Continuous:
                             update_weights(w, attr, to_float(SV[attr]), coef)
-                    
+
                 weights.append(w)
         if sum:
             scores = defaultdict(float)
@@ -887,7 +887,6 @@ def get_linear_svm_weights(classifier, sum=True):
                 scores[key] = math.sqrt(scores[key])
             weights = dict(scores)
     else:
-#        raise TypeError("SVM classification model expected.")
         weights = {}
         for coef, sv_ind in classifier.coef[0]:
             SV = SVs[sv_ind]
@@ -896,9 +895,9 @@ def get_linear_svm_weights(classifier, sum=True):
             for attr in attributes:
                 if attr.varType == Orange.feature.Type.Continuous:
                     update_weights(weights, attr, to_float(SV[attr]), coef)
-           
+
     return weights 
-    
+
 getLinearSVMWeights = get_linear_svm_weights
 
 def example_weighted_sum(example, weights):
@@ -911,35 +910,40 @@ exampleWeightedSum = example_weighted_sum
 
 class ScoreSVMWeights(Orange.feature.scoring.Score):
     """
-    Score a feature by the squared sum of weights using a linear SVM
-    classifier.
+    Score a feature using squares of weights of a linear SVM
+    model.
         
     Example:
     
         >>> score = Orange.classification.svm.ScoreSVMWeights()
-        >>> for feature in table.domain.features:
-        ...     print "%-35s: %.3f" % (feature.name, score(feature, table))
-        compactness                        : 0.019
-        circularity                        : 0.025
-        distance circularity               : 0.007
-        radius ratio                       : 0.010
-        pr.axis aspect ratio               : 0.076
-        max.length aspect ratio            : 0.010
-        scatter ratio                      : 0.046
-        elongatedness                      : 0.095
-        pr.axis rectangularity             : 0.006
-        max.length rectangularity          : 0.030
-        scaled variance along major axis   : 0.001
-        scaled variance along minor axis   : 0.001
-        scaled radius of gyration          : 0.002
-        skewness about major axis          : 0.004
-        skewness about minor axis          : 0.003
-        kurtosis about minor axis          : 0.001
-        kurtosis about major axis          : 0.060
-        hollows ratio                      : 0.029
-        
-              
+        >>> svm_scores = [(score(f, table), f) for f in table.domain.features] 
+        >>> for feature_score, feature in sorted(svm_scores, reverse=True):
+        ...     print "%-35s: %.3f" % (feature.name, feature_score)
+        kurtosis about major axis          : 47.113
+        pr.axis aspect ratio               : 44.949
+        max.length rectangularity          : 39.748
+        radius ratio                       : 29.098
+        scatter ratio                      : 26.133
+        skewness about major axis          : 24.403
+        compactness                        : 20.432
+        hollows ratio                      : 20.109
+        max.length aspect ratio            : 15.757
+        scaled radius of gyration          : 15.242
+        scaled variance along minor axis   : 14.289
+        pr.axis rectangularity             : 9.882
+        circularity                        : 8.293
+        distance circularity               : 7.785
+        scaled variance along major axis   : 6.179
+        elongatedness                      : 4.038
+        skewness about minor axis          : 1.351
+        kurtosis about minor axis          : 0.760
+
     """
+
+    handles_discrete = True
+    handles_continuous = True
+    computes_thresholds = False
+    needs = Orange.feature.scoring.Score.Generator
 
     def __new__(cls, attr=None, data=None, weight_id=None, **kwargs):
         self = Orange.feature.scoring.Score.__new__(cls, **kwargs)
@@ -954,31 +958,95 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
 
     def __init__(self, learner=None, **kwargs):
         """
-        :param learner: Learner used for weight estimation 
-            (default LinearSVMLearner(solver_type=L2Loss_SVM_Dual))
+        :param learner: Learner used for weight estimation
+            (by default ``LinearSVMLearner(solver_type=L2R_L2LOSS_DUAL, C=1.0)``
+            will be used for classification problems and
+            ``SVMLearner(svm_type=Epsilon_SVR, kernel_type=Linear, C=1.0, p=0.25)``
+            for regression problems.
+            
         :type learner: Orange.core.LinearLearner 
         
         """
-        if learner:
-            self.learner = learner
-        else:
-            self.learner = LinearSVMLearner(solver_type=
-                                    LinearSVMLearner.L2R_L2LOSS_DUAL)
-
+        self.learner = learner
         self._cached_examples = None
 
     def __call__(self, attr, data, weight_id=None):
+        if attr not in data.domain.attributes:
+            raise ValueError("Feature %r is not from the domain." % attr)
+
+        if self.learner is not None:
+            learner = self.learner
+        elif isinstance(data.domain.class_var, variable.Discrete):
+            learner = LinearSVMLearner(solver_type=
+                                LinearSVMLearner.L2R_L2LOSS_DUAL,
+                                C=1.0)
+        elif isinstance(data.domain.class_var, variable.Continuous):
+            learner = SVMLearner(svm_type=SVMLearner.Epsilon_SVR,
+                                 kernel_type=kernels.Linear,
+                                 C=1.0, p=0.25)
+        else:
+            raise TypeError("Cannot handle the class variable type %r" % \
+                                type(data.domain.class_var))
+
         if data is self._cached_examples:
             weights = self._cached_weights
         else:
-            classifier = self.learner(data, weight_id)
+            classifier = learner(data, weight_id)
             self._cached_examples = data
-            import numpy
-            weights = numpy.array(classifier.weights)
-            weights = numpy.sum(weights ** 2, axis=0)
-            weights = dict(zip(data.domain.attributes, weights))
+            weights = self._extract_weights(classifier, data.domain.attributes)
             self._cached_weights = weights
         return weights.get(attr, 0.0)
+
+    def _extract_weights(self, classifier, original_features):
+        """Extract weights from a svm classifer (``SVMClassifier`` or a 
+        ``LinearLearner`` instance).
+        
+        """
+        import numpy as np
+        if isinstance(classifier, SVMClassifier):
+            weights = get_linear_svm_weights(classifier, sum=True)
+            if isinstance(classifier.class_var, variable.Continuous):
+                # The weights are in the the original non squared form
+                weights = dict((f, w ** 2) for f, w in weights.items()) 
+        elif isinstance(classifier, Orange.core.LinearClassifier):
+            weights = np.array(classifier.weights)
+            weights = np.sum(weights ** 2, axis=0)
+            weights = dict(zip(classifier.domain.attributes, weights))
+        else:
+            raise TypeError("Don't know how to use classifier type %r" % \
+                                type(classifier))
+
+        # collect dummy variables that were created for discrete features
+        sources = self._collect_source(weights.keys())
+        source_weights = dict.fromkeys(original_features, 0.0)
+        for f in original_features:
+            if f not in weights and f in sources:
+                dummys = sources[f]
+                # Use averege weight  
+                source_weights[f] = np.average([weights[d] for d in dummys])
+            else:
+                raise ValueError(f)
+
+        return source_weights
+
+    def _collect_source(self, vars):
+        """ Given a list of variables ``var``, return a mapping from source
+        variables (``source_variable`` or ``get_value_from.variable`` members)
+        back to the variables in ``vars``.
+        
+        """
+        source = defaultdict(list)
+        for var in vars:
+            svar = None
+            if var.source_variable:
+                source[var.source_variable].append(var)
+            elif isinstance(var.get_value_from, Orange.core.ClassifierFromVar):
+                source[var.get_value_from.variable].append(var)
+            elif isinstance(var.get_value_from, Orange.core.ImputeClassifier):
+                source[var.get_value_from.classifier_from_var.variable].append(var)
+            else:
+                source[var].append(var)
+        return dict(source)
 
 MeasureAttribute_SVMWeights = ScoreSVMWeights
 
