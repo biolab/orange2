@@ -927,6 +927,7 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
         
     Example:
     
+        >>> table = Orange.data.Table("vehicle.tab")
         >>> score = Orange.classification.svm.ScoreSVMWeights()
         >>> svm_scores = [(score(f, table), f) for f in table.domain.features] 
         >>> for feature_score, feature in sorted(svm_scores, reverse=True):
@@ -980,7 +981,10 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
         
         """
         self.learner = learner
-        self._cached_examples = None
+        self._cached_data = None
+        self._cached_data_crc = None
+        self._cached_weights = None
+        self._cached_classifier = None
 
     def __call__(self, attr, data, weight_id=None):
         if attr not in data.domain.attributes:
@@ -1000,11 +1004,14 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
             raise TypeError("Cannot handle the class variable type %r" % \
                                 type(data.domain.class_var))
 
-        if data is self._cached_examples:
+        crc = data.checksum()
+        if data is self._cached_data and crc == self._cached_data_crc:
             weights = self._cached_weights
         else:
             classifier = learner(data, weight_id)
-            self._cached_examples = data
+            self._cached_data = data
+            self._cached_data_crc = data.checksum()
+            self._cached_classifier = classifier
             weights = self._extract_weights(classifier, data.domain.attributes)
             self._cached_weights = weights
         return weights.get(attr, 0.0)
@@ -1032,7 +1039,9 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
         sources = self._collect_source(weights.keys())
         source_weights = dict.fromkeys(original_features, 0.0)
         for f in original_features:
-            if f not in weights and f in sources:
+            if f in weights:
+                source_weights[f] = weights[f]
+            elif f not in weights and f in sources:
                 dummys = sources[f]
                 # Use averege weight  
                 source_weights[f] = np.average([weights[d] for d in dummys])
@@ -1069,19 +1078,24 @@ class RFE(object):
     
     Example::
     
-        import Orange
-        table = Orange.data.Table("vehicle.tab")
-        l = Orange.classification.svm.SVMLearner(
-            kernel_type=Orange.classification.svm.kernels.Linear, 
-            normalization=False) # normalization=False will not change the domain
-        rfe = Orange.classification.svm.RFE(l)
-        data_subset_of_features = rfe(table, 5)
+        >>> table = Orange.data.Table("promoters.tab")
+        >>> svm_l = Orange.classification.svm.SVMLearner(
+        ...     kernel_type=Orange.classification.svm.kernels.Linear) 
+        ... 
+        >>> rfe = Orange.classification.svm.RFE(learner=svm_l)
+        >>> data_with_subset_of_features = rfe(table, 10)
+        >>> data_with_subset_of_features.domain
+        [p-45, p-36, p-35, p-34, p-33, p-31, p-18, p-12, p-10, p-04, y]
         
     """
 
     def __init__(self, learner=None):
-        self.learner = learner or SVMLearner(kernel_type=
-                            kernels.Linear, normalization=False)
+        """
+        :param learner: A linear svm learner for use with 
+            :class:`ScoreSVMWeights`.
+        
+        """
+        self.learner = learner
 
     @Orange.utils.deprecated_keywords({"progressCallback": "progress_callback", "stopAt": "stop_at" })
     def get_attr_scores(self, data, stop_at=0, progress_callback=None):
@@ -1092,26 +1106,22 @@ class RFE(object):
         """
         iter = 1
         attrs = data.domain.attributes
-        attrScores = {}
+        attr_scores = {}
+        scorer = ScoreSVMWeights(learner=self.learner)
 
         while len(attrs) > stop_at:
-            weights = get_linear_svm_weights(self.learner(data), sum=False)
+            scores = [(scorer(attr, data), attr) for attr in attrs]
             if progress_callback:
                 progress_callback(100. * iter / (len(attrs) - stop_at))
-            score = dict.fromkeys(attrs, 0)
-            for w in weights:
-                for attr, wAttr in w.items():
-                    score[attr] += wAttr ** 2
-            score = score.items()
-            score.sort(lambda a, b:cmp(a[1], b[1]))
-            numToRemove = max(int(len(attrs) * 1.0 / (iter + 1)), 1)
-            for attr, s in  score[:numToRemove]:
-                attrScores[attr] = len(attrScores)
-            attrs = [attr for attr, s in score[numToRemove:]]
+            scores = sorted(scores)
+            num_to_remove = max(int(len(attrs) * 1.0 / (iter + 1)), 1)
+            for s, attr in  scores[:num_to_remove]:
+                attr_scores[attr] = len(attr_scores)
+            attrs = [attr for s, attr in scores[num_to_remove:]]
             if attrs:
-                data = data.select(attrs + [data.domain.classVar])
+                data = data.select(attrs + [data.domain.class_var])
             iter += 1
-        return attrScores
+        return attr_scores
 
     @Orange.utils.deprecated_keywords({"numSelected": "num_selected", "progressCallback": "progress_callback"})
     def __call__(self, data, num_selected=20, progress_callback=None):
@@ -1119,6 +1129,7 @@ class RFE(object):
         
         :param data: Data
         :type data: Orange.data.Table
+        
         :param num_selected: number of features to preserve
         :type num_selected: int
         
@@ -1171,12 +1182,3 @@ def table_to_svm_format(data, file):
         file.write("\n")
 
 tableToSVMFormat = table_to_svm_format
-
-
-def _doctest_args():
-    """For unittest framework to test the docstrings.
-    """
-    import Orange
-    table = Orange.data.Table("vehicle.tab")
-    extraglobs = locals()
-    return {"extraglobs": extraglobs}
