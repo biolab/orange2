@@ -77,9 +77,11 @@ SVM Based feature selection and scoring
 =======================================
 
 .. autoclass:: Orange.classification.svm.RFE
+   :members: __init__, __call__
 
 .. autoclass:: Orange.classification.svm.ScoreSVMWeights
-    :show-inheritance:
+   :members: __init__, __call__
+   :show-inheritance:
  
  
 Utility functions
