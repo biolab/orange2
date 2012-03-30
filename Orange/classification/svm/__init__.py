@@ -725,13 +725,13 @@ class SVMLearnerSparseEasy(SVMLearnerEasy):
 """
 LIBLINEAR learners interface
 """
+
 class LinearSVMLearner(Orange.core.LinearLearner):
     """Train a linear SVM model."""
 
     L2R_L2LOSS_DUAL = Orange.core.LinearLearner.L2R_L2Loss_SVC_Dual
     L2R_L2LOSS = Orange.core.LinearLearner.L2R_L2Loss_SVC
     L2R_L1LOSS_DUAL = Orange.core.LinearLearner.L2R_L1Loss_SVC_Dual
-    L2R_L1LOSS_DUAL = Orange.core.LinearLearner.L2R_L2Loss_SVC_Dual
     L1R_L2LOSS = Orange.core.LinearLearner.L1R_L2Loss_SVC
 
     __new__ = _orange__new__(base=Orange.core.LinearLearner)
@@ -739,13 +739,19 @@ class LinearSVMLearner(Orange.core.LinearLearner):
     def __init__(self, solver_type=L2R_L2LOSS_DUAL, C=1.0, eps=0.01, 
                  normalization=True, **kwargs):
         """
-        :param solver_type: One of the following class constants: 
-            ``LR2_L2LOSS_DUAL``, ``L2R_L2LOSS``, 
-            ``LR2_L1LOSS_DUAL``, ``L2R_L1LOSS`` or 
-            ``L1R_L2LOSS``
+        :param solver_type: One of the following class constants:
+            ``L2R_L2LOSS_DUAL``, ``L2R_L2LOSS``,
+            ``L2R_L1LOSS_DUAL``, ``L1R_L2LOSS``
+            
+            The first part (``L2R`` or ``L1R``) is the regularization term 
+            on the weight vector (squared or absolute norm respectively),
+            the ``L1LOSS`` or ``L2LOSS`` indicate absolute or squared
+            loss function ``DUAL`` means the optimization problem is
+            solved in the dual space (for more information see the
+            documentation on `LIBLINEAR`_).
         
         :param C: Regularization parameter (default 1.0)
-        :type C: float  
+        :type C: float
         
         :param eps: Stopping criteria (default 0.01)
         :type eps: float
@@ -753,6 +759,12 @@ class LinearSVMLearner(Orange.core.LinearLearner):
         :param normalization: Normalize the input data prior to learning
             (default True)
         :type normalization: bool
+        
+        Example
+        
+            >>> linear_svm = LinearSVMLearner(solver_type=LinearSVMLearner.L1R_L2LOSS,
+            ...                               C=2.0)
+            ...
         
         """
         self.solver_type = solver_type
@@ -763,7 +775,7 @@ class LinearSVMLearner(Orange.core.LinearLearner):
         for name, val in kwargs.items():
             setattr(self, name, val)
         if self.solver_type not in [self.L2R_L2LOSS_DUAL, self.L2R_L2LOSS,
-                self.L2R_L1LOSS_DUAL, self.L2R_L1LOSS_DUAL, self.L1R_L2LOSS]:
+                self.L2R_L1LOSS_DUAL, self.L1R_L2LOSS]:
             import warnings
             warnings.warn("""\
 Deprecated 'solver_type', use 
@@ -791,6 +803,7 @@ LinearLearner = LinearSVMLearner
 
 class MultiClassSVMLearner(Orange.core.LinearLearner):
     """ Multi-class SVM (Crammer and Singer) from the `LIBLINEAR`_ library.
+    
     """
     __new__ = _orange__new__(base=Orange.core.LinearLearner)
 
@@ -910,8 +923,7 @@ exampleWeightedSum = example_weighted_sum
 
 class ScoreSVMWeights(Orange.feature.scoring.Score):
     """
-    Score a feature using squares of weights of a linear SVM
-    model.
+    Score a feature using squared weights of a linear SVM model.
         
     Example:
     
