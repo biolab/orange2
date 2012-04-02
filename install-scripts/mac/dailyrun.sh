@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash
 #
 # Should be run as: sudo ./dailyrun.sh
 #
@@ -130,6 +130,9 @@ if [ ! -e $FINK_INFO_DIR ]; then
 	mkdir -p $FINK_INFO_DIR
 fi
 
+# Remove any old remaining local .info files
+rm -f $FINK_INFO_DIR/orange-*.info
+
 # Directory where fink .info templates are
 FINK_TEMPLATES=$WORK_DIR/orange/install-scripts/mac/fink
 
@@ -139,22 +142,30 @@ echo "" > $FINK_LOG
 if [[ $NEW_ORANGE || $FORCE ]]; then
 	FINK_ORANGE_SOURCE_TEMPLATE="Orange-%v.tar.gz"
 	./fink-register-info.sh "$FINK_TEMPLATES/orange-gui-dev-py.info" $BASE_URL/$FINK_ORANGE_SOURCE_TEMPLATE $ORANGE_SOURCE_MD5 $ORANGE_VERSION $FINK_INFO_DIR/orange-gui-dev-py.info >> $FINK_LOG 2>&1
+	FINK_ORANGE_INFO_EXIT_VALUE=$?
 fi
 
 if [[ $NEW_BIOINFORMATICS || $FORCE ]]; then
 	FINK_BIOINFORMATICS_SOURCE_TEMPLATE="Orange-Bioinformatics-%v.tar.gz"
 	./fink-register-info.sh "$FINK_TEMPLATES/orange-bioinformatics-gui-dev-py.info" $BASE_URL/$FINK_BIOINFORMATICS_SOURCE_TEMPLATE $BIOINFORMATICS_SOURCE_MD5 $BIOINFORMATICS_VERSION $FINK_INFO_DIR/orange-bioinformatics-gui-dev-py.info >> $FINK_LOG 2>&1
+	FINK_BIOINFORMATICS_INFO_EXIT_VALUE=$?
 fi
 
 if [[ $NEW_TEXT || $FORCE ]]; then
 	FINK_TEXT_SOURCE_TEMPLATE="Orange-Text-Mining-%v.tar.gz"
 	./fink-register-info.sh "$FINK_TEMPLATES/orange-text-gui-dev-py.info" $BASE_URL/$FINK_TEXT_SOURCE_TEMPLATE $TEXT_SOURCE_MD5 $TEXT_VERSION $FINK_INFO_DIR/orange-text-gui-dev-py.info >> $FINK_LOG 2>&1
+	FINK_TEXT_INFO_EXIT_VALUE=$?
 fi
 
 if [ ! $LOCAL ]; then
 	/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 fi
 
+EXIT_VALUE=$(($FINK_ORANGE_INFO_EXIT_VALUE + $FINK_BIOINFORMATICS_INFO_EXIT_VALUE + $FINK_TEXT_INFO_EXIT_VALUE))
+if (($EXIT_VALUE)); then
+	echo "Running fink-register-info.sh failed"
+	rm -f $FINK_INFO_DIR/orange-*.info
+fi
 
 ## daily fink build
 

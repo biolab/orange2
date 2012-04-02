@@ -74,8 +74,8 @@ curl "http://orange.biolab.si/fink/dists/10.$MAC_VERSION/main/finkinfo/all.tgz" 
 tar -xzf $FINK_ROOT/fink/dists/biolab/main/finkinfo/all.tgz -C $FINK_ROOT/fink/dists/biolab/main/finkinfo/
 rm -f $FINK_ROOT/fink/dists/biolab/main/finkinfo/all.tgz
 
-# Move info files from local/main/finkinfo (put there by dailyru[-finkonly].sh
-if [ -e $FINK_ROOT/fink/dists/local/main/finkinfo/*.info ]; then
+# Move info files from local/main/finkinfo (put there by dailyrun[-finkonly].sh
+if [[ $(ls -A $FINK_ROOT/fink/dists/local/main/finkinfo/ | grep "\.info") ]]; then
 	echo "Updating new fink info files."
 	mv $FINK_ROOT/fink/dists/local/main/finkinfo/*.info $FINK_ROOT/fink/dists/biolab/main/finkinfo/
 fi
