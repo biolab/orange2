@@ -194,6 +194,7 @@ class ScaleData:
 
         self.jitter_size = 10
         self.jitter_continuous = 0
+        self.jitter_seed = 0
 
         self.attr_values = {}
         self.domain_data_stat = []
@@ -268,7 +269,6 @@ class ScaleData:
         self.raw_subset_data = subset_data
 
         len_data = data and len(data) or 0
-        numpy.random.seed(1)     # we always reset the random generator, so that if we receive the same data again we will add the same noise
 
         self.attribute_names = [attr.name for attr in full_data.domain]
         self.attribute_name_index = dict([(full_data.domain[i].name, i)
@@ -361,17 +361,39 @@ class ScaleData:
         scaled_data = numpy.concatenate([self.no_jittering_scaled_data,
                                          self.no_jittering_scaled_subset_data],
                                          axis = 1)
-        for index in range(len(data.domain)):
+
+        # Random generators for jittering 
+        random = numpy.random.RandomState(seed=self.jitter_seed)
+        rand_seeds = random.random_integers(0, sys.maxint - 1, size=len(data.domain))
+        for index, rseed in zip(range(len(data.domain)), rand_seeds):
+            # Need to use a different seed for each feature
+            random = numpy.random.RandomState(seed=rseed)
             attr = data.domain[index]
             if attr.var_type == Orange.core.VarTypes.Discrete:
                 scaled_data[index] += (self.jitter_size/(50.0*max(1,len(attr.values))))*\
-                                      (numpy.random.random(len(full_data)) - 0.5)
+                                      (random.rand(len(full_data)) - 0.5)
                 
             elif attr.var_type == Orange.core.VarTypes.Continuous and self.jitter_continuous:
-                scaled_data[index] += self.jitter_size/50.0 * (0.5 - numpy.random.random(len(full_data)))
+                scaled_data[index] += self.jitter_size/50.0 * (0.5 - random.rand(len(full_data)))
                 scaled_data[index] = numpy.absolute(scaled_data[index])       # fix values below zero
                 ind = numpy.where(scaled_data[index] > 1.0, 1, 0)     # fix values above 1
                 numpy.putmask(scaled_data[index], ind, 2.0 - numpy.compress(ind, scaled_data[index]))
+
+        if self.have_subset_data:
+            # Fix all subset instances which are also in the main data
+            # to have the same jittered values
+            ids_to_indices = dict((inst.id, i) \
+                                  for i, inst in enumerate(self.raw_data))
+
+            subset_ids_map = [[i, ids_to_indices[s.id]] \
+                               for i, s in enumerate(self.raw_subset_data)\
+                               if s.id in ids_to_indices]
+            if len(subset_ids_map):
+                subset_ids_map = numpy.array(subset_ids_map)
+                subset_ids_map[:, 0] += len_data
+                scaled_data[:, subset_ids_map[:, 0]] = \
+                        scaled_data[:, subset_ids_map[:, 1]]
+
         self.scaled_data = scaled_data[:,:len_data]; self.scaled_subset_data = scaled_data[:,len_data:]
     
     setData = set_data

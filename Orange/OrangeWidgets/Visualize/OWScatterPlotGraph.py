@@ -227,10 +227,14 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
             xPointsToAdd = {}
             yPointsToAdd = {}
+            subsetIdsAlreadyDrawn = set()
             for i in range(len(self.rawData)):
                 if not validData[i]: continue
                 if subsetIdsToDraw.has_key(self.rawData[i].id):
-                    continue
+                    instanceFilled = 1
+                    subsetIdsAlreadyDrawn.add(self.rawData[i].id)
+                else:
+                    instanceFilled = showFilled
 
                 if colorIndex != -1:
                     if self.dataDomain[colorIndex].varType == orange.VarTypes.Continuous:
@@ -245,11 +249,11 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 size = self.pointWidth
                 if sizeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeIndex][i] * self.pointWidth)
 
-                if not xPointsToAdd.has_key((newColor, size, Symbol, showFilled)):
-                    xPointsToAdd[(newColor, size, Symbol, showFilled)] = []
-                    yPointsToAdd[(newColor, size, Symbol, showFilled)] = []
-                xPointsToAdd[(newColor, size, Symbol, showFilled)].append(xData[i])
-                yPointsToAdd[(newColor, size, Symbol, showFilled)].append(yData[i])
+                if not xPointsToAdd.has_key((newColor, size, Symbol, instanceFilled)):
+                    xPointsToAdd[(newColor, size, Symbol, instanceFilled)] = []
+                    yPointsToAdd[(newColor, size, Symbol, instanceFilled)] = []
+                xPointsToAdd[(newColor, size, Symbol, instanceFilled)].append(xData[i])
+                yPointsToAdd[(newColor, size, Symbol, instanceFilled)].append(yData[i])
                 self.tips.addToolTip(xData[i], yData[i], i)     # we add a tooltip for this point
 
                 # Show a label by each marker
@@ -267,7 +271,10 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
                 validSubData = self.getValidSubsetList(attrs)
                 xData, yData = self.getXYSubsetDataPositions(xAttr, yAttr)
                 for i in range(len(self.rawSubsetData)):
-                    if not validSubData[i]: continue
+                    if not validSubData[i]:
+                        continue
+                    if self.rawSubsetData[i].id in subsetIdsAlreadyDrawn:
+                        continue
 
                     if colorIndex != -1 and self.validSubsetDataArray[colorIndex][i]:
                         if self.rawData.domain[colorIndex].varType == orange.VarTypes.Continuous:
