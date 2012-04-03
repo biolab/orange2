@@ -1,1 +1,1 @@
-from Orange.optimization import *
+from Orange.tuning import *
