@@ -39,7 +39,7 @@ try:
         "networkCanvas.trim_label_words", "opt_from_curr", "networkCanvas.explore_distances",
         "networkCanvas.show_component_distances", "fontWeight", "networkCanvas.state",
         "networkCanvas.selection_behavior", "hubs", "markDistance",
-        "markNConnections", "markNumber"]
+        "markNConnections", "markNumber", "markSearchString"]
 
         def __init__(self, parent=None, signalManager=None, name='Net Explorer',
                      NetworkCanvas=OWNxCanvas):
@@ -438,9 +438,11 @@ try:
                 if hubs == 0:
                     self.networkCanvas.networkCurve.clear_node_marks()
                 elif hubs == 1:
-                    #print "mark on given label"
-                    txt = self.markSearchString
+                    if self.graph_base.items() is None or self.markSearchString == '':
+                        self.networkCanvas.networkCurve.clear_node_marks()
+                        return
 
+                    txt = self.markSearchString
                     toMark = set(i for i, values in enumerate(self.graph_base.items()) if txt.lower() in " ".join([str(values[ndx]).decode("ascii", "ignore").lower() for ndx in range(len(self.graph_base.items().domain)) + self.graph_base.items().domain.getmetas().keys()]))
                     toMark = toMark.intersection(self.graph.nodes())
                     self.networkCanvas.networkCurve.clear_node_marks()
@@ -497,6 +499,10 @@ try:
                         i, d in powers[:cut]))
 
                 elif hubs == 9:
+                    if self.graph_base.items() is None:
+                        self.networkCanvas.networkCurve.clear_node_marks()
+                        return
+
                     var = str(self.markInputCombo.currentText())
                     if self.markInputItems is not None and len(self.markInputItems) > 0:
                         if var == 'ID':
@@ -1147,7 +1153,7 @@ try:
             self.optButton.setText("Stop")
             qApp.processEvents()
             self.networkCanvas.networkCurve.layout_fr(self.frSteps, False)
-            self.networkCanvas.update_canvas()
+           # self.networkCanvas.update_canvas()
             self.optButton.setChecked(False)
             self.optButton.setText("Optimize layout")
 
