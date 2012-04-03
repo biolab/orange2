@@ -921,12 +921,13 @@ void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const 
     for(mi = mb; mi != me; mi++) {
       if (!(*mi).optional) {
         PUTDELIM;
-        if (DK && ((*ri).valueType == valueDK))
+        const TValue &mval = (*ex)[(*mi).id];
+        if (DK && (mval.valueType == valueDK))
           fprintf(file, DK);
-        else if (DC && ((*ri).valueType == valueDC))
+        else if (DC && (mval.valueType == valueDC))
           fprintf(file, DC);
         else {
-          (*mi).variable->val2filestr((*ex)[(*mi).id], st, *ex);
+          (*mi).variable->val2filestr(mval, st, *ex);
           fprintf(file, "%s", checkCtrl(st.c_str()));
         }
       }
