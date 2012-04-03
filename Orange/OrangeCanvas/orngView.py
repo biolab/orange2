@@ -170,7 +170,11 @@ class SchemaView(QGraphicsView):
 
     def unselectAllWidgets(self):
         for item in self.doc.widgets:
-            item.setSelected(0)
+            item.setSelected(False)
+            
+    def selectAllWidgets(self):
+        for item in self.doc.widgets:
+            item.setSelected(True)
 
     def getItemsAtPos(self, pos, itemType = None):
         if isinstance(pos, QGraphicsItem):
@@ -224,7 +228,7 @@ class SchemaView(QGraphicsView):
             self.tempWidget = None
             rect = self.maxSelectionRect(QRectF(self.mouseDownPosition, self.mouseDownPosition))
             self.widgetSelectionRect = QGraphicsRectItem(rect, None, self.scene())
-            self.widgetSelectionRect.setPen(QPen(QBrush(QColor(51, 153, 255, 192)), 1, Qt.SolidLine, Qt.RoundCap))
+            self.widgetSelectionRect.setPen(QPen(QBrush(QColor(51, 153, 255, 192)), 0.4, Qt.SolidLine, Qt.RoundCap))
             self.widgetSelectionRect.setBrush(QBrush(QColor(168, 202, 236, 192)))
             self.widgetSelectionRect.setZValue(-100)
             self.widgetSelectionRect.show()
@@ -437,7 +441,9 @@ class SchemaView(QGraphicsView):
         minGeom = self.mapToScene(QRect(QPoint(0, 0), minSize)).boundingRect()
         sceneRect = minGeom.united(b_rect)
         return rect.intersected(sceneRect).adjusted(penWidth, penWidth, -penWidth, -penWidth)
-#        
-#    def resizeEvent(self, event):
-#        self.updateSceneRect()
 
+    def keyPressEvent(self, event):
+        if event == QKeySequence.SelectAll:
+            self.selectAllWidgets()
+        else:
+            return QGraphicsView.keyPressEvent(self, event)
