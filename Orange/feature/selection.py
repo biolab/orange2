@@ -58,6 +58,7 @@ def select(data, scores, n):
     return data.select(top_rated(scores, n) + [data.domain.classVar.name])
 
 selectBestNAtts = select
+select_best_n = select
 
 
 def select_above_threshold(data, scores, threshold=0.0):
