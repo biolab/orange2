@@ -6,9 +6,8 @@ import Orange.core as orange
 
 from Orange.feature.scoring import score_all
 
-
-def best_n(scores, n):
-    """Return the best features (without scores) from the list
+def top_rated(scores, n, highest_best=True):
+    """Return n top-rated features from the list of scores.
 
     :param scores: a list such as the one returned by
       :obj:`~Orange.feature.scoring.score_all`
@@ -16,14 +15,14 @@ def best_n(scores, n):
     :param n: number of features to select.
     :type n: int
     :rtype: :obj:`list`
-
+    :param highest_best: if true, the features that are scored higher are preferred
+    :type highest_best: bool
     """
     return [x[0] for x in \
             sorted(scores, key=itemgetter(1), reverse=True)[:n]
             ]
 
-bestNAtts = best_n
-
+bestNAtts = top_rated
 
 def above_threshold(scores, threshold=0.0):
     """Return features (without scores) with scores above or
@@ -43,7 +42,7 @@ def above_threshold(scores, threshold=0.0):
 attsAboveThreshold = above_threshold
 
 
-def select_best_n(data, scores, n):
+def select(data, scores, n):
     """Construct and return a new data table that includes a
     class and only the best features from a list scores.
 
@@ -56,16 +55,16 @@ def select_best_n(data, scores, n):
     :type n: int
     :rtype: :obj:`Orange.data.Table`
     """
-    return data.select(best_n(scores, n) + [data.domain.classVar.name])
+    return data.select(top_rated(scores, n) + [data.domain.classVar.name])
 
-selectBestNAtts = select_best_n
+selectBestNAtts = select
 
 
 def select_above_threshold(data, scores, threshold=0.0):
     """Construct and return a new data table that includes a class and
     features from the list returned by
-    :obj:`~Orange.feature.scoring.score_all` that have the score above or
-    equal to a specified threshold.
+    :obj:`~Orange.feature.scoring.score_all` with higher or equal score
+    to a given threshold.
 
     :param data: a data table
     :type data: :obj:`Orange.data.Table`
@@ -99,7 +98,7 @@ def select_relief(data, measure=orange.MeasureAttribute_relief(k=20, m=50), marg
     """
     measl = score_all(data, measure)
     while len(data.domain.attributes) > 0 and measl[-1][1] < margin:
-        data = select_best_n(data, measl, len(data.domain.attributes) - 1)
+        data = select(data, measl, len(data.domain.attributes) - 1)
         measl = score_all(data, measure)
     return data
 
@@ -107,25 +106,17 @@ filterRelieff = select_relief
 
 
 class FilterAboveThreshold(object):
-    """A class wrapper around :obj:`select_above_threshold`; the
-    constructor stores the filter parameters that are applied when the
-    function is called.
+    """A wrapper around :obj:`select_above_threshold`; the
+    constructor stores the parameters of the feature selection
+    procedure that are then applied when the the selection
+    is called with the actual data.
 
     :param measure: a feature scorer
     :type measure: :obj:`Orange.feature.scoring.Score`
     :param threshold: threshold for selection. Defaults to 0.
     :type threshold: float
-
-    Some examples of how to use this class::
-
-        filter = Orange.feature.selection.FilterAboveThreshold(threshold=.15)
-        new_data = filter(data)
-        new_data = Orange.feature.selection.FilterAboveThreshold(data)
-        new_data = Orange.feature.selection.FilterAboveThreshold(data, threshold=.1)
-        new_data = Orange.feature.selection.FilterAboveThreshold(data, threshold=.1,
-                   measure=Orange.feature.scoring.Gini())
-
     """
+
     def __new__(cls, data=None,
                 measure=orange.MeasureAttribute_relief(k=20, m=50),
                 threshold=0.0):
@@ -157,7 +148,7 @@ FilterAttsAboveThresh_Class = FilterAboveThreshold
 
 
 class FilterBestN(object):
-    """A class wrapper around :obj:`select_best_n`; the
+    """A wrapper around :obj:`select`; the
     constructor stores the filter parameters that are applied when the
     function is called.
 
@@ -186,7 +177,7 @@ class FilterBestN(object):
     def __call__(self, data):
         ma = score_all(data, self.measure)
         self.n = min(self.n, len(data.domain.attributes))
-        return select_best_n(data, ma, self.n)
+        return select(data, ma, self.n)
 
 FilterBestNAtts = FilterBestN
 FilterBestNAtts_Class = FilterBestN
@@ -229,8 +220,9 @@ FilterRelief_Class = FilterRelief
 
 
 class FilteredLearner(object):
-    """A learner that applies the given features selection method and
-    then calls the base learner. This learner is needed to properly cross-validate a combination of feature selection and learning.
+    """A feature selection wrapper around base learner. When provided data,
+     this learner applies a given feature selection method and then calls
+     the base learner.
 
     Here is an example of how to build a wrapper around naive Bayesian learner
     and use it on a data set::
