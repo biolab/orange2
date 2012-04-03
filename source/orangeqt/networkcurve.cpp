@@ -1126,6 +1126,13 @@ void NetworkCurve::remove_node(int index)
     }
     NodeItem* node = m_nodes.take(index);
     Q_ASSERT(node->index() == index);
+
+    if (node->label != NULL)
+    {
+    	remove_label(index);
+    	node->label = NULL;
+    }
+
     Plot* p = plot();
     if (p)
     {
