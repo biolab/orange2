@@ -887,10 +887,13 @@ try:
 
             self._network_view = nxView
 
+            g = self.graph_base
             if self._network_view is not None:
                 self._network_view.set_nx_explorer(self)
+            else:
+                self.graph_base = None
 
-            self.set_graph(self.graph_base)
+            self.set_graph(g)
 
             if self._network_view is not None:
                 QObject.connect(self.networkCanvas, SIGNAL('selection_changed()'), self._network_view.node_selection_changed)
