@@ -9,17 +9,19 @@ Selection (``selection``)
 .. index::
    single: feature; feature selection
 
-Feature selection module contains several functions for selecting features based on they scores. A typical example is the function :obj:`select_best_n` that returns the best n features:
+Feature selection module contains several utility functions for selecting features based on they scores normally
+obtained in classification or regression problems. A typical example is the function :obj:`select`
+that returns a subsets of highest-scored features features:
 
-    .. literalinclude:: code/selection-best3.py
-        :lines: 7-
+.. literalinclude:: code/selection-best3.py
+    :lines: 7-
 
-    The script outputs::
+The script outputs::
 
-        Best 3 features:
-        physician-fee-freeze
-        el-salvador-aid
-        synfuels-corporation-cutback
+    Best 3 features:
+    physician-fee-freeze
+    el-salvador-aid
+    synfuels-corporation-cutback
 
 The module also includes a learner that incorporates feature subset
 selection.
@@ -28,11 +30,11 @@ selection.
 Functions for feature subset selection
 --------------------------------------
 
-.. automethod:: Orange.feature.selection.best_n
+.. automethod:: Orange.feature.selection.top_rated
 
 .. automethod:: Orange.feature.selection.above_threshold
 
-.. automethod:: Orange.feature.selection.select_best_n
+.. automethod:: Orange.feature.selection.select
 
 .. automethod:: Orange.feature.selection.select_above_threshold
 
@@ -55,6 +57,15 @@ Class wrappers for selection functions
 
 .. autoclass:: Orange.feature.selection.FilterAboveThreshold(data=None, measure=Orange.feature.scoring.Relief(k=20, m=50), threshold=0.0)
    :members:
+
+Below are few examples of utility of this class::
+
+    >>> filter = Orange.feature.selection.FilterAboveThreshold(threshold=.15)
+    >>> new_data = filter(data)
+    >>> new_data = Orange.feature.selection.FilterAboveThreshold(data)
+    >>> new_data = Orange.feature.selection.FilterAboveThreshold(data, threshold=.1)
+    >>> new_data = Orange.feature.selection.FilterAboveThreshold(data, threshold=.1, \
+        measure=Orange.feature.scoring.Gini())
 
 .. autoclass:: Orange.feature.selection.FilterBestN(data=None, measure=Orange.feature.scoring.Relief(k=20, m=50), n=5)
    :members:

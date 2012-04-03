@@ -220,12 +220,16 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         elif self.haveSubsetData:
             shownSubsetCount = 0
             subsetIdsToDraw = dict([(example.id,1) for example in self.rawSubsetData])
-
+            subsetIdsAlreadyDrawn = set()
             # draw the rawData data set. examples that exist also in the subset data draw full, other empty
             for i in range(dataSize):
-                if not validData[i]: continue
-                if subsetIdsToDraw.has_key(self.rawData[i].id):
+                if not validData[i]:
                     continue
+                if subsetIdsToDraw.has_key(self.rawData[i].id):
+                    instance_filled = 1
+                    subsetIdsAlreadyDrawn.add(self.rawData[i].id)
+                else:
+                    instance_filled = 0
 
                 if self.dataHasDiscreteClass and self.useDifferentColors:
                     newColor = self.discPalette.getRGB(self.originalData[self.dataClassIndex][i])
@@ -239,11 +243,11 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 else:
                     curveSymbol = self.curveSymbols[0]
 
-                if not xPointsToAdd.has_key((newColor, curveSymbol,0)):
-                    xPointsToAdd[(newColor, curveSymbol,0)] = []
-                    yPointsToAdd[(newColor, curveSymbol,0)] = []
-                xPointsToAdd[(newColor, curveSymbol,0)].append(x_positions[i])
-                yPointsToAdd[(newColor, curveSymbol,0)].append(y_positions[i])
+                if not xPointsToAdd.has_key((newColor, curveSymbol, instance_filled)):
+                    xPointsToAdd[(newColor, curveSymbol, instance_filled)] = []
+                    yPointsToAdd[(newColor, curveSymbol, instance_filled)] = []
+                xPointsToAdd[(newColor, curveSymbol, instance_filled)].append(x_positions[i])
+                yPointsToAdd[(newColor, curveSymbol, instance_filled)].append(y_positions[i])
                 if self.showValueLines:
                     self.addValueLineCurve(x_positions[i], y_positions[i], newColor, i, indices)
 
@@ -259,7 +263,10 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             sub_y_positions = projSubData[1]
 
             for i in range(len(self.rawSubsetData)):
-                if not validSubData[i]: continue    # check if has missing values
+                if not validSubData[i]: # check if has missing values
+                    continue
+                if self.rawSubsetData[i].id in subsetIdsAlreadyDrawn:
+                    continue
 
                 if not self.dataHasClass or self.rawSubsetData[i].getclass().isSpecial():
                     newColor = (0,0,0)

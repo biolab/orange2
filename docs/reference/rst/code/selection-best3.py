@@ -9,7 +9,7 @@ voting = Orange.data.Table("voting")
 
 n = 3
 ma = Orange.feature.scoring.score_all(voting)
-best = Orange.feature.selection.best_n(ma, n)
+best = Orange.feature.selection.top_rated(ma, n)
 print 'Best %d features:' % n
 for s in best:
     print s
