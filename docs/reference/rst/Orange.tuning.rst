@@ -1,8 +1,10 @@
+.. py:currentmodule:: Orange.classification.majority
+
 ###############################
-Optimization (``optimization``)
+Tuning (``tuning``)
 ###############################
 
-.. automodule:: Orange.optimization
+.. automodule:: Orange.tuning
 
 .. index:: tuning
 
@@ -17,15 +19,15 @@ Tuning parameters
 *****************
 
 Two classes support tuning parameters.
-:obj:`Orange.optimization.Tune1Parameter` for fitting a single parameter and
-:obj:`Orange.optimization.TuneMParameters` fitting multiple parameters at once,
+:obj:`~Tune1Parameter` for fitting a single parameter and
+:obj:`~TuneMParameters` fitting multiple parameters at once,
 trying all possible combinations. When called with data and, optionally, id
 of meta attribute with weights, they find the optimal setting of arguments
 using cross validation. The classes can also be used as ordinary learning
 algorithms - they are in fact derived from
-:obj:`Orange.classification.Learner`.
+:obj:`~Orange.classification.Learner`.
 
-Both classes have a common parent, :obj:`Orange.optimization.TuneParameters`,
+Both classes have a common parent, :obj:`~TuneParameters`,
 and a few common attributes.
 
 .. autoclass:: TuneParameters
@@ -75,7 +77,7 @@ part of :download:`optimization-thresholding2.py <code/optimization-thresholding
 
 The script first divides the data into training and testing subsets. It trains
 a naive Bayesian classifier and than wraps it into
-:obj:`Orange.optimization.ThresholdClassifiers` with thresholds of .2, .5 and
+:obj:`~ThresholdClassifiers` with thresholds of .2, .5 and
 .8. The three models are tested on the left-out data, and we compute the
 confusion matrices from the results. The printout::
 

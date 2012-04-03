@@ -31,7 +31,7 @@ Orange Scripting Reference
 
    Orange.network
 
-   Orange.optimization
+   Orange.tuning
    
    Orange.projection
 

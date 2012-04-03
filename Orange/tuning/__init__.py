@@ -1,8 +1,3 @@
-""" 
-
-   
-"""
-
 import Orange.core
 import Orange.classification
 import Orange.evaluation.scoring
