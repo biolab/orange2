@@ -56,21 +56,22 @@ class OWSVM(OWWidget):
                              0, 0, Qt.AlignLeft)
         
         b.layout().addWidget(QLabel("Cost (C)", b), 0, 1, Qt.AlignRight)
-        b.layout().addWidget(OWGUI.doubleSpin(b, self, "C", 0.5, 512.0, 0.5, 
-                                addToLayout=False, 
-                                callback=lambda *x: self.setType(0), 
+        b.layout().addWidget(OWGUI.doubleSpin(b, self, "C", 0.1, 512.0, 0.1,
+                                decimals=2,
+                                addToLayout=False,
+                                callback=lambda *x: self.setType(0),
                                 alignment=Qt.AlignRight,
                                 tooltip= "Cost for a mis-classified training instance."),
                              0, 2)
         
-        b.layout().addWidget(OWGUI.appendRadioButton(b, self, "useNu", u"ν-SVM", 
+        b.layout().addWidget(OWGUI.appendRadioButton(b, self, "useNu", u"ν-SVM",
                                                      addToLayout=False),
                              1, 0, Qt.AlignLeft)
-        
+
         b.layout().addWidget(QLabel(u"Complexity bound (\u03bd)", b), 1, 1, Qt.AlignRight)
-        b.layout().addWidget(OWGUI.doubleSpin(b, self, "nu", 0.1, 1.0, 0.1, 
+        b.layout().addWidget(OWGUI.doubleSpin(b, self, "nu", 0.05, 1.0, 0.05,
                                 tooltip="Lower bound on the ratio of support vectors",
-                                addToLayout=False, 
+                                addToLayout=False,
                                 callback=lambda *x: self.setType(1),
                                 alignment=Qt.AlignRight),
                              1, 2)
@@ -86,6 +87,7 @@ class OWSVM(OWWidget):
         OWGUI.separator(b)
         self.gcd = OWGUI.widgetBox(b, orientation="horizontal")
         self.leg = OWGUI.doubleSpin(self.gcd, self, "gamma",0.0,10.0,0.0001,
+                                decimals=5,
                                 label="  g: ",
                                 orientation="horizontal",
                                 callback=self.changeKernel,
@@ -264,7 +266,8 @@ class OWSVM(OWWidget):
         if self.kernel_type==1:
             params.append("degree")
         try:
-            learner.tuneParameters(self.data, params, 4, verbose=0, progressCallback=self.progres)
+            learner.tuneParameters(self.data, params, 4, verbose=0,
+                                   progressCallback=self.progres)
         except UnhandledException:
             pass
         for param in params:
