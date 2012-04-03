@@ -1374,9 +1374,8 @@ class PCA(object):
     def _perform_pca(self, dataset, Xd, Xg):
         n, m = Xd.shape
         if n < m:
-            C = numpy.dot(Xg.T, Xd.T) / (m - self.ddof)
-            V, D, T = numpy.linalg.svd(C)
-            U = numpy.dot(V.T, Xd) / numpy.sqrt(D.reshape(-1, 1) * (m - self.ddof))
+            _, D, U = numpy.linalg.svd(Xd, full_matrices=0)
+            D *= D / (n - self.ddof)
         else:
             C = numpy.dot(Xg, Xd) / (n - self.ddof)
             U, D, T = numpy.linalg.svd(C)
