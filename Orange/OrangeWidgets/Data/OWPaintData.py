@@ -710,7 +710,6 @@ class OWPaintData(OWWidget):
         
         self.classValuesView = listView = QListView()
         listView.setSelectionMode(QListView.SingleSelection)
-        listView.setEditTriggers(QListView.SelectedClicked)
         
         self.classValuesModel = EnumVariableModel(self.classVariable, self, flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled| Qt.ItemIsEditable)
         self.classValuesModel.wrap(self.classVariable.values)

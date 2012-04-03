@@ -264,7 +264,7 @@ def doubleSpin(widget, master, value, min, max, step=1,
          box=None, label=None, labelWidth=None, orientation=None, tooltip=None,
          callback=None, debuggingEnabled = 1, controlWidth = None, callbackOnReturn = False,
          checked = "", checkCallback = None, posttext = None, addToLayout=True, alignment = Qt.AlignLeft,
-         keyboardTracking=True): #widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None, controlWidth=None):
+         keyboardTracking=True, decimals=None):
     if box or label and not checked:
         b = widgetBox(widget, box, orientation)
         hasHBox = orientation == 'horizontal' or not orientation
@@ -284,6 +284,10 @@ def doubleSpin(widget, master, value, min, max, step=1,
 
 
     wa = bi.control = DoubleSpinBoxWFocusOut(min, max, step, bi)
+
+    if decimals is not None:
+        wa.setDecimals(decimals)
+
     wa.setAlignment(alignment)
     wa.setKeyboardTracking(keyboardTracking) # If false it wont emit valueChanged signals while editing the text
     if addToLayout and bi.layout() is not None:

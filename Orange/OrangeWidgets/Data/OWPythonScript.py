@@ -296,7 +296,7 @@ class OWPythonScript(OWWidget):
         self.controlBox = OWGUI.widgetBox(self.controlArea, 'Library')
         self.controlBox.layout().setSpacing(1)
         self.libraryView = QListView()
-        self.libraryView.pyqtConfigure(editTriggers=QListView.DoubleClicked | QListView.SelectedClicked)
+        self.libraryView.setEditTriggers(QListView.DoubleClicked | QListView.EditKeyPressed)
         self.libraryView.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         self.libraryView.setItemDelegate(ScriptItemDelegate(self))
         self.libraryView.setModel(self.libraryList)
