@@ -283,8 +283,9 @@ class SVMClassifier(_SVMClassifier):
         
         assert(type(wrapped) in [_SVMClassifier, _SVMClassifierSparse])
         
-        if self.svm_type in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
-            # Reorder the support vectors
+        if self.svm_type in [SVMLearner.C_SVC, SVMLearner.Nu_SVC] \
+                and len(wrapped.support_vectors) > 0:
+            # Reorder the support vectors of the binary classifiers
             label_map = self._get_libsvm_labels_map()
             start = 0
             support_vectors = []
