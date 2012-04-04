@@ -2667,6 +2667,43 @@ def mt_flattened_score(res, score):
             res2.results.append(te2)
     return score(res2)
 
+def mt_global_accuracy(res):
+    """
+    \emph{Global accuracy} (accuracy per example) over \emph{d}-dimensional class variable.
+    :math:`Acc = \frac{1}{N}\sum_{i=1}^{N}\delta(\mathbf{c_{i}'},\mathbf{c_{i}})`
+    :math:'\delta (\mathbf{c_{i}'},\mathbf{c_{i}} )=\left\{\begin{matrix}1:\mathbf{c_{i}'}=\mathbf{c_{i}}\\ 0: otherwise\end{matrix}'
+    """
+    results = []
+    for l in xrange(res.number_of_learners):
+        n_results = len(res.results)
+        n_correct = 0.
+
+        for r in res.results:
+            if list(r.classes[l]) == r.actual_class:
+                n_correct+=1
+
+        results.append(n_correct/n_results)
+    return results
+
+def mt_mean_accuracy(res):
+    """
+    \emph{Mean accuracy} (accuracy per class or per label) over \emph{d} class variables.
+    :math:`\overline{Acc_{d}} = \frac{1}{d}\sum_{j=1}^{d}Acc_{j} = \frac{1}{d}\sum_{j=1}^{d} \frac{1}{N}\sum_{i=1}^{N}\delta(c_{ij}',c_{ij} )`
+    :math:'\delta (c_{ij}',c_{ij} )=\left\{\begin{matrix}1:c_{ij}'=c_{ij}\\ 0: otherwise\end{matrix}'
+    """
+    results = []
+    for l in xrange(res.number_of_learners):
+        n_classes = len(res.results[0].actual_class)
+        n_results = len(res.results)
+        n_correct = 0.
+
+        for r in res.results:
+            #n_correct+=sum((1 if r.classes[l][i] == r.actual_class[i] else 0 for i in xrange(n_classes)))
+            for i in xrange(n_classes):
+                if r.classes[l][i] == r.actual_class[i]:
+                    n_correct+=1
+        results.append(n_correct/n_classes/n_results)
+    return results
 
 ################################################################################
 if __name__ == "__main__":
