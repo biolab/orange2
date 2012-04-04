@@ -68,9 +68,11 @@ class OWSaveDistanceFile(OWWidget):
     def saveSymMatrix(self, matrix, file):
         fn = open(file, 'w')
         fn.write("%d labeled\n" % matrix.dim)
-        
+
+        hasNames = all(hasattr(ex, "name") for ex in matrix.items) and \
+                   any(ex.name for ex in matrix.items)
         for i in range(matrix.dim):
-            fn.write("%s" % matrix.items[i][0])
+            fn.write("%s" % matrix.items[i].name if hasNames else str(matrix.items[i]))
             for j in range(i+1):
                 fn.write("\t%.6f" % matrix[i,j])
             fn.write("\n")
