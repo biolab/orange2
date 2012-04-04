@@ -966,6 +966,12 @@ class OWROC(OWWidget):
 
         self.closeContext()
 
+        self.warning([0, 1])
+
+        if dres is not None and dres.class_values is None:
+            self.warning(1, "ROC cannot be used for regression results.")
+            dres = None
+
         if not dres:
             self.targetClass = None
             self.classCombo.clear()
@@ -978,7 +984,6 @@ class OWROC(OWWidget):
         if dres and dres.test_type != TEST_TYPE_SINGLE:
             self.warning(0, "ROC is implemented only for single-target prediction problems.")
             return
-        self.warning(0, None)
 
         self.dres = dres
 

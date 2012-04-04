@@ -335,6 +335,12 @@ class OWCalibrationPlot(OWWidget):
         self.removeGraphs()
         self.classCombo.clear()
 
+        self.warning([0, 1])
+
+        if dres is not None and dres.class_values is None:
+            self.warning(1, "ROC cannot be used for regression results.")
+            dres = None
+
         self.dres = dres
         
         if dres and dres.test_type != TEST_TYPE_SINGLE:

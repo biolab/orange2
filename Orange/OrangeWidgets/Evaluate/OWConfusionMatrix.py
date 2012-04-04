@@ -110,9 +110,14 @@ class OWConfusionMatrix(OWWidget):
         self.res = res
         self.warning([0, 1])
         self.outputBox.setEnabled(True)
-        
+
+        if res is not None and res.class_values is None:
+            self.warning(1, "Confusion Matrix cannot be used for regression results.")
+            self.res = res = None
+
         if not res:
             self.matrix = None
+            self.learnerNames = []
             self.table.setRowCount(0)
             self.table.setColumnCount(0)
             return

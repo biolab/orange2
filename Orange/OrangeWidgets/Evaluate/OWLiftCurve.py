@@ -340,6 +340,12 @@ class OWLiftCurve(OWROC):
         self.testSetsQLB.clear()
         self.classifiersQLB.clear()
 
+        self.warning([0, 1])
+
+        if dres is not None and dres.class_values is None:
+            self.warning(1, "Lift Curve cannot be used for regression results.")
+            dres = None
+
         self.dres = dres
 
         if not dres:
@@ -350,7 +356,6 @@ class OWLiftCurve(OWROC):
         if dres and dres.test_type != TEST_TYPE_SINGLE:
             self.warning(0, "Lift curve is supported only for single-target prediction problems.")
             return
-        self.warning(0, None)
 
         self.defaultPerfLinePValues = []
         if self.dres <> None:
