@@ -310,13 +310,11 @@ class OWHierarchicalClustering(OWWidget):
         if self.Annotation == 0:
             labels = [""] * len(items)
         elif self.Annotation == 1:
-            if isinstance(items, ExampleTable):
-                labels = [str(i) for i in range(len(items))]
-            else:
-                try:
-                    labels = [item.name for item in items]
-                except AttributeError:
-                    labels = [str(item) for item in items]
+            try:
+                labels = [item.name for item in items]
+                if not any(labels): raise AttributeError("No labels.")
+            except AttributeError:
+                labels = [str(item) for item in items]
         elif self.Annotation > 1 and isinstance(items, ExampleTable):
             attr = self.labelInd[min(self.Annotation - 2, len(self.labelInd) - 1)]
             labels = [str(ex[attr]) for ex in items]

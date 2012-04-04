@@ -1130,7 +1130,7 @@ void NetworkCurve::remove_node(int index)
     if (node->label != NULL)
     {
     	remove_label(index);
-    	enode->label = NULL;
+    	node->label = NULL;
     }
 
     Plot* p = plot();
