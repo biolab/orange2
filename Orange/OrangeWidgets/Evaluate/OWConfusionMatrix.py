@@ -7,9 +7,13 @@
 """
 from OWWidget import *
 import OWGUI
+import orange
 import orngStat, orngTest
 import statc, math
+
 from operator import add
+from collections import defaultdict
+
 from Orange.evaluation.testing import TEST_TYPE_SINGLE
             
 class TransformedLabel(QLabel):
@@ -74,7 +78,7 @@ class OWConfusionMatrix(OWWidget):
         
         OWGUI.separator(self.controlArea)
 
-        box = OWGUI.widgetBox(self.controlArea, "Output")
+        self.outputBox = box = OWGUI.widgetBox(self.controlArea, "Output")
         OWGUI.checkBox(box, self, "appendPredictions", "Append class predictions", callback = self.sendIf)
         OWGUI.checkBox(box, self, "appendProbabilities", "Append predicted class probabilities", callback = self.sendIf)
         applyButton = OWGUI.button(box, self, "Commit", callback = self.sendData, default=True)
@@ -104,6 +108,9 @@ class OWConfusionMatrix(OWWidget):
 
     def setTestResults(self, res):
         self.res = res
+        self.warning([0, 1])
+        self.outputBox.setEnabled(True)
+        
         if not res:
             self.matrix = None
             self.table.setRowCount(0)
@@ -113,7 +120,16 @@ class OWConfusionMatrix(OWWidget):
         if res and res.test_type != TEST_TYPE_SINGLE:
             self.warning(0, "Confusion matrix can be calculated only for single-target prediction problems.")
             return
-        self.warning(0, None)
+        
+        canOutput = True
+        if not hasattr(res, "examples"):
+            self.warning(1, "Results do not have testing instances (Output is disabled).")
+            canOutput = False
+        elif not isinstance(res.examples, orange.ExampleTable):
+            self.warning(1, "Output for results from 'Proportion test' is not supported.")
+            canOutput = False
+            
+        self.outputBox.setEnabled(canOutput) 
         
         self.matrix = orngStat.confusionMatrices(res, -2)
 
@@ -278,10 +294,13 @@ class OWConfusionMatrix(OWWidget):
             return
 
         learnerI = self.selectedLearner[0]
-        selectionIndices = [i for i, rese in enumerate(res.results) if (rese.actualClass, rese.classes[learnerI]) in selected]
-        data = res.examples.getitemsref(selectionIndices)
         
-        if self.appendPredictions or self.appendProbabilities:
+        data = None
+        if hasattr(res, "examples") and isinstance(res.examples, orange.ExampleTable):
+            selectionIndices = [i for i, rese in enumerate(res.results) if (rese.actualClass, rese.classes[learnerI]) in selected]
+            data = res.examples.getitemsref(selectionIndices)
+        
+        if data is not None and (self.appendPredictions or self.appendProbabilities):
             domain = orange.Domain(data.domain.attributes, data.domain.classVar)
             domain.addmetas(data.domain.getmetas())
             data = orange.ExampleTable(domain, data)
