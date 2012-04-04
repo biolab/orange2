@@ -19,7 +19,7 @@ for i in range(len(iris)):
 
 # Run the MDS
 mds = Orange.projection.mds.MDS(matrix, dim=3)
-mds.Torgerson()
+mds.torgerson()
 
 # Print a few points
 print mds.points[:3]

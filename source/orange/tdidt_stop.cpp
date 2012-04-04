@@ -67,14 +67,14 @@ bool TTreeStopCriteria::operator()(PExampleGenerator gen, const int &, PDomainCo
 
 TTreeStopCriteria_common::TTreeStopCriteria_common(float aMaxMajor, float aMinExamples)
 : maxMajority(aMaxMajor),
-  minExamples(aMinExamples)
+  minInstances(aMinExamples)
 {}
 
 
 TTreeStopCriteria_common::TTreeStopCriteria_common(const TTreeStopCriteria_common &old)
 : TTreeStopCriteria(old),
   maxMajority(old.maxMajority),
-  minExamples(old.minExamples)
+  minInstances(old.minInstances)
 {}
 
 
@@ -83,7 +83,7 @@ bool TTreeStopCriteria_common::operator()(PExampleGenerator gen, const int &weig
     return true; // inherited method says its enough
 
   PDistribution classDist = ocont ? ocont->classes : getClassDistribution(gen, weight);
-  if (classDist->abs<minExamples)
+  if (classDist->abs<minInstances)
     return true; // not enough examples
 
   float limit = maxMajority*classDist->abs;

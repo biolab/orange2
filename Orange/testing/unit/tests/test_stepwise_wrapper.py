@@ -4,7 +4,7 @@ except:
     import unittest
 
 import Orange
-from Orange.misc import testing
+from Orange.testing import testing
 
 from Orange.classification import bayes
 from Orange.classification import wrappers

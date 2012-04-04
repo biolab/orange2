@@ -8,7 +8,7 @@ test = bupa.select(ri2, 1)
 bayes = Orange.classification.bayes.NaiveLearner(train)
 
 thresholds = [.2, .5, .8]
-models = [Orange.optimization.ThresholdClassifier(bayes, thr) for thr in thresholds]
+models = [Orange.tuning.ThresholdClassifier(bayes, thr) for thr in thresholds]
 
 res = Orange.evaluation.testing.test_on_data(models, test)
 cm = Orange.evaluation.scoring.confusion_matrices(res)

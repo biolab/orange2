@@ -1,6 +1,6 @@
 import Orange
-from Orange.misc import testing
-from Orange.misc.testing import datasets_driven, test_on_data, test_on_datasets
+from Orange.testing import testing
+from Orange.testing.testing import datasets_driven, test_on_data, test_on_datasets
 from Orange.regression import earth
 
 try:
@@ -101,13 +101,16 @@ class TestEarthMultitarget(unittest.TestCase):
         self.assertTrue(all(c1 == c2 for c1, c2 in \
                             zip(predictor.class_vars, domain.class_vars)))
         
-    
 #@datasets_driven(datasets=testing.REGRESSION_DATASETS,)
 #class TestScoreRSS(testing.MeasureAttributeTestCase):
 #    def setUp(self):
 #        from Orange.regression.earth import ScoreRSS
 #        self.measure = ScoreRSS()
 
+def load_tests(loader, tests, ignore):
+    import doctest
+    loader.addTests(doctest.DocTestSuite(earth, **earth._doctest_args()))
+    return loader
 
 if __name__ == "__main__":
     unittest.main()

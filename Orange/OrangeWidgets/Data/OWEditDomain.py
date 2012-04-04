@@ -142,8 +142,7 @@ class VariableEditor(QWidget):
         vlayout.setSpacing(1)
         
         self.labels_edit = QTreeView()
-        self.labels_edit.setEditTriggers(QTreeView.DoubleClicked | \
-                                         QTreeView.EditKeyPressed)
+        self.labels_edit.setEditTriggers(QTreeView.CurrentChanged)
         self.labels_edit.setRootIsDecorated(False)
         
         self.labels_model = DictItemsModel()
@@ -293,8 +292,7 @@ class DiscreteVariableEditor(VariableEditor):
         
     def _setup_gui_values(self):
         self.values_edit = QListView()
-        self.values_edit.setEditTriggers(QListView.DoubleClicked | \
-                                         QListView.EditKeyPressed)
+        self.values_edit.setEditTriggers(QTreeView.CurrentChanged)
         self.values_model = PyListModel(flags=Qt.ItemIsSelectable | \
                                         Qt.ItemIsEnabled | Qt.ItemIsEditable)
         self.values_edit.setModel(self.values_model)

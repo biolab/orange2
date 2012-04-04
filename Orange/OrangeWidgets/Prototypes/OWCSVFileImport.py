@@ -216,10 +216,6 @@ class OWCSVFileImport(OWWidget):
         path = QFileDialog.getOpenFileName(self, "Open File", last)
         path = unicode(path)
         if path:
-            basedir, name = os.path.split(path)
-            self.recent_combo.insertItem(0, name)
-            self.recent_combo.setCurrentIndex(0)
-            self.recent_files.insert(0, path)
             self.set_selected_file(path)
     
     def delimiter_changed(self, index=-1):
@@ -250,6 +246,25 @@ class OWCSVFileImport(OWWidget):
         self.update_preview()
             
     def set_selected_file(self, filename):
+        basedir, name = os.path.split(filename)
+        
+        index_to_remove = None
+        if filename in self.recent_files:
+            index_to_remove = self.recent_files.index(filename)
+        elif self.recent_combo.count() > 20:
+            # Always keep 20 latest files in the list.
+            index_to_remove = self.recent_combo.count() - 1
+        
+        self.recent_combo.insertItem(0, name)
+        self.recent_combo.setCurrentIndex(0)
+        self.recent_files.insert(0, filename)
+            
+        if index_to_remove is not None:    
+            self.recent_combo.removeItem(index_to_remove + 1)
+            self.recent_files.pop(index_to_remove + 1)
+            if filename in self.hints:
+                del self.hints[filename]
+        
         if filename in self.hints:
             hints = self.hints[filename]
         else:

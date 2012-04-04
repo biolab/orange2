@@ -14,11 +14,11 @@ def getDropShadow(item):
     else:
         return None
     
-def setDropShadow(self):
+def setDropShadow(self, offset=QPointF(0.3, 0.5), blur_radius=5):
     if qVersion() >= "4.6" and self.canvasDlg.settings["enableCanvasDropShadows"]:
         effect = QGraphicsDropShadowEffect(self.scene())
-        effect.setOffset(QPointF(0.3, 0.5))
-        effect.setBlurRadius(5)
+        effect.setOffset(offset)
+        effect.setBlurRadius(blur_radius)
         self.setGraphicsEffect(effect)
     
 class TempCanvasLine(QGraphicsPathItem):
@@ -32,7 +32,7 @@ class TempCanvasLine(QGraphicsPathItem):
 
         self.setPen(QPen(QColor(180, 180, 180), 3, Qt.SolidLine))
         
-        self.setDropShadow()
+        self.setDropShadow(offset=QPointF(0.0, 0.0))
     
     setDropShadow = setDropShadow
     getDropShadow = getDropShadow
@@ -145,7 +145,7 @@ class CanvasLine(QGraphicsPathItem):
             
         QObject.connect(self.outWidget.instance, SIGNAL("dynamicLinkEnabledChanged(PyQt_PyObject, bool)"), self.updateDynamicEnableState)
         
-        self.setDropShadow()
+        self.setDropShadow(offset=QPointF(0.0, 0.0))
         
     setDropShadow = setDropShadow
     getDropShadow = getDropShadow

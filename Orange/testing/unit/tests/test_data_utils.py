@@ -1,4 +1,4 @@
-from Orange.misc import testing
+from Orange.testing import testing
 from Orange.data import utils
 import Orange
 

@@ -1,8 +1,8 @@
 Classification: bupa.tab
 Learner  CA     Brier  AUC
-tree     0.588  0.823  0.578
+tree     0.591  0.817  0.570
 forest   0.704  0.406  0.751
 Regression: housing.tab
 Learner  MSE    RSE    R2
-tree     23.113  0.274  0.726
+tree     21.685  0.257  0.743
 forest   15.225  0.180  0.820

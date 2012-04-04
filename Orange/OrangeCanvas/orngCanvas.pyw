@@ -477,18 +477,14 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.addAction("&Add-ons...", self.menuItemAddOns)
 
         localHelp = 0
-        self.menuHelp = QMenu("&Help", self)
-        if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")): self.menuHelp.addAction("Orange Help", self.menuOpenLocalOrangeHelp)
-        if os.path.exists(os.path.join(self.orangeDir, r"doc/catalog/index.html")): self.menuHelp.addAction("Orange Widget Catalog", self.menuOpenLocalWidgetCatalog)
-        if os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")): self.menuHelp.addAction("Orange Canvas Help", self.menuOpenLocalCanvasHelp)
-
+        self.menuHelp = QMenu("&Help", self) 
+        self.menuHelp.addAction("Orange Online Reference", self.menuOpenOnlineOrangeReference)
+#        if os.path.exists(os.path.join(self.orangeDir, r"doc/catalog/index.html")):
+#            self.menuHelp.addAction("Orange Widget Catalog", self.menuOpenLocalWidgetCatalog)
+#        if os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")):
+#            self.menuHelp.addAction("Orange Canvas Help", self.menuOpenLocalCanvasHelp)
         self.menuHelp.addAction("Orange Online Widget Catalog", self.menuOpenOnlineOrangeHelp)
-        #self.menuHelp.addAction("Orange Canvas Online Help", self.menuOpenOnlineCanvasHelp)
-
-#        if os.path.exists(os.path.join(self.orangeDir, r"updateOrange.py")):
-#            self.menuHelp.addSeparator()
-#            self.menuHelp.addAction("Check for updates", self.menuCheckForUpdates)
-            
+        #self.menuHelp.addAction("Orange Canvas Online Help", self.menuOpenOnlineCanvasHelp)            
         self.menuHelp.addSeparator()
         self.menuHelp.addAction("About Orange", self.menuItemAboutOrange)
 
@@ -604,8 +600,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def readRecentFiles(self):
         self.menuRecent.clear()
-        if not self.settings.has_key("RecentFiles"): return
-        recentDocs = self.settings["RecentFiles"]
+        recentDocs = self.settings.get("RecentFiles", [])
 
         # remove missing recent files
         for i in range(len(recentDocs) - 1, -1, -1):
@@ -614,19 +609,23 @@ class OrangeCanvasDlg(QMainWindow):
 
         recentDocs = recentDocs[:9]
         self.settings["RecentFiles"] = recentDocs
-
-        for i in range(len(recentDocs)):
-            shortName = "&" + str(i + 1) + " " + os.path.basename(recentDocs[i])
-            self.menuRecent.addAction(shortName, lambda ind=i: self.openRecentFile(ind + 1))
+        
+        if len(recentDocs) == 0 :
+            self.menuRecent.addAction("None").setEnabled(False)
+        else :            
+            for i in range(len(recentDocs)):
+                shortName = "&" + str(i + 1) + " " + os.path.basename(recentDocs[i])
+                self.menuRecent.addAction(shortName, lambda ind=i: self.openRecentFile(ind),)
 
     def openRecentFile(self, index):
-        if len(self.settings["RecentFiles"]) >= index:
-            self.schema.clear()
-            name = self.settings["RecentFiles"][index - 1]
-            dirname = os.path.dirname(name)
-            os.chdir(dirname)
-            self.schema.loadDocument(name)
-            self.addToRecentMenu(name)
+        if index < len(self.settings["RecentFiles"]):
+            name = self.settings["RecentFiles"][index]
+            if self.schema.saveBeforeClose():
+                self.schema.clear()
+                dirname = os.path.dirname(name)
+                os.chdir(dirname)
+                self.schema.loadDocument(name)
+                self.addToRecentMenu(name)
 
     def addToRecentMenu(self, name):
         recentDocs = []
@@ -746,9 +745,13 @@ class OrangeCanvasDlg(QMainWindow):
         import webbrowser
         webbrowser.open(os.path.join(self.orangeDir, "doc/canvas/default.htm"))
 
+    def menuOpenOnlineOrangeReference(self):
+        import webbrowser
+        webbrowser.open("http://orange.biolab.si/doc/reference/")
+        
     def menuOpenOnlineOrangeHelp(self):
         import webbrowser
-        webbrowser.open("http://orange.biolab.si/doc/catalog")
+        webbrowser.open("http://orange.biolab.si/doc/widgets/")
 
     def menuOpenOnlineCanvasHelp(self):
         import webbrowser

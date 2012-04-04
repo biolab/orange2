@@ -10,4 +10,4 @@ map = som(Orange.data.Table("iris.tab"))
 node = map[3, 3]
 
 print "Node position: (%d, %d)" % node.pos
-print "Data instances in the node:", len(node.examples)
+print "Data instances in the node:", len(node.instances)

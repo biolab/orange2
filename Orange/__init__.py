@@ -25,7 +25,8 @@ def _import(name):
             UserWarning, 2)
         alreadyWarned = True
 
-_import("misc")
+_import("utils")
+
 _import("data")
 _import("data.io")
 _import("data.sample")
@@ -70,7 +71,7 @@ _import("classification.logreg")
 _import("classification.knn")
 _import("classification.majority")
 
-_import("optimization")
+_import("tuning")
 
 _import("projection")
 _import("projection.linear")
@@ -124,8 +125,6 @@ _import("clustering.hierarchical")
 _import("clustering.consensus")
 
 _import("misc")
-_import("misc.selection")
-#_import("misc.r")
 
 _import("utils") #TODO hide utils from the user
 _import("utils.environ")
@@ -143,3 +142,6 @@ except ImportError:
     # Leave the default version defined at the top.
     pass
 
+del _import
+del alreadyWarned
+del disabledMsg

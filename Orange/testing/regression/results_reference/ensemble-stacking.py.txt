@@ -1,0 +1,5 @@
+stacking: 0.915
+   bayes: 0.858
+    tree: 0.688
+      lr: 0.868
+     knn: 0.839

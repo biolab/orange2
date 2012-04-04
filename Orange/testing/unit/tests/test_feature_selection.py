@@ -1,4 +1,4 @@
-import Orange.misc.testing as testing
+import Orange.testing.testing as testing
 from Orange.feature import selection, scoring
 import Orange
 
@@ -26,15 +26,15 @@ class TestSelection(unittest.TestCase):
         best_3 = map(itemgetter(0), sorted_scores[:3])
         
         # test best_n function
-        self.assertEqual(selection.best_n(self.scores, 3), best_3)
+        self.assertEqual(selection.top_rated(self.scores, 3), best_3)
         
-        self.assertTrue(len(selection.best_n(self.scores, 3)) == 3)
+        self.assertTrue(len(selection.top_rated(self.scores, 3)) == 3)
         
         # all returned values should be strings.
         self.assertTrue(all(isinstance(item, basestring) for item in \
-                            selection.best_n(self.scores, 3)))
+                            selection.top_rated(self.scores, 3)))
         
-        new_data = selection.select_best_n(self.data, self.scores, 3)
+        new_data = selection.select(self.data, self.scores, 3)
         self.assertEqual(best_3, [a.name for a in new_data.domain.attributes])
         self.assertEqual(new_data.domain.class_var, self.data.domain.class_var)
         

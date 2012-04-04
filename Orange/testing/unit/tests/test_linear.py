@@ -1,7 +1,7 @@
 import Orange
-from Orange.misc import testing
-from Orange.misc.testing import datasets_driven
-from Orange.classification.svm import LinearLearner
+from Orange.testing import testing
+from Orange.testing.testing import datasets_driven
+from Orange.classification.svm import LinearSVMLearner
 try:
     import unittest2 as unittest
 except:
@@ -17,38 +17,35 @@ def test_learner_on(self, dataset):
     else:
         self.assertEquals(len(self.classifier.weights), 1)
 
-    n_features = len(dataset.domain.attributes)
-    self.assert_(all(len(w) == n_features for w in self.classifier.weights))
-
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
-class TestLinearLearnerL2R_L2LOSS_DUAL(testing.LearnerTestCase):
-    LEARNER = LinearLearner(sover_type=LinearLearner.L2R_L2LOSS_DUAL)
+class TestLinearSVMLearnerL2R_L2LOSS_DUAL(testing.LearnerTestCase):
+    LEARNER = LinearSVMLearner(sover_type=LinearSVMLearner.L2R_L2LOSS_DUAL)
 
     test_learner_on = test_learner_on
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
-class TestLinearLearnerL2R_L2LOSS(testing.LearnerTestCase):
-    LEARNER = LinearLearner(sover_type=LinearLearner.L2R_L2LOSS)
+class TestLinearSVMLearnerL2R_L2LOSS(testing.LearnerTestCase):
+    LEARNER = LinearSVMLearner(sover_type=LinearSVMLearner.L2R_L2LOSS)
     test_learner_on = test_learner_on
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
-class TestLinearLearnerL2R_L1LOSS_DUAL(testing.LearnerTestCase):
-    LEARNER = LinearLearner(sover_type=LinearLearner.L2R_L1LOSS_DUAL)
+class TestLinearSVMLearnerL2R_L1LOSS_DUAL(testing.LearnerTestCase):
+    LEARNER = LinearSVMLearner(sover_type=LinearSVMLearner.L2R_L1LOSS_DUAL)
     test_learner_on = test_learner_on
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
-class TestLinearLearnerL2R_L1LOSS(testing.LearnerTestCase):
-    LEARNER = LinearLearner(sover_type=LinearLearner.L2R_L2LOSS)
+class TestLinearSVMLearnerL2R_L1LOSS(testing.LearnerTestCase):
+    LEARNER = LinearSVMLearner(sover_type=LinearSVMLearner.L2R_L2LOSS)
     test_learner_on = test_learner_on
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
-class TestLinearLearnerL1R_L2LOSS(testing.LearnerTestCase):
-    LEARNER = LinearLearner(sover_type=LinearLearner.L1R_L2LOSS)
+class TestLinearSVMLearnerL1R_L2LOSS(testing.LearnerTestCase):
+    LEARNER = LinearSVMLearner(sover_type=LinearSVMLearner.L1R_L2LOSS)
     test_learner_on = test_learner_on
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
-class TestLinearLearnerL1R_L2LOSS(testing.LearnerTestCase):
-    LEARNER = LinearLearner(sover_type=LinearLearner.MCSVM_CS)
+class TestLinearSVMLearnerL1R_L2LOSS(testing.LearnerTestCase):
+    LEARNER = LinearSVMLearner(sover_type=LinearSVMLearner.MCSVM_CS)
     test_learner_on = test_learner_on
 
 if __name__ == "__main__":

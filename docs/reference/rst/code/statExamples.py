@@ -5,7 +5,7 @@
 
 import Orange
 
-learners = [ Orange.classification.bayes.NaiveLearner(name = "bayes"),
+learners = [ Orange.classification.bayes.NaiveLearner(name="bayes"),
              Orange.classification.tree.TreeLearner(name="tree"),
              Orange.classification.majority.MajorityLearner(name="majrty")]
 
@@ -28,15 +28,15 @@ for l in range(len(learners)):
     print "%s\t%5.3f\t%5.3f\t%5.3f\t%6.3f" % (learners[l].name, CAs[l], APs[l], Briers[l], ISs[l])
 
 
-CAs = Orange.evaluation.scoring.CA(res, reportSE=True)
-APs = Orange.evaluation.scoring.AP(res, reportSE=True)
-Briers = Orange.evaluation.scoring.Brier_score(res, reportSE=True)
-ISs = Orange.evaluation.scoring.IS(res, reportSE=True)
+CAs = Orange.evaluation.scoring.CA(res, report_se=True)
+APs = Orange.evaluation.scoring.AP(res, report_se=True)
+Briers = Orange.evaluation.scoring.Brier_score(res, report_se=True)
+ISs = Orange.evaluation.scoring.IS(res, report_se=True)
 
 print
 print "method\tCA\tAP\tBrier\tIS"
 for l in range(len(learners)):
-    print "%s\t%5.3f+-%5.3f\t%5.3f+-%5.3f\t%5.3f+-%5.3f\t%6.3f+-%5.3f" % ((learners[l].name, ) + CAs[l] + APs[l] + Briers[l] + ISs[l])
+    print "%s\t%5.3f+-%5.3f\t%5.3f+-%5.3f\t%5.3f+-%5.3f\t%6.3f+-%5.3f" % ((learners[l].name,) + CAs[l] + APs[l] + Briers[l] + ISs[l])
 
 
 print
@@ -62,9 +62,9 @@ print "TP: %i, FP: %i, FN: %s, TN: %i" % (cm.TP, cm.FP, cm.FN, cm.TN)
 print
 cm = Orange.evaluation.scoring.confusion_matrices(resVeh)[0]
 classes = vehicle.domain.class_var.values
-print "\t"+"\t".join(classes)
+print "\t" + "\t".join(classes)
 for className, classConfusions in zip(classes, cm):
-    print ("%s" + ("\t%i" * len(classes))) % ((className, ) + tuple(classConfusions))
+    print ("%s" + ("\t%i" * len(classes))) % ((className,) + tuple(classConfusions))
 
 cm = Orange.evaluation.scoring.confusion_matrices(res)
 sensitivities = Orange.evaluation.scoring.sens(cm)
@@ -104,7 +104,7 @@ methods = ["by pairs, weighted", "by pairs", "one vs. all, weighted", "one vs. a
 print " " *25 + "  \tbayes\ttree\tmajority"
 for i in range(4):
     AUCs = Orange.evaluation.scoring.AUC(resVeh, i)
-    print "%25s: \t%5.3f\t%5.3f\t%5.3f" % ((methods[i], ) + tuple(AUCs))
+    print "%25s: \t%5.3f\t%5.3f\t%5.3f" % ((methods[i],) + tuple(AUCs))
 
 
 classes = vehicle.domain.class_var.values
@@ -112,26 +112,26 @@ classDist = Orange.statistics.distribution.Distribution(vehicle.domain.class_var
 
 print
 print "AUC for detecting class 'van' in 'vehicle'"
-AUCs = Orange.evaluation.scoring.AUC_single(resVeh, classIndex = vehicle.domain.class_var.values.index("van"))
+AUCs = Orange.evaluation.scoring.AUC_for_single_class(resVeh, class_index=vehicle.domain.class_var.values.index("van"))
 print "%5.3f\t%5.3f\t%5.3f" % tuple(AUCs)
 
 print
 print "AUCs for detecting various classes in 'vehicle'"
-for c,s in enumerate(classes):
-    print "%s (%5.3f) vs others: \t%5.3f\t%5.3f\t%5.3f" % ((s, classDist[c] ) + tuple(Orange.evaluation.scoring.AUC_single(resVeh, c)))
+for c, s in enumerate(classes):
+    print "%s (%5.3f) vs others: \t%5.3f\t%5.3f\t%5.3f" % ((s, classDist[c]) + tuple(Orange.evaluation.scoring.AUC_for_single_class(resVeh, c)))
 
 print
 classes = vehicle.domain.class_var.values
 AUCmatrix = Orange.evaluation.scoring.AUC_matrix(resVeh)[0]
-print "\t"+"\t".join(classes[:-1])
+print "\t" + "\t".join(classes[:-1])
 for className, AUCrow in zip(classes[1:], AUCmatrix[1:]):
-    print ("%s" + ("\t%5.3f" * len(AUCrow))) % ((className, ) + tuple(AUCrow))
+    print ("%s" + ("\t%5.3f" * len(AUCrow))) % ((className,) + tuple(AUCrow))
 
 print
 print "AUCs for detecting various pairs of classes in 'vehicle'"
 for c1, s1 in enumerate(classes):
     for c2 in range(c1):
-        print "%s vs %s: \t%5.3f\t%5.3f\t%5.3f" % ((s1, classes[c2]) + tuple(Orange.evaluation.scoring.AUC_pair(resVeh, c1, c2)))
+        print "%s vs %s: \t%5.3f\t%5.3f\t%5.3f" % ((s1, classes[c2]) + tuple(Orange.evaluation.scoring.AUC_for_pair_of_classes(resVeh, c1, c2)))
 
 
 ri2 = Orange.data.sample.SubsetIndices2(voting, 0.6)

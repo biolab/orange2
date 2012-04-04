@@ -1,91 +1,3 @@
-""" 
-.. index:: optimization
-
-Wrappers for Tuning Parameters and Thresholds
-
-Classes for two very useful purposes: tuning learning algorithm's parameters
-using internal validation and tuning the threshold for classification into
-positive class.
-
-*****************
-Tuning parameters
-*****************
-
-Two classes support tuning parameters.
-:obj:`Orange.optimization.Tune1Parameter` for fitting a single parameter and
-:obj:`Orange.optimization.TuneMParameters` fitting multiple parameters at once,
-trying all possible combinations. When called with data and, optionally, id
-of meta attribute with weights, they find the optimal setting of arguments
-using cross validation. The classes can also be used as ordinary learning
-algorithms - they are in fact derived from
-:obj:`Orange.classification.Learner`.
-
-Both classes have a common parent, :obj:`Orange.optimization.TuneParameters`,
-and a few common attributes.
-
-.. autoclass:: Orange.optimization.TuneParameters
-   :members:
-
-.. autoclass:: Orange.optimization.Tune1Parameter
-   :members:
-  
-.. autoclass:: Orange.optimization.TuneMParameters
-   :members: 
-   
-**************************
-Setting Optimal Thresholds
-**************************
-
-Some models may perform well in terms of AUC which measures the ability to
-distinguish between instances of two classes, but have low classifications
-accuracies. The reason may be in the threshold: in binary problems, classifiers
-usually classify into the more probable class, while sometimes, when class
-distributions are highly skewed, a modified threshold would give better
-accuracies. Here are two classes that can help.
-  
-.. autoclass:: Orange.optimization.ThresholdLearner
-   :members: 
-     
-.. autoclass:: Orange.optimization.ThresholdClassifier
-   :members: 
-   
-Examples
-========
-
-This is how you use the learner.
-
-part of :download:`optimization-thresholding1.py <code/optimization-thresholding1.py>`
-
-.. literalinclude:: code/optimization-thresholding1.py
-
-The output::
-
-    W/out threshold adjustement: 0.633
-    With adjusted thredhold: 0.659
-    With threshold at 0.80: 0.449
-
-part of :download:`optimization-thresholding2.py <code/optimization-thresholding2.py>`
-
-.. literalinclude:: code/optimization-thresholding2.py
-
-The script first divides the data into training and testing subsets. It trains
-a naive Bayesian classifier and than wraps it into
-:obj:`Orange.optimization.ThresholdClassifiers` with thresholds of .2, .5 and
-.8. The three models are tested on the left-out data, and we compute the
-confusion matrices from the results. The printout::
-
-    0.20: TP 60.000, TN 1.000
-    0.50: TP 42.000, TN 24.000
-    0.80: TP 2.000, TN 43.000
-
-shows how the varying threshold changes the balance between the number of true
-positives and negatives.
-
-.. autoclass:: Orange.optimization.PreprocessedLearner
-   :members: 
-   
-"""
-
 import Orange.core
 import Orange.classification
 import Orange.evaluation.scoring
@@ -193,7 +105,7 @@ class TuneParameters(Orange.classification.Learner):
     def findobj(self, name):
         import string
         names = string.split(name, ".")
-        lastobj = self.object
+        lastobj = self.learner
         for i in names[:-1]:
             lastobj = getattr(lastobj, i)
         return lastobj, names[-1]
@@ -268,7 +180,7 @@ class Tune1Parameter(TuneParameters):
         folds = getattr(self, "folds", 5)
         compare = getattr(self, "compare", cmp)
         return_what = getattr(self, "return_what",
-                             Tune1Parameter.returnClassifier)
+                             Tune1Parameter.RETURN_CLASSIFIER)
 
         if (type(self.parameter) == list) or (type(self.parameter) == tuple):
             to_set = [self.findobj(ld) for ld in self.parameter]
@@ -276,14 +188,14 @@ class Tune1Parameter(TuneParameters):
             to_set = [self.findobj(self.parameter)]
 
         cvind = Orange.core.MakeRandomIndicesCV(data, folds)
-        findBest = Orange.misc.selection.BestOnTheFly(seed=data.checksum(),
-                                         callCompareOn1st=True)
+        findBest = Orange.utils.selection.BestOnTheFly(seed=data.checksum(),
+                                         call_compare_on_1st=True)
         tableAndWeight = weight and (data, weight) or data
         for par in self.values:
             for i in to_set:
                 setattr(i[0], i[1], par)
             res = evaluate(Orange.evaluation.testing.test_with_indices(
-                                        [self.object], tableAndWeight, cvind))
+                                        [self.learner], tableAndWeight, cvind))
             findBest.candidate((res, par))
             if verbose == 2:
                 print '*** optimization  %s: %s:' % (par, ", ".join("%.8f" % r for r in res))
@@ -295,14 +207,14 @@ class Tune1Parameter(TuneParameters):
         if verbose:
             print "*** Optimal parameter: %s = %s" % (self.parameter, bestpar)
 
-        if return_what == Tune1Parameter.returnNone:
+        if return_what == Tune1Parameter.RETURN_NONE:
             return None
-        elif return_what == Tune1Parameter.returnParameters:
+        elif return_what == Tune1Parameter.RETURN_PARAMETERS:
             return bestpar
-        elif return_what == Tune1Parameter.returnLearner:
-            return self.object
+        elif return_what == Tune1Parameter.RETURN_LEARNER:
+            return self.learner
         else:
-            classifier = self.object(data)
+            classifier = self.learner(data)
             if not Orange.utils.environ.orange_no_deprecated_members:
                 classifier.setattr("fittedParameter", bestpar)
             classifier.setattr("fitted_parameter", bestpar)
@@ -333,7 +245,7 @@ class TuneMParameters(TuneParameters):
         folds = getattr(self, "folds", 5)
         compare = getattr(self, "compare", cmp)
         verbose = verbose or getattr(self, "verbose", 0)
-        return_what = getattr(self, "return_what", Tune1Parameter.returnClassifier)
+        return_what = getattr(self, "return_what", Tune1Parameter.RETURN_CLASSIFIER)
         progress_callback = getattr(self, "progress_callback", lambda i: None)
 
         to_set = []
@@ -348,8 +260,8 @@ class TuneMParameters(TuneParameters):
 
 
         cvind = Orange.core.MakeRandomIndicesCV(data, folds)
-        findBest = Orange.misc.selection.BestOnTheFly(seed=data.checksum(),
-                                         callCompareOn1st=True)
+        findBest = Orange.utils.selection.BestOnTheFly(seed=data.checksum(),
+                                         call_compare_on_1st=True)
         tableAndWeight = weight and (data, weight) or data
         numOfTests = sum([len(x[1]) for x in self.parameters])
         milestones = set(range(0, numOfTests, max(numOfTests / 100, 1)))
@@ -364,7 +276,7 @@ class TuneMParameters(TuneParameters):
                         print "%s: %s" % (parnames[pi][i], value)
 
             res = evaluate(Orange.evaluation.testing.test_with_indices(
-                                        [self.object], tableAndWeight, cvind))
+                                        [self.learner], tableAndWeight, cvind))
             if itercount in milestones:
                 progress_callback(100.0 * itercount / numOfTests)
 
@@ -383,14 +295,14 @@ class TuneMParameters(TuneParameters):
         if verbose:
             print
 
-        if return_what == Tune1Parameter.returnNone:
+        if return_what == Tune1Parameter.RETURN_NONE:
             return None
-        elif return_what == Tune1Parameter.returnParameters:
+        elif return_what == Tune1Parameter.RETURN_PARAMETERS:
             return bestpar
-        elif return_what == Tune1Parameter.returnLearner:
-            return self.object
+        elif return_what == Tune1Parameter.RETURN_LEARNER:
+            return self.learner
         else:
-            classifier = self.object(data)
+            classifier = self.learner(data)
             if Orange.utils.environ.orange_no_deprecated_members:
                 classifier.fittedParameters = bestpar
             classifier.fitted_parameters = bestpar

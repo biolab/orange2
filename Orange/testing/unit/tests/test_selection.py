@@ -3,7 +3,7 @@ try:
 except:
     import unittest
 
-from Orange.misc import selection
+from Orange.utils import selection
 
 
 class TestBestOnTheFly(unittest.TestCase):

@@ -94,11 +94,11 @@ algorithms (:download:`ensemble-stacking.py <code/ensemble-stacking.py>`):
 The benefits of stacking on this particular data set are
 substantial (numbers show classification accuracy)::
 
-   stacking: 0.934
+   stacking: 0.915
       bayes: 0.858
        tree: 0.688
-         lr: 0.764
-        knn: 0.830
+         lr: 0.868
+        knn: 0.839
 
 *************
 Random Forest

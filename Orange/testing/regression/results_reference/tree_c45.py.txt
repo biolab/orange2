@@ -16,7 +16,7 @@ Iris-setosa Iris-setosa
 Iris-setosa Iris-setosa
 
 
-C4.5 with minObjs=100
+C4.5 with min_objs=100
 Iris-setosa Iris-setosa
 Iris-setosa Iris-setosa
 Iris-setosa Iris-setosa

@@ -35,10 +35,10 @@ def printTree(x):
         raise TypeError, "invalid parameter"
 
 learner.stop = Orange.classification.tree.StopCriteria_common()
-print learner.stop.max_majority, learner.stop.min_examples
+print learner.stop.max_majority, learner.stop.min_instances
 
 print "\n\nTree with minExamples = 5.0"
-learner.stop.min_examples = 5.0
+learner.stop.min_instances = 5.0
 tree = learner(lenses)
 print tree
 

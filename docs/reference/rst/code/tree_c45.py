@@ -18,8 +18,8 @@ tree = Orange.classification.tree.C45Learner(iris, m=100)
 for i in iris[:5]:
     print tree(i), i.getclass()
 
-print "\n\nC4.5 with minObjs=100"
-tree = Orange.classification.tree.C45Learner(iris, minObjs=100)
+print "\n\nC4.5 with min_objs=100"
+tree = Orange.classification.tree.C45Learner(iris, min_objs=100)
 for i in iris[:5]:
     print tree(i), i.getclass()
 
@@ -36,7 +36,7 @@ print tree
 print
 
 
-res = Orange.evaluation.testing.cross_validation([Orange.classification.tree.C45Learner(), 
+res = Orange.evaluation.testing.cross_validation([Orange.classification.tree.C45Learner(),
     Orange.classification.tree.C45Learner(convertToOrange=1)], iris)
 print "Classification accuracy: %5.3f (converted to tree: %5.3f)" % tuple(Orange.evaluation.scoring.CA(res))
 print "Brier score: %5.3f (converted to tree: %5.3f)" % tuple(Orange.evaluation.scoring.Brier_score(res))

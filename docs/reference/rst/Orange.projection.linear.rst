@@ -45,7 +45,7 @@ Optimizer and Projector
 =======================
 
 .. index:: PCA
-.. autoclass:: Orange.projection.linear.Pca
+.. autoclass:: Orange.projection.linear.PCA
    :members:
 
 .. autoclass:: Orange.projection.linear.PcaProjector

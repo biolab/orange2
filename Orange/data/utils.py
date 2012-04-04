@@ -232,6 +232,10 @@ _aggregate_mapping = {"random": random.choice,
                       "mean": mean,
                       "geometric mean": geometric_mean,
                       "harmonic mean": harmonic_mean,
+                      "min": lambda values: min([float(v) for v in values if not v.is_special()]),
+                      "max": lambda values: max([float(v) for v in values if not v.is_special()]),
+                      "sum": lambda values: sum([float(v) for v in values if not v.is_special()]),
+                      "count": len,
                       "join": lambda values: ", ".join(map(str, values))
                       }
 

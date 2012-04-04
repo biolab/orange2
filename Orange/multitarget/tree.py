@@ -103,10 +103,12 @@ class MultitargetVariance(Orange.feature.scoring.Score):
         :param feature: Continuous feature to be split.
         :type feature: :class:`Orange.feature.Descriptor`
 
-        :param data: The data set to be split using the given continuous feature.
+        :param data: The data set to be split using the given continuous
+                     feature.
         :type data: :class:`Orange.data.Table`
 
-        :return: :obj:`list` of :obj:`tuples <tuple>` [(threshold, score, None),]
+        :return: :obj:`list` of :obj:`tuples <tuple>`
+                 [(threshold, score, None),]
         """
 
         f = data.domain[feature]
@@ -130,7 +132,8 @@ class MultitargetVariance(Orange.feature.scoring.Score):
         :param feature: Continuous feature to be split.
         :type feature: :class:`Orange.feature.Descriptor`
 
-        :param data: The data set to be split using the given continuous feature.
+        :param data: The data set to be split using the given continuous
+                     feature.
         :type data: :class:`Orange.data.Table`
 
         :return: :obj:`tuple` (threshold, score, None)
@@ -172,12 +175,14 @@ class MultiTreeLearner(Orange.classification.tree.TreeLearner):
 
     .. attribute:: node_learner
         
-        Standard trees use :class:`~Orange.classification.majority.MajorityLearner`
+        Standard trees use
+        :class:`~Orange.classification.majority.MajorityLearner`
         to construct prediction models in the leaves of the tree.
         MultiTreeLearner uses the multi-target equivalent which can be 
         obtained simply by wrapping the majority learner:
 
-        :class:`Orange.multitarget.MultitargetLearner` (:class:`Orange.classification.majority.MajorityLearner()`).
+        :class:`Orange.multitarget.MultitargetLearner`
+        (:class:`Orange.classification.majority.MajorityLearner()`).
 
     """
 
@@ -188,11 +193,12 @@ class MultiTreeLearner(Orange.classification.tree.TreeLearner):
         :obj:`Orange.classification.tree.TreeLearner.__init__`.
         """
         
-        measure = MultitargetVariance()
-        node_learner = Orange.multitarget.MultitargetLearner(
-            Orange.classification.majority.MajorityLearner())
-        Orange.classification.tree.TreeLearner.__init__(
-            self, measure=measure, node_learner=node_learner, **kwargs)
+        if 'measure' not in kwargs:
+            kwargs['measure'] = MultitargetVariance()
+        if 'node_learner' not in kwargs:
+            kwargs['node_learner'] = Orange.multitarget.MultitargetLearner(
+                Orange.classification.majority.MajorityLearner())
+        Orange.classification.tree.TreeLearner.__init__(self, **kwargs)
 
     def __call__(self, data, weight=0):
         """
@@ -203,18 +209,27 @@ class MultiTreeLearner(Orange.classification.tree.TreeLearner):
         :type weight: :obj:`int`
         """
         
+        # Use the class, if data does not have class_vars
+        if not data.domain.class_vars and data.domain.class_var:
+            dom = Orange.data.Domain(data.domain.features,
+                data.domain.class_var, class_vars=[data.domain.class_var])
+            data = Orange.data.Table(dom, data)
+
+        # Check for missing class values in data
         for ins in data:
             for cval in ins.get_classes():
                 if cval.is_special():
                     raise ValueError('Data has missing class values.')
+
         # TreeLearner does not work on class-less domains,
         # so we set the class if necessary
-        if data.domain.class_var is None:
-            data2 = Orange.data.Table(Orange.data.Domain(
-                data.domain.attributes, data.domain.class_vars[0],
-                class_vars=data.domain.class_vars), data)
+        if not data.domain.class_var and data.domain.class_vars:
+            dom = Orange.data.Domain(data.domain.features,
+                data.domain.class_vars[0], class_vars=data.domain.class_vars)
+            data = Orange.data.Table(dom, data)
+
         tree = Orange.classification.tree.TreeLearner.__call__(
-            self, data2, weight)
+            self, data, weight)
         return MultiTree(base_classifier=tree)
 
 class MultiTree(Orange.classification.tree.TreeClassifier):

@@ -997,4 +997,61 @@ def zprob(z):
 	prob = ((1.0-x)*0.5)
     return prob
 
-   
+
+"""
+Logistic regression learner from LIBLINEAR
+"""
+
+from Orange.data import preprocess
+class LibLinearLogRegLearner(Orange.core.LinearLearner):
+    """A logistic regression learner from `LIBLINEAR`_.
+    
+    Supports L2 regularized learning.
+    
+    .. _`LIBLINEAR`: http://www.csie.ntu.edu.tw/~cjlin/liblinear/
+     
+    """
+
+    L2R_LR = Orange.core.LinearLearner.L2R_LR
+    L2R_LR_DUAL = Orange.core.LinearLearner.L2R_LR_Dual
+
+    __new__ = Orange.utils._orange__new__(base=Orange.core.LinearLearner)
+
+    def __init__(self, solver_type=L2R_LR, C=1.0, eps=0.01, normalization=True,
+                 **kwargs):
+        """
+        :param solver_type: One of the following class constants: 
+            ``L2_LR`` or``L2_LR_DUAL``
+        
+        :param C: Regularization parameter (default 1.0)
+        :type C: float
+        
+        :param eps: Stopping criteria (default 0.01)
+        :type eps: float
+        
+        :param normalization: Normalize the input data prior to learning
+            (default True)
+        :type normalization: bool
+        
+        """
+        self.solver_type = solver_type
+        self.C = C
+        self.eps = eps
+        self.normalization = normalization
+
+        for name, valu in kwargs.items():
+            setattr(self, name, value)
+
+    def __call__(self, data, weight_id=None):
+        if not isinstance(data.domain.class_var, Orange.feature.Discrete):
+            raise TypeError("Can only learn a discrete class.")
+
+        if data.domain.has_discrete_attributes(False) or self.normalization:
+            dc = Orange.data.continuization.DomainContinuizer()
+            dc.multinomial_treatment = dc.NValues
+            dc.class_treatment = dc.Ignore
+            dc.continuous_treatment = \
+                    dc.NormalizeByVariance if self.normalization else dc.Leave
+            c_domain = dc(data) 
+            data = data.translate(c_domain)
+        return super(LibLinearLogRegLearner, self).__call__(data, weight_id)

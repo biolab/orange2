@@ -25,7 +25,7 @@ Deprecation utility functions
 .. autofunction:: Orange.utils.deprecated_function_name
 
 ----------------
-Other submodules
+Submodules
 ----------------
 
 .. automodule:: Orange.utils.environ
@@ -38,6 +38,8 @@ Other submodules
 
 .. automodule:: Orange.utils.addons
 
+.. automodule:: Orange.utils.selection
+
 """
 
 __all__ = ["deprecated_members", "deprecated_keywords",
@@ -47,7 +49,6 @@ __all__ = ["deprecated_members", "deprecated_keywords",
 
 import environ
 
-import warnings
 def deprecation_warning(old, new, stacklevel=-2):
     """ Raise a deprecation warning of an obsolete attribute access.
     
@@ -594,4 +595,8 @@ def _orange__reduce__(self):
 
 demangleExamples = deprecated_function_name(demangle_examples)
 printVerbose = deprecated_function_name(print_verbose)
+
+import warnings
+
+import selection
 

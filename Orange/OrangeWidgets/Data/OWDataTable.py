@@ -149,7 +149,51 @@ class ExampleTableModel(QAbstractItemModel):
                   self.index(0,0),
                   self.index(len(self.examples) - 1, len(self.all_attrs) - 1)
                   )
+
+
+class TableViewWithCopy(QTableView):
+    def keyPressEvent(self, event):
+        if event == QKeySequence.Copy:
+            sel_model = self.selectionModel()
+            try:
+                self.copy_selection_to_clipboard(sel_model)
+            except Exception:
+                import traceback
+                traceback.print_exc(file=sys.stderr)
+        else:
+            return QTableView.keyPressEvent(self, event)
             
+    def copy_selection_to_clipboard(self, selection_model):
+        """Copy table selection to the clipboard.
+        """
+        # TODO: html/rtf table
+        import csv
+        from StringIO import StringIO
+        rows = selection_model.selectedRows(0)
+        lines = []
+        csv_str = StringIO()
+        csv_writer = csv.writer(csv_str, dialect="excel")
+        tsv_str = StringIO()
+        tsv_writer = csv.writer(tsv_str, dialect="excel-tab")
+        for row in rows:
+            line = []
+            for i in range(self.model().columnCount()):
+                index = self.model().index(row.row(), i)
+                val = index.data(Qt.DisplayRole)
+                line.append(unicode(val.toString()))
+
+            csv_writer.writerow(line)
+            tsv_writer.writerow(line)
+
+        csv_lines = csv_str.getvalue()
+        tsv_lines = tsv_str.getvalue()
+
+        mime = QMimeData()
+        mime.setData("text/csv", QByteArray(csv_lines))
+        mime.setData("text/tab-separated-values", QByteArray(tsv_lines))
+        mime.setData("text/plain", QByteArray(tsv_lines))
+        QApplication.clipboard().setMimeData(mime, QClipboard.Clipboard)
+
 
 class OWDataTable(OWWidget):
     settingsList = ["showDistributions", "showMeta", "distColorRgb", "showAttributeLabels", "autoCommit", "selectedSchemaIndex", "colorByClass"]
@@ -274,7 +318,7 @@ class OWDataTable(OWWidget):
             self.data[id] = data
             self.showMetas[id] = (True, [])
 
-            table = QTableView()
+            table = TableViewWithCopy() #QTableView()
             table.setSelectionBehavior(QAbstractItemView.SelectRows)
             table.setSortingEnabled(True)
             table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)

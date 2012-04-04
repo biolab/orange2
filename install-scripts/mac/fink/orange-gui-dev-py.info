@@ -1,5 +1,5 @@
 Info3: <<
-Package: orange-gui-hg-py%type_pkg[python]
+Package: orange-gui-dev-py%type_pkg[python]
 Type: python (2.6 2.7)
 Version: __VERSION__
 Revision: 1
@@ -12,7 +12,7 @@ HomePage: http://orange.biolab.si/
 License: GPL
 Depends: <<
 	python%type_pkg[python],
-	orange-hg-py%type_pkg[python] (>= %v),
+	orange-dev-py%type_pkg[python] (>= %v),
 	pyqt4-mac-py%type_pkg[python] (>= 4.4),
 	pyqwt-qt4mac-py%type_pkg[python] (>= 5.1),
 	opengl-py%type_pkg[python],
@@ -27,8 +27,8 @@ BuildDepends: <<
 	cmake
 <<
 # Conflicts other versions because of app bundle
-Conflicts: orange-gui-svn-py%type_pkg[python], orange-hg
-Replaces: orange-gui-svn-py%type_pkg[python], orange-hg-py%type_pkg[python]
+Conflicts: orange-gui-svn-py%type_pkg[python], orange-dev
+Replaces: orange-gui-svn-py%type_pkg[python], orange-dev-py%type_pkg[python]
 Description: Data mining framework (GUI)
 DescDetail: <<
 	Orange is a component-based data mining software. It includes a range
@@ -43,14 +43,14 @@ Shlibs: <<
 	%p/lib/python%type_raw[python]/site-packages/orangeqt.so 0.0.0 %n (>= 0.0.0-1)
 <<
 SplitOff: <<
-	Package: orange-hg-py%type_pkg[python]
+	Package: orange-dev-py%type_pkg[python]
 	Depends: <<
 		python%type_pkg[python],
 		numpy-py%type_pkg[python],
 		pil-py%type_pkg[python],
 		networkx-py%type_pkg[python]
 	<<
-	Suggests: orange-gui-hg-py%type_pkg[python]
+	Suggests: orange-gui-dev-py%type_pkg[python]
 	Conflicts: orange-svn-py%type_pkg[python]
 	Replaces: orange-svn-py%type_pkg[python]
 	Description: Data mining framework (Python module)
@@ -65,7 +65,7 @@ SplitOff: <<
 	Files: <<
 		lib/python%type_raw[python]/site-packages/Orange/*
 		lib/python%type_raw[python]/site-packages/Orange-orng-modules.pth
-		share/doc/orange-hg-py%type_pkg[python]
+		share/doc/orange-dev-py%type_pkg[python]
 		bin/orange-canvas%type_raw[python]
 	<<
 <<
@@ -133,16 +133,16 @@ InstallScript: <<
 	# TODO: this should be done by setup.py install and using global orangerc.cfg file
 	echo "datasetsPath=\"%p/share/doc/orange-svn-py%type_pkg[python]/datasets/\"" > %i/lib/python%type_raw[python]/site-packages/Orange/orng/orngConfiguration.py	
 
-	# Documentation for orange-gui-hg-py
-	mkdir -p %i/share/doc/orange-gui-hg-py%type_pkg[python]/
-	cp COPYING LICENSES %i/share/doc/orange-gui-hg-py%type_pkg[python]/
-	cp Orange/doc/style.css %i/share/doc/orange-gui-hg-py%type_pkg[python]/
-	mv Orange/doc/widgets/ %i/share/doc/orange-gui-hg-py%type_pkg[python]/
+	# Documentation for orange-gui-dev-py
+	mkdir -p %i/share/doc/orange-gui-dev-py%type_pkg[python]/
+	cp COPYING LICENSES %i/share/doc/orange-gui-dev-py%type_pkg[python]/
+	cp Orange/doc/style.css %i/share/doc/orange-gui-dev-py%type_pkg[python]/
+	mv Orange/doc/widgets/ %i/share/doc/orange-gui-dev-py%type_pkg[python]/
 	
-	# Documentation for orange-hg-py
-	mkdir -p %i/share/doc/orange-hg-py%type_pkg[python]/
-	cp COPYING LICENSES %i/share/doc/orange-hg-py%type_pkg[python]/
-	mv Orange/doc/* %i/share/doc/orange-hg-py%type_pkg[python]/
+	# Documentation for orange-dev-py
+	mkdir -p %i/share/doc/orange-dev-py%type_pkg[python]/
+	cp COPYING LICENSES %i/share/doc/orange-dev-py%type_pkg[python]/
+	mv Orange/doc/* %i/share/doc/orange-dev-py%type_pkg[python]/
 
 	# Add python version to bin/orange-canvas script
 	mv %i/bin/orange-canvas %i/bin/orange-canvas%type_raw[python]
