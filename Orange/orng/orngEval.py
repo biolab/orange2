@@ -18,7 +18,6 @@ def CA_dev(res, **argkw):
 
 CA2 = CA
 computeAROC = AROC
-aROC = AROCFromCDT
 
 def TFPosNeg(res, cutoff=0.5, classIndex=1):
     return computeConfusionMatrices(res, classIndex, cutoff=0.5)
