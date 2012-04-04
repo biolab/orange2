@@ -1,6 +1,8 @@
 import orange, orngTree, OWGUI, OWColorPalette
 from OWWidget import *
 
+import Orange
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -353,7 +355,7 @@ class OWTreeViewer2D(OWWidget):
         self.root = None
         self.selectedNode = None
 
-        self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
+        self.inputs = [("Classification Tree", Orange.classification.tree.TreeClassifier, self.ctree)]
         self.outputs = [("Examples", ExampleTable)]
 
         #set default settings

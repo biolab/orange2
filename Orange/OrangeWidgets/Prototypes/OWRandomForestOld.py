@@ -12,14 +12,19 @@ import orngEnsemble
 from exceptions import Exception
 from orngWrap import PreprocessedLearner
 
+import Orange
+
 class OWRandomForestOld(OWWidget):
     settingsList = ["name", "trees", "attributes", "attributesP", "preNodeInst", "preNodeInstP", "limitDepth", "limitDepthP", "rseed", "outtree" ]
 
     def __init__(self, parent=None, signalManager = None, name='Random Forest'):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False, resizingEnabled=False)
 
-        self.inputs = [("Data", ExampleTable, self.setData), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        self.outputs = [("Learner", orange.Learner),("Random Forest Classifier", orange.Classifier),("Selected Tree", orange.TreeClassifier) ]
+        self.inputs = [("Data", ExampleTable, self.setData),
+                       ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
+        self.outputs = [("Learner", orange.Learner),
+                        ("Random Forest Classifier", orange.Classifier),
+                        ("Selected Tree", Orange.classification.tree.TreeClassifier)]
 
         self.name = 'Random Forest'
         self.trees = 10
