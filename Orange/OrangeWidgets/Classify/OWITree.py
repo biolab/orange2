@@ -12,6 +12,8 @@ from orngDataCaching import *
 
 from OWItemModels import VariableListModel
 
+import Orange
+
 class FixedTreeLearner(orange.Learner):
     def __init__(self, classifier, name):
         self.classifier = classifier
@@ -26,8 +28,12 @@ class OWITree(OWClassificationTreeViewer):
 
     def __init__(self,parent = None, signalManager = None):
         OWClassificationTreeViewer.__init__(self, parent, signalManager, 'I&nteractive Tree Builder')
-        self.inputs = [("Data", ExampleTable, self.setData), ("Tree Learner", orange.Learner, self.setLearner)]
-        self.outputs = [("Data", ExampleTable), ("Classifier", orange.TreeClassifier), ("Tree Learner", orange.Learner)]
+        self.inputs = [("Data", ExampleTable, self.setData),
+                       ("Tree Learner", orange.Learner, self.setLearner)]
+        
+        self.outputs = [("Data", ExampleTable),
+                        ("Classifier", Orange.classification.tree.TreeClassifier),
+                        ("Tree Learner", orange.Learner)]
 
         self.attridx = 0
         self.cutoffPoint = 0.0
