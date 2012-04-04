@@ -71,7 +71,7 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
   TVarList::iterator vi(dom->variables->begin());
   TVarList::const_iterator const ve(dom->variables->end());
   TVarList::const_iterator const ce(dom->classVars->end());
-  while(vi != ce) {
+  while(vi != ce && vi != ve) {
     PyObject *li=PyList_GetItem(lst, pos++);
     if (!li)
       PYERROR(PyExc_SystemError, "can't read the list", false);
