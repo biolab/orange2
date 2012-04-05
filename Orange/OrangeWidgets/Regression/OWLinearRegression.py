@@ -102,6 +102,9 @@ class OWLinearRegression(OWWidget):
         self.apply()
         
     def set_data(self, data=None):
+        if not self.isDataWithClass(data, Orange.core.VarTypes.Continuous, 
+                                    checkMissing=True):
+            data = None
         self.data = data
             
     def set_preprocessor(self, pproc=None):
