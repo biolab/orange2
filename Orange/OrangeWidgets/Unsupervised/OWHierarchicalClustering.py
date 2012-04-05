@@ -239,7 +239,7 @@ class OWHierarchicalClustering(OWWidget):
     def clear(self):
         self.matrix = None
         self.root_cluster = None
-        self.selected_clusters = None
+        self.selected_clusters = []
         self.dendrogram.clear()
         self.labelCombo.clear()
         

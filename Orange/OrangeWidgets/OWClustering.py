@@ -367,12 +367,12 @@ class DendrogramLayout(QGraphicsLayout):
             c_rect = self.contentsRect()
             
             if self.orientation == Qt.Vertical:
-                height_scale = c_rect.width() / root_height
+                height_scale = c_rect.width() / (root_height or 1)
                 width_scale =  c_rect.height() / cluster_width
                 x_offset = self._selection_poly_adjust + c_rect.left() 
                 y_offset = c_rect.top() #width_scale / 2.0
             else:
-                height_scale = c_rect.height() / root_height
+                height_scale = c_rect.height() / (root_height or 1)
                 width_scale =  c_rect.width() / cluster_width
                 x_offset = c_rect.left() # width_scale / 2.0 
                 y_offset = self._selection_poly_adjust + c_rect.top()
@@ -540,12 +540,15 @@ class DendrogramWidget(QGraphicsWidget):
         root_item = self.item(self.root_cluster)
         rect = root_item.rect()
         root_height = self.root_cluster.height
-        if self.orientation == Qt.Vertical:
-            x = (rect.right() - rect.left()) / root_height * (root_height - height) + rect.left()
-            y = 0.0
+        if root_height > 0:
+            if self.orientation == Qt.Vertical:
+                x = (rect.right() - rect.left()) / root_height * (root_height - height) + rect.left()
+                y = 0.0
+            else:
+                x = 0.0
+                y = (rect.bottom() - rect.top()) / root_height * height + rect.top()
         else:
-            x = 0.0
-            y = (rect.bottom() - rect.top()) / root_height * height + rect.top()
+            x = y = 0.0
             
         return QPointF(x, y)
             
