@@ -160,7 +160,10 @@ class RandomForestLearner(Orange.core.Learner):
                 self.callback((i+1.)/self.trees)
 
         return RandomForestClassifier(classifiers = classifiers, name=self.name,\
-                    domain=instances.domain, class_var=instances.domain.class_var)
+                    domain=instances.domain, class_var=instances.domain.class_var, \
+                    class_vars=instances.domain.class_vars)
+
+            
 RandomForestLearner = Orange.utils.deprecated_members({"examples":"instances"})(RandomForestLearner)
 
 class RandomForestClassifier(orange.Classifier):
@@ -185,13 +188,18 @@ class RandomForestClassifier(orange.Classifier):
     :param class_var: the class feature.
     :type class_var: :class:`Orange.feature.Descriptor`
 
+    :param class_vars: the multi-target class features.
+    :type class_vars: list of :class:`Orange.feature.Descriptor`
+
     """
-    def __init__(self, classifiers, name, domain, class_var, **kwds):
+    def __init__(self, classifiers, name, domain, class_var, class_vars, **kwds):
         self.classifiers = classifiers
         self.name = name
         self.domain = domain
         self.class_var = class_var
+        self.class_vars = class_vars
         self.__dict__.update(kwds)
+        self.single_class = True if not class_vars else False
 
     def __call__(self, instance, result_type = orange.GetValue):
         """
@@ -207,62 +215,94 @@ class RandomForestClassifier(orange.Classifier):
         """
         from operator import add
         
-        # handle discreete class
-        
-        if self.class_var.var_type == Orange.feature.Discrete.Discrete:
-        
-            # voting for class probabilities
-            if result_type == orange.GetProbabilities or result_type == orange.GetBoth:
-                prob = [0.] * len(self.domain.class_var.values)
-                for c in self.classifiers:
-                    a = [x for x in c(instance, orange.GetProbabilities)]
-                    prob = map(add, prob, a)
-                norm = sum(prob)
-                cprob = Orange.statistics.distribution.Discrete(self.class_var)
-                for i in range(len(prob)):
-                    cprob[i] = prob[i]/norm
-                
-            # voting for crisp class membership, notice that
-            # this may not be the same class as one obtaining the
-            # highest probability through probability voting
-            if result_type == orange.GetValue or result_type == orange.GetBoth:
-                cfreq = [0] * len(self.domain.class_var.values)
-                for c in self.classifiers:
-                    cfreq[int(c(instance))] += 1
-                index = cfreq.index(max(cfreq))
-                cvalue = Orange.data.Value(self.domain.class_var, index)
-    
-            if result_type == orange.GetValue: return cvalue
-            elif result_type == orange.GetProbabilities: return cprob
-            else: return (cvalue, cprob)
-        
-        else:
-            # Handle continuous class
-        
-            # voting for class probabilities
-            if result_type == orange.GetProbabilities or result_type == orange.GetBoth:
-                probs = [c(instance, orange.GetBoth) for c in self.classifiers]
-                cprob = dict()
-                for val,prob in probs:
-                    if prob != None: #no probability output
-                        a = dict(prob.items())
-                    else:
-                        a = { val.value : 1. }
-                    cprob = dict( (n, a.get(n, 0)+cprob.get(n, 0)) for n in set(a)|set(cprob) )
-                cprob = Orange.statistics.distribution.Continuous(cprob)
-                cprob.normalize()
-                
-            # gather average class value
-            if result_type == orange.GetValue or result_type == orange.GetBoth:
-                values = [c(instance).value for c in self.classifiers]
-                cvalue = Orange.data.Value(self.domain.class_var, sum(values) / len(self.classifiers))
+        # get results to avoid multiple calls
+        res_both = [c(instance, orange.GetBoth) for c in self.classifiers]
+
+        # transform single class instance to match multi-target instances
+        if self.single_class:
+            self.class_vars = [self.class_var]
+            res_both = [([(r[0])],[(r[1])]) for r in res_both]
+
+        mt_prob = []
+        mt_value = []
+
+        for varn in xrange(len(self.class_vars)):
+
+            self.class_var = self.class_vars[varn]
             
-            if result_type == orange.GetValue: return cvalue
-            elif result_type == orange.GetProbabilities: return cprob
-            else: return (cvalue, cprob)
+            # handle discreete class
+        
+            if self.class_var.var_type == Orange.feature.Discrete.Discrete:
+        
+                # voting for class probabilities
+                if result_type == orange.GetProbabilities or result_type == orange.GetBoth:
+                    prob = [0.] * len(self.class_var.values)
+                    for r in res_both:
+                        a = [x for x in r[1][varn]]
+                        prob = map(add, prob, a)
+                    norm = sum(prob)
+                    cprob = Orange.statistics.distribution.Discrete(self.class_var)
+                    for i in range(len(prob)):
+                        cprob[i] = prob[i]/norm
+                
+                # voting for crisp class membership, notice that
+                # this may not be the same class as one obtaining the
+                # highest probability through probability voting
+                if result_type == orange.GetValue or result_type == orange.GetBoth:
+                    cfreq = [0] * len(self.class_var.values)
+                    for r in res_both:
+                        cfreq[int(r[0][varn])] += 1
+                    index = cfreq.index(max(cfreq))
+                    cvalue = Orange.data.Value(self.class_var, index)
             
+                if result_type == orange.GetValue: mt_value.append(cvalue)
+                elif result_type == orange.GetProbabilities: mt_prob.append(cprob)
+                else: 
+                    mt_value.append(cvalue)
+                    mt_prob.append(cprob)
+        
+            else:
+                # Handle continuous class
+        
+                # voting for class probabilities
+                if result_type == orange.GetProbabilities or result_type == orange.GetBoth:
+                    probs = [ r for r in res_both]
+                    cprob = dict()
+      
+                    for val,prob in probs:
+                        if prob != None: #no probability output
+                            a = dict(prob[varn].items())
+                        else:
+                            ya = { val.value : 1. }
+                        cprob = dict( (n, a.get(n, 0)+cprob.get(n, 0)) for n in set(a)|set(cprob) )
+                    cprob = Orange.statistics.distribution.Continuous(cprob)
+                    cprob.normalize()
+                
+                # gather average class value
+                if result_type == orange.GetValue or result_type == orange.GetBoth:
+                    values = [r[0][varn] for r in res_both]
+                    cvalue = Orange.data.Value(self.class_var, sum(values) / len(self.classifiers))
+            
+                if result_type == orange.GetValue: mt_value.append(cvalue)
+                elif result_type == orange.GetProbabilities: mt_prob.append(cprob)
+                else: 
+                    mt_value.append(cvalue)
+                    mt_prob.append(cprob)
+        
+        # check for singleclass when returning
+        if self.single_class:
+            if result_type == orange.GetValue: return mt_value[0]
+            elif result_type == orange.GetProbabilities: return mt_prob[0]
+            else: 
+                return [mt_value[0],mt_prob[0]] 
+            
+        if result_type == orange.GetValue: return tuple(mt_value)
+        elif result_type == orange.GetProbabilities: return tuple(mt_prob)
+        else: 
+            return [tuple(mt_value),tuple(mt_prob)]
+
     def __reduce__(self):
-        return type(self), (self.classifiers, self.name, self.domain, self.class_var), dict(self.__dict__)
+        return type(self), (self.classifiers, self.name, self.domain, self.class_var, self.class_vars), dict(self.__dict__)
 RandomForestClassifier = Orange.utils.deprecated_members({"resultType":"result_type", "classVar":"class_var", "example":"instance"})(RandomForestClassifier)
 ### MeasureAttribute_randomForests
 
