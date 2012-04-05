@@ -35,7 +35,11 @@ class OWEnsemble(OWWidget):
         
         self.loadSettings()
         
-        box = OWGUI.radioButtonsInBox(self.controlArea, self, "method", [name for name, _ in self.METHODS], box="Ensemble", callback=self.onChange)
+        box = OWGUI.radioButtonsInBox(self.controlArea, self, "method",
+                                      [name for name, _ in self.METHODS], 
+                                      box="Ensemble",
+                                      callback=self.onChange)
+        
         i_box = OWGUI.indentedBox(box, sep=OWGUI.checkButtonOffsetHint(box.buttons[0]))
         
         OWGUI.spin(i_box, self, "t", min=1, max=100, step=1, label="Number of created classifiers:")
@@ -51,23 +55,37 @@ class OWEnsemble(OWWidget):
         self.learner = learner
         
     def setData(self, data):
+        if not self.isDataWithClass(data, checkMissing=True):
+             data = None
         self.data = data
         
     def handleNewSignals(self):
+        self.checkMethod()
         self.commit()
         
     def onChange(self):
-        pass
+        self.checkMethod()
+    
+    def checkMethod(self):
+        self.warning(0)
+        if self.data is not None:
+            class_var = self.data.domain.class_var
+            if self.method == 0 and not \
+                    isinstance(class_var, orange.EnumVariable):
+                self.warning(0, "Cannot use 'Boosting' on non discrete class")
+                return False
+        return True
     
     def commit(self):
         wrapped = None
+        classifier = None
         if self.learner:
             wrapped = self.METHODS[self.method][1](self.learner, t=self.t)
-            self.send("Learner", wrapped)
+        self.send("Learner", wrapped)
             
-        if self.data and wrapped:
+        if self.data and wrapped and self.checkMethod():
             classifier = wrapped(self.data)
-            self.send("Classifier", classifier)
+        self.send("Classifier", classifier)
             
 if __name__ == "__main__":
     app = QApplication(sys.argv)
