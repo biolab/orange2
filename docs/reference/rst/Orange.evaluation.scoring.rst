@@ -163,11 +163,11 @@ Which outputs::
 
 Two more accuracy measures based on the article by Zaragoza et al.(2011):
 
-Global accuracy (accuracy per example) over d-dimensional class variable.
+Global accuracy (accuracy per example) over d-dimensional class variable:
 
 .. autofunction:: mt_global_accuracy
 
-Mean accuracy accuracy per class or per label over d class variables.
+Mean accuracy (accuracy per class or per label) over d class variables: 
 
 .. autofunction:: mt_mean_accuracy   
 
