@@ -271,10 +271,10 @@ class RandomForestClassifier(orange.Classifier):
                     cprob = dict()
       
                     for val,prob in probs:
-                        if prob != None: #no probability output
+                        if prob[varn] != None: #no probability output
                             a = dict(prob[varn].items())
                         else:
-                            ya = { val.value : 1. }
+                            a = { val[varn].value : 1. }
                         cprob = dict( (n, a.get(n, 0)+cprob.get(n, 0)) for n in set(a)|set(cprob) )
                     cprob = Orange.statistics.distribution.Continuous(cprob)
                     cprob.normalize()
