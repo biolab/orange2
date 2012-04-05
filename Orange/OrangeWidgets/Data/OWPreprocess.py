@@ -93,7 +93,7 @@ class DiscretizeEditor(BaseEditor):
             
         self.updateSliderBox()
         
-    data = _pyqtProperty(Preprocessor_discretize,
+    data = _pyqtProperty(preprocess.Discretize,
                         fget=getDiscretizer,
                         fset=setDiscretizer,
                         user=True)
