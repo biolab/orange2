@@ -255,7 +255,6 @@ class RandomForestClassifier(orange.Classifier):
                     index = cfreq.index(max(cfreq))
                     cvalue = Orange.data.Value(self.class_var, index)
             
-
                 if result_type == orange.GetValue: mt_value.append(cvalue)
                 elif result_type == orange.GetProbabilities: mt_prob.append(cprob)
                 else: 
@@ -269,11 +268,10 @@ class RandomForestClassifier(orange.Classifier):
                 if result_type == orange.GetProbabilities or result_type == orange.GetBoth:
                     probs = [ r for r in res_both]
                     cprob = dict()
-
-               
+      
                     for val,prob in probs:
                         if prob != None: #no probability output
-                            a = dict(prob.items())
+                            a = dict(prob[varn].items())
                         else:
                             ya = { val.value : 1. }
                         cprob = dict( (n, a.get(n, 0)+cprob.get(n, 0)) for n in set(a)|set(cprob) )
@@ -282,7 +280,7 @@ class RandomForestClassifier(orange.Classifier):
                 
                 # gather average class value
                 if result_type == orange.GetValue or result_type == orange.GetBoth:
-                    values = [c(instance).value for c in self.classifiers]
+                    values = [r[0][varn] for r in res_both]
                     cvalue = Orange.data.Value(self.class_var, sum(values) / len(self.classifiers))
             
                 if result_type == orange.GetValue: mt_value.append(cvalue)
