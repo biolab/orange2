@@ -214,7 +214,8 @@ class RandomForestClassifier(orange.Classifier):
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
         from operator import add
-        
+
+        instance = Orange.data.Instance(self.domain, instance)
         # get results to avoid multiple calls
         res_both = [c(instance, orange.GetBoth) for c in self.classifiers]
 
