@@ -632,6 +632,9 @@ TSimpleTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
 	if (!ogen->domain->classVar)
 		raiseError("class-less domain");
 
+	if (!ogen->numberOfExamples() > 0)
+	    raiseError("no examples");
+
 	/* create a tabel with pointers to examples */
 	ASSERT(examples = (struct Example *)calloc(ogen->numberOfExamples(), sizeof *examples));
 	ex = examples;
