@@ -13,6 +13,14 @@ from orngWrap import PreprocessedLearner
 
 import Orange
 
+# Test if the c45.(so|pyd) can be found by orange.C45Learner
+import orange
+try:
+    orange.C45Learner()
+except orange.KernelException, ex:
+    # I guess not
+    raise ImportError(ex.message)
+ 
 class OWC45Tree(OWWidget):
     settingsList = ["name",
                     "infoGain", "subset", "probThresh",
