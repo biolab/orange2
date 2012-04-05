@@ -202,6 +202,12 @@ TPearsonCorrelation::TPearsonCorrelation(PExampleGenerator gen, PVariable v1, PV
   
   t = r*sqrt((N-2)/(1-r*r));
   df = int(floor(N));
-  
-  p=betai(double(df*0.5), double(0.5), double(df/(df+t*t)));
+  try
+  {
+    p=betai(double(df*0.5), double(0.5), double(df/(df+t*t)));
+  }
+    catch (const std::exception &exc)
+    {
+      raiseError(exc.what());
+    }
 }
