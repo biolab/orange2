@@ -210,6 +210,7 @@ struct model *linear_load_model_alt(istream &stream)
 struct model *linear_load_model_alt(string &buffer)
 {
 	std::istringstream str_stream(buffer);
+	str_stream.exceptions(ios::failbit | ios::badbit);
 	return linear_load_model_alt(str_stream);
 }
 
@@ -232,75 +233,60 @@ int countFeatures(const TExample &ex, bool includeMeta, bool includeRegular){
 	return count;
 }
 
-feature_node *feature_nodeFromExample(const TExample &ex, map<int, int> &indexMap, bool includeMeta=false, bool includeRegular=true){
-	//cout << "example " << endl;
-	int numOfNodes = countFeatures(ex, includeMeta, includeRegular);
-	/*if (includeRegular)
-		numOfNodes += ex.domain->attributes->size();
-	if (includeMeta)
-		numOfNodes += ex.meta.size();*/
-	feature_node *nodes = new feature_node[numOfNodes];
+feature_node *feature_nodeFromExample(const TExample &ex, double bias){
+	int n_nodes = countFeatures(ex, false, true);
+
+	if (bias >= 0.0)
+	    n_nodes++;
+
+	feature_node *nodes = new feature_node[n_nodes];
 	feature_node *ptr = nodes;
+
 	int index = 1;
-	int featureIndex = 1;
-	if (includeRegular){
-		for (TExample::iterator i=ex.begin(); i!=ex.end(); i++){
-			if ((i->varType==TValue::INTVAR || (i->varType==TValue::FLOATVAR && (*i==*i))) && i->isRegular() && i!=&ex.getClass()){
-				if (i->varType==TValue::INTVAR)
-					ptr->value = (int) *i;
-				else
-					ptr->value = (float) *i;
-				ptr->index = index;
-				if (indexMap.find(index)==indexMap.end()){
-					ptr->index = featureIndex;
-					indexMap[index] = featureIndex++;
-				} else
-					ptr->index = indexMap[index];
-				//featureIndices.insert(index);
-				//cout << ptr->value << " ";
-				ptr++;
-			}
-			index++;
-		}
+
+    for (TExample::iterator i=ex.begin(); i!=ex.end(); i++)
+        if (i!=&ex.getClass()){
+            if ((i->varType==TValue::INTVAR || (i->varType==TValue::FLOATVAR && (*i==*i))) && i->isRegular()){
+                if (i->varType==TValue::INTVAR)
+                    ptr->value = (int) *i;
+                else
+                    ptr->value = (float) *i;
+                ptr->index = index;
+                ptr++;
+            }
+            index++;
+        }
+
+	if (bias >= 0.0)
+	{
+	    ptr->value = bias;
+	    ptr->index = index;
+	    ptr++;
 	}
-	if (includeMeta){
-		feature_node *first = ptr;
-		for (TMetaValues::const_iterator i=ex.meta.begin(); i!=ex.meta.end(); i++){
-			if ((i->second.valueType==TValue::INTVAR || i->second.valueType==TValue::FLOATVAR) && i->second.isRegular()){
-				ptr->value = (float) i->second;
-				//ptr->index = index - i->first;
-				if (indexMap.find(i->first)==indexMap.end()){
-					ptr->index = featureIndex;
-					indexMap[i->first] = featureIndex++;
-				} else
-					ptr->index = indexMap[i->first];
-				//featureIndices.insert(ptr->index);
-				ptr++;
-			}
-		}
-		//cout << endl << "	sorting" << endl;
-		sort(first, ptr, NodeSort());
-	}
+
 	ptr->index = -1;
 	return nodes;
 }
 
-problem *problemFromExamples(PExampleGenerator examples, map<int, int> &indexMap, bool includeMeta=false, bool includeRegular=true){
+problem *problemFromExamples(PExampleGenerator examples, double bias){
 	problem *prob = new problem;
 	prob->l = examples->numberOfExamples();
+	prob->n = examples->domain->attributes->size();
+
+	if (bias >= 0)
+	    prob->n++;
+
 	prob->x = new feature_node* [prob->l];
 	prob->y = new int [prob->l];
-	prob->bias = -1.0;
+	prob->bias = bias;
 	feature_node **ptrX = prob->x;
 	int *ptrY = prob->y;
 	PEITERATE(iter, examples){
-		*ptrX = feature_nodeFromExample(*iter, indexMap, includeMeta, includeRegular);
+		*ptrX = feature_nodeFromExample(*iter, bias);
 		*ptrY = (int) (*iter).getClass();
 		ptrX++;
 		ptrY++;
 	}
-	prob->n = indexMap.size();
-	//cout << "prob->n " << prob->n <<endl;
 	return prob;
 }
 
@@ -316,12 +302,12 @@ static void dont_print_string(const char *s){}
 TLinearLearner::TLinearLearner(){
 	solver_type = L2R_LR;
 	eps = 0.01f;
-	C=1;
+	C = 1;
+	bias = -1.0;
 	set_print_string_function(&dont_print_string);
 }
 
 PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &weight){
-	//cout << "initializing param" << endl;
 	parameter *param = new parameter;
 	param->solver_type = solver_type;
 	param->eps = eps;
@@ -329,10 +315,15 @@ PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &we
 	param->nr_weight = 0;
 	param->weight_label = NULL;
 	param->weight = NULL;
-	//cout << "initializing problem" << endl;
-	map<int, int> *indexMap =new map<int, int>;
-	problem *prob = problemFromExamples(examples, *indexMap);
-	//cout << "cheking parameters" << endl;
+
+	PVariable classVar = examples->domain->classVar;
+	if (!classVar)
+	    raiseError("classVar expected");
+	if (classVar->varType != TValue::INTVAR)
+	    raiseError("Discrete class expected");
+
+	problem *prob = problemFromExamples(examples, bias);
+
 	const char * error_msg = check_parameter(prob, param);
 	if (error_msg){
 		delete param;
@@ -349,21 +340,28 @@ PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &we
 	model *model = train(prob, param);
 	destroy_problem(prob);
 
-	return PClassifier(mlnew TLinearClassifier(examples->domain->classVar, examples, model, indexMap));
+	return PClassifier(mlnew TLinearClassifier(examples->domain->classVar, examples, model));
 }
 
-TLinearClassifier::TLinearClassifier(const PVariable &var, PExampleTable _examples, struct model *_model, map<int, int> *_indexMap){
+TLinearClassifier::TLinearClassifier(const PVariable &var, PExampleTable _examples, struct model *_model){
 	classVar = var;
-	linmodel = _model;
+	domain = _examples->domain;
 	examples = _examples;
-	domain = examples->domain;
-	indexMap = _indexMap;
+	linmodel = _model;
+	bias = _model->bias;
+	dbias = _model->bias;
+
 	computesProbabilities = check_probability_model(linmodel) != 0;
 	int nr_classifier = (linmodel->nr_class==2 && linmodel->param.solver_type != MCSVM_CS)? 1 : linmodel->nr_class;
+
+	int nr_feature = linmodel->nr_feature;
+	if (linmodel->bias >= 0.0)
+	    nr_feature++;
+
 	weights = mlnew TFloatListList(nr_classifier);
-	for (int i=0; i<nr_classifier; i++){
-		weights->at(i) = mlnew TFloatList(linmodel->nr_feature);
-		for (int j=0; j<linmodel->nr_feature; j++)
+	for (int i = 0; i < nr_classifier; i++){
+		weights->at(i) = mlnew TFloatList(nr_feature);
+		for (int j = 0; j < nr_feature; j++)
 			weights->at(i)->at(j) = linmodel->w[j*nr_classifier+i];
 	}
 }
@@ -371,15 +369,13 @@ TLinearClassifier::TLinearClassifier(const PVariable &var, PExampleTable _exampl
 TLinearClassifier::~TLinearClassifier(){
 	if (linmodel)
 		free_and_destroy_model(&linmodel);
-	if (indexMap)
-		delete indexMap;
 }
 
 PDistribution TLinearClassifier::classDistribution(const TExample &example){
     TExample new_example(domain, example);
 	int numClass = get_nr_class(linmodel);
 	map<int, int> indexMap;
-	feature_node *x = feature_nodeFromExample(new_example, indexMap, false);
+	feature_node *x = feature_nodeFromExample(new_example, bias);
 
 	int *labels = new int [numClass];
 	get_labels(linmodel, labels);
@@ -401,7 +397,7 @@ TValue TLinearClassifier::operator () (const TExample &example){
     TExample new_example(domain, example);
 	int numClass = get_nr_class(linmodel);
 	map<int, int> indexMap;
-	feature_node *x = feature_nodeFromExample(new_example, indexMap, false);
+	feature_node *x = feature_nodeFromExample(new_example, bias);
 
 	int predict_label = predict(linmodel, x);
 	delete[] x;
