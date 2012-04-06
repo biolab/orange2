@@ -358,12 +358,24 @@ TLinearClassifier::TLinearClassifier(const PVariable &var, PExampleTable _exampl
 	if (linmodel->bias >= 0.0)
 	    nr_feature++;
 
+	int* labels = new int[linmodel->nr_class];
+	get_labels(linmodel, labels);
+
 	weights = mlnew TFloatListList(nr_classifier);
-	for (int i = 0; i < nr_classifier; i++){
+	for (int i = 0; i < nr_classifier; i++)
+	{
 		weights->at(i) = mlnew TFloatList(nr_feature);
-		for (int j = 0; j < nr_feature; j++)
-			weights->at(i)->at(j) = linmodel->w[j*nr_classifier+i];
 	}
+
+	for (int i = 0; i < nr_classifier; i++)
+	{
+		for (int j = 0; j < nr_feature; j++)
+		{
+            weights->at((nr_classifier > 1)? labels[i]: 0)->at(j) = \
+                    linmodel->w[j*nr_classifier + i];
+		}
+	}
+	delete[] labels;
 }
 
 TLinearClassifier::~TLinearClassifier(){
