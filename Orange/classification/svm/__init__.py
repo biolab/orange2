@@ -738,7 +738,7 @@ class LinearSVMLearner(Orange.core.LinearLearner):
     __new__ = _orange__new__(base=Orange.core.LinearLearner)
 
     def __init__(self, solver_type=L2R_L2LOSS_DUAL, C=1.0, eps=0.01, 
-                 normalization=True, **kwargs):
+                 bias=1.0, normalization=True, **kwargs):
         """
         :param solver_type: One of the following class constants:
             ``L2R_L2LOSS_DUAL``, ``L2R_L2LOSS``,
@@ -757,6 +757,11 @@ class LinearSVMLearner(Orange.core.LinearLearner):
         :param eps: Stopping criteria (default 0.01)
         :type eps: float
         
+        :param bias: If non negative then each instance is appended a constant
+            bias term (default 1.0).
+            
+        :type bias: float
+        
         :param normalization: Normalize the input data prior to learning
             (default True)
         :type normalization: bool
@@ -771,6 +776,7 @@ class LinearSVMLearner(Orange.core.LinearLearner):
         self.solver_type = solver_type
         self.eps = eps
         self.C = C
+        self.bias = bias
         self.normalization = normalization
 
         for name, val in kwargs.items():
@@ -808,13 +814,19 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
     """
     __new__ = _orange__new__(base=Orange.core.LinearLearner)
 
-    def __init__(self, C=1.0, eps=0.01, normalization=True, **kwargs):
+    def __init__(self, C=1.0, eps=0.01, bias=1.0,
+                 normalization=True, **kwargs):
         """\
         :param C: Regularization parameter (default 1.0)
         :type C: float  
         
         :param eps: Stopping criteria (default 0.01)
         :type eps: float
+        
+        :param bias: If non negative then each instance is appended a constant
+            bias term (default 1.0).
+            
+        :type bias: float
         
         :param normalization: Normalize the input data prior to learning
             (default True)
@@ -823,6 +835,7 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
         """
         self.C = C
         self.eps = eps
+        self.bias = bias
         self.normalization = normalization
         for name, val in kwargs.items():
             setattr(self, name, val)
@@ -933,24 +946,25 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
         >>> svm_scores = [(score(f, table), f) for f in table.domain.features] 
         >>> for feature_score, feature in sorted(svm_scores, reverse=True):
         ...     print "%-35s: %.3f" % (feature.name, feature_score)
-        kurtosis about major axis          : 47.113
-        pr.axis aspect ratio               : 44.949
-        max.length rectangularity          : 39.748
-        radius ratio                       : 29.098
-        scatter ratio                      : 26.133
-        skewness about major axis          : 24.403
-        compactness                        : 20.432
-        hollows ratio                      : 20.109
-        max.length aspect ratio            : 15.757
-        scaled radius of gyration          : 15.242
-        scaled variance along minor axis   : 14.289
-        pr.axis rectangularity             : 9.882
-        circularity                        : 8.293
-        distance circularity               : 7.785
-        scaled variance along major axis   : 6.179
-        elongatedness                      : 4.038
-        skewness about minor axis          : 1.351
-        kurtosis about minor axis          : 0.760
+        pr.axis aspect ratio               : 44.263
+        kurtosis about major axis          : 42.593
+        max.length rectangularity          : 39.377
+        radius ratio                       : 28.741
+        skewness about major axis          : 26.682
+        hollows ratio                      : 20.993
+        compactness                        : 20.085
+        elongatedness                      : 17.410
+        distance circularity               : 14.542
+        scaled radius of gyration          : 12.584
+        max.length aspect ratio            : 10.686
+        scatter ratio                      : 10.574
+        scaled variance along minor axis   : 10.049
+        circularity                        : 8.360
+        pr.axis rectangularity             : 7.473
+        scaled variance along major axis   : 5.731
+        skewness about minor axis          : 1.368
+        kurtosis about minor axis          : 0.690
+
 
     """
 
