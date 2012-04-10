@@ -1405,21 +1405,29 @@ class AboutDlg(QDialog):
         self.setWindowTitle("About Orange")
         
         import orngEnviron
+        import Orange
+        import re
         logoImage = QPixmap(os.path.join(orngEnviron.directoryNames["canvasDir"], "icons", "splash.png"))
         logo = OWGUI.widgetLabel(self, "")
         logo.setPixmap(logoImage)
         
         OWGUI.widgetLabel(self, '<p align="center"><h2>Orange</h2></p>') 
         
+        default_version_str = Orange.__version__
+        built_on = re.findall("\((.*?)\)", Orange.orange.version)
+        if built_on:
+            built_on_str = " (built on " + built_on[0].split(",")[-1] + ")"
+        else:
+            built_on_str = ""
         try:
             import Orange.version as version
             short_version = version.short_version
             hg_revision = version.hg_revision
-            OWGUI.widgetLabel(self, '<p align="center">version %s</p>' % (short_version))
+            OWGUI.widgetLabel(self, '<p align="center">version %s</p>' % (short_version + built_on_str))
             if not version.release:
                 OWGUI.widgetLabel(self, '<p align="center">(hg revision %s)</p>' % (hg_revision))
         except ImportError:
-            pass
+            OWGUI.widgetLabel(self, '<p align="center">version %s</p>' % (default_version_str + built_on_str))
         OWGUI.widgetLabel(self, "" )
         #OWGUI.button(self, self, "Close", callback = self.accept)
         b = QDialogButtonBox(self)
