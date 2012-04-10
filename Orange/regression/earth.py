@@ -345,7 +345,28 @@ class EarthClassifier(Orange.core.ClassifierFD):
         (data,) = instances.to_numpy_MA("A")
         bx = base_matrix(data, self.best_set, self.dirs, self.cuts)
         return bx
-    
+
+    def base_features(self):
+        """Return a list of features for the included Earth terms.
+        The attributes can be used in Orange's domain translation
+        (i.e. they define the proper ``get_value_from`` functions).
+        
+        """
+        terms = []
+        dirs = self.dirs[self.best_set]
+        cuts = self.cuts[self.best_set]
+
+        for dir, cut in zip(dirs[1:], cuts[1:]): # Drop the intercept (first) 
+            hinge = [_format_knot(self, attr.name, dir1, cut1) \
+                     for (attr, dir1, cut1) in \
+                     zip(self.domain.attributes, dir, cut) \
+                     if dir1 != 0.0]
+            term_name = " * ".join(hinge)
+            term = Orange.feature.Continuous(term_name)
+            term.get_value_from = term_computer(term, self.domain, dir, cut)
+            terms.append(term)
+        return terms
+
     def predict(self, instance):
         """ Predict the response value(s)
         
@@ -397,7 +418,6 @@ class EarthClassifier(Orange.core.ClassifierFD):
         
     def __str__(self):
         return self.to_string()
-    
 
 """
 Utility functions
@@ -460,6 +480,25 @@ def gcv(rss, n, n_effective_params):
      
     """
     return  rss / (n * (1. - n_effective_params / n) ** 2)
+
+class term_computer(Orange.core.ClassifierFD):
+    """An utility class for computing basis terms. Can be used as
+    a :obj:`~Orange.feature.Descriptior.get_value_from` member.
+    """
+    def __init__(self, term_var=None, domain=None, dir=None, cut=None):
+        self.class_var = term_var
+        self.domain = domain
+        self.dir = dir
+        self.cut = cut
+
+    def __call__(self, instance, return_what=Orange.core.GetValue):
+        instance = Orange.data.Instance(self.domain, instance)
+        attributes = self.domain.attributes
+        sum = 0.0
+        for val, dir1, cut1 in zip(instance, self.dir, self.cut):
+            if dir1 != 0.0 and dir1 != 2 and not val.isSpecial():
+                sum += max(dir1 * (float(val) - cut1), 0.0)
+        return self.class_var(sum)
 
 """
 Multi-label utility functions

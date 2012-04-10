@@ -22,6 +22,10 @@ class TestEarthLearner(testing.LearnerTestCase):
         testing.LearnerTestCase.test_learner_on(self, dataset)
         str = self.classifier.to_string()
         evimp = self.classifier.evimp()
+        # Test base_features (make sure the domain translation works) 
+        basis_features = self.classifier.base_features()
+        basis_domain = Orange.data.Domain(basis_features, None)
+        basis_matrix = Orange.data.Table(basis_domain, dataset)
 
     @test_on_data
     def test_bagged_evimp(self, dataset):
