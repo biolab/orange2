@@ -27,8 +27,7 @@ class TestRidgeRegressionLearner(testing.LearnerTestCase):
     @test_on_data
     def test_learner_on(self, dataset):
         testing.LearnerTestCase.test_learner_on(self, dataset)
-        if self.classifier.p_vals:
-            self.assertTrue(isinstance(self.classifier.to_string(), str))
+        self.assertTrue(isinstance(self.classifier.to_string(), str))
 
 
 if __name__ == "__main__":

@@ -8,10 +8,12 @@ Linear regression (``linear``)
 .. `Linear regression`: http://en.wikipedia.org/wiki/Linear_regression
 
 
-`Linear regression <http://en.wikipedia.org/wiki/Linear_regression>`_ is a statistical regression method
-which tries to predict a value of a continuous response (class) variable based on the values of several predictors.
-The model assumes that the response variable is a linear combination of the predictors, the task of linear regression
-is therefore to fit the unknown coefficients.
+`Linear regression <http://en.wikipedia.org/wiki/Linear_regression>`_ 
+is a statistical regression method which tries to predict a value of 
+a continuous response (class) variable based on the values of several 
+predictors. The model assumes that the response variable is a linear
+combination of the predictors, the task of linear regression is 
+therefore to fit the unknown coefficients.
 
 To fit the regression parameters on housing data set use the following code:
 
@@ -48,11 +50,11 @@ The output of this code is
 
 ::
 
-    Actual: 24.000, predicted: 30.004 
-    Actual: 21.600, predicted: 25.026 
-    Actual: 34.700, predicted: 30.568 
-    Actual: 33.400, predicted: 28.607 
-    Actual: 36.200, predicted: 27.944   
+    Actual: 24.00, predicted: 30.00
+    Actual: 21.60, predicted: 25.03
+    Actual: 34.70, predicted: 30.57
+    Actual: 33.40, predicted: 28.61
+    Actual: 36.20, predicted: 27.94
 
 =========================
 Poperties of fitted model
@@ -69,7 +71,7 @@ The code output is
 
 ::
 
-    Variable  Coeff Est  Std Error    t-value          p
+      Variable  Coeff Est  Std Error    t-value          p      
      Intercept     36.459      5.103      7.144      0.000   ***
           CRIM     -0.108      0.033     -3.287      0.001    **
             ZN      0.046      0.014      3.382      0.001   ***
@@ -84,23 +86,21 @@ The code output is
        PTRATIO     -0.953      0.131     -7.283      0.000   ***
              B      0.009      0.003      3.467      0.001   ***
          LSTAT     -0.525      0.051    -10.347      0.000   ***
-    Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1
-
 
 
 ===================
 Stepwise regression
 ===================
 
-To use stepwise regression initialize learner with stepwise=True.
-The upper and lower bound for significance are contolled with
-add_sig and remove_sig.
+To use stepwise regression initialize learner with ``stepwise=True``.
+The upper and lower bound for significance are controlled with
+``add_sig`` and ``remove_sig``.
 
 .. literalinclude:: code/linear-example.py
    :lines: 20-23,25
 
-As you can see from the output the non-significant coefficients
-have been removed from the output
+As you can see from the output, the non-significant coefficients
+have been removed from the model.
 
 ::
 
@@ -118,8 +118,6 @@ have been removed from the output
            RAD      0.300      0.063      4.726      0.000   ***
            TAX     -0.012      0.003     -3.493      0.001   ***
     Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1
-
-
 
 """
 
@@ -466,13 +464,6 @@ class LinearRegression(Orange.classification.Classifier):
         and significances.
 
         """
-        from string import join
-        labels = ('Variable', 'Coeff Est', 'Std Error', 't-value', 'p')
-        lines = [join(['%10s' % l for l in labels], ' ')]
-
-        fmt = "%10s " + join(["%10.3f"] * 4, " ") + " %5s"
-        if not self.p_vals:
-            raise ValueError("Model does not contain model statistics.")
         def get_star(p):
             if p < 0.001: return  "*" * 3
             elif p < 0.01: return "*" * 2
@@ -480,23 +471,52 @@ class LinearRegression(Orange.classification.Classifier):
             elif p < 0.1: return  "."
             else: return " "
 
-        if self.intercept == True:
-            stars =  get_star(self.p_vals[0])
-            lines.append(fmt % ('Intercept', self.coefficients[0],
-                                self.std_error[0], self.t_scores[0],
-                                self.p_vals[0], stars))
-            for i in range(len(self.domain.attributes)):
-                stars = get_star(self.p_vals[i + 1])
-                lines.append(fmt % (self.domain.attributes[i].name,
-                             self.coefficients[i + 1], self.std_error[i + 1],
-                             self.t_scores[i + 1], self.p_vals[i + 1], stars))
+        labels = ("Variable", "Coeff Est", "Std Error", "t-value", "p", "")
+        names = [a.name for a in self.domain.attributes]
+
+        if self.intercept:
+            names = ["Intercept"] + names
+
+        float_fmt = "%10.3f"
+        float_str = float_fmt.__mod__
+
+        coefs = map(float_str, self.coefficients)
+        if self.std_error is not None:
+            std_error = map(float_str, self.std_error)
         else:
-            for i in range(len(self.domain.attributes)):
-                stars = get_star(self.p_vals[i])
-                lines.append(fmt % (self.domain.attributes[i].name,
-                             self.coefficients[i], self.std_error[i],
-                             self.t_scores[i], self.p_vals[i], stars))
-        lines.append("Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1")
+            std_error = None
+
+        if self.t_scores is not None:
+            t_scores = map(float_str, self.t_scores)
+        else:
+            t_scores = None
+
+        if self.p_vals is not None:
+            p_vals = map(float_str, self.p_vals)
+            stars = [get_star(p) for p in self.p_vals]
+        else:
+            p_vals = None
+            stars = None
+
+        columns = [names, coefs, std_error, t_scores, p_vals, stars]
+        labels = [label for label, c in zip(labels, columns) if c is not None]
+        columns = [c for c in columns if c is not None]
+        name_len = max([len(name) for name in names] + [10])
+        fmt_name = "%%%is" % name_len
+        lines = [" ".join([fmt_name % labels[0]] + \
+                          ["%10s" % l for l in labels[1:]])
+                 ]
+
+        if p_vals is not None:
+            fmt = fmt_name + " " + " ".join(["%10s"] * (len(labels) - 2)) + " %5s"
+        else:
+            fmt = fmt_name + " " + " ".join(["%10s"] * (len(labels) - 1))
+
+        for i in range(len(names)):
+            lines.append(fmt % tuple([c[i] for c in columns]))
+
+        if self.p_vals is not None:
+            lines.append("Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1")
         return "\n".join(lines)
 
     def __str__(self):
@@ -598,4 +618,3 @@ if __name__ == "__main__":
     table = Orange.data.Table("housing.tab")
     c = LinearRegressionLearner(table)
     print c
-
