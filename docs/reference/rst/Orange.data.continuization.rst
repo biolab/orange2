@@ -30,8 +30,8 @@ variable separately.
 
     The typical use of the class is as follows::
 
-        continuizer = orange.DomainContinuizer()
-        continuizer.multinomialTreatment = continuizer.LowestIsBase
+        continuizer = Orange.data.continuization.DomainContinuizer()
+        continuizer.multinomial_treatment = continuizer.LowestIsBase
         domain0 = continuizer(data)
         data0 = data.translate(domain0)
 
