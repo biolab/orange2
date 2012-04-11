@@ -1000,7 +1000,7 @@ class OWNxExplorerQwt(OWWidget):
 
         hubs = self.hubs
         if hubs == 0:
-            self.networkCanvas.setMarkedVertices([])
+            self.networkCanvas.set_marked_nodes([])
             self.networkCanvas.replot()
             return
 
@@ -1011,7 +1011,7 @@ class OWNxExplorerQwt(OWWidget):
             self.networkCanvas.markWithRed = self.graph.number_of_nodes > 200
 
             toMark = [i for i, values in enumerate(self.graph_base.items()) if txt.lower() in " ".join([str(values[ndx]).decode("ascii", "ignore").lower() for ndx in range(len(self.graph_base.items().domain)) + self.graph_base.items().domain.getmetas().keys()])]
-            self.networkCanvas.setMarkedVertices(toMark)
+            self.networkCanvas.set_marked_nodes(toMark)
             self.networkCanvas.replot()
             return
 
@@ -1035,20 +1035,20 @@ class OWNxExplorerQwt(OWWidget):
         if hubs == 4: # at least N connections
             #print "mark at least N connections"
             N = self.markNConnections
-            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power >= N])
+            self.networkCanvas.set_marked_nodes([i for i, power in enumerate(powers) if power >= N])
             self.networkCanvas.replot()
         elif hubs == 5:
             #print "mark at most N connections"
             N = self.markNConnections
-            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power <= N])
+            self.networkCanvas.set_marked_nodes([i for i, power in enumerate(powers) if power <= N])
             self.networkCanvas.replot()
         elif hubs == 6:
             #print "mark more than any"
-            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power > max([0] + [powers[nn] for nn in self.graph.getNeighbours(i)])])
+            self.networkCanvas.set_marked_nodes([i for i, power in enumerate(powers) if power > max([0] + [powers[nn] for nn in self.graph.getNeighbours(i)])])
             self.networkCanvas.replot()
         elif hubs == 7:
             #print "mark more than avg"
-            self.networkCanvas.setMarkedVertices([i for i, power in enumerate(powers) if power > statc.mean([0] + [powers[nn] for nn in self.graph.getNeighbours(i)])])
+            self.networkCanvas.set_marked_nodes([i for i, power in enumerate(powers) if power > statc.mean([0] + [powers[nn] for nn in self.graph.getNeighbours(i)])])
             self.networkCanvas.replot()
         elif hubs == 8:
             #print "mark most"
@@ -1058,7 +1058,7 @@ class OWNxExplorerQwt(OWWidget):
             cutPower = powers[sortedIdx[cutP]]
             while cutP < len(powers) and powers[sortedIdx[cutP]] == cutPower:
                 cutP += 1
-            self.networkCanvas.setMarkedVertices(sortedIdx[:cutP])
+            self.networkCanvas.set_marked_nodes(sortedIdx[:cutP])
             self.networkCanvas.replot()
         elif hubs == 9:
             self.setMarkInput()
@@ -1443,11 +1443,11 @@ class OWNxExplorerQwt(OWWidget):
             values = [str(x[var]).strip().upper() for x in self.markInputItems]
             toMark = [i for (i, x) in enumerate(self.graph) if str(self.graph_base.items()[x][var]).strip().upper() in values]
             #print "mark:", toMark
-            self.networkCanvas.setMarkedVertices(list(toMark))
+            self.networkCanvas.set_marked_nodes(list(toMark))
             self.networkCanvas.replot()
 
         else:
-            self.networkCanvas.setMarkedVertices([])
+            self.networkCanvas.set_marked_nodes([])
             self.networkCanvas.replot()
 
     def markItems(self, items):
