@@ -80,7 +80,7 @@ def get_source_files(path, ext="cpp", exclude=[]):
 qt_libs = ["QtCore", "QtGui", "QtOpenGL"]
 
 if cfg.qt_framework:
-    extra_includes = []
+    extra_includes = ["-F%s" % cfg.qt_lib_dir]
     extra_link_args = ["-F%s" % cfg.qt_lib_dir]
     for lib in qt_libs:
         extra_includes += ["-I" + os.path.join(cfg.qt_lib_dir,
