@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ev
 #
 # Build the orange Mac OSX bundle
 #
@@ -37,6 +37,19 @@ PY_VER=`$PYTHON -c "import sys; print sys.version[:3]"`
 echo "Checkouting and building orange"
 echo "==============================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange orange $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+
+echo "Specifically building orangeqt"
+CUR_DIR=`pwd`
+cd $REPOS_DIR/orange/source/orangeqt
+echo "Fixing sip/pyqt configuration"
+
+APP=${TMP_BUNDLE_DIR}/Orange.app
+APP_ESCAPED=`echo ${TMP_BUNDLE_DIR}/Orange.app | sed s/'\/'/'\\\\\/'/g`
+sed -i.bak "s/Users.*Orange.app/$APP_ESCAPED/g"  $APP/Contents/Frameworks/Python.framework/Versions/$PY_VER/lib/python$PY_VER/site-packages/PyQt4/pyqtconfig.py
+sed -i.bak "s/Users.*Orange.app/$APP_ESCAPED/g"  $APP/Contents/Frameworks/Python.framework/Versions/$PY_VER/lib/python$PY_VER/site-packages/sipconfig.py
+export PATH=$APP/Contents/Resources/Qt4/bin:$PATH
+$PYTHON setup.py install
+cd $CUR_DIR
 
 echo "Checkouting and building bioinformatics addon"
 echo "============================================="
