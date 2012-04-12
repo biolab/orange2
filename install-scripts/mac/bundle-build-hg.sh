@@ -1,4 +1,4 @@
-#!/bin/bash -ev
+#!/bin/bash -e
 #
 # Build the orange Mac OSX bundle
 #
