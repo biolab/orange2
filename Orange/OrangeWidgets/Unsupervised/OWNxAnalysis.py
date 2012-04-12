@@ -265,7 +265,7 @@ class OWNxAnalysis(OWWidget):
         setattr(self, "lbl_" + job.name, "   waiting")
     
     def start_job(self):
-        max_jobs = QThread.idealThreadCount() - 1
+        max_jobs = max(1, QThread.idealThreadCount() - 1)
         
         self.mutex.lock()
         if len(self.job_queue) > 0 and len(self.job_working) < max_jobs:
