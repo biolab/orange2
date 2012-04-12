@@ -42,7 +42,7 @@ cd $CLONE_FULLPATH
 
 # Run installation
 echo "Running setup.py install with python '$PYTHON'"
-$PYTHON setup.py install
+$PYTHON setup.py install --single-version-externally-managed --record=RECORD.txt
 
 # Clean up the archive
 cd $WORK_DIR

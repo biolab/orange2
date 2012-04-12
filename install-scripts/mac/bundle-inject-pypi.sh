@@ -28,7 +28,7 @@ curl --silent -o $SOURCE_TAR $PACKAGE_URL
 tar -xf $SOURCE_TAR -C $WORK_DIR
 
 cd $SOURCE_DIR
-$PYTHON setup.py install
+$PYTHON setup.py install --single-version-externally-managed --record=RECORD.txt
 
 cd ..
 

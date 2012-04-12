@@ -35,6 +35,8 @@ if [[ ! -e /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg || $DAILY_
 	# (Keeps last 5 versions.)
 	perl -e 'unlink ((reverse sort </Volumes/download/orange-bundle-hg-0*.dmg>)[5..10000])'
 
+	MD5=`md5 -q $BUNDLE`
+	
 	echo "Moving bundle to the download directory."
 	mv $BUNDLE /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg
 
@@ -42,8 +44,8 @@ if [[ ! -e /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg || $DAILY_
 	chmod +r /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg
 
 	# Check integrity 
-	MD5=`md5 -q /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg`
-	if [[ $MD5 != `md5 -q $BUNDLE` ]]; then
+	MD5_D=`md5 -q /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg`
+	if [[ $MD5 != $MD5_D ]]; then
 		echo "Error moving the bundle in place"
 		rm /Volumes/download/orange-bundle-hg-0.0.$DAILY_REVISION.dmg
 		exit 1
