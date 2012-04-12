@@ -2688,7 +2688,7 @@ def mt_global_accuracy(res):
 
 def mt_mean_accuracy(res):
     """
-    :math:`\\overline{Acc_{d}} = \\frac{1}{d}\sum_{j=1}^{d}Acc_{j} = \\frac{1}{d}\\sum_{j=1}^{d} \\frac{1}{N}\sum_{i=1}^{N}\\delta(c_{ij}',c_{ij} ) \\newline `
+    :math:`\\overline{Acc_{d}} = \\frac{1}{d}\\sum_{j=1}^{d}Acc_{j} = \\frac{1}{d}\\sum_{j=1}^{d} \\frac{1}{N}\\sum_{i=1}^{N}\\delta(c_{ij}',c_{ij} ) \\newline`
 	
     :math:`\\delta (c_{ij}',c_{ij} )=\\left\\{\\begin{matrix}1:c_{ij}'=c_{ij}\\\\ 0: otherwise\\end{matrix}\\right.`
     """

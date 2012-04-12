@@ -161,7 +161,7 @@ Which outputs::
              PLS    0.3021
            Earth    0.2880
 
-Two more accuracy measures based on the article by Zaragoza et al.(2011):
+Two more accuracy measures based on the article by Zaragoza et al.(2011); applicable to discrete classes:
 
 Global accuracy (accuracy per example) over d-dimensional class variable:
 
