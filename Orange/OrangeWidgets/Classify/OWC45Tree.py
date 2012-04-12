@@ -5,6 +5,10 @@
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>35</priority>
 """
+import os
+
+from distutils import sysconfig
+
 from OWWidget import *
 import OWGUI
 from exceptions import Exception
@@ -13,13 +17,19 @@ from orngWrap import PreprocessedLearner
 
 import Orange
 
-# Test if the c45.(so|pyd) can be found by orange.C45Learner
-import orange
-try:
-    orange.C45Learner()
-except orange.KernelException, ex:
-    # I guess not
-    raise ImportError(ex.message)
+_Orange_dir = os.path.dirname(Orange.__file__)
+_SO = "c45%s" % sysconfig.get_config_var("SO")
+
+if os.path.exists(os.path.join(_Orange_dir, _SO)):              
+    # Test if the c45.(so|pyd) can be loaded by orange.C45Learner
+    import orange
+    try:
+        orange.C45Learner()
+    except orange.KernelException, ex:
+        # I guess not
+        raise ImportError(ex.message)
+else:
+    raise ImportError("c45 is not found")
  
 class OWC45Tree(OWWidget):
     settingsList = ["name",
