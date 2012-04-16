@@ -180,7 +180,7 @@ class OWLinearRegression(OWWidget):
                    variable.Continuous("p"),]
         
         domain = Orange.data.Domain(columns, None)
-        vars = ["Intercept"] #if m.intercept else []
+        vars = ["Intercept"] if m.intercept else []
         vars.extend([a.name for a in m.domain.attributes])
         stats = []
         geti = lambda list, i: list[i] if list is not None else "?"
@@ -192,7 +192,6 @@ class OWLinearRegression(OWWidget):
             p = geti(m.p_vals, i)
             stats.append([var, coef, std_err, t_val, p])
                 
-        print Orange.data.Table(domain, stats)[:]
         return Orange.data.Table(domain, stats)
     
     def statistics_lasso(self, m):
