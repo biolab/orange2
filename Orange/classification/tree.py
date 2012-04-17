@@ -2757,3 +2757,184 @@ def _countLeaves(node):
             count += 1
     return count
 
+
+def _simple_tree_convert(tree, domain, training_data=None, weight_id=None):
+    """
+    Convert an :class:`SimpleTreeClassifier` to a :class:`TreeClassifier`.
+
+    The domain used to build it must be supplied with the `domain`
+    parameter. If `training_data` is not None it is split and assigned
+    to the tree's nodes.
+
+    :param SimpleTreeClassifeir tree:
+        The :class:`SimpleTreeClassifier` instance.
+    :param Orange.data.Domain domain:
+        The domain on which the `tree` was built.
+    :param Orange.data.Table training_data:
+        Optional training data do assign to the nodes of the newly
+        constructed TreeClassifier.
+    :param int weight_id:
+        The weight (if any) used when training the `tree`.
+    :rval: TreeClassifier
+
+    """
+    import json
+    Distribution = Orange.statistics.distribution.Distribution
+
+    if not isinstance(tree, SimpleTreeClassifier):
+        raise TypeError("SimpleTreeClassifier instance expected (got %s)" %
+                        type(tree).__name__)
+
+    def is_discrete(var):
+        return isinstance(var, Orange.feature.Discrete)
+
+    def is_continuous(var):
+        return isinstance(var, Orange.feature.Continuous)
+
+    # Get the string representation as used by pickle.
+    _, (tree_string, ), _ = tree.__reduce__()
+    # convert it to a valid json string
+    tree_string = "[ %s ]" % (tree_string.replace(" ", ",")
+                              .replace("{,", "[")
+                              .replace(",}", "]")
+                              .rstrip(","))
+
+    tree_list = json.loads(tree_string)
+
+    node_type, child_count, branches = tree_list
+    # node_type 0 is a classifier, 1 a regression tree
+    if node_type == 0 and not is_discrete(domain.class_var):
+        raise ValueError
+    elif node_type == 1 and not is_continuous(domain.class_var):
+        raise ValueError
+
+    def discrete_dist(var, values):
+        """
+        Create a discrete distribution containing `values`.
+        """
+        dist = Distribution(var)
+        for i, val in enumerate(values):
+            dist.add(i, val)
+        return dist
+
+    def continuous_dist(var, count, value):
+        """
+        Create a continuous distribution with `count` points at `value`.
+        """
+        dist = Distribution(var)
+        dist.add(value, count)
+        return dist
+
+    if is_discrete(domain.class_var):
+        def node_distribution(values):
+            return discrete_dist(domain.class_var, values)
+    else:
+        def node_distribution(count_valuesum):
+            count, valuesum = count_valuesum
+            return continuous_dist(domain.class_var, count, valuesum / count)
+
+    def build_tree(branch_list):
+        """
+        Recursivly build a tree for a `branch_list`.
+        """
+        node_type = branch_list[0]
+        node = Orange.core.TreeNode()
+
+        if node_type in [0, 1]:
+            # Internal split node
+            branch_count, split_var_ind, split_val = branch_list[1:4]
+            sub_branches = branch_list[4: 4 + branch_count]
+            distribution = branch_list[4 + branch_count:]
+            split_var = domain[split_var_ind]
+
+            node.distribution = node_distribution(distribution)
+
+            node.branches = map(build_tree, sub_branches)
+
+            node.branch_sizes = \
+                [sum(branch.branch_sizes or [branch.distribution.abs])
+                 for branch in node.branches]
+
+            if node_type == 0:
+                # Discrete split node
+                node.branch_descriptions = split_var.values
+
+                node.branch_selector = \
+                    Orange.core.ClassifierFromVarFD(
+                        class_var=split_var,
+                        position=split_var_ind,
+                        domain=domain,
+                        distribution_for_unknown=node.distribution)
+
+            else:
+                # Continuous split node
+                node.branch_descriptions = \
+                    ["<=%.3f" % split_val, ">%.3f" % split_val]
+
+                transformer = \
+                    Orange.feature.discretization.ThresholdDiscretizer(
+                        threshold=split_val)
+
+                selector_var = Orange.feature.Discrete(
+                    split_var.name, values=node.branch_descriptions)
+
+                unknown_dist = discrete_dist(selector_var, node.branch_sizes)
+
+                node.branch_selector = \
+                    Orange.core.ClassifierFromVarFD(
+                        class_var=selector_var,
+                        domain=domain,
+                        position=split_var_ind,
+                        transformer=transformer,
+                        transform_unknowns=False,
+                        distribution_for_unknown=unknown_dist)
+
+        elif node_type == 2:
+            # Leaf predictor node
+            distribution = branch_list[2:]
+            node.distribution = node_distribution(distribution)
+
+        # Node classifier
+        if is_continuous(domain.class_var):
+            default_val = node.distribution.average()
+        else:
+            default_val = node.distribution.modus()
+
+        node.node_classifier = \
+            Orange.classification.ConstantClassifier(
+                class_var=domain.class_var,
+                default_val=default_val,
+                default_distribution=node.distribution)
+        return node
+
+    def descend_assign_instances(node, instances, splitter, weight_id=None):
+        node.instances = node.examples = instances
+        if len(instances):
+            node.distribution = Distribution(domain.class_var, instances,
+                                             weight_id)
+
+            node.node_classifier = \
+                Orange.classification.majority.MajorityLearner(
+                    instances, weight_id)
+
+        if node.branches:
+            split_instances, weights = splitter(node, instances, weight_id)
+
+            if weights is None:
+                weights = [None] * len(node.branches)
+
+            for branch, branch_instances, weight_id in \
+                    zip(node.branches, split_instances, weights):
+                descend_assign_instances(branch, branch_instances, splitter,
+                                         weight_id)
+
+    tree_root = build_tree(branches)
+
+    if training_data:
+        splitter = Splitter_UnknownsAsSelector()
+        descend_assign_instances(tree_root, training_data, splitter, weight_id)
+
+    tree_c = _TreeClassifier(domain=domain, class_var=domain.class_var)
+    tree_c.descender = Orange.core.TreeDescender_UnknownMergeAsSelector()
+    tree_c.tree = tree_root
+    return TreeClassifier(base_classifier=tree_c)
