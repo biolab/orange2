@@ -228,12 +228,14 @@ try:
             OWGUI.appendRadioButton(ribg, self, "hubs", "Neighbors of focused", callback=self.set_mark_mode)
             OWGUI.appendRadioButton(ribg, self, "hubs", "Neighbours of selected", callback=self.set_mark_mode)
             ib = OWGUI.indentedBox(ribg, orientation=0)
-            self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ", callback=(lambda h=2: self.set_mark_mode(h)))
+            self.ctrlMarkDistance = OWGUI.spin(ib, self, "markDistance", 0, 100, 1, label="Distance ",
+                callback=(lambda: self.set_mark_mode(2 if not self.hubs==3 else 3)))
             #self.ctrlMarkFreeze = OWGUI.button(ib, self, "&Freeze", value="graph.freezeNeighbours", toggleButton = True)
             OWGUI.widgetLabel(ribg, "Mark nodes with ...")
             OWGUI.appendRadioButton(ribg, self, "hubs", "at least N connections", callback=self.set_mark_mode)
             OWGUI.appendRadioButton(ribg, self, "hubs", "at most N connections", callback=self.set_mark_mode)
-            self.ctrlMarkNConnections = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markNConnections", 0, 1000000, 1, label="N ", callback=(lambda h=4: self.set_mark_mode(h)))
+            self.ctrlMarkNConnections = OWGUI.spin(OWGUI.indentedBox(ribg), self, "markNConnections", 0, 1000000, 1, label="N ",
+                callback=(lambda: self.set_mark_mode(4 if not self.hubs==5 else 5)))
             OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than any neighbour", callback=self.set_mark_mode)
             OWGUI.appendRadioButton(ribg, self, "hubs", "more connections than avg neighbour", callback=self.set_mark_mode)
             OWGUI.appendRadioButton(ribg, self, "hubs", "most connections", callback=self.set_mark_mode)
@@ -553,6 +555,9 @@ try:
                 Orange.network.readwrite.write(self.graph, fn)
 
         def send_data(self):
+            selected_nodes = self.networkCanvas.selected_nodes()
+            self.nSelected = len(selected_nodes)
+
             if len(self.signalManager.getLinks(self, None, \
                 "Selected Items", None)) > 0 or \
                     len(self.signalManager.getLinks(self, None, \
@@ -561,7 +566,6 @@ try:
                                 "Selected Network", None)) > 0:
 
                 # signal connected
-                selected_nodes = self.networkCanvas.selected_nodes()
                 graph = self.graph_base.subgraph(selected_nodes)
 
                 if graph is not None:
