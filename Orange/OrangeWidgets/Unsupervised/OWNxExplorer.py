@@ -553,6 +553,9 @@ try:
                 Orange.network.readwrite.write(self.graph, fn)
 
         def send_data(self):
+            selected_nodes = self.networkCanvas.selected_nodes()
+            self.nSelected = len(selected_nodes)
+
             if len(self.signalManager.getLinks(self, None, \
                 "Selected Items", None)) > 0 or \
                     len(self.signalManager.getLinks(self, None, \
@@ -561,7 +564,6 @@ try:
                                 "Selected Network", None)) > 0:
 
                 # signal connected
-                selected_nodes = self.networkCanvas.selected_nodes()
                 graph = self.graph_base.subgraph(selected_nodes)
 
                 if graph is not None:
