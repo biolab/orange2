@@ -343,6 +343,7 @@ class OWPCA(OWWidget):
         self.cumulative_variance_curve.setVisible(True)
 
         self.scree_plot.set_cutoff_curve_enabled(True)
+        self.scree_plot.replot()
 
     def on_cutoff_moved(self, value):
         """Cutoff curve was moved by the user.
