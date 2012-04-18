@@ -1228,19 +1228,12 @@ class Projector(object):
         features = []
         for i in range(len(self.projection)):
             f = feature.Continuous("Comp.%d" % (i + 1))
-            f.get_value_from = lambda ex, w: self._project_single(ex, w, f, i)
+            f.get_value_from = _ProjectSingleComponent(self, f, i)
             features.append(f)
 
         self.output_domain = Orange.data.Domain(features,
                                                 self.input_domain.class_var,
                                                 class_vars=self.input_domain.class_vars)
-
-    def _project_single(self, example, return_what, new_feature, feature_idx):
-        ex = Orange.data.Table([example]).to_numpy("a")[0]
-        ex -= self.center
-        if self.standardize:
-            ex /= self.scale
-        return new_feature(numpy.dot(self.projection[feature_idx, :], ex.T)[0])
 
     def __call__(self, dataset):
         """
@@ -1272,6 +1265,19 @@ class Projector(object):
 
         class_, classes = dataset.to_numpy("c")[0], dataset.to_numpy("m")[0]
         return data.Table(self.output_domain, numpy.hstack((self.A, class_, classes)))
+
+class _ProjectSingleComponent():
+    def __init__(self, projector, feature, idx):
+        self.projector = projector
+        self.feature = feature
+        self.idx = idx
+
+    def __call__(self, example, return_what):
+        ex = Orange.data.Table([example]).to_numpy("a")[0]
+        ex -= self.projector.center
+        if self.projector.standardize:
+            ex /= self.projector.scale
+        return self.feature(numpy.dot(self.projector.projection[self.idx, :], ex.T)[0])
 
 
 #color table for biplot

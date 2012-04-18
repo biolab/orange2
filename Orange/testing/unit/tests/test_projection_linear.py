@@ -4,11 +4,12 @@ except:
     import unittest
 
 import numpy as np
-import random
+import pickle, random
 
 from Orange import data, feature
 from Orange.projection import linear
 
+np.random.seed(0)
 random.seed(0)
 
 def normalize(a):
@@ -209,6 +210,23 @@ class TestProjector(unittest.TestCase):
         new_examples = data.Table(data.Domain(self.dataset.domain.features[:5]), [[1.,2.,3.,4.,5.]])
 
         projector(new_examples)
+
+    def test_can_pickle_and_unpickle(self):
+        self.create_normal_dataset()
+        projector = linear.PCA(variance_covered=.99)(self.dataset)
+
+        pickled = pickle.dumps(projector)
+        restored = pickle.loads(pickled)
+
+        self.assertFalse((projector.projection - restored.projection).any())
+        self.assertFalse((projector.center - restored.center).any())
+        self.assertFalse((projector.scale - restored.scale).any())
+
+        transformed, new_transformed = projector(self.dataset), restored(self.dataset)
+        print transformed[0][0]
+        for ex1, ex2 in zip(transformed, new_transformed):
+            for v1, v2 in zip(ex1, ex2):
+                self.assertEqual(v1, v2)
 
 
 class TestFda(unittest.TestCase):
