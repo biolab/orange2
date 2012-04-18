@@ -1,5 +1,9 @@
 """
 <name>PCA</name>
+<description>Perform Principal Component Analysis</description>
+<contact>ales.erjavec(@ at @)fri.uni-lj.si</contact>
+<icons>icons/PCA.png</icons>
+<tags>pca,principal,component,projection</tags>
 
 """
 import Orange
@@ -13,9 +17,6 @@ import Orange.projection.linear as plinear
 
 import numpy as np
 import sys
-from Orange import orangeqt
-
-sys.modules["orangeqt"] = orangeqt
 
 from plot.owplot import OWPlot
 from plot.owcurve import OWCurve

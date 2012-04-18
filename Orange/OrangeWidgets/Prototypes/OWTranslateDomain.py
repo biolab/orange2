@@ -1,5 +1,9 @@
 """
 <name>Translate Domain</name>
+<description>Translate input data into a target domain</description>
+<contact>ales.erjavec(@ at @)fri.uni-lj.si</contact>
+<icons>icons/TranslateDomain.png</icons>
+<tags>translate,transformation</tags>
 
 """
 
