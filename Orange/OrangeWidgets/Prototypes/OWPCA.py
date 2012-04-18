@@ -91,7 +91,7 @@ class CutoffCurve(OWCurve):
 
 class OWPCA(OWWidget):
     settingsList = ["standardize", "max_components", "variance_covered",
-                    "use_generalized_eigenvectors"]
+                    "use_generalized_eigenvectors", "auto_commit"]
     def __init__(self, parent=None, signalManager=None, title="PCA"):
         OWWidget.__init__(self, parent, signalManager, title)
 
@@ -103,10 +103,12 @@ class OWPCA(OWWidget):
         self.max_components = 0
         self.variance_covered = 100.0
         self.use_generalized_eigenvectors = False
+        self.auto_commit = False
 
         self.loadSettings()
 
         self.data = None
+        self.changed_flag = False
 
         #####
         # GUI
@@ -141,6 +143,12 @@ class OWPCA(OWWidget):
         grid.addWidget(sb2.control, 2, 1)
 
         OWGUI.rubber(self.controlArea)
+
+        box = OWGUI.widgetBox(self.controlArea, "Commit")
+        cb = OWGUI.checkBox(box, self, "auto_commit", "Commit on any change")
+        b = OWGUI.button(box, self, "Commit",
+                         callback=self.update_components)
+        OWGUI.setStopper(self, b, cb, "changed_flag", self.update_components)
 
         self.scree_plot = ScreePlot(self)
 #        self.scree_plot.set_main_title("Scree Plot")
@@ -233,7 +241,7 @@ class OWPCA(OWWidget):
             return
         self.update_cutoff_curve()
         if self.currently_selected != self.number_of_selected_components():
-            self.update_components()
+            self.update_components_if()
 
     def construct_pca_all_comp(self):
         pca = plinear.PCA(standardize=self.standardize,
@@ -268,11 +276,20 @@ class OWPCA(OWWidget):
         self.max_components_spin.setRange(1, len(self.variances))
         self.update_scree_plot()
         self.update_cutoff_curve()
-        self.update_components()
+        self.update_components_if()
 
+    def update_components_if(self):
+        if self.auto_commit:
+            self.update_components()
+        else:
+            self.changed_flag = True
+        
     def update_components(self):
         """Update the output components.
         """
+        if self.data is None:
+            return 
+
         scale = self.projector_full.scale
         center = self.projector_full.center
         components = self.projector_full.projection
@@ -299,6 +316,8 @@ class OWPCA(OWWidget):
 
         self.send("Transformed Data", projected_data)
         self.send("Eigen Vectors", eigenvectors)
+
+        self.changed_flag = False
 
     def eigenvectors_as_table(self, U):
         features = [Orange.feature.Continuous("C%i" % i) \
@@ -330,7 +349,7 @@ class OWPCA(OWWidget):
         if self.currently_selected != self.number_of_selected_components():
 #            self.max_components = int(np.floor(value)) + 1
 #            self.variance_covered = self.variances_cumsum[self.max_components - 1] * 100
-            self.update_components()
+            self.update_components_if()
 
     def update_cutoff_curve(self):
         """Update cutoff curve from 'Components Selection' control box.
