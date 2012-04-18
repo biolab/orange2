@@ -233,12 +233,21 @@ class OWAssociationRulesTreeViewer(OWWidget):
 
     def arules(self,arules):
         self.origRules = arules
-        self.rules=[(set(str(val.variable.name) + (val.varType and "=" + str(val) or "") for val in rule.left if not val.isSpecial()),
-                     "  ".join(str(val.variable.name) + (val.varType and "=" + str(val) or "") for val in rule.right if not val.isSpecial()),
-                     (rule.support, rule.confidence, rule.lift, rule.leverage, rule.strength, rule.coverage),
-                     id
-                     )
-                    for id, rule in enumerate(arules or [])]
+        if not arules:
+            self.rules = []
+        elif arules[0].left.domain.attributes:
+                self.rules=[(set(str(val.variable.name) + (val.varType and "=" + str(val) or "") for val in rule.left if not val.isSpecial()),
+                             "  ".join(str(val.variable.name) + (val.varType and "=" + str(val) or "") for val in rule.right if not val.isSpecial()),
+                             (rule.support, rule.confidence, rule.lift, rule.leverage, rule.strength, rule.coverage),
+                             id
+                             )
+                            for id, rule in enumerate(arules)]
+        else: # sparse rules
+            self.rules = [(set(rule.left.get_metas(str)), " ".join(rule.right.get_metas(str)),
+                           (rule.support, rule.confidence, rule.lift, rule.leverage, rule.strength, rule.coverage),
+                           id)
+                for id, rule in enumerate(arules)
+            ]
         self.displayRules()
         self.selectionChanged()
 
