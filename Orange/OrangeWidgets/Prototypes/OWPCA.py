@@ -43,6 +43,9 @@ class ScreePlot(OWPlot):
         self.cutoff_curve.set_data([x, x], [0.0, 1.0])
 
     def mousePressEvent(self, event):
+        if self.isLegendEvent(event, QGraphicsView.mousePressEvent):
+            return
+
         if self.is_cutoff_enabled() and event.buttons() & Qt.LeftButton:
             pos = self.mapToScene(event.pos())
             x, _  = self.map_from_graph(pos)
@@ -54,6 +57,9 @@ class ScreePlot(OWPlot):
         return QGraphicsView.mousePressEvent(self, event)
 
     def mouseMoveEvent(self, event):
+        if self.isLegendEvent(event, QGraphicsView.mouseMoveEvent):
+            return
+
         if self.is_cutoff_enabled() and event.buttons() & Qt.LeftButton:
             pos = self.mapToScene(event.pos())
             x, _ = self.map_from_graph(pos)
