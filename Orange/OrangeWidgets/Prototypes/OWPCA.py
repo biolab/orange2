@@ -47,7 +47,8 @@ class ScreePlot(OWPlot):
             pos = self.mapToScene(event.pos())
             x, _  = self.map_from_graph(pos)
             xmin, xmax = self.x_scale()
-            if x >= xmin and x <= xmax:
+            if x >= xmin - 0.1 and x <= xmax + 0.1:
+                x = min(max(x, xmin), xmax)
                 self.cutoff_curve.set_data([x, x], [0.0, 1.0])
                 self.emit_cutoff_moved(x)
         return QGraphicsView.mousePressEvent(self, event)
@@ -57,7 +58,8 @@ class ScreePlot(OWPlot):
             pos = self.mapToScene(event.pos())
             x, _ = self.map_from_graph(pos)
             xmin, xmax = self.x_scale()
-            if x >= xmin and x <= xmax:
+            if x >= xmin - 0.5 and x <= xmax + 0.5:
+                x = min(max(x, xmin), xmax)
                 self.cutoff_curve.set_data([x, x], [0.0, 1.0])
                 self.emit_cutoff_moved(x)
         return QGraphicsView.mouseMoveEvent(self, event)
@@ -68,9 +70,9 @@ class ScreePlot(OWPlot):
     def x_scale(self):
         ax = self.axes[owaxis.xBottom]
         if ax.labels:
-            return 0, len(ax.labels) - 0.5
+            return 0, len(ax.labels) - 1
         elif ax.scale:
-            return ax.scale[0], ax.scale[1] + 0.5
+            return ax.scale[0], ax.scale[1]
         else:
             raise ValueError
 
