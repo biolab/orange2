@@ -93,7 +93,7 @@ class OWPCA(OWWidget):
     settingsList = ["standardize", "max_components", "variance_covered",
                     "use_generalized_eigenvectors", "auto_commit"]
     def __init__(self, parent=None, signalManager=None, title="PCA"):
-        OWWidget.__init__(self, parent, signalManager, title)
+        OWWidget.__init__(self, parent, signalManager, title, wantGraph=True)
 
         self.inputs = [("Input Data", Orange.data.Table, self.set_data)]
         self.outputs = [("Transformed Data", Orange.data.Table, Default),
@@ -189,6 +189,11 @@ class OWPCA(OWWidget):
                      SIGNAL("cutoff_moved(double)"),
                      self.on_cutoff_moved
                      )
+
+        self.connect(self.graphButton,
+                     SIGNAL("clicked()"),
+                     self.scree_plot.save_to_file)
+
         self.components = None
         self.variances = None
         self.variances_sum = None
@@ -347,8 +352,6 @@ class OWPCA(OWWidget):
         self.max_components = components
         self.variance_covered = self.variances_cumsum[components - 1] * 100
         if self.currently_selected != self.number_of_selected_components():
-#            self.max_components = int(np.floor(value)) + 1
-#            self.variance_covered = self.variances_cumsum[self.max_components - 1] * 100
             self.update_components_if()
 
     def update_cutoff_curve(self):
@@ -371,6 +374,34 @@ class OWPCA(OWWidget):
         variance_components = np.searchsorted(self.variances_cumsum,
                                               self.variance_covered / 100.0)
         return min(variance_components + 1, self.max_components)
+
+    def sendReport(self):
+        self.reportSettings("PCA Settings",
+                            [("Max. components", self.max_components),
+                             ("Variance covered", "%i%%" % self.variance_covered),
+                             ])
+        if self.data is not None and self.projector_full:
+            output_domain = self.projector_full.output_domain
+            st_dev = np.sqrt(self.projector_full.variances)
+            summary = [[""] + [a.name for a in output_domain.attributes],
+                       ["Std. deviation"] + ["%.3f" % sd for sd in st_dev],
+                       ["Proportion Var"] + ["%.3f" % v for v in self.variances * 100.0],
+                       ["Cumulative Var"] + ["%.3f" % v for v in self.variances_cumsum * 100.0]
+                       ]
+
+            th = "<th>%s</th>".__mod__
+            header = "".join(map(th, summary[0]))
+            td = "<td>%s</td>".__mod__
+            summary = ["".join(map(td, row)) for row in summary[1:]]
+            tr = "<tr>%s</tr>".__mod__
+            summary = "\n".join(map(tr, [header] + summary))
+            summary = "<table>\n%s\n</table>" % summary
+
+            self.reportSection("Summary")
+            self.reportRaw(summary)
+
+            self.reportSection("Scree Plot")
+            self.reportImage(self.scree_plot.save_to_file_direct)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
