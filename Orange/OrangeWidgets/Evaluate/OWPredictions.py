@@ -488,8 +488,8 @@ class OWPredictions(OWWidget):
                 metas.extend(mc)
         else:
             # regression
-            mc = [orange.FloatVariable(name="%s" % c.name, 
-                                       getValueFrom = lambda ex, rw, c=c: orange.Value(c(ex)))
+            mc = [orange.FloatVariable(name="%s" % str(c.name),
+                    getValueFrom=lambda ex, rw, c=c: orange.Value(c(ex)))
                   for c in self.predictors.values()]
             metas.extend(mc)
                 
