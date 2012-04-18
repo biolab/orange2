@@ -112,7 +112,7 @@ class OWPCA(OWWidget):
         # GUI
         #####
         grid = QGridLayout()
-        box = OWGUI.widgetBox(self.controlArea, "Settings",
+        box = OWGUI.widgetBox(self.controlArea, "Components Selection",
                               orientation=grid)
 
         label1 = QLabel("Max components", box)
@@ -185,6 +185,7 @@ class OWPCA(OWWidget):
         self.variances = None
         self.variances_sum = None
         self.projector_full = None
+        self.currently_selected = 0
 
         self.resize(800, 400)
 
@@ -204,6 +205,7 @@ class OWPCA(OWWidget):
         self.variances = None
         self.variances_cumsum = None
         self.projector_full = None
+        self.currently_selected = 0
 
     def set_data(self, data=None):
         """Set the widget input data.
@@ -212,18 +214,26 @@ class OWPCA(OWWidget):
         if data is not None:
             self.data = data
             self.on_change()
+        else:
+            self.send("Transformed Data", None)
+            self.send("Eigen Vectors", None)
 
     def on_change(self):
+        """Data has changed and we need to recompute the projection.
+        """
         if self.data is None:
             return
         self.clear_cached()
         self.apply()
 
     def on_update(self):
+        """Component selection was changed by the user.
+        """
         if self.data is None:
             return
         self.update_cutoff_curve()
-        self.update_components()
+        if self.currently_selected != self.number_of_selected_components():
+            self.update_components()
 
     def construct_pca_all_comp(self):
         pca = plinear.PCA(standardize=self.standardize,
@@ -244,7 +254,7 @@ class OWPCA(OWWidget):
         return pca
 
     def apply(self):
-        """Apply PCA in input data, caching the full projection,
+        """Apply PCA on input data, caching the full projection,
         then updating the selected components.
         
         """
@@ -257,9 +267,12 @@ class OWPCA(OWWidget):
 
         self.max_components_spin.setRange(1, len(self.variances))
         self.update_scree_plot()
+        self.update_cutoff_curve()
         self.update_components()
 
     def update_components(self):
+        """Update the output components.
+        """
         scale = self.projector_full.scale
         center = self.projector_full.center
         components = self.projector_full.projection
@@ -282,6 +295,8 @@ class OWPCA(OWWidget):
         projected_data = projector(self.data)
         eigenvectors = self.eigenvectors_as_table(components)
 
+        self.currently_selected = self.number_of_selected_components()
+
         self.send("Transformed Data", projected_data)
         self.send("Eigen Vectors", eigenvectors)
 
@@ -292,32 +307,33 @@ class OWPCA(OWWidget):
         return Orange.data.Table(domain, [list(v) for v in U])
 
     def update_scree_plot(self):
-        variances = self.projector_full.variances
-        s = np.sum(variances)
-        cv = variances / s
-        cs = np.cumsum(cv)
-        x_space = np.arange(0, len(variances))
+        x_space = np.arange(0, len(self.variances))
         self.scree_plot.set_axis_enabled(owaxis.xBottom, True)
         self.scree_plot.set_axis_enabled(owaxis.yLeft, True)
         self.scree_plot.set_axis_labels(owaxis.xBottom, 
                                         ["PC" + str(i + 1) for i in x_space])
 
-        self.variance_curve.set_data(x_space, cv)
-        self.cumulative_variance_curve.set_data(x_space, cs)
+        self.variance_curve.set_data(x_space, self.variances)
+        self.cumulative_variance_curve.set_data(x_space, self.variances_cumsum)
         self.variance_curve.setVisible(True)
         self.cumulative_variance_curve.setVisible(True)
 
         self.scree_plot.set_cutoff_curve_enabled(True)
 
     def on_cutoff_moved(self, value):
+        """Cutoff curve was moved by the user.
+        """
         components = int(np.floor(value)) + 1
-        if components != self.max_components:
-            self.max_components = int(np.floor(value)) + 1
-            self.variance_covered = self.variances_cumsum[self.max_components - 1] * 100
+        # Did the number of components actually change
+        self.max_components = components
+        self.variance_covered = self.variances_cumsum[components - 1] * 100
+        if self.currently_selected != self.number_of_selected_components():
+#            self.max_components = int(np.floor(value)) + 1
+#            self.variance_covered = self.variances_cumsum[self.max_components - 1] * 100
             self.update_components()
 
     def update_cutoff_curve(self):
-        """Update cutoff line from gui control elements.
+        """Update cutoff curve from 'Components Selection' control box.
         """
         variance = self.variances_cumsum[self.max_components - 1] * 100.0
         if variance < self.variance_covered:
@@ -327,6 +343,15 @@ class OWPCA(OWWidget):
                                      self.variance_covered / 100.0)
         self.scree_plot.set_cutoff_value(cutoff + 0.5)
 
+    def number_of_selected_components(self):
+        """How many components are selected.
+        """
+        if self.data is None:
+            return 0
+
+        variance_components = np.searchsorted(self.variances_cumsum,
+                                              self.variance_covered / 100.0)
+        return min(variance_components + 1, self.max_components)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
