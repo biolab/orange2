@@ -62,6 +62,6 @@ class OWTranslateDomain(OWWidget):
         if self.target is not None and self.input_data is not None:
             try:
                 translated = self.input_data.translate(self.target.domain)
-            except Exception:
+            except Exception, ex:
                 self.error("Failed to convert the domain (%r)." % ex)
         self.send("Translated Data", translated)
