@@ -6,8 +6,8 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import os.path, sys
 from string import strip, count, replace
-import orngDoc, orngOutput, orngRegistry
-from orngSignalManager import InputSignal, OutputSignal
+import orngDoc, orngOutput, orngRegistry, orngSignalManager
+from orngSignalManager import InputSignal, OutputSignal, resolveSignal
 import OWGUIEx
 import orngHelp
 
@@ -578,6 +578,7 @@ class CanvasPopup(QMenu):
         self.suggestDict = dict([(widget.name, widget) for widget in reduce(list.__add__, [cat.values() for cat in cats.values()], [])])
         self.suggestItems = [QListWidgetItem(self.canvasDlg.getWidgetIcon(widget), widget.name) for widget in self.suggestDict.values()]
         self.categoriesYOffset = 0
+        self._canConnectCache = {}
                 
     def showEvent(self, ev):
         QMenu.showEvent(self, ev)
@@ -609,15 +610,66 @@ class CanvasPopup(QMenu):
                 while hasattr(obj, "category"):
                     obj = obj.category
                     obj.setEnabled(True)
-            else: 
+            else:
                 act.setEnabled(False)
-    
-    def updateWidgesByOutputs(self, widgetInfo):
-        self.selectActions("outputClasses", widgetInfo.inputClasses)
+
+    def selectInputActions(self, widgetInfo):
+        """Enable widgets which can consume the output from `widgetInfo`'s
+        output channels.
         
+        """
+        for cat in self.allCatActions:
+            cat.setEnabled(False)
+
+        for act in self.allActions:
+            if self.canConnect(widgetInfo, act.widgetInfo):
+                act.setEnabled(True)
+                obj = act
+                while hasattr(obj, "category"):
+                    obj = obj.category
+                    obj.setEnabled(True)
+            else:
+                act.setEnabled(False)
+
+    def selectOutputActions(self, widgetInfo):
+        """Enable widgets which can produce the input for `widgetInfo`'s
+        input channels.
+         
+        """
+        for cat in self.allCatActions:
+            cat.setEnabled(False)
+
+        for act in self.allActions:
+            if self.canConnect(act.widgetInfo, widgetInfo):
+                act.setEnabled(True)
+                obj = act
+                while hasattr(obj, "category"):
+                    obj = obj.category
+                    obj.setEnabled(True)
+            else:
+                act.setEnabled(False)
+
+    def canConnect(self, outWidgetDesc, inWidgetDesc):
+        """Can connect any output from outWidgetDesc to input
+        from inWidgetDesc.
+        
+        """
+        if (outWidgetDesc, inWidgetDesc) not in self._canConnectCache:
+            ret = any(orngSignalManager.canConnect(
+                        resolveSignal(out),
+                        resolveSignal(in_), dynamic=True) \
+                      for out in outWidgetDesc.outputs \
+                      for in_ in inWidgetDesc.inputs
+                      )
+            self._canConnectCache[(outWidgetDesc, inWidgetDesc)] = ret
+        return self._canConnectCache[(outWidgetDesc, inWidgetDesc)]
+
+    def updateWidgesByOutputs(self, widgetInfo):
+        self.selectOutputActions(widgetInfo)
+
     def updateWidgetsByInputs(self, widgetInfo):
-        self.selectActions("inputClasses", widgetInfo.outputClasses)
-    
+        self.selectInputActions(widgetInfo)
+
     def updatePredictedWidgets(self, widgets, actClassesAttr, ioClasses=None):
         self.candidates = []
         for widget in widgets:
