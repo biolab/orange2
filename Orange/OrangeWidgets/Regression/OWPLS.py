@@ -13,7 +13,7 @@ import OWGUI
 
 import Orange
 from Orange.regression import pls
-from Orange.optimization import PreprocessedLearner
+from Orange.tuning import PreprocessedLearner
 
 class OWPLS(OWWidget):
     settingsList = ["name", "n_comp", "deflation_mode", "mode", "algorithm"]
