@@ -43,7 +43,7 @@ def readCategories(silent=False):
     # Add orange version to the cache version (because cache contains names
     # of types inside the Orange hierarchy, if that changes the cache should be
     # invalidated)
-    currentCacheVersion = (2, orange_version)
+    currentCacheVersion = (3, orange_version)
     
     global widgetsWithError, widgetsWithErrorPrototypes
     widgetDirName = os.path.realpath(orngEnviron.directoryNames["widgetDir"])
