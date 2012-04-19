@@ -9,7 +9,7 @@ from OWWidget import *
 from OWPythonScript import OWPythonScript, Script, ScriptItemDelegate, PythonConsole
 from OWItemModels import PyListModel, ModelActionsWidget
 
-import Orange.misc.r as r
+import Orange.utils.r as r
 
 globalenv = r.globalenv
 
