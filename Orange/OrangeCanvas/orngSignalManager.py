@@ -4,8 +4,11 @@
 #
 
 import sys, os, time
+import copy
 import logging
 import logging.handlers
+
+import __builtin__
 
 import orange
 from Orange.utils import debugging
@@ -27,16 +30,18 @@ class InputSignal(object):
         self.type = signalType
         self.handler = handler
 
-        if type(parameters) == str: 
+        if type(parameters) == str:
             parameters = eval(parameters)   # parameters are stored as strings
         # if we have the old definition of parameters then transform them
-        if parameters in [0,1]:
+        if parameters in [0, 1]:
             self.single = parameters
             self.default = not oldParam
             return
 
-        if not (parameters & Single or parameters & Multiple): parameters += Single
-        if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
+        if not (parameters & Single or parameters & Multiple):
+            parameters += Single
+        if not (parameters & Default or parameters & NonDefault):
+            parameters += NonDefault
         self.single = parameters & Single
         self.default = parameters & Default
         self.explicit = parameters & Explicit
@@ -69,6 +74,42 @@ def canConnect(output, input, dynamic=False):
         ret = ret or issubclass(input.type,output.type)
     return ret
 
+
+def rgetattr(obj, name):
+    while "." in name:
+        first, name = name.split(".", 1)
+        obj = getattr(obj, first)
+    return getattr(obj, name)
+
+
+def resolveSignal(signal, globals={}):
+    """If `signal.type` is a string (used by orngRegistry) return
+    the signal copy with the resolved `type`, else return the signal
+    unchanged.
+    """
+    if isinstance(signal.type, basestring):
+        type_name = signal.type
+        if "." in type_name:
+            module, name = type_name.split(".", 1)
+            if module in globals:
+                #  module and type are imported in the globals
+                module = globals[module]
+                sig_type = rgetattr(module, name)
+            else:
+                module, name = type_name.rsplit(".", 1)
+                module = __import__(module, fromlist=[name], globals=globals)
+                sig_type = getattr(module, name)
+        else:
+            if type_name in globals:
+                sig_type = globals[type_name]
+            elif hasattr(__builtin__, type_name):
+                sig_type = getattr(__builtin__, type_name)
+            else:
+                raise NameError(type_name)
+
+        signal = copy.copy(signal)
+        signal.type = sig_type
+    return signal
 
 class SignalLink(object):
     def __init__(self, widgetFrom, outputSignal, widgetTo, inputSignal, enabled=True):
