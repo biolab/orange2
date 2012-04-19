@@ -34,8 +34,10 @@ source/orangeom/lib_vectors_auto.txt
 build
 dist
 MANIFEST
-Orange.egg-info
 Orange/version.py
+*.egg-info
+*.egg
+distribute*.tar.gz
 
 # Built documentation.
 docs/*/html
