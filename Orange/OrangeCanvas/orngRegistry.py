@@ -2,7 +2,7 @@
 #
 
 import os, sys, re, glob, stat
-from orngSignalManager import OutputSignal, InputSignal
+from orngSignalManager import OutputSignal, InputSignal, resolveSignal
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import widgetParser
@@ -165,11 +165,33 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
             if not dirnameInPath and dirname in sys.path: # I have no idea, why we need this, but it seems to disappear sometimes?!
                 sys.path.remove(dirname)
             widgClass = wmod.__dict__[widgname]
-            inputClasses = set(eval(x[1], wmod.__dict__).__name__ for x in eval(meta.inputList))
-            outputClasses = set(y.__name__ for x in eval(meta.outputList) for y in eval(x[1], wmod.__dict__).mro())
-            
+
+            # Evaluate the input/output list (all tuple items are strings)
+            inputs = eval(meta.inputList)
+            outputs = eval(meta.outputList)
+
+            inputs = [InputSignal(*input) for input in inputs]
+            outputs = [OutputSignal(*output) for output in outputs]
+
+            # Resolve signal type names into concrete type instances
+            inputs = [resolveSignal(input, globals=wmod.__dict__)
+                      for input in inputs]
+            outputs = [resolveSignal(output, globals=wmod.__dict__)
+                      for output in outputs]
+
+            inputClasses = set([s.type.__name__ for s in inputs])
+            outputClasses = set([klass.__name__ for s in outputs
+                                 for klass in s.type.mro()])
+
+            # Convert all signal types back into qualified names.
+            # This is to prevent any possible import problems when cached
+            # descriptions are unpickled (the relevant code using this lists
+            # should be able to handle missing types better).
+            for s in inputs + outputs:
+                s.type = "%s.%s" % (s.type.__module__, s.type.__name__)
+
             widgetInfo = WidgetDescription(
-                             name = meta.name,
+                             name =meta.name,
                              time = datetime,
                              fileName = widgname,
                              fullName = filename,
@@ -177,22 +199,22 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
                              addOn = addOn,
                              inputList = meta.inputList, outputList = meta.outputList,
                              inputClasses = inputClasses, outputClasses = outputClasses,
-                             tags=meta.tags
+                             tags=meta.tags,
+                             inputs=inputs,
+                             outputs=outputs,
                              )
-    
+
             for attr in ["contact", "icon", "priority", "description", "category"]:
                 setattr(widgetInfo, attr, getattr(meta, attr))
-    
+
             # build the tooltip
-            widgetInfo.inputs = [InputSignal(*signal) for signal in eval(widgetInfo.inputList)]
             if len(widgetInfo.inputs) == 0:
                 formatedInList = "<b>Inputs:</b><br> &nbsp;&nbsp; None<br>"
             else:
                 formatedInList = "<b>Inputs:</b><br>"
                 for signal in widgetInfo.inputs:
                     formatedInList += " &nbsp;&nbsp; - " + signal.name + " (" + signal.type + ")<br>"
-    
-            widgetInfo.outputs = [OutputSignal(*signal) for signal in eval(widgetInfo.outputList)]
+
             if len(widgetInfo.outputs) == 0:
                 formatedOutList = "<b>Outputs:</b><br> &nbsp; &nbsp; None<br>"
             else:
