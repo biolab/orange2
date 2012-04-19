@@ -1,138 +1,147 @@
 """
 <name>Model File</name>
-<description>Load prediction models</description>
+<description>Load a Model Map</description>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact>
 <icon>icons/DistanceFile.png</icon>
 <priority>6510</priority>
 """
 
 from OWWidget import *
-from OWDistanceFile import *
 
 import OWGUI
-import orange
+import Orange
+import orngMisc
 import exceptions
 import os.path
-import pickle
+import cPickle as pickle
+import bz2
 
-class OWModelFile(OWDistanceFile):
-    settingsList = ["recentFiles", "origRecentFiles", "invertDistances", "normalizeMethod", "invertMethod"]
+class OWModelFile(OWWidget):
+    settingsList = ["files", "file_index"]
 
-    def __init__(self, parent=None, signalManager = None):
-        OWDistanceFile.__init__(self, parent, signalManager, name='Model File', inputItems=0)
-        #self.inputs = [("Examples", ExampleTable, self.getExamples, Default)]
-        
-        
-        
-        self.outputs = [("Distances", orange.SymMatrix)]
-        
-        self.dataFileBox.setTitle(" Model File ")
-        self.origRecentFiles=[]
-        self.origFileIndex = 0
-        self.originalData = None
-        
+    def __init__(self, parent=None, signalManager=None):
+        OWWidget.__init__(self, parent, signalManager, name='Model File', wantMainArea=0, resizingEnabled=1)
+
+        self.outputs = [("Distances", Orange.misc.SymMatrix),
+                        ("Model Meta-data", Orange.data.Table),
+                        ("Original Data", Orange.data.Table)]
+
+        #self.dataFileBox.setTitle("Model File")
+        self.files = []
+        self.file_index = 0
+
+        self.matrix = None
+        self.model_data = None
+        self.original_data = None
+
         self.loadSettings()
-        
-        box = OWGUI.widgetBox(self.controlArea, "Original Data File", addSpace=True)
-        hbox = OWGUI.widgetBox(box, orientation = 0)
-        self.origFilecombo = OWGUI.comboBox(hbox, self, "origFileIndex", callback = self.loadOrigDataFile)
-        self.origFilecombo.setMinimumWidth(250)
-        button = OWGUI.button(hbox, self, '...', callback = self.browseOrigFile)
+
+        self.fileBox = OWGUI.widgetBox(self.controlArea, "Model File", addSpace=True)
+        hbox = OWGUI.widgetBox(self.fileBox, orientation=0)
+        self.filecombo = OWGUI.comboBox(hbox, self, "file_index", callback=self.loadFile)
+        self.filecombo.setMinimumWidth(250)
+        button = OWGUI.button(hbox, self, '...', callback=self.browseFile)
         button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
         button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed)
-        self.loadOrigDataFile()
-        
-    def browseOrigFile(self):
-        if self.origRecentFiles:
-            lastPath = os.path.split(self.origRecentFiles[0])[0]
+
+
+#        Moved to SymMatrixTransform widget
+#
+#        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "normalizeMethod", [], "Normalize method", callback = self.setNormalizeMode)
+#        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "None", callback = self.setNormalizeMode)
+#        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "To interval [0,1]", callback = self.setNormalizeMode)
+#        OWGUI.appendRadioButton(ribg, self, "normalizeMethod", "Sigmoid function: 1 / (1 + e^x)", callback = self.setNormalizeMode)
+#        
+#        ribg = OWGUI.radioButtonsInBox(self.controlArea, self, "invertMethod", [], "Invert method", callback = self.setInvertMode)
+#        OWGUI.appendRadioButton(ribg, self, "invertMethod", "None", callback = self.setInvertMode)
+#        OWGUI.appendRadioButton(ribg, self, "invertMethod", "-X", callback = self.setInvertMode)
+#        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 - X", callback = self.setInvertMode)
+#        OWGUI.appendRadioButton(ribg, self, "invertMethod", "Max - X", callback = self.setInvertMode)
+#        OWGUI.appendRadioButton(ribg, self, "invertMethod", "1 / X", callback = self.setInvertMode)
+
+        OWGUI.rubber(self.controlArea)
+
+        self.adjustSize()
+
+        for i in range(len(self.files) - 1, -1, -1):
+            if not (os.path.exists(self.files[i]) and os.path.isfile(self.files[i])):
+                del self.files[i]
+
+        if self.files:
+            self.loadFile()
+
+    def browseFile(self):
+        if self.files:
+            lastPath = os.path.split(self.files[0])[0]
         else:
             lastPath = "."
-        fn = unicode(QFileDialog.getOpenFileName(self, "Open Original Data File", 
-                                             lastPath, "Data File (*.tab)"))
+        fn = unicode(QFileDialog.getOpenFileName(self, "Open Model Map File",
+                                             lastPath, "Model Map (*.bz2)"))
         fn = os.path.abspath(fn)
-        if fn in self.origRecentFiles: # if already in list, remove it
-            self.origRecentFiles.remove(fn)
-        self.origRecentFiles.insert(0, fn)
-        self.origFileIndex = 0
-        self.loadOrigDataFile()
-        
-    def loadOrigDataFile(self):
-        if self.origFileIndex:
-            fnOrigData = self.origRecentFiles[self.origFileIndex]
-            self.origRecentFiles.remove(fnOrigData)
-            self.origRecentFiles.insert(0, fnOrigData)
-            self.origFileIndex = 0
-        else:
-            if len(self.origRecentFiles) > 0:
-                fnOrigData = self.origRecentFiles[0]
-            else:
-                fnOrigData = ''
+        if fn in self.files: # if already in list, remove it
+            self.files.remove(fn)
+        self.files.insert(0, fn)
+        self.file_index = 0
+        self.loadFile()
 
-        self.origFilecombo.clear()
-        for file in self.origRecentFiles:
-            self.origFilecombo.addItem(os.path.split(file)[1])
-        
-        if os.path.isfile(fnOrigData):
-            self.originalData = orange.ExampleTable(fnOrigData)
-        
-        if self.matrix == None:
-            self.loadFile()
-        else:
-            self.matrix.originalData = self.originalData
-            self.send("Distances", self.matrix)
-        
     def loadFile(self):
-        if not hasattr(self, "originalData"):
-            return
-        
-        if self.fileIndex:
-            fn = self.recentFiles[self.fileIndex]
-            self.recentFiles.remove(fn)
-            self.recentFiles.insert(0, fn)
-            self.fileIndex = 0
+        if self.file_index:
+            fn = self.files[self.file_index]
+            self.files.remove(fn)
+            self.files.insert(0, fn)
+            self.file_index = 0
         else:
-            if len(self.recentFiles) > 0:
-                fn = self.recentFiles[0]
-            else:
-                return
+            fn = self.files[0]
 
         self.filecombo.clear()
-        for file in self.recentFiles:
+        for file in self.files:
             self.filecombo.addItem(os.path.split(file)[1])
         #self.filecombo.updateGeometry()
 
+        self.matrix = None
+        self.model_data = None
+        self.original_data = None
+        pb = OWGUI.ProgressBar(self, 100)
+
         self.error()
-        
         try:
-            self.matrix = None
-            self.labels = None
-            self.data = None
-            pb = OWGUI.ProgressBar(self, 100)
-            self.matrix, self.labels, self.data = readMatrix(fn, pb)
-            
-            dstFile, ext = os.path.splitext(fn)
-            warning = ""
-            self.warning()
-            if os.path.exists(dstFile + ".tab"):
-                self.data = orange.ExampleTable(dstFile + ".tab")
-                self.matrix.items = self.data
+            matrix, self.model_data, self.original_data = pickle.load(bz2.BZ2File('%s' % fn, "r"))
+
+            self.matrix = Orange.misc.SymMatrix(len(matrix))
+            milestones = orngMisc.progressBarMilestones(self.matrix.dim, 100)
+            for i in range(self.matrix.dim):
+                for j in range(i + 1):
+                    self.matrix[j, i] = matrix[i, j]
+
+                if i in milestones:
+                    pb.advance()
+            pb.finish()
+
+        except Exception, ex:
+            self.error("Error while reading the file: '%s'" % str(ex))
+            return
+        self.relabel()
+
+    def relabel(self):
+        self.error()
+        if self.matrix is not None:
+            if self.model_data is not None and self.matrix.dim == len(self.model_data):
+                self.matrix.setattr("items", self.model_data)
             else:
-                warning += "ExampleTable %s not found!\n" % (dstFile + ".tab")
-            if os.path.exists(dstFile + ".res"):
-                self.matrix.results = pickle.load(open(dstFile + ".res", 'rb'))
-            else:
-                warning += "Results pickle %s not found!\n" % (dstFile + ".res")
-            
-            self.matrix.originalData = self.originalData
-            
-            if warning != "":
-                self.warning(warning.rstrip())
-    
-            self.relabel()
-        except Exception as e:
-            self.error("Error while reading the file\n\n%s" % e.message)
-        
-if __name__=="__main__":
+                self.error("The number of model doesn't match the matrix dimension. Invalid Model Map file.")
+
+            if self.original_data is not None:
+                self.matrix.setattr("original_data", self.original_data)
+
+            self.send("Distances", self.matrix)
+
+        if self.model_data is not None:
+            self.send("Model Meta-data", self.model_data)
+
+        if self.original_data is not None:
+            self.send("Original Data", self.original_data)
+
+if __name__ == "__main__":
     a = QApplication(sys.argv)
     ow = OWModelFile()
     ow.show()
