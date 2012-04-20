@@ -4,6 +4,7 @@
 <contact>ales.erjavec(@ at @)fri.uni-lj.si</contact>
 <icons>icons/PCA.png</icons>
 <tags>pca,principal,component,projection</tags>
+<priority>3050</priority>
 
 """
 import Orange
