@@ -290,6 +290,8 @@ class OWPCA(OWWidget):
         self.variances_cumsum = np.cumsum(self.variances)
 
         self.max_components_spin.setRange(0, len(self.variances))
+        self.max_components = min(self.max_components,
+                                  len(self.variances) - 1)
         self.update_scree_plot()
         self.update_cutoff_curve()
         self.update_components_if()
