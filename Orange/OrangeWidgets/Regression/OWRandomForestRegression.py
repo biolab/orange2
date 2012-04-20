@@ -4,7 +4,7 @@
 <icon>icons/RandomForestRegression.svg</icon>
 <contact>Marko Toplak (marko.toplak(@at@)gmail.com)</contact>
 <priority>320</priority>
-<keywords>bagging, ensemble</keywords>
+<tags>bagging,ensemble</tags>
 
 """
 
@@ -19,11 +19,16 @@ class OWRandomForestRegression(OWRandomForest):
                        ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
 
         self.outputs = [("Learner", orange.Learner),
-                        ("Random Forest Classifier", orange.Classifier)]
+                        ("Random Forest Classifier", orange.Classifier),
+                        ("Selected Tree", Orange.classification.tree.TreeClassifier)]
 
     def setData(self, data):
-        self.data = self.isDataWithClass(data, orange.VarTypes.Continuous, checkMissing=True) and data or None
-        
+        if not self.isDataWithClass(data, orange.VarTypes.Continuous,
+                                    checkMissing=True):
+            data = None
+        self.data = data
+
+        self.streeEnabled(False)
         if self.data:
             learner = self.constructLearner()
             self.progressBarInit()
@@ -31,6 +36,7 @@ class OWRandomForestRegression(OWRandomForest):
             try:
                 self.classifier = learner(self.data)
                 self.classifier.name = self.name
+                self.streeEnabled(True)
             except Exception, (errValue):
                 self.error(str(errValue))
                 self.classifier = None

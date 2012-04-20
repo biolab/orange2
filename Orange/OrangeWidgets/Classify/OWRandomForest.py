@@ -27,7 +27,8 @@ class OWRandomForest(OWWidget):
                         self.setPreprocessor)]
 
         self.outputs = [("Learner", orange.Learner),
-                        ("Random Forest Classifier", orange.Classifier)]
+                        ("Random Forest Classifier", orange.Classifier),
+                        ("Selected Tree", Orange.classification.tree.TreeClassifier)]
 
         self.name = 'Random Forest'
         self.trees = 10
@@ -38,6 +39,7 @@ class OWRandomForest(OWWidget):
         self.limitDepth = 0
         self.limitDepthP = 3
         self.rseed = 0
+        self.outtree = 0
 
         self.maxTrees = 10000
 
@@ -82,6 +84,13 @@ class OWRandomForest(OWWidget):
                                 " or fewer instances")
 
         OWGUI.separator(self.controlArea)
+
+        self.streesBox = OWGUI.spin(self.controlArea, self, "outtree", -1,
+                                    self.maxTrees,
+                                    orientation="horizontal",
+                                    label="Index of tree on the output",
+                                    callback=[self.period, self.extree])
+        self.streeEnabled(False)
 
         OWGUI.separator(self.controlArea)
 
@@ -154,13 +163,14 @@ class OWRandomForest(OWWidget):
         self.data = data
 
         #self.setLearner()
-
+        self.streeEnabled(False)
         if self.data:
             learner = self.constructLearner()
             self.progressBarInit()
             learner.callback = lambda v: self.progressBarSet(100.0 * v)
             try:
                 self.classifier = learner(self.data)
+                self.streeEnabled(True)
                 self.classifier.name = self.name
             except Exception, (errValue):
                 self.error(str(errValue))
@@ -178,6 +188,45 @@ class OWRandomForest(OWWidget):
     def doBoth(self):
         self.setLearner()
         self.setData(self.data)
+
+    def period(self):
+        if self.outtree == -1:
+            self.outtree = self.claTrees - 1
+        elif self.outtree >= self.claTrees:
+            self.outtree = 0
+
+    def extree(self):
+        stc = self.classifier.classifiers[self.outtree]
+        if self.preprocessor:
+            # TODO: get the transformed data at learning step from the
+            # wrapped learner (or at least cache it here)
+            train_data = self.data.translate(self.classifier.domain)
+        else:
+            train_data = self.data
+
+        # Replay the bootstrap sampling as done by RandomForestLearner
+        rand = random.Random(self.claSeed)
+        n = len(train_data)
+        selection = [rand.randrange(n)
+                     for _ in range((self.outtree + 1) * n)]
+        # need the last n samples
+        selection = selection[-n:]
+        train_data = train_data.get_items_ref(selection)
+
+        tree = Orange.classification.tree._simple_tree_convert(
+            stc, self.classifier.domain, train_data)
+
+        self.send("Selected Tree", tree)
+
+    def streeEnabled(self, status):
+        if status:
+            self.claTrees = self.trees
+            self.claSeed = self.rseed
+            self.streesBox.setDisabled(False)
+            self.period()
+            self.extree()
+        else:
+            self.streesBox.setDisabled(True)
 
 
 if __name__ == "__main__":
