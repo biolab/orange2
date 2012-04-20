@@ -109,11 +109,11 @@ class PredictionItemDelegete(QStyledItemDelegate):
     
     def displayText(self, value, locale):
         pred = value.toPyObject()
-        if type(pred) >= tuple:
+        if isinstance(pred, (tuple, list)) and len(pred) == 2:
             cls, prob = pred
-        elif type(pred) >= orange.Value:
+        elif isinstance(pred, orange.Value):
             cls, prob = pred, None
-        elif type(pred) >= orange.Distribution:
+        elif isinstance(pred, orange.Distribution):
             cls, prob = pred.modus(), pred
         else:
             return QString("")
