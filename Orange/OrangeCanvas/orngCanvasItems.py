@@ -271,7 +271,12 @@ class CanvasLine(QGraphicsPathItem):
 class CanvasWidget(QGraphicsRectItem):
     def __init__(self, signalManager, scene, view, widgetInfo, defaultPic, canvasDlg, widgetSettings = {}):
         # import widget class and create a class instance
-        m = __import__(widgetInfo.fileName)
+        if widgetInfo.module:
+            name = "%s.%s" % (widgetInfo.module, widgetInfo.fileName)
+            __import__(name)
+            m = sys.modules[name]
+        else:
+            m = __import__(widgetInfo.fileName)
         self.instance = m.__dict__[widgetInfo.fileName].__new__(m.__dict__[widgetInfo.fileName], _owInfo=canvasDlg.settings["owInfo"],
                                                                 _owWarning = canvasDlg.settings["owWarning"], _owError=canvasDlg.settings["owError"],
                                                                 _owShowStatus = canvasDlg.settings["owShow"], _useContexts = canvasDlg.settings["useContexts"],

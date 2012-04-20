@@ -17,7 +17,7 @@ def _getSignalList(regex, data):
         return "[]"
 
 class WidgetMetaData:
-    xmlAttrs = ["name", "description", "contact", "category", "icon", "hasDoc"]
+    xmlAttrs = ["name", "description", "contact", "category", "icon", "hasDoc", "prototype"]
     
     def __init__(self, data, defaultCategory="Prototypes", enforceDefaultCategory=False, filename=None, hasDoc="0"):  # data can either be a string with module (.py file) contents or an xml.dom.Element
         if not filename and data.__class__ is xml.dom.minidom.Element:  # XML (as returned by toXml())
@@ -27,6 +27,7 @@ class WidgetMetaData:
             self.description=""
             self.category=""
             self.tags=""
+            self.prototype="0"
             self.filename=None
             self.hasDoc = hasDoc
             for attr in self.xmlAttrs:
@@ -37,7 +38,7 @@ class WidgetMetaData:
                 self.filename = data.getAttribute("filename")
         else:   # python module
             setattr(self, "filename", filename)
-            for attr, deflt in (("name", None), ("contact", "") , ("icon", "icons/Unknown.png"), ("priority", "5000"), ("description", ""), ("category", defaultCategory), ("tags", "")):
+            for attr, deflt in (("name", None), ("contact", "") , ("icon", "icons/Unknown.png"), ("priority", "5000"), ("description", ""), ("category", defaultCategory), ("tags", ""), ("prototype", "0")):
                 istart, iend = data.find("<"+attr+">"), data.find("</"+attr+">")
                 setattr(self, attr, istart >= 0 and iend >= 0 and data[istart+2+len(attr):iend].strip() or deflt)
             if enforceDefaultCategory:

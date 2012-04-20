@@ -11,7 +11,7 @@ from PyQt4.QtGui import *
     
 import sys, os, cPickle, orngRegistry, OWGUI
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngHelp, OWReport
-import  user, orngMisc
+import user, orngMisc
 
 import gc
 

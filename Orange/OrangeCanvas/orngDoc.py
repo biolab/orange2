@@ -687,7 +687,7 @@ class GUIApplication(OWBaseWidget):
                     if self.widgets[i].caption == widgetName: widget = self.widgets[i]
 
                 shown = widgetName in saveDlg.shownWidgetList
-                widgetParameters += "self.createWidget('%s', '%s', '%s', %d, self.signalManager)\n" % (widget.widgetInfo.fileName, widget.widgetInfo.icon, widget.caption, shown) +t+t
+                widgetParameters += "self.createWidget('%s', '%s', '%s', %d, self.signalManager)\n" % ("%s.%s" % (widget.widgetInfo.module, widget.widgetInfo.fileName) if widget.widgetInfo.module else widget.widgetInfo.fileName, widget.widgetInfo.icon, widget.caption, shown) +t+t
             else:
                 if not asTabs:
                     widgetParameters += "self.box.layout().addSpacing(10)\n" +t+t

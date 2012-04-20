@@ -2,6 +2,7 @@
 #
 
 import os, sys, re, glob, stat
+import pkg_resources
 from orngSignalManager import OutputSignal, InputSignal, resolveSignal
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -12,8 +13,11 @@ if not orangeDir in sys.path:
     sys.path.append(orangeDir)
 
 import orngEnviron, Orange.utils.addons
+from Orange.utils import addons
 
-class WidgetDescription:
+WIDGETS_ENTRY_POINT = 'orange.widgets'
+
+class WidgetDescription(object):
     def __init__(self, **attrs):
         self.__dict__.update(attrs)
 
@@ -69,20 +73,38 @@ def readCategories(silent=False):
     for dirName in os.listdir(widgetDirName):
         directory = os.path.join(widgetDirName, dirName)
         if os.path.isdir(directory):
-            directories.append((None, directory, None, "prototypes" in dirName.lower()))
+            directories.append((None, directory, None, "prototypes" in dirName.lower(), None))
             
     # read list of add-ons
     for addOn in Orange.utils.addons.installed_addons.values() + Orange.utils.addons.registered_addons:
         addOnWidgetsDir = os.path.join(addOn.directory, "widgets")
         if os.path.isdir(addOnWidgetsDir):
-            directories.append((addOn.name, addOnWidgetsDir, addOn, False))
+            directories.append((addOn.name, addOnWidgetsDir, addOn, False, None))
         addOnWidgetsPrototypesDir = os.path.join(addOnWidgetsDir, "prototypes")
         if os.path.isdir(addOnWidgetsPrototypesDir):
-            directories.append((None, addOnWidgetsPrototypesDir, addOn, True))
+            directories.append((None, addOnWidgetsPrototypesDir, addOn, True, None))
+
+    # New-type add-ons
+    for entry_point in pkg_resources.iter_entry_points(WIDGETS_ENTRY_POINT):
+        try:
+            module = entry_point.load()
+            if hasattr(module, '__path__'):
+                # It is a package
+                addOn = addons.OrangeAddOn()
+                addOn.name = entry_point.name
+                addOn.directory = module.__path__[0] # This is invalid and useless as documentation is not there, but to set it to something
+                directories.append((entry_point.name, module.__path__[0], addOn, False, module.__name__))
+            else:
+                # It is a module
+                # TODO: Implement loading of widget modules
+                # (This should be default way to load widgets, not parsing them as files, or traversing directories, just modules and packages (which load modules))
+                pass
+        except ImportError, err:
+            print "While loading, importing widgets '%s' failed: %s" % (entry_point.name, err)
 
     categories = {}     
-    for defCat, dirName, addOn, isPrototype in directories:
-        widgets = readWidgets(dirName, cachedWidgetDescriptions, isPrototype, silent=silent, addOn=addOn, defaultCategory=defCat)
+    for defCat, dirName, addOn, isPrototype, module in directories:
+        widgets = readWidgets(dirName, cachedWidgetDescriptions, isPrototype, silent=silent, addOn=addOn, defaultCategory=defCat, module=module)
         for (wName, wInfo) in widgets:
             catName = wInfo.category
             if not catName in categories:
@@ -112,7 +134,7 @@ splashWindow = None
 widgetsWithError = []
 widgetsWithErrorPrototypes = []
 
-def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=False, addOn=None, defaultCategory=None):
+def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=False, addOn=None, defaultCategory=None, module=None):
     import sys, imp
     global hasErrors, splashWindow, widgetsWithError, widgetsWithErrorPrototypes
     
@@ -142,6 +164,10 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
         except:   # Probably not an Orange widget module.
             continue
 
+        widgetPrototype = meta.prototype == "1" or meta.prototype.lower().strip() == "true" or prototype
+        if widgetPrototype:
+            meta.category = "Prototypes"
+
         dirname, fname = os.path.split(filename)
         widgname = os.path.splitext(fname)[0]
         try:
@@ -161,7 +187,10 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
             dirnameInPath = dirname in sys.path
             if not dirnameInPath:
                 sys.path.append(dirname)
-            wmod = imp.load_source(widgname, filename)
+            if module:
+                wmod = imp.load_source("%s.%s" % (module, widgname), filename)
+            else:
+                wmod = imp.load_source(widgname, filename)
             if not dirnameInPath and dirname in sys.path: # I have no idea, why we need this, but it seems to disappear sometimes?!
                 sys.path.remove(dirname)
             widgClass = wmod.__dict__[widgname]
@@ -194,6 +223,7 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
                              name =meta.name,
                              time = datetime,
                              fileName = widgname,
+                             module = module,
                              fullName = filename,
                              directory = directory,
                              addOn = addOn,
@@ -233,7 +263,7 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
             if not silent:
                 print "   %s: %s" % (widgname, msg)
 
-            if not prototype:
+            if not widgetPrototype:
                 widgetsWithError.append(widgname)
             else:
                 widgetsWithErrorPrototypes.append(widgname)
