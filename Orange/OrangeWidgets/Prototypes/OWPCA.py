@@ -22,6 +22,7 @@ from plot.owplot import OWPlot
 from plot.owcurve import OWCurve
 from plot import owaxis
 
+
 class ScreePlot(OWPlot):
     def __init__(self, parent=None, name="Scree Plot"):
         OWPlot.__init__(self, parent, name=name)
@@ -48,7 +49,7 @@ class ScreePlot(OWPlot):
 
         if self.is_cutoff_enabled() and event.buttons() & Qt.LeftButton:
             pos = self.mapToScene(event.pos())
-            x, _  = self.map_from_graph(pos)
+            x, _ = self.map_from_graph(pos)
             xmin, xmax = self.x_scale()
             if x >= xmin - 0.1 and x <= xmax + 0.1:
                 x = min(max(x, xmin), xmax)
@@ -89,15 +90,18 @@ class ScreePlot(OWPlot):
         OWPlot.set_axis_labels(self, *args)
         self.map_transform = self.transform_for_axes()
 
+
 class CutoffCurve(OWCurve):
     def __init__(self, *args, **kwargs):
         OWCurve.__init__(self, *args, **kwargs)
         self.setAcceptHoverEvents(True)
         self.setCursor(Qt.SizeHorCursor)
 
+
 class OWPCA(OWWidget):
     settingsList = ["standardize", "max_components", "variance_covered",
                     "use_generalized_eigenvectors", "auto_commit"]
+
     def __init__(self, parent=None, signalManager=None, title="PCA"):
         OWWidget.__init__(self, parent, signalManager, title, wantGraph=True)
 
@@ -126,13 +130,14 @@ class OWPCA(OWWidget):
         label1 = QLabel("Max components", box)
         grid.addWidget(label1, 1, 0)
 
-        sb1 = OWGUI.spin(box, self, "max_components", 1, 1000,
+        sb1 = OWGUI.spin(box, self, "max_components", 0, 1000,
                          tooltip="Maximum number of components",
                          callback=self.on_update,
                          addToLayout=False,
                          keyboardTracking=False
                          )
         self.max_components_spin = sb1.control
+        self.max_components_spin.setSpecialValueText("All")
         grid.addWidget(sb1.control, 1, 1)
 
         label2 = QLabel("Variance covered", box)
@@ -166,7 +171,7 @@ class OWPCA(OWWidget):
 
         self.variance_curve = self.scree_plot.add_curve(
                         "Variance",
-                        Qt.red, Qt.red, 2, 
+                        Qt.red, Qt.red, 2,
                         xData=[],
                         yData=[],
                         style=OWCurve.Lines,
@@ -179,7 +184,7 @@ class OWPCA(OWWidget):
 
         self.cumulative_variance_curve = self.scree_plot.add_curve(
                         "Cumulative Variance",
-                        Qt.darkYellow, Qt.darkYellow, 2, 
+                        Qt.darkYellow, Qt.darkYellow, 2,
                         xData=[],
                         yData=[],
                         style=OWCurve.Lines,
@@ -284,7 +289,7 @@ class OWPCA(OWWidget):
         self.variances /= np.sum(self.variances)
         self.variances_cumsum = np.cumsum(self.variances)
 
-        self.max_components_spin.setRange(1, len(self.variances))
+        self.max_components_spin.setRange(0, len(self.variances))
         self.update_scree_plot()
         self.update_cutoff_curve()
         self.update_components_if()
@@ -294,12 +299,12 @@ class OWPCA(OWWidget):
             self.update_components()
         else:
             self.changed_flag = True
-        
+
     def update_components(self):
         """Update the output components.
         """
         if self.data is None:
-            return 
+            return
 
         scale = self.projector_full.scale
         center = self.projector_full.center
@@ -308,7 +313,7 @@ class OWPCA(OWWidget):
         variances = self.projector_full.variances
         variance_sum = self.projector_full.variance_sum
 
-        # Get selected components (based on max_components and 
+        # Get selected components (based on max_components and
         # variance_coverd)
         pca = self.construct_pca()
         variances, components, variance_sum = pca._select_components(variances, components)
@@ -340,7 +345,7 @@ class OWPCA(OWWidget):
         x_space = np.arange(0, len(self.variances))
         self.scree_plot.set_axis_enabled(owaxis.xBottom, True)
         self.scree_plot.set_axis_enabled(owaxis.yLeft, True)
-        self.scree_plot.set_axis_labels(owaxis.xBottom, 
+        self.scree_plot.set_axis_labels(owaxis.xBottom,
                                         ["PC" + str(i + 1) for i in x_space])
 
         self.variance_curve.set_data(x_space, self.variances)
@@ -364,9 +369,15 @@ class OWPCA(OWWidget):
     def update_cutoff_curve(self):
         """Update cutoff curve from 'Components Selection' control box.
         """
-        variance = self.variances_cumsum[self.max_components - 1] * 100.0
+        if self.max_components == 0:
+            # Special "All" value
+            max_components = len(self.variances_cumsum)
+        else:
+            max_components = self.max_components
+
+        variance = self.variances_cumsum[max_components - 1] * 100.0
         if variance < self.variance_covered:
-            cutoff = float(self.max_components - 1)
+            cutoff = float(max_components - 1)
         else:
             cutoff = np.searchsorted(self.variances_cumsum,
                                      self.variance_covered / 100.0)
@@ -380,7 +391,12 @@ class OWPCA(OWWidget):
 
         variance_components = np.searchsorted(self.variances_cumsum,
                                               self.variance_covered / 100.0)
-        return min(variance_components + 1, self.max_components)
+        if self.max_components == 0:
+            # Special "All" value
+            max_components = len(self.variances_cumsum)
+        else:
+            max_components = self.max_components
+        return min(variance_components + 1, max_components)
 
     def sendReport(self):
         self.reportSettings("PCA Settings",
@@ -409,6 +425,7 @@ class OWPCA(OWWidget):
 
             self.reportSection("Scree Plot")
             self.reportImage(self.scree_plot.save_to_file_direct)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
