@@ -24,3 +24,12 @@ Starting Orange Canvas
 Start orange canvas from the command line with::
 
      orange-canvas
+
+Installation for Developers
+---------------------------
+
+To install in `development mode`_ run::
+
+    python setup.py develop
+   
+.. _development mode: http://packages.python.org/distribute/setuptools.html#development-mode
