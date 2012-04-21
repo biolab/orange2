@@ -363,8 +363,15 @@ class SchemaDoc(QWidget):
 
     def clear(self):
         self.canvasDlg.setCaption()
-        for widget in self.widgets[::-1]:   
-            self.removeWidget(widget, saveTempDoc = False)   # remove widgets from last to first
+
+        # remove widgets in the reverse order as listed in signalManager
+        # (it keeps them ordered topologically) 
+        widgets = sorted(self.widgets,
+                key=lambda w: self.signalManager.widgets.index(w.instance),
+                reverse=True)
+
+        for widget in widgets:
+            self.removeWidget(widget, saveTempDoc = False)
         self.canvas.update()
         self.schemaPath = self.canvasDlg.settings["saveSchemaDir"]
         self.schemaName = ""
