@@ -93,7 +93,7 @@ def readCategories(silent=False):
                 addOn = addons.OrangeAddOn()
                 addOn.name = entry_point.name
                 addOn.directory = module.__path__[0] # This is invalid and useless as documentation is not there, but to set it to something
-                directories.append((entry_point.name, module.__path__[0], addOn, False, module.__name__))
+                directories.append((entry_point.name, module.__path__[0], addOn, False, module))
             else:
                 # It is a module
                 # TODO: Implement loading of widget modules
@@ -139,7 +139,7 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
     global hasErrors, splashWindow, widgetsWithError, widgetsWithErrorPrototypes
     
     widgets = []
-    
+
     if not defaultCategory:
         predir, defaultCategory = os.path.split(directory.strip(os.path.sep).strip(os.path.altsep))
         if defaultCategory == "widgets":
@@ -147,18 +147,36 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
     
     if defaultCategory.lower() == "prototypes" or prototype:
         defaultCategory = "Prototypes"
-    
-    for filename in glob.iglob(os.path.join(directory, "*.py")):
-        if os.path.isdir(filename):
-            continue
+   
+    if module:
+        files = [f for f in pkg_resources.resource_listdir(module.__name__, '') if f.endswith('.py')]
+    else:
+        files = glob.iglob(os.path.join(directory, "*.py"))
+
+    for filename in files:
+        if module:
+            if pkg_resources.resource_isdir(module.__name__, filename):
+                continue
+        else:
+            if os.path.isdir(filename):
+                continue
         
-        datetime = str(os.stat(filename)[stat.ST_MTIME])
+        if module:
+            if getattr(module, '__loader__', None):
+                datetime = str(os.stat(module.__loader__.archive)[stat.ST_MTIME])
+            else:
+                datetime = str(os.stat(pkg_resources.resource_filename(module.__name__, filename))[stat.ST_MTIME])
+        else:
+            datetime = str(os.stat(filename)[stat.ST_MTIME])
         cachedDescription = cachedWidgetDescriptions.get(filename, None)
         if cachedDescription and cachedDescription.time == datetime and hasattr(cachedDescription, "inputClasses"):
             widgets.append((cachedDescription.name, cachedDescription))
             continue
         
-        data = file(filename).read()
+        if module:
+            data = pkg_resources.resource_string(module.__name__, filename)
+        else:
+            data = file(filename).read()
         try:
             meta = widgetParser.WidgetMetaData(data, defaultCategory, enforceDefaultCategory=prototype)
         except:   # Probably not an Orange widget module.
@@ -184,14 +202,16 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
             # We import modules using imp.load_source to avoid storing them in sys.modules,
             # but we need to append the path to sys.path in case the module would want to load
             # something
-            dirnameInPath = dirname in sys.path
-            if not dirnameInPath:
-                sys.path.append(dirname)
+            if dirname:
+                dirnameInPath = dirname in sys.path
+                if not dirnameInPath:
+                    sys.path.append(dirname)
             if module:
-                wmod = imp.load_source("%s.%s" % (module, widgname), filename)
+                # TODO: We could optimize this probably with loading the module in a way which would not need filename directly
+                wmod = imp.load_source("%s.%s" % (module.__name__, widgname), pkg_resources.resource_filename(module.__name__, filename))
             else:
                 wmod = imp.load_source(widgname, filename)
-            if not dirnameInPath and dirname in sys.path: # I have no idea, why we need this, but it seems to disappear sometimes?!
+            if dirname and not dirnameInPath and dirname in sys.path: # I have no idea, why we need this, but it seems to disappear sometimes?!
                 sys.path.remove(dirname)
             widgClass = wmod.__dict__[widgname]
 
@@ -223,8 +243,8 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
                              name =meta.name,
                              time = datetime,
                              fileName = widgname,
-                             module = module,
-                             fullName = filename,
+                             module = module.__name__ if module else None,
+                             fullName = wmod.__file__,
                              directory = directory,
                              addOn = addOn,
                              inputList = meta.inputList, outputList = meta.outputList,

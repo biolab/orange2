@@ -10,6 +10,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
     
 import sys, os, cPickle, orngRegistry, OWGUI
+import pkg_resources
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngHelp, OWReport
 import user, orngMisc
 
@@ -1037,13 +1038,20 @@ class OrangeCanvasDlg(QMainWindow):
         name, ext = os.path.splitext(iconName)
         for num in [16, 32, 40, 48, 60]:
             names.append("%s_%d%s" % (name, num, ext))
-            
-        widgetDir = str(widgetInfo.directory)  #os.path.split(self.getFileName())[0]
+        
+        if widgetInfo.module:
+            widgetDir = ''
+        else:
+            widgetDir = str(widgetInfo.directory)  #os.path.split(self.getFileName())[0]
         fullPaths = []
         for paths in [(self.widgetDir, widgetInfo.category), (self.widgetDir,), (self.picsDir,), tuple(), (widgetDir,), (widgetDir, "icons")]:
             for name in names + [iconName]:
                 fname = os.path.join(*paths + (name,))
-                if os.path.exists(fname):
+                if widgetInfo.module:
+                    if pkg_resources.resource_exists(widgetInfo.module, fname):
+                        # TODO: Optimize, we should not be required to extract the icon
+                        fullPaths.append(pkg_resources.resource_filename(widgetInfo.module, fname))
+                elif os.path.exists(fname):
                     fullPaths.append(fname)
             if len(fullPaths) > 1 and fullPaths[-1].endswith(iconName):
                 fullPaths.pop()     # if we have the new icons we can remove the default icon
@@ -1052,13 +1060,19 @@ class OrangeCanvasDlg(QMainWindow):
         return [self.defaultPic]
     
     def getFullIconBackgroundName(self, widgetInfo):
-        widgetDir = str(widgetInfo.directory)
+        if widgetInfo.module:
+            widgetDir = ''
+        else:
+            widgetDir = str(widgetInfo.directory)
         fullPaths = []
         for paths in [(widgetDir, "icons"), (self.widgetDir, widgetInfo.category, "icons"), (self.widgetDir, "icons"), (self.picsDir,), tuple(), (widgetDir,), (widgetDir, "icons")]:
             for name in ["background_%d.png" % num for num in [16, 32, 40, 48, 60]]:
                 fname = os.path.join(*paths + (name,))
-#                print fname
-                if os.path.exists(fname):
+                if widgetInfo.module:
+                    if pkg_resources.resource_exists(widgetInfo.module, fname):
+                        # TODO: Optimize, we should not be required to extract the icon
+                        fullPaths.append(pkg_resources.resource_filename(widgetInfo.module, fname))
+                elif os.path.exists(fname):
                     fullPaths.append(fname)
             if fullPaths != []:
                 return fullPaths    

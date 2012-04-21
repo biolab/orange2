@@ -96,6 +96,8 @@ The following variables are exposed as top level module members
 
 import os, sys
 import ConfigParser
+import pkg_resources
+from pkg_resources import working_set
 
 def _path_fix():
     """ Fix some common problems with $(PATH) and sys.path
@@ -296,3 +298,15 @@ def add_orange_directories_to_path():
             
 add_orange_directories_to_path()
 directories = dict([(dname, globals()[dname]) for dname in _ALL_DIR_OPTIONS])
+
+def load_eggs(search_path):
+    distributions, errors = working_set.find_plugins(
+        pkg_resources.Environment(search_path)
+    )
+    map(working_set.add, distributions)
+
+    if errors:
+        import warnings
+        warnings.warn("Error loading eggs: %s" % (errors,))
+
+load_eggs([add_ons_dir_user])
