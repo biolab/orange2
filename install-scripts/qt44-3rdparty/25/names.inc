@@ -9,5 +9,6 @@
 	!insertmacro installmodule PIL PIL-1.1.6.win32-py2.5.exe $PythonDir\lib\site-packages\PIL\*.*
 	!insertmacro installmodule PyQt PyQt-Py2.5-gpl-4.4.2-1.exe $PythonDir\lib\site-packages\PyQt4\*.*
 	!insertmacro installmodule PyQwt PyQwt5.1.0-Python2.5-PyQt4.4.2-NumPy1.1.0-1.exe $PythonDir\lib\site-packages\PyQt4\Qwt5\*.*
+	!insertmacro installmodule setuptools setuptools-0.6c11.win32-py2.5.exe $PythonDir\lib\site-packages\setuptools\*.*
 !macroend
     
