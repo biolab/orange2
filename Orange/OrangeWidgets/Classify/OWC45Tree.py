@@ -18,19 +18,23 @@ from orngWrap import PreprocessedLearner
 import Orange
 
 _Orange_dir = os.path.dirname(Orange.__file__)
-_SO = "c45%s" % sysconfig.get_config_var("SO")
 
-if os.path.exists(os.path.join(_Orange_dir, _SO)):              
+if sys.platform == "win32":
+    _SO = "c45.dll"
+else:
+    _SO = "c45.so"
+
+if os.path.exists(os.path.join(_Orange_dir, _SO)):
     # Test if the c45.(so|pyd) can be loaded by orange.C45Learner
-    import orange
     try:
-        orange.C45Learner()
+        Orange.core.C45Learner()
     except orange.KernelException, ex:
         # I guess not
         raise ImportError(ex.message)
 else:
     raise ImportError("c45 is not found")
- 
+
+
 class OWC45Tree(OWWidget):
     settingsList = ["name",
                     "infoGain", "subset", "probThresh",
