@@ -575,12 +575,12 @@ Unsupervised
       - |InteractionGraph_icon| `Interaction Graph`_
     * - |kMeansClustering_icon| `k-Means Clustering`_
       - |MDS_icon| `MDS`_
-      - |NetworkFile_icon| `Network File`
-    * - |NetExplorer_icon| `Net Explorer`_
+      - |PCA_icon| :ref:`PCA`
+    * - |NetworkFile_icon| `Network File`
+      - |NetExplorer_icon| `Net Explorer`_
       - |NetworkFromDistances_icon| `Network From Distances`
-      - |SOM_icon| `SOM`
-    * - |SOMVisualizer_icon| `SOM Visualizer`
-      -
+    * - |SOM_icon| `SOM`
+      - |SOMVisualizer_icon| `SOM Visualizer`
       -
 
 
@@ -682,6 +682,12 @@ Unsupervised
     :width: 48
     :height: 48
 
+.. |PCA_icon| image:: ../../../Orange/OrangeWidgets/icons/Unknown.png
+    :align: middle
+    :alt: PCA
+    :width: 48
+    :height: 48
+
 .. |NetworkFile_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/NetworkFile_48.png
     :align: middle
     :alt: NetworkFile
@@ -725,6 +731,8 @@ Index:
    regression/mean.rst
    regression/linear.rst
    regression/earth.rst
+   
+   unsupervized/PCA.rst
 
 ****************
 Index and search
