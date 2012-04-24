@@ -84,6 +84,13 @@ TestedExample = deprecated_members({"iterationNumber": "iteration_number",
                                     "actualClass": "actual_class"
                                     })(TestedExample)
 
+def mt_vals(vals):
+    """
+    Substitution for the unpicklable lambda function for multi-target classifiers.
+    """
+    return [int(val) if val.variable.var_type == Orange.feature.Type.Discrete
+                                            else float(val) for val in vals]
+
 class ExperimentResults(object):
     """
     ``ExperimentResults`` stores results of one or more repetitions of
@@ -180,8 +187,8 @@ class ExperimentResults(object):
                     self.converter = float
             elif test_type in (TEST_TYPE_MLC, TEST_TYPE_MULTITARGET):
                 self.labels = [var.name for var in domain.class_vars]
-                self.converter = lambda vals: [int(val) if val.variable.var_type == Orange.feature.Type.Discrete
-                                               else float(val) for val in vals]
+                self.converter = mt_vals
+
 
         self.__dict__.update(argkw)
 
