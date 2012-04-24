@@ -64,12 +64,9 @@ class MultitargetLearner(Orange.classification.Learner):
     
     def __init__(self, learner, **kwargs):
         """
-
         :param learner: Base learner used to construct independent
                         models for each class.
-                        
         """
-
         self.learner = learner
         self.__dict__.update(kwargs)
 
@@ -95,6 +92,9 @@ class MultitargetLearner(Orange.classification.Learner):
                        for dom in domains]
         return MultitargetClassifier(classifiers=classifiers, domains=domains)
         
+    def __reduce__(self):
+        return type(self), (self.learner,), dict(self.__dict__)
+
 
 class MultitargetClassifier(Orange.classification.Classifier):
     """
@@ -125,4 +125,7 @@ class MultitargetClassifier(Orange.classification.Classifier):
                        for c, dom in zip(self.classifiers, self.domains)]
         return zip(*predictions) if return_type == Orange.core.GetBoth \
                else predictions
+
+    def __reduce__(self):
+        return type(self), (self.classifiers, self.domains), dict(self.__dict__)
 
