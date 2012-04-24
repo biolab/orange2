@@ -38,7 +38,6 @@ if [[ $CURRENT_REVISION != $LATEST_REVISION  || $FORCE ]]; then
 else
 	BUILD=
 fi
-echo $BUILD
 
 if [ $BUILD ]; then	
 	if [ ! -e $LOCAL_REPO ]; then
@@ -51,10 +50,9 @@ if [ $BUILD ]; then
 
 	hg update -r $HG_REV -R $LOCAL_REPO
 
-	cd $LOCAL_REPO
+	hg --config extensions.purge= clean --all -R $LOCAL_REPO
 
-	# Remove old sources
-	rm -rf dist/
+	cd $LOCAL_REPO
 
 	# Build the source distribution
 	BUILD_TAG=`hg parent --template=".dev-r{rev}-{node|short}"`
