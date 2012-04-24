@@ -70,6 +70,12 @@ class ScreePlot(OWPlot):
                 x = min(max(x, xmin), xmax)
                 self.cutoff_curve.set_data([x, x], [0.0, 1.0])
                 self.emit_cutoff_moved(x)
+        elif self.is_cutoff_enabled() and \
+                self.is_pos_over_cutoff_line(event.pos()):
+            self.setCursor(Qt.SizeHorCursor)
+        else:
+            self.setCursor(Qt.ArrowCursor)
+
         return QGraphicsView.mouseMoveEvent(self, event)
 
     def mouseReleaseEvene(self, event):
@@ -91,6 +97,17 @@ class ScreePlot(OWPlot):
         OWPlot.set_axis_labels(self, *args)
         self.map_transform = self.transform_for_axes()
 
+    def is_pos_over_cutoff_line(self, pos):
+        x1 = self.inv_transform(owaxis.xBottom, pos.x() - 1.5)
+        x2 = self.inv_transform(owaxis.xBottom, pos.x() + 1.5)
+        y = self.inv_transform(owaxis.yLeft, pos.y())
+        if y < 0.0 or y > 1.0:
+            return False
+        curve_data = self.cutoff_curve.data()
+        if not curve_data:
+            return False
+        cutoff = curve_data[0][0]
+        return x1 < cutoff and cutoff < x2
 
 class CutoffCurve(OWCurve):
     def __init__(self, *args, **kwargs):
