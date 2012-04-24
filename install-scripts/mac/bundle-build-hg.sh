@@ -53,7 +53,7 @@ cd $CUR_DIR
 
 echo "Checkouting and building bioinformatics addon"
 echo "============================================="
-./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-addon-bioinformatics bioinformatics $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-bioinformatics bioinformatics $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
 echo "Checkouting and building text addon"
 echo "==================================="

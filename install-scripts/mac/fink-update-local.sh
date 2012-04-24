@@ -20,7 +20,7 @@ FORCE=true
 
 # First build all the source packages
 ./build-source.sh https://bitbucket.org/biolab/orange orange tip $WORK_DIR Orange
-./build-source.sh https://bitbucket.org/biolab/orange-addon-bioinformatics bioinformatics tip $WORK_DIR Orange-Bioinformatics
+./build-source.sh https://bitbucket.org/biolab/orange-bioinformatics bioinformatics tip $WORK_DIR Orange-Bioinformatics
 ./build-source.sh https://bitbucket.org/biolab/orange-addon-text text tip $WORK_DIR Orange-Text-Mining
 
 # Get versions from PKG-INFO files
