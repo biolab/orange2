@@ -35,7 +35,7 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
 
     __new__ = Orange.utils._orange__new__(Orange.core.Learner)
 
-    def __init__(self, base=None, rand=None): #pickle needs an empty init
+    def __init__(self, base=None, rand=None): # pickle needs an empty init
         self.base = base
         self.attributes = None
         self.rand = rand
@@ -49,7 +49,43 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
         return r
 
 _RandomForestSimpleTreeLearner = Orange.utils.deprecated_members({"weightID":"weight_id", "examples":"instances"})(_RandomForestSimpleTreeLearner)
-   
+
+
+class _RandomForestTreeLearner(Orange.core.Learner):
+    """ A learner which wraps an ordinary TreeLearner with
+    a new split constructor.
+    """
+
+    __new__ = Orange.utils._orange__new__(Orange.core.Learner)
+    
+    def __init__(self, base=None, rand=None): # pickle needs an empty init
+        self.base = base
+        self.attributes = None
+        self.rand = rand
+        if not self.rand: #for all the built trees
+            self.rand = random.Random(0)
+
+    @deprecated_keywords({"examples":"instances"})
+    def __call__(self, instances, weight=0):
+        """ A current tree learner is copied, modified and then used.
+        Modification: set a different split constructor, which uses
+        a random subset of attributes.
+        """
+        bcopy = copy.copy(self.base)
+
+        #if base tree learner has no measure set
+        if not bcopy.measure:
+            bcopy.measure = Orange.feature.scoring.Gini() \
+                if isinstance(instances.domain.class_var, Orange.feature.Discrete) \
+                else Orange.feature.scoring.MSE()
+
+        bcopy.split = SplitConstructor_AttributeSubset(\
+            bcopy.split, self.attributes, self.rand)
+
+        return bcopy(instances, weight=weight)
+
+
+
 class RandomForestLearner(Orange.core.Learner):
     """
     Trains an ensemble predictor consisting of trees trained
@@ -162,8 +198,7 @@ class RandomForestLearner(Orange.core.Learner):
         return RandomForestClassifier(classifiers = classifiers, name=self.name,\
                     domain=instances.domain, class_var=instances.domain.class_var, \
                     class_vars=instances.domain.class_vars)
-
-            
+           
 RandomForestLearner = Orange.utils.deprecated_members({"examples":"instances"})(RandomForestLearner)
 
 class RandomForestClassifier(orange.Classifier):
@@ -304,6 +339,7 @@ class RandomForestClassifier(orange.Classifier):
 
     def __reduce__(self):
         return type(self), (self.classifiers, self.name, self.domain, self.class_var, self.class_vars), dict(self.__dict__)
+
 RandomForestClassifier = Orange.utils.deprecated_members({"resultType":"result_type", "classVar":"class_var", "example":"instance"})(RandomForestClassifier)
 ### MeasureAttribute_randomForests
 
@@ -511,38 +547,6 @@ class ScoreFeature(orange.MeasureAttribute):
         else:
           return set([])
 
-class _RandomForestTreeLearner(Orange.core.Learner):
-    """ A learner which wraps an ordinary TreeLearner with
-    a new split constructor.
-    """
-
-    __new__ = Orange.utils._orange__new__(Orange.core.Learner)
-     
-    def __init__(self, base, rand):
-        self.base = base
-        self.attributes = None
-        self.rand = rand
-        if not self.rand: #for all the built trees
-            self.rand = random.Random(0)
-
-    @deprecated_keywords({"examples":"instances"})
-    def __call__(self, instances, weight=0):
-        """ A current tree learner is copied, modified and then used.
-        Modification: set a different split constructor, which uses
-        a random subset of attributes.
-        """
-        bcopy = copy.copy(self.base)
-
-        #if base tree learner has no measure set
-        if not bcopy.measure:
-            bcopy.measure = Orange.feature.scoring.Gini() \
-                if isinstance(instances.domain.class_var, Orange.feature.Discrete) \
-                else Orange.feature.scoring.MSE()
-
-        bcopy.split = SplitConstructor_AttributeSubset(\
-            bcopy.split, self.attributes, self.rand)
-
-        return bcopy(instances, weight=weight)
 
 class SplitConstructor_AttributeSubset(orange.TreeSplitConstructor):
     def __init__(self, scons, attributes, rand = None):
