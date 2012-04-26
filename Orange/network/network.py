@@ -189,6 +189,13 @@ class BaseGraph():
                 vars.extend(var for i, var in metas.iteritems())
         return [x for x in vars if str(x.name) != 'u' and str(x.name) != 'v']
 
+    def subgraph(self, nbunch):
+        G = nx.Graph.subgraph(self, nbunch)
+        items = self.items().get_items(G.nodes())
+        G = G.to_orange_network()
+        G.set_items(items)
+        return G
+
 class Graph(BaseGraph, nx.Graph):
     """Bases: `NetworkX.Graph <http://networkx.lanl.gov/reference/classes.graph.html>`_, 
     :obj:`Orange.network.BaseGraph` 
@@ -198,13 +205,6 @@ class Graph(BaseGraph, nx.Graph):
     def __init__(self, data=None, name='', **attr):
         nx.Graph.__init__(self, data, name=name, **attr)
         BaseGraph.__init__(self)
-
-    def subgraph(self, nbunch):
-        G = nx.Graph.subgraph(self, nbunch)
-        items = self.items().get_items(G.nodes())
-        G = G.to_orange_network()
-        G.set_items(items)
-        return G
         # TODO: _links
 
     __doc__ += _get_doc(nx.Graph.__doc__)
