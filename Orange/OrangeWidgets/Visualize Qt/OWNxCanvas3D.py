@@ -3,7 +3,7 @@ from plot.owopenglrenderer import VertexBuffer
 from PyQt4.QtCore import Qt
 from PyQt4.QtGui import QVBoxLayout
 from PyQt4 import QtOpenGL
-import orangeqt
+from Orange import orangeqt
 import Orange
 import orange
 import numpy

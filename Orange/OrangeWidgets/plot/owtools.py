@@ -41,7 +41,7 @@ from owcurve import *
 from owpalette import OWPalette
 
 from Orange.data.preprocess.scaling import get_variable_values_sorted
-import orangeom
+from Orange import orangeom
 import ColorPalette
 
 def resize_plot_item_list(lst, size, item_type, parent):

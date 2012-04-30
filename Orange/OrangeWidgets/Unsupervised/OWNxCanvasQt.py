@@ -17,7 +17,7 @@ from plot.owpoint import *
 from plot.owtools import *
 
 from orngScaleScatterPlotData import *
-import orangeqt
+from Orange import orangeqt
 
 class NodeItem(orangeqt.NodeItem):
     def __init__(self, index, x=None, y=None, parent=None):

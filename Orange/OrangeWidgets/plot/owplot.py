@@ -35,7 +35,7 @@ from OWBaseWidget import unisetattr
 from OWColorPalette import *      # color palletes, ...
 from Orange.utils import deprecated_members, deprecated_attribute
 
-import orangeqt
+from Orange import orangeqt
 
 def n_min(*args):
     lst = args[0] if len(args) == 1 else args
