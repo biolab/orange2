@@ -221,7 +221,7 @@ class EarthLearner(Orange.regression.base.BaseRegressionLearner):
         
         if self.scale_resp and y.shape[1] == 1:
             sy = y - numpy.mean(y, axis=0)
-            sy = sy / numpy.std(sy, axis=1)
+            sy = sy / numpy.std(sy, axis=0)
         else:
             sy = y
             
@@ -602,7 +602,7 @@ def forward_pass(x, y, degree=1, terms=21, penalty=None, thresh=0.001,
         raise ValueError("Invalid 'new_var_penalty' (must be in [0, 10] ).")
     if (numpy.var(y, axis=0) <= 1e-8).any():
         raise ValueError("Variance of y is zero (or near zero).")
-     
+
     _c_forward_pass_(ctypes.byref(n_term), full_set, bx, dirs, cuts,
                      n_factors_in_terms, n_uses, x, y, weights, n_cases,
                      n_resp, n_preds, degree, terms, penalty, thresh,
