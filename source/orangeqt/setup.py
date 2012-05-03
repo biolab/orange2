@@ -149,6 +149,12 @@ orangeqt_ext = PyQt4Extension("orangeqt",
                               library_dirs=library_dirs
                              )
 
+ENTRY_POINTS = {
+    'orange.addons': (
+        'orangeqt = orangeqt',
+    ),
+}
+
 def setup_package():
     setup(name = NAME,
           description = DESCRIPTION,
@@ -159,6 +165,7 @@ def setup_package():
           license = LICENSE,
           ext_modules = [orangeqt_ext],
           cmdclass={"build_ext": build_pyqt_ext},
+          entry_points = ENTRY_POINTS,
           )
 
 if __name__ == '__main__':
