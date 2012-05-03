@@ -670,11 +670,18 @@ def confusion_matrices(test_results, class_index= -1,
 
     :param test_results: test results
     :param class_index: index of class value for which the confusion matrices
-                        are to be computed.
+        are to be computed (by default unspecified - see note below).
     :param ignore_weights: ignore instance weights.
-    :params cutoff: cutoff for probability
+    :param cutoff: cutoff for probability
 
-    :rtype: list of :obj:`ConfusionMatrix`
+    :rtype: list of :obj:`ConfusionMatrix` or list-of-list-of-lists (see
+        note below)
+
+    .. note:: If `class_index` is not specified and `test_results`
+        contain predictions for multi-class problem, then the return
+        value is a list of 2D tables (list-of-lists) of all class
+        value pairwise misclassifications. 
+
     """
     tfpns = [ConfusionMatrix() for _ in range(test_results.number_of_learners)]
 
