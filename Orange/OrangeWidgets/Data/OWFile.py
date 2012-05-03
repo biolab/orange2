@@ -262,8 +262,8 @@ class OWFile(OWWidget):
                 self.error(str(errValue))
                 self.dataDomain = None
                 self.infoa.setText('Data was not loaded due to an error.')
-                self.infob.setText("")
-                self.warnings.setText("")
+                self.infob.setText('Error:')
+                self.warnings.setText(str(errValue))
                 if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
                 return
                         
