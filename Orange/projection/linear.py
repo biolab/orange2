@@ -1263,7 +1263,7 @@ class Projector(object):
 
         self.A = numpy.dot(Xd, U.T)
 
-        class_, classes = dataset.to_numpy("c")[0], dataset.to_numpy("m")[0]
+        class_, classes = dataset.to_numpy_MA("c")[0], dataset.to_numpy_MA("m")[0]
         return data.Table(self.output_domain, numpy.hstack((self.A, class_, classes)))
 
 class _ProjectSingleComponent():
@@ -1273,7 +1273,11 @@ class _ProjectSingleComponent():
         self.idx = idx
 
     def __call__(self, example, return_what):
-        ex = Orange.data.Table([example]).to_numpy("a")[0]
+        if len(self.projector.projection.T) != len(example.domain.features):
+            ex = Orange.data.Table(self.projector.input_domain, [example])
+        else:
+            ex = Orange.data.Table([example])
+        ex = ex.to_numpy_MA("a")[0]
         ex -= self.projector.center
         if self.projector.standardize:
             ex /= self.projector.scale
