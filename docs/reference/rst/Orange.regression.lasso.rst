@@ -10,32 +10,29 @@ Lasso regression (``lasso``)
     http://www-stat.stanford.edu/~tibs/lasso/lasso.pdf
 
 
-`The Lasso <http://www-stat.stanford.edu/~tibs/lasso/lasso.pdf>`_ is a shrinkage
-and selection method for linear regression. It minimizes the usual sum of squared
-errors, with a bound on the sum of the absolute values of the coefficients. 
+`The lasso <http://www-stat.stanford.edu/~tibs/lasso/lasso.pdf>`_
+(least absolute shrinkage and selection operator) is a regularized
+version of least squares regression.
+It minimizes the sum of squared errors while also penalizing the
+:math:`L_1` norm (sum of absolute values) of the coefficients.
 
-To fit the regression parameters on housing data set use the following code:
+Concretely, the function that is minimized in Orange is:
 
-.. literalinclude:: code/lasso-example.py
-   :lines: 9,10,11
+.. math:: \frac{1}{n}\|Xw - y\|_2^2 + \frac{\lambda}{m} \|w\|_1
 
-.. autoclass:: LassoRegressionLearner
-    :members:
-
-.. autoclass:: LassoRegression
-    :members:
-
+Where :math:`X` is a :math:`n \times m` data matrix, :math:`y` the vector
+of class values and :math:`w` the regression coefficients to be estimated.
 
 .. autoclass:: LassoRegressionLearner
     :members:
+    :show-inheritance:
 
 .. autoclass:: LassoRegression
     :members:
+    :show-inheritance:
 
 Utility functions
 -----------------
-
-.. autofunction:: center
 
 .. autofunction:: get_bootstrap_sample
 
@@ -46,50 +43,45 @@ Utility functions
 Examples
 ========
 
-To predict values of the response for the first five instances
-use the code
+To fit the regression parameters on housing data set use the following code:
 
 .. literalinclude:: code/lasso-example.py
-   :lines: 14,15
+   :lines: 9,10,11
 
-Output
-
-::
-
-    Actual: 24.00, predicted: 24.58 
-    Actual: 21.60, predicted: 23.30 
-    Actual: 34.70, predicted: 24.98 
-    Actual: 33.40, predicted: 24.78 
-    Actual: 36.20, predicted: 24.66 
-
-To see the fitted regression coefficients, print the model
+To predict values of the response for the first five instances:
 
 .. literalinclude:: code/lasso-example.py
-   :lines: 17
+   :lines: 15,16
 
-The output
+Output::
 
-::
+    Actual: 24.00, predicted: 30.45
+    Actual: 21.60, predicted: 25.60
+    Actual: 34.70, predicted: 31.48
+    Actual: 33.40, predicted: 30.18
+    Actual: 36.20, predicted: 29.59
 
-    Variable  Coeff Est  Std Error          p
+To see the fitted regression coefficients, print the model:
+
+.. literalinclude:: code/lasso-example.py
+   :lines: 19
+
+Output::
+
+      Variable  Coeff Est  Std Error          p
      Intercept     22.533
-          CRIM     -0.000      0.023      0.480      
-         INDUS     -0.010      0.023      0.300      
-            RM      1.303      0.994      0.000   ***
-           AGE     -0.002      0.000      0.320      
-       PTRATIO     -0.191      0.209      0.050     .
-         LSTAT     -0.126      0.105      0.000   ***
+          CRIM     -0.023      0.024      0.050     .
+          CHAS      1.970      1.331      0.040     *
+           NOX     -4.226      2.944      0.010     *
+            RM      4.270      0.934      0.000   ***
+           DIS     -0.373      0.170      0.010     *
+       PTRATIO     -0.798      0.117      0.000   ***
+             B      0.007      0.003      0.020     *
+         LSTAT     -0.519      0.102      0.000   ***
     Signif. codes:  0 *** 0.001 ** 0.01 * 0.05 . 0.1 empty 1
 
+    For 5 variables the regression coefficient equals 0:
+    ZN, INDUS, AGE, RAD, TAX
 
-    For 7 variables the regression coefficient equals 0: 
-    ZN
-    CHAS
-    NOX
-    DIS
-    RAD
-    TAX
-    B
-
-shows that some of the regression coefficients are equal to 0.    
+Note that some of the regression coefficients are equal to 0.    
 
