@@ -10,12 +10,14 @@
 from OWWidget import *
 
 import OWGUI
-
 import Orange
 
+
 class OWTranslateDomain(OWWidget):
-    def __init__(self, parent=None, signalManager=None, title="Translate Domain"):
-        OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
+    def __init__(self, parent=None, signalManager=None,
+                 title="Translate Domain"):
+        OWWidget.__init__(self, parent, signalManager, title,
+                          wantMainArea=False)
 
         self.inputs = [("Target Domain", Orange.data.Table, self.set_target),
                        ("Input Data", Orange.data.Table, self.set_input)]
@@ -51,9 +53,11 @@ class OWTranslateDomain(OWWidget):
             else:
                 class_str = "no"
             num_features = len(self.target.domain.features)
-            target_lines = ["Target domain with %i features and %s class." % (num_features, class_str)]
+            target_lines = ["Target domain with %i features and %s class." % \
+                            (num_features, class_str)]
         if self.input_data is not None:
-            input_lines = ["Input data with %i instances" % len(self.input_data)]
+            input_lines = ["Input data with %i instances" % \
+                           len(self.input_data)]
         self.info.setText("\n".join(target_lines + input_lines))
 
     def commit(self):
@@ -63,5 +67,7 @@ class OWTranslateDomain(OWWidget):
             try:
                 translated = self.input_data.translate(self.target.domain)
             except Exception, ex:
+                import traceback
+                traceback.print_exc(limit=8, file=sys.stdout)
                 self.error("Failed to convert the domain (%r)." % ex)
         self.send("Translated Data", translated)
