@@ -998,7 +998,17 @@ try:
 
             qApp.processEvents()
 
-            if self.optMethod == 1:
+            if self.optMethod == 0:
+                items = self.graph.items()
+                if items is not None and 'x' in items.domain and 'y' in items.domain:
+                    positions = dict((node, (items[node]['x'].value, items[node]['y'].value)) \
+                                 for node in self.graph if items[node]['x'].value != '?' \
+                                 and items[node]['y'].value != '?')
+
+                    # ignore start position if all nodes are on the same coordinate
+                    if len(set(positions.values())) > 1:
+                        self.networkCanvas.networkCurve.set_node_coordinates(positions)
+            elif self.optMethod == 1:
                 self.networkCanvas.networkCurve.random()
             elif self.optMethod == 2:
                 self.graph_layout_fr(False)
