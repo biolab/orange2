@@ -130,9 +130,10 @@ class OWNxHist():
 
         for var in vars:
             try:
-                self.attributeCombo.addItem(self.icons[var.varType], unicode(var.name))
+                if var.varType != 7: # if not Orange.feature.Python
+                    self.attributeCombo.addItem(self.icons[var.varType], unicode(var.name))
             except:
-                print "error adding ", var, " to the attribute combo"
+                print "Error adding", var, "to the attribute combo."
 
         self.setPercentil()
         self.generateGraph()
