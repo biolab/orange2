@@ -55,6 +55,8 @@ MultiDiGraph
 
 import copy
 import math
+import inspect
+
 import numpy
 import networkx as nx
 import Orange
@@ -190,7 +192,7 @@ class BaseGraph():
         return [x for x in vars if str(x.name) != 'u' and str(x.name) != 'v']
 
     def subgraph(self, nbunch):
-        G = nx.Graph.subgraph(self, nbunch)
+        G = self.__class__.__bases__[1].subgraph(self, nbunch)
         items = self.items().get_items(G.nodes())
         G = G.to_orange_network()
         G.set_items(items)

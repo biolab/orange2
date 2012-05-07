@@ -821,7 +821,9 @@ try:
                              for node in self.graph if items[node]['x'].value != '?' \
                              and items[node]['y'].value != '?')
 
-                self.networkCanvas.networkCurve.set_node_coordinates(positions)
+                # ignore start position if all nodes are on the same coordinate
+                if len(set(positions.values())) > 1:
+                    self.networkCanvas.networkCurve.set_node_coordinates(positions)
 
 
             self.networkCanvas.showEdgeLabels = self.showEdgeLabels
@@ -1161,7 +1163,6 @@ try:
             self.optButton.setText("Stop")
             qApp.processEvents()
             self.networkCanvas.networkCurve.layout_fr(self.frSteps, False)
-           # self.networkCanvas.update_canvas()
             self.optButton.setChecked(False)
             self.optButton.setText("Optimize layout")
 
