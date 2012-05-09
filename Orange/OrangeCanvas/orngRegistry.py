@@ -135,7 +135,7 @@ widgetsWithError = []
 widgetsWithErrorPrototypes = []
 
 def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=False, addOn=None, defaultCategory=None, module=None):
-    import sys, imp
+    import sys
     global hasErrors, splashWindow, widgetsWithError, widgetsWithErrorPrototypes
     
     widgets = []
@@ -172,7 +172,6 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
         if cachedDescription and cachedDescription.time == datetime and hasattr(cachedDescription, "inputClasses"):
             widgets.append((cachedDescription.name, cachedDescription))
             continue
-        
         if module:
             data = pkg_resources.resource_string(module.__name__, filename)
         else:
@@ -195,25 +194,21 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
                 splashWindow = QSplashScreen(logo, Qt.WindowStaysOnTopHint)
                 splashWindow.setMask(logo.mask())
                 splashWindow.show()
-                
+
             splashWindow.showMessage("Registering widget %s" % meta.name, Qt.AlignHCenter + Qt.AlignBottom)
             qApp.processEvents()
-            
-            # We import modules using imp.load_source to avoid storing them in sys.modules,
-            # but we need to append the path to sys.path in case the module would want to load
-            # something
-            if dirname:
-                dirnameInPath = dirname in sys.path
-                if not dirnameInPath:
-                    sys.path.append(dirname)
+
             if module:
-                # TODO: We could optimize this probably with loading the module in a way which would not need filename directly
-                wmod = imp.load_source("%s.%s" % (module.__name__, widgname), pkg_resources.resource_filename(module.__name__, filename))
+                import_name = "%s.%s" % (module.__name__, widgname)
             else:
-                wmod = imp.load_source(widgname, filename)
-            if dirname and not dirnameInPath and dirname in sys.path: # I have no idea, why we need this, but it seems to disappear sometimes?!
-                sys.path.remove(dirname)
-            widgClass = wmod.__dict__[widgname]
+                import_name = widgname
+            wmod = __import__(import_name, fromlist=[""])
+
+            wmodFilename = wmod.__file__
+            if os.path.splitext(wmodFilename)[1] != "py":
+                # Replace .pyc, .pyo with bare .py extension
+                # (used as key in cachedWidgetDescription)
+                wmodFilename = os.path.splitext(wmodFilename)[0] + ".py"
 
             # Evaluate the input/output list (all tuple items are strings)
             inputs = eval(meta.inputList)
@@ -240,11 +235,11 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
                 s.type = "%s.%s" % (s.type.__module__, s.type.__name__)
 
             widgetInfo = WidgetDescription(
-                             name =meta.name,
+                             name = meta.name,
                              time = datetime,
                              fileName = widgname,
                              module = module.__name__ if module else None,
-                             fullName = wmod.__file__,
+                             fullName = wmodFilename,
                              directory = directory,
                              addOn = addOn,
                              inputList = meta.inputList, outputList = meta.outputList,
