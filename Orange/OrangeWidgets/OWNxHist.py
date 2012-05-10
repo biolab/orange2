@@ -265,7 +265,7 @@ class OWNxHist():
                 self.graph = graph
 
         if matrix != None:
-            matrix.items = self.graph.items()
+            matrix.setattr("items", self.graph.items())
         self.graph_matrix = matrix
 
         if self.graph is None:
