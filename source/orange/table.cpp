@@ -721,10 +721,18 @@ void TExampleTable::pickClass(PVariable classVar)
         }
         newDomain = mlnew TDomain(classVar, domain->attributes.getReference());
         newDomain->classVars = mlnew TVarList();
-        PITERATE(TVarList, ci, domain->classVars) {
+        TVarList::iterator ci(domain->classVars->begin());
+        TVarList::const_iterator const ce(domain->classVars->end());
+        if (!domain->classVar && (classPos != attrs)) {
+            ci++;
+        }
+        for(; ci != ce; ci++) {
             if (*ci == classVar) {
                 if (domain->classVar) {
                     newDomain->classVars->push_back(domain->classVar);
+                }
+                else if (classPos != attrs) {
+                    newDomain->classVars->push_back(domain->classVars->front());
                 }
             }
             else {
