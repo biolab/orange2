@@ -40,6 +40,9 @@ class ModelItem : NodeItem
 public:
     ModelItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent /TransferThis/ = 0);
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
+    
+    void set_representative(double y);
+    bool representative() const;
 };
 
 class EdgeItem : QAbstractGraphicsShapeItem

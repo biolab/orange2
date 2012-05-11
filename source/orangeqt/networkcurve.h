@@ -144,6 +144,12 @@ public:
 	ModelItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent = 0);
 
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
+
+    void set_representative(bool value);
+    bool is_representative() const;
+
+private:
+    bool representative;
 };
 
 struct ArrowData

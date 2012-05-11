@@ -41,7 +41,7 @@
 
 ModelItem::ModelItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent): NodeItem(index, symbol, color, size, parent)
 {
-
+	representative = 0;
 }
 
 void ModelItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
@@ -109,6 +109,16 @@ void ModelItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
     	set_label(l);
     }
     */
+}
+
+ModelItem::set_representative(bool value)
+{
+	representative = value;
+}
+
+ModelItem::is_representative()
+{
+	return representative;
 }
 
 NodeItem::NodeItem(int index, int symbol, QColor color, int size, QGraphicsItem* parent): Point(symbol, color, size, parent)
