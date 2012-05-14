@@ -9,20 +9,20 @@ REM call hg pull --update
 REM call hg clone https://bitbucket.org/biolab/orange snapshot
 cdd snapshot
 call hg pull
-call hg update
+call hg update --clean
 
 
-REM call hg clone https://bitbucket.org/biolab/orange-addon-bioinformatics Bioinformatics
+REM call hg clone https://bitbucket.org/biolab/orange-bioinformatics Bioinformatics
 cdd Bioinformatics
 call hg pull
-call hg update
+call hg update --clean
 
 cdd  e:\orange\scripts\snapshot
 
 REM call hg clone https://bitbucket.org/biolab/orange-addon-text Text
 cdd Text
 call hg pull 
-call hg update
+call hg update --clean
 
 cdd e:\orange\scripts
 
