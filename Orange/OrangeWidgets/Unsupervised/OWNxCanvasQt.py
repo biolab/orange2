@@ -617,9 +617,9 @@ class OWNxCanvas(OWPlot):
     def change_graph(self, newgraph):
         old_nodes = set(self.graph.nodes_iter())
         new_nodes = set(newgraph.nodes_iter())
-        inter_nodes = old_nodes.intersection(new_nodes)
-        remove_nodes = list(old_nodes.difference(inter_nodes))
-        add_nodes = list(new_nodes.difference(inter_nodes))
+        inter_nodes = old_nodes & new_nodes
+        remove_nodes = list(old_nodes - inter_nodes)
+        add_nodes = list(new_nodes - inter_nodes)
 
         self.graph = newgraph
 

@@ -55,7 +55,8 @@ void ModelItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
     	double style = 1;
     	int _size = size() + 5;
 
-    	painter->setPen(QPen(QBrush(color()), 1, Qt::SolidLine, Qt::RoundCap));
+    	int pen_size = (representative) ? 3 : 1;
+    	painter->setPen(QPen(QBrush(color()), pen_size, Qt::SolidLine, Qt::RoundCap));
 
     	QRadialGradient gradient(QPointF(0, 0), _size);
 		gradient.setColorAt(0, color());
@@ -111,12 +112,12 @@ void ModelItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option,
     */
 }
 
-ModelItem::set_representative(bool value)
+void ModelItem::set_representative(bool value)
 {
 	representative = value;
 }
 
-ModelItem::is_representative()
+bool ModelItem::is_representative() const
 {
 	return representative;
 }

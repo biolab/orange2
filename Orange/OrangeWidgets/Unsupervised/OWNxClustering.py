@@ -56,6 +56,8 @@ class OWNxClustering(OWWidget):
         OWGUI.button(self.controlArea, self, "Commit",
                      callback=lambda b=True: self.cluster(b))
 
+        self.cluster()
+
     def setNetwork(self, net):
         self.net = net
         if self.autoApply:
