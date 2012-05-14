@@ -31,19 +31,13 @@ rem # build source distribution
 e:\Python27\python.exe setup.py sdist
 
 rem # build msi file
-rem # build_msi only handles StrictVersion so we change Orange\version.py
-rem # and remove the .hg dir so the short_version is used
-e:\Python27\python.exe -c"print open('Orange/version.py', 'rb').read().replace('if not release:', 'if not release and False:')" > version.py.1
-move /z version.py.1 Orange\version.py
-del /syeqtx .hg
-
 e:\Python27\python.exe setup.py bdist_msi
 
 break_on_error
 
 rem # if no errors then publish on web (everything at the same time)
 rem # remove any old files  
-rem # leave 10 latest versions. 
+rem # leave 10 latest versions.
 e:\Python27\python.exe -c"import os,glob; [os.remove(f) for f in sorted(glob.glob('%DOWNLOADDIR\orange-win-snapshot-hg-*.exe'), reverse=True)[30:]]"
 e:\Python27\python.exe -c"import os,glob; [os.remove(f) for f in sorted(glob.glob('%DOWNLOADDIR\orange-win-w-python-snapshot-hg-*.exe'), reverse=True)[30:]]"
 e:\Python27\python.exe -c"import os,glob; [os.remove(f) for f in sorted(glob.glob('%DOWNLOADDIR\orangeAddOn-bioinformatics-snapshot-hg-*.exe'), reverse=True)[30:]]"
