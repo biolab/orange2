@@ -37,6 +37,12 @@ if [ ! $LOCAL ]; then
 	/Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 fi
 
+# Get old source addon versions from PKG-INFO files (these are updated by dailyrun-sources)
+OLD_ORANGE_VERSION=`grep "^Version:" $SOURCES_DIR/Orange.egg-info/PKG-INFO | cut -d " " -f 2`
+OLD_BIOINFORMATICS_VERSION=`grep "^Version:" $SOURCES_DIR/Orange_Bioinformatics.egg-info/PKG-INFO | cut -d " " -f 2`
+OLD_TEXT_VERSION=`grep "^Version:" $SOURCES_DIR/Orange_Text_Mining.egg-info/PKG-INFO | cut -d " " -f 2`
+
+
 SOURCE_LOG=$WORK_DIR/sources-daily-build.log
 
 ./dailyrun-sources.sh $WORK_DIR $FORCE $LOCAL &> $SOURCE_LOG
@@ -50,7 +56,7 @@ cat $SOURCE_LOG >> "$LOG_DIR/source-daily-build-hg.log"
 
 SOURCES_DIR=$PUBLISH_DIR/sources
 
-# Get versions from PKG-INFO files (these are updated by dailyrun-sources)
+# Get new versions from PKG-INFO files (these are updated by dailyrun-sources)
 ORANGE_VERSION=`grep "^Version:" $SOURCES_DIR/Orange.egg-info/PKG-INFO | cut -d " " -f 2`
 BIOINFORMATICS_VERSION=`grep "^Version:" $SOURCES_DIR/Orange_Bioinformatics.egg-info/PKG-INFO | cut -d " " -f 2`
 TEXT_VERSION=`grep "^Version:" $SOURCES_DIR/Orange_Text_Mining.egg-info/PKG-INFO | cut -d " " -f 2`
@@ -67,10 +73,24 @@ ORANGE_SOURCE_MD5=`md5 -q $SOURCES_DIR/$ORANGE_SOURCE`
 BIOINFORMATICS_SOURCE_MD5=`md5 -q $SOURCES_DIR/$BIOINFORMATICS_SOURCE`
 TEXT_SOURCE_MD5=`md5 -q $SOURCES_DIR/$TEXT_SOURCE`
 
+# Are there new versions of orange and addons available.
+if [[ $OLD_ORANGE_VERSION < $ORANGE_VERSION ]]; then
+	NEW_ORANGE=1
+fi
+
+if [[ $OLD_BIOINFORMATICS_VERSION < $BIOINFORMATICS_VERSION ]]; then
+	NEW_BIOINFORMATICS=1
+	NEW_BUNDLE_ADDONS=1
+fi
+
+if [[ $OLD_TEXT_VERSION < $TEXT_VERSION ]]; then
+	NEW_TEXT=1
+	NEW_BUNDLE_ADDONS=1
+fi
 
 ## Daily bundle build from hg (for now always until versioning is established).
 if [[ true || $NEW_ORANGE || $NEW_BIOINFORMATICS || $NEW_TEXT || $FORCE ]]; then
-	./bundle-daily-build-hg.sh &> $WORK_DIR/bundle-daily-build.log
+	./bundle-daily-build-hg.sh $NEW_BUNDLE_ADDONS &> $WORK_DIR/bundle-daily-build.log
 	EXIT_VALUE=$?
 fi
 
@@ -102,15 +122,15 @@ OLD_ORANGE_VERSION=`curl --silent $BASE/orange-gui-dev-py.info | grep "Version: 
 OLD_BIOINFORMATICS_VERSION=`curl --silent $BASE/orange-bioinformatics-gui-dev-py.info | grep "Version: " | cut -d" " -f 2`
 OLD_TEXT_VERSION=`curl --silent $BASE/orange-text-gui-dev-py.info | grep "Version: " | cut -d" " -f 2`
 
-if [[ $OLD_ORANGE_VERSION < ORANGE_VERSION ]]; then
+if [[ $OLD_ORANGE_VERSION < $ORANGE_VERSION ]]; then
 	NEW_ORANGE=1
 fi
 
-if [[ $OLD_BIOINFORMATICS_VERSION < BIOINFORMATICS_VERSION ]]; then
+if [[ $OLD_BIOINFORMATICS_VERSION < $BIOINFORMATICS_VERSION ]]; then
 	NEW_BIOINFORMATICS=1
 fi
 
-if [[ $OLD_TEXT_VERSION < TEXT_VERSION ]]; then
+if [[ $OLD_TEXT_VERSION < $TEXT_VERSION ]]; then
 	NEW_TEXT=1
 fi
 
