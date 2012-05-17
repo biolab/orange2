@@ -30,6 +30,7 @@ if [ ! -e $WORK_DIR ]; then
 	mkdir -p $WORK_DIR
 fi
 
+SOURCES_DIR=$PUBLISH_DIR/sources
 
 defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
@@ -53,8 +54,6 @@ date >> "$LOG_DIR/source-daily-build-hg.log"
 cat $SOURCE_LOG >> "$LOG_DIR/source-daily-build-hg.log"
 (($EXIT_VALUE)) && echo "Daily sources failed"
 
-
-SOURCES_DIR=$PUBLISH_DIR/sources
 
 # Get new versions from PKG-INFO files (these are updated by dailyrun-sources)
 ORANGE_VERSION=`grep "^Version:" $SOURCES_DIR/Orange.egg-info/PKG-INFO | cut -d " " -f 2`
