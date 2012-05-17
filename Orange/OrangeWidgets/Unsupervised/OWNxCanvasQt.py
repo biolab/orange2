@@ -148,6 +148,8 @@ class NetworkCurve(orangeqt.NetworkCurve):
 
         components = Orange.network.nx.algorithms.components.connected.connected_components(graph)
         distances.matrixType = Orange.core.SymMatrix.Symmetric
+        # TODO!!!!!!!
+        sorted(graph.nodes_iter())
 
         # scale net coordinates
         if avgLinkage:
@@ -711,8 +713,8 @@ class OWNxCanvas(OWPlot):
 
         #add nodes
         #self.vertices_old = [(None, []) for v in self.graph]
-        vertices = dict((v, self.NodeItem(v, parent=self.networkCurve)) for v in self.graph)
-        self.networkCurve.set_nodes(vertices)
+        nodes = dict((v, self.NodeItem(v, parent=self.networkCurve)) for v in self.graph.nodes_iter())
+        self.networkCurve.set_nodes(nodes)
 
         #build edge to row index
         self.edge_to_row = {}
@@ -733,25 +735,21 @@ class OWNxCanvas(OWPlot):
         #add edges
         if self.links is not None and len(self.links) > 0:
             links = self.links
-            links_indices = (self.edge_to_row[i + 1][j + 1] for (i, j) in self.graph.edges())
+            links_indices = (self.edge_to_row[i + 1][j + 1] \
+                             for (i, j) in self.graph.edges_iter())
 
-            if self.graph.is_directed():
-                edges = [EdgeItem(vertices[i], vertices[j],
-                    graph[i][j].get('weight', 1), links_index, arrows=EdgeItem.ArrowV, \
-                    parent=self.networkCurve) for ((i, j), links_index) in \
-                         zip(self.graph.edges(), links_indices)]
-            else:
-                edges = [EdgeItem(vertices[i], vertices[j],
-                    graph[i][j].get('weight', 1), links_index, \
-                    parent=self.networkCurve) for ((i, j), links_index) in \
-                         zip(self.graph.edges(), links_indices)]
+            arrow = EdgeItem.ArrowV if self.graph.is_directed() else None
 
-        elif self.graph.is_directed():
-            edges = [EdgeItem(vertices[i], vertices[j],
-                                      graph[i][j].get('weight', 1), arrows=EdgeItem.ArrowV, parent=self.networkCurve) for (i, j) in self.graph.edges()]
+            edges = [EdgeItem(nodes[i], nodes[j],
+                    graph[i][j].get('weight', 1), links_index, arrows=arrow, \
+                    parent=self.networkCurve) for ((i, j), links_index) in \
+                         zip(self.graph.edges_iter(), links_indices)]
         else:
-            edges = [EdgeItem(vertices[i], vertices[j],
-                                      graph[i][j].get('weight', 1), parent=self.networkCurve) for (i, j) in self.graph.edges()]
+            arrow = EdgeItem.ArrowV if self.graph.is_directed() else None
+
+            edges = [EdgeItem(nodes[i], nodes[j], graph[i][j].get('weight', 1), \
+                              arrows=arrow, parent=self.networkCurve) \
+                                  for (i, j) in self.graph.edges_iter()]
 
         self.networkCurve.set_edges(edges)
         self.networkCurve.update_properties()

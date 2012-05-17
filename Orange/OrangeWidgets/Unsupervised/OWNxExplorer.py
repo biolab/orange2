@@ -386,8 +386,11 @@ try:
             self.cb_show_distances.setEnabled(0)
             self.cb_show_component_distances.setEnabled(0)
 
-            if matrix is None or self.graph_base is None:
+            if matrix is None:
                 self.items_matrix = None
+                return
+
+            if self.graph_base is None:
                 self.networkCanvas.items_matrix = None
                 self.information('No graph found!')
                 return
@@ -1070,7 +1073,7 @@ try:
                     self.information('No network found')
                     self.optButton.setEnabled(False)
                     return
-                if self.items_matrix.dim != self.graph.number_of_nodes():
+                if self.items_matrix.dim != self.graph_base.number_of_nodes():
                     self.error('Distance matrix dimensionality must equal number of vertices')
                     self.optButton.setEnabled(False)
                     return
@@ -1098,7 +1101,7 @@ try:
                 self.optButton.setChecked(False)
                 return
 
-            if self.items_matrix.dim != self.graph.number_of_nodes():
+            if self.items_matrix.dim != self.graph_base.number_of_nodes():
                 self.error('Distance matrix dimensionality must equal number of vertices')
                 self.optButton.setChecked(False)
                 return
@@ -1116,7 +1119,7 @@ try:
             if self.graph.number_of_nodes() == self.graph_base.number_of_nodes():
                 matrix = self.items_matrix
             else:
-                matrix = self.items_matrix.get_items(sorted(self.graph.nodes()))
+                matrix = self.items_matrix.get_items(sorted(self.graph.nodes_iter()))
 
             self.networkCanvas.networkCurve.layout_fragviz(self.frSteps, matrix, self.graph, self.mds_progress, self.opt_from_curr)
 
@@ -1135,7 +1138,7 @@ try:
                 self.optButton.setChecked(False)
                 return
 
-            if self.items_matrix.dim != self.graph.number_of_nodes():
+            if self.items_matrix.dim != self.graph_base.number_of_nodes():
                 self.error('Distance matrix dimensionality must equal number of vertices')
                 self.optButton.setChecked(False)
                 return
