@@ -628,8 +628,8 @@ class OWNxCanvas(OWPlot):
 
         current_nodes = self.networkCurve.nodes()
 
-        center_x = numpy.average([node.x() for node in current_nodes.values()]) if len(current_nodes) > 0 else 0
-        center_y = numpy.average([node.y() for node in current_nodes.values()]) if len(current_nodes) > 0 else 0
+        center_x = numpy.average([node.x() for node in current_nodes.itervalues()]) if len(current_nodes) > 0 else 0
+        center_y = numpy.average([node.y() for node in current_nodes.itervalues()]) if len(current_nodes) > 0 else 0
 
         def closest_nodes_with_pos(nodes):
 
@@ -649,7 +649,7 @@ class OWNxCanvas(OWPlot):
 
         pos = dict((n, [numpy.average(c) for c in zip(*[(current_nodes[u].x(), current_nodes[u].y()) for u in closest_nodes_with_pos(set([n]))])]) for n in add_nodes)
 
-        self.networkCurve.remove_nodes(list(remove_nodes))
+        self.networkCurve.remove_nodes(remove_nodes)
 
         nodes = dict((v, self.NodeItem(v, x=pos[v][0] if len(pos[v]) == 2 else center_x, y=pos[v][1] if len(pos[v]) == 2 else center_y, parent=self.networkCurve)) for v in add_nodes)
         self.networkCurve.add_nodes(nodes)

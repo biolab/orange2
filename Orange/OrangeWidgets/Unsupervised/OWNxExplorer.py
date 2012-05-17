@@ -765,6 +765,7 @@ try:
 
         def set_graph_none(self):
             self.graph = None
+            self.graph_base = None
             #self.graph_base = None
             self._clear_combos()
             self.number_of_nodes_label = -1
