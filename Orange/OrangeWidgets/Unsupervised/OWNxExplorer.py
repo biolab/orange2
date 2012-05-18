@@ -10,11 +10,11 @@ import operator
 import statc
 import time
 
-import Orange
 import OWGUI
 import OWColorPalette
 import orngMDS
 
+from Orange import core, data, feature, network
 from OWWidget import *
 from operator import itemgetter
 
@@ -45,17 +45,17 @@ try:
                      NetworkCanvas=OWNxCanvas):
             OWWidget.__init__(self, parent, signalManager, name, noReport=True)
             #self.contextHandlers = {"": DomainContextHandler("", [ContextField("attributes", selected="markerAttributes"), ContextField("attributes", selected="tooltipAttributes"), "color"])}
-            self.inputs = [("Network", Orange.network.Graph, self.set_graph, Default),
-                           ("Items", Orange.data.Table, self.set_items),
-                           ("Item Subset", Orange.data.Table, self.mark_items),
-                           ("Distances", Orange.core.SymMatrix, self.set_items_distance_matrix),
-                           ("Net View", Orange.network.NxView, self.set_network_view)]
+            self.inputs = [("Network", network.Graph, self.set_graph, Default),
+                           ("Items", data.Table, self.set_items),
+                           ("Item Subset", data.Table, self.mark_items),
+                           ("Distances", core.SymMatrix, self.set_items_distance_matrix),
+                           ("Net View", network.NxView, self.set_network_view)]
 
-            self.outputs = [("Selected Network", Orange.network.Graph),
-                            ("Distance Matrix", Orange.core.SymMatrix),
-                            ("Marked Items", Orange.data.Table),
-                            ("Selected Items", Orange.data.Table),
-                            ("Other Items", Orange.data.Table)]
+            self.outputs = [("Selected Network", network.Graph),
+                            ("Distance Matrix", core.SymMatrix),
+                            ("Marked Items", data.Table),
+                            ("Selected Items", data.Table),
+                            ("Other Items", data.Table)]
                             #("Attribute Selection List", AttributeList)]
 
             self.networkCanvas = NetworkCanvas(self, self.mainArea, "Net Explorer")
@@ -352,7 +352,7 @@ try:
 
         def hide_selection(self):
             nodes = set(self.graph.nodes()).difference(self.networkCanvas.selected_nodes())
-            self.change_graph(Orange.network.nx.Graph.subgraph(self.graph, nodes))
+            self.change_graph(network.nx.Graph.subgraph(self.graph, nodes))
 
         def show_selection(self):
             self.change_graph(self.graph_base)
@@ -371,7 +371,7 @@ try:
                 return
 
             items = self.graph_base.items()
-            if items.domain[att].var_type == Orange.feature.Type.Continuous:
+            if items.domain[att].var_type == feature.Type.Continuous:
                 for v in vertices:
                     items[v][att] = float(self.editValue)
             else:
@@ -406,12 +406,22 @@ try:
             self.cb_show_distances.setEnabled(1)
             self.cb_show_component_distances.setEnabled(1)
 
-            if str(self.optMethod) in ['8', '9', '10']:
-                if self.items_matrix is not None and self.graph is not None and \
-                self.items_matrix.dim == self.graph.number_of_nodes():
+            if self.optMethod in [8, 9, 10]:
+                if self.items_matrix is not None and self.graph_base is not None and \
+                                    self.items_matrix.dim == self.graph_base.number_of_nodes():
                     self.optButton.setEnabled(True)
-                    self.optButton.setChecked(True)
-                    self.graph_layout()
+
+                    if self.optMethod in [8, 9]:
+                        self.cb_opt_from_curr.setEnabled(True)
+
+                    if self.optMethod == 8: # if FragViz, run FR first
+                        self.optMethod = 2
+                        self.optButton.setChecked(True)
+                        self.graph_layout()
+                        self.optMethod = 8
+
+                self.optButton.setChecked(True)
+                self.graph_layout()
 
         def _set_canvas_attr(self, attr, value):
             setattr(self.networkCanvas, attr, value)
@@ -555,7 +565,7 @@ try:
                     graph_node['x'] = plot_node.x()
                     graph_node['y'] = plot_node.y()
 
-                Orange.network.readwrite.write(self.graph, fn)
+                network.readwrite.write(self.graph, fn)
 
         def send_data(self):
             selected_nodes = self.networkCanvas.selected_nodes()
@@ -621,12 +631,12 @@ try:
             self.edgeAttributes = [(var.name, var.varType) for var in edgeVars]
 
             for var in vars:
-                if var.varType in [Orange.feature.Type.Discrete, \
-                                   Orange.feature.Type.Continuous]:
+                if var.varType in [feature.Type.Discrete, \
+                                   feature.Type.Continuous]:
                     self.colorCombo.addItem(self.icons.get(var.varType, \
                                             self.icons[-1]), unicode(var.name))
 
-                if var.varType in [Orange.feature.Type.String] and hasattr(self.graph, 'items') and self.graph_base.items() is not None and len(self.graph_base.items()) > 0:
+                if var.varType in [feature.Type.String] and hasattr(self.graph, 'items') and self.graph_base.items() is not None and len(self.graph_base.items()) > 0:
 
                     value = self.graph_base.items()[0][var].value
 
@@ -641,7 +651,7 @@ try:
                     if len(value.split(',')) > 1:
                         self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), "num of " + unicode(var.name))
 
-                elif var.varType in [Orange.feature.Type.Continuous]:
+                elif var.varType in [feature.Type.Continuous]:
                     self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
                 self.nameComponentCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
@@ -650,7 +660,7 @@ try:
                 self.comboAttSelection.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
             for var in edgeVars:
-                if var.varType in [Orange.feature.Type.Discrete, Orange.feature.Type.Continuous]:
+                if var.varType in [feature.Type.Discrete, feature.Type.Continuous]:
                     self.edgeColorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
             for i in range(self.vertexSizeCombo.count()):
@@ -955,14 +965,14 @@ try:
                 lstNewDomain = [x.name for x in items.domain] + [items.domain[x].name for x in items.domain.getmetas()]
                 commonVars = set(lstNewDomain) & set(lstOrgDomain)
 
-                self.markInputCombo.addItem(self.icons[Orange.feature.Type.Discrete], unicode("ID"))
+                self.markInputCombo.addItem(self.icons[feature.Type.Discrete], unicode("ID"))
 
                 if len(commonVars) > 0:
                     for var in commonVars:
                         orgVar = self.graph_base.items().domain[var]
                         mrkVar = items.domain[var]
 
-                        if orgVar.varType == mrkVar.varType and orgVar.varType == Orange.feature.Type.String:
+                        if orgVar.varType == mrkVar.varType and orgVar.varType == feature.Type.String:
                             self.markInputCombo.addItem(self.icons[orgVar.varType], unicode(orgVar.name))
 
                 self.markInputRadioButton.setEnabled(True)
@@ -1048,19 +1058,19 @@ try:
             if method is not None:
                 self.optMethod = method
 
-            if str(self.optMethod) == '0':
+            if self.optMethod == 0:
                 self.optButton.setEnabled(False)
             else:
                 self.optButton.setEnabled(True)
 
-            if str(self.optMethod) in ['2', '3', '4']:
+            if self.optMethod in [2, 3, 4]:
                 self.stepsSpin.setEnabled(True)
 
-            elif str(self.optMethod) in ['8', '9', '10']:
-                if str(self.optMethod) == '8':
+            elif self.optMethod in [8, 9, 10]:
+                if self.optMethod == 10:
                     self.stepsSpin.label.setText('Pivots: ')
 
-                if str(self.optMethod) in ['9', '10']:
+                if self.optMethod in [8, 9]:
                     self.cb_opt_from_curr.setEnabled(True)
 
                 self.stepsSpin.setEnabled(True)
@@ -1429,11 +1439,11 @@ try:
                 return
 
             self.progressBarInit()
-            components = [c for c in Orange.network.nx.algorithms.components.connected_components(self.graph) if len(c) > 1]
+            components = [c for c in network.nx.algorithms.components.connected_components(self.graph) if len(c) > 1]
             if 'component name' in self.graph_base.items().domain:
                 keyword_table = self.graph_base.items()
             else:
-                keyword_table = Orange.data.Table(Orange.data.Domain(Orange.feature.String('component name')), [[''] for i in range(len(self.graph_base.items()))])
+                keyword_table = data.Table(data.Domain(feature.String('component name')), [[''] for i in range(len(self.graph_base.items()))])
 
             import obiGO
             ontology = obiGO.Ontology.Load(progressCallback=self.progressBarSet)
@@ -1549,7 +1559,7 @@ try:
                 self.progressBarSet(i * 100.0 / len(components))
 
             self.lastNameComponentAttribute = self.nameComponentCombo.currentText()
-            self.set_items(Orange.data.Table([self.graph_base.items(), keyword_table]))
+            self.set_items(data.Table([self.graph_base.items(), keyword_table]))
             self.progressBarFinished()
 
 

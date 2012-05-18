@@ -8,16 +8,14 @@ SELECT_RECTANGLE = 2
 SELECT_POLYGON = 3
 MOVE_SELECTION = 100
 
-import Orange
-import random
 import numpy
 
 from plot.owplot import *
 from plot.owpoint import *
 from plot.owtools import *
 
+from Orange import core, data, misc, network, orangeqt, projection
 from orngScaleScatterPlotData import *
-from Orange import orangeqt
 
 class NodeItem(orangeqt.NodeItem):
     def __init__(self, index, x=None, y=None, parent=None):
@@ -46,7 +44,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
     def set_node_sizes(self, values={}, min_size=0, max_size=0):
         orangeqt.NetworkCurve.set_node_sizes(self, values, min_size, max_size)
 
-    def fragviz_callback(self, a, b, mds, mdsRefresh, components, progress_callback):
+    def fragviz_callback(self, a, b, mds, mdsRefresh, graph_components, matrix_components, progress_callback):
         """Refresh the UI when running  MDS on network components."""
 
         if not self.mdsStep % mdsRefresh:
@@ -54,17 +52,18 @@ class NetworkCurve(orangeqt.NetworkCurve):
             component_props = []
             x_mds = []
             y_mds = []
-            phi = [None] * len(components)
+            phi = [None] * len(graph_components)
             nodes = self.nodes()
+            ncomponents = len(graph_components)
 
-            for i, component in enumerate(components):
+            for i in range(ncomponents):
 
-                if len(mds.points) == len(components):  # if average linkage before
+                if len(mds.points) == ncomponents:  # if average linkage before
                     x_avg_mds = mds.points[i][0]
                     y_avg_mds = mds.points[i][1]
                 else:                                   # if not average linkage before
-                    x = [mds.points[u][0] for u in component]
-                    y = [mds.points[u][1] for u in component]
+                    x = [mds.points[u][0] for u in matrix_components[i]]
+                    y = [mds.points[u][1] for u in matrix_components[i]]
 
                     x_avg_mds = sum(x) / len(x)
                     y_avg_mds = sum(y) / len(y)
@@ -77,8 +76,8 @@ class NetworkCurve(orangeqt.NetworkCurve):
 #                    phi[i] = sum(c) / sum(n)
 
 
-                x = [nodes[i].x() for i in component]
-                y = [nodes[i].y() for i in component]
+                x = [nodes[j].x() for j in graph_components[i]]
+                y = [nodes[j].y() for j in graph_components[i]]
 
                 x_avg_graph = sum(x) / len(x)
                 y_avg_graph = sum(y) / len(y)
@@ -89,7 +88,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
                 component_props.append((x_avg_graph, y_avg_graph, \
                                         x_avg_mds, y_avg_mds, phi))
 
-            for i, component in enumerate(components):
+            for i, component in enumerate(graph_components):
                 x_avg_graph, y_avg_graph, x_avg_mds, \
                 y_avg_mds, phi = component_props[i]
 
@@ -104,9 +103,9 @@ class NetworkCurve(orangeqt.NetworkCurve):
                 # translate vertices
                 if not rotationOnly:
                     self.set_node_coordinates(dict(
-                       (i, ((nodes[i].x() - x_avg_graph) + x_avg_mds,
-                            (nodes[i].y() - y_avg_graph) + y_avg_mds)) \
-                                  for i in component))
+                       (j, ((nodes[j].x() - x_avg_graph) + x_avg_mds,
+                            (nodes[j].y() - y_avg_graph) + y_avg_mds)) \
+                                  for j in component))
 
             #if self.mdsType == MdsType.exactSimulation:
             #    self.mds.points = [[self.graph.coors[0][i], \
@@ -146,28 +145,30 @@ class NetworkCurve(orangeqt.NetworkCurve):
         self.mdsStep = 1
         self.stopMDS = False
 
-        components = Orange.network.nx.algorithms.components.connected.connected_components(graph)
-        distances.matrixType = Orange.core.SymMatrix.Symmetric
-        # TODO!!!!!!!
-        sorted(graph.nodes_iter())
+        nodes_inds = {n: i for i, n in enumerate(sorted(graph.nodes_iter()))}
+        inds_nodes = {i: n for i, n in enumerate(sorted(graph.nodes_iter()))}
+
+        graph_components = network.nx.algorithms.connected_components(graph)
+        matrix_components = [[nodes_inds[n] for n in c] for c in graph_components]
+
+        distances.matrixType = misc.SymMatrix.Symmetric
 
         # scale net coordinates
         if avgLinkage:
-            distances = distances.avgLinkage(components)
+            distances = distances.avgLinkage(matrix_components)
 
         # if only one component
         if distances.dim == 1:
             return 0
 
-        mds = Orange.projection.mds.MDS(distances)
-        mds.optimize(10, Orange.projection.mds.SgnRelStress, 0)
+        mds = projection.mds.MDS(distances)
+        mds.optimize(10, projection.mds.SgnRelStress, 0)
         rect = self.data_rect()
         w_fr = rect.width()
         h_fr = rect.height()
         d_fr = math.sqrt(w_fr ** 2 + h_fr ** 2)
 
-        x_mds = [mds.points[u][0] for u in range(len(mds.points))]
-        y_mds = [mds.points[u][1] for u in range(len(mds.points))]
+        x_mds, y_mds = zip(*mds.points)
         w_mds = max(x_mds) - min(x_mds)
         h_mds = max(y_mds) - min(y_mds)
         d_mds = math.sqrt(w_mds ** 2 + h_mds ** 2)
@@ -180,8 +181,8 @@ class NetworkCurve(orangeqt.NetworkCurve):
             d_mds = 1
             d_fr = 1
 
-        self.set_node_coordinates(dict(
-           (n, (nodes[n].x() * d_mds / d_fr, nodes[n].y() * d_mds / d_fr)) for n in nodes))
+        self.set_node_coordinates({key: (node.x() * d_mds / d_fr, node.y() * d_mds / d_fr) \
+                                   for key, node in nodes.iteritems()})
 
         #self.update_properties()
         p.replot()
@@ -189,7 +190,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
 
         if opt_from_curr:
             if avgLinkage:
-                for u, c in enumerate(components):
+                for u, c in enumerate(graph_components):
                     x = sum([nodes[n].x() for n in c]) / len(c)
                     y = sum([nodes[n].y() for n in c]) / len(c)
                     mds.points[u][0] = x
@@ -201,19 +202,15 @@ class NetworkCurve(orangeqt.NetworkCurve):
         else:
             mds.Torgerson()
 
-        mds.optimize(steps, Orange.projection.mds.SgnRelStress, minStressDelta,
+        mds.optimize(steps, projection.mds.SgnRelStress, minStressDelta,
                      progressCallback=
-                         lambda a,
-                                b=None,
-                                mds=mds,
-                                mdsRefresh=mdsRefresh,
-                                components=components,
-                                progress_callback=progress_callback:
-                                    self.fragviz_callback(a, b, mds, mdsRefresh, components, progress_callback))
+                         lambda a, b=None, mds=mds, mdsRefresh=mdsRefresh, graph_comp=graph_components,
+                                matrix_comp=matrix_components, progress_callback=progress_callback:
+                         self.fragviz_callback(a, b, mds, mdsRefresh, graph_comp, matrix_comp, progress_callback))
 
-        self.fragviz_callback(mds.avgStress, 0, mds, mdsRefresh, components, progress_callback)
+        self.fragviz_callback(mds.avgStress, 0, mds, mdsRefresh, graph_components, matrix_components, progress_callback)
 
-        if progress_callback != None:
+        if progress_callback is not None:
             progress_callback(mds.avgStress, self.mdsStep)
 
         p.animate_points = animate_points
@@ -224,9 +221,8 @@ class NetworkCurve(orangeqt.NetworkCurve):
 
         if not self.mdsStep % mdsRefresh:
 
-            self.set_node_coordinates(dict((u, (mds.points[u][0], \
-                                                mds.points[u][1])) for u in \
-                                           range(len(mds.points))))
+            self.set_node_coordinates({n: (mds.points[i][0], \
+                                           mds.points[i][1]) for i, n in enumerate(sorted(self.nodes()))})
             self.plot().replot()
             qApp.processEvents()
 
@@ -255,16 +251,15 @@ class NetworkCurve(orangeqt.NetworkCurve):
         self.mdsStep = 1
         self.stopMDS = False
 
-        distances.matrixType = Orange.core.SymMatrix.Symmetric
-        mds = Orange.projection.mds.MDS(distances)
-        mds.optimize(10, Orange.projection.mds.SgnRelStress, 0)
+        distances.matrixType = core.SymMatrix.Symmetric
+        mds = projection.mds.MDS(distances)
+        mds.optimize(10, projection.mds.SgnRelStress, 0)
         rect = self.data_rect()
         w_fr = rect.width()
         h_fr = rect.height()
         d_fr = math.sqrt(w_fr ** 2 + h_fr ** 2)
 
-        x_mds = [mds.points[u][0] for u in range(len(mds.points))]
-        y_mds = [mds.points[u][1] for u in range(len(mds.points))]
+        x_mds, y_mds = zip(*mds.points)
         w_mds = max(x_mds) - min(x_mds)
         h_mds = max(y_mds) - min(y_mds)
         d_mds = math.sqrt(w_mds ** 2 + h_mds ** 2)
@@ -285,7 +280,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
         else:
             mds.Torgerson()
 
-        mds.optimize(steps, Orange.projection.mds.SgnRelStress, minStressDelta,
+        mds.optimize(steps, projection.mds.SgnRelStress, minStressDelta,
                      progressCallback=
                          lambda a,
                                 b=None,
@@ -296,7 +291,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
 
         self.mds_callback(mds.avgStress, 0, mds, mdsRefresh, progress_callback)
 
-        if progress_callback != None:
+        if progress_callback is not None:
             progress_callback(mds.avgStress, self.mdsStep)
 
         p.animate_points = animate_points
@@ -443,7 +438,7 @@ class OWNxCanvas(OWPlot):
             self.showComponentAttribute = None
             return
 
-        components = Orange.network.nx.algorithms.components.connected_components(self.graph)
+        components = network.nx.algorithms.components.connected_components(self.graph)
         nodes = self.networkCurve.nodes()
 
         for c in components:
@@ -467,7 +462,7 @@ class OWNxCanvas(OWPlot):
             for var in table.domain.variables:
                 if var.name == attribute:
                     colorIndex = i
-                    if var.varType == orange.VarTypes.Discrete:
+                    if var.varType == core.VarTypes.Discrete:
                         colorIndices = getVariableValueIndices(var, colorIndex)
 
                 i += 1
@@ -475,13 +470,13 @@ class OWNxCanvas(OWPlot):
             for i, var in metas.iteritems():
                 if var.name == attribute:
                     colorIndex = i
-                    if var.varType == orange.VarTypes.Discrete:
+                    if var.varType == core.VarTypes.Discrete:
                         colorIndices = getVariableValueIndices(var, colorIndex)
 
         colorIndices['?'] = len(colorIndices)
         palette.setNumberOfColors(len(colorIndices))
 
-        if colorIndex != None and table.domain[colorIndex].varType == orange.VarTypes.Continuous:
+        if colorIndex != None and table.domain[colorIndex].varType == core.VarTypes.Continuous:
             minValue = float(min([x[colorIndex].value for x in table if x[colorIndex].value != "?"] or [0.0]))
             maxValue = float(max([x[colorIndex].value for x in table if x[colorIndex].value != "?"] or [0.0]))
 
@@ -497,15 +492,15 @@ class OWNxCanvas(OWPlot):
         if nodes is None:
             nodes = self.graph.nodes()
 
-        if colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous and minValue == maxValue:
+        if colorIndex is not None and self.items.domain[colorIndex].varType == core.VarTypes.Continuous and minValue == maxValue:
             colors.update((node, self.discPalette[0]) for node in nodes)
 
-        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Continuous:
+        elif colorIndex is not None and self.items.domain[colorIndex].varType == core.VarTypes.Continuous:
             colors.update((v, self.contPalette[(float(self.items[v][colorIndex].value) - minValue) / (maxValue - minValue)])
                           if str(self.items[v][colorIndex].value) != '?' else
                           (v, self.discPalette[0]) for v in nodes)
 
-        elif colorIndex is not None and self.items.domain[colorIndex].varType == orange.VarTypes.Discrete:
+        elif colorIndex is not None and self.items.domain[colorIndex].varType == core.VarTypes.Discrete:
             colors.update((v, self.discPalette[colorIndices[self.items[v][colorIndex].value]]) for v in nodes)
 
         else:
@@ -524,7 +519,7 @@ class OWNxCanvas(OWPlot):
             self.node_label_attributes = attributes
 
         label_attributes = []
-        if self.items is not None and isinstance(self.items, orange.ExampleTable):
+        if self.items is not None and isinstance(self.items, data.Table):
             label_attributes = [self.items.domain[att] for att in \
                 self.node_label_attributes if att in self.items.domain]
 
@@ -564,15 +559,15 @@ class OWNxCanvas(OWPlot):
         colorIndices, colorIndex, minValue, maxValue = self.getColorIndeces(self.links, attribute, self.discPalette)
         colors = []
 
-        if colorIndex is not None and self.links.domain[colorIndex].varType == orange.VarTypes.Continuous and minValue == maxValue:
+        if colorIndex is not None and self.links.domain[colorIndex].varType == core.VarTypes.Continuous and minValue == maxValue:
             colors = [self.discEdgePalette[0] for edge in self.networkCurve.edge_indices()]
 
-        elif colorIndex is not None and self.links.domain[colorIndex].varType == orange.VarTypes.Continuous:
+        elif colorIndex is not None and self.links.domain[colorIndex].varType == core.VarTypes.Continuous:
             colors = [self.contPalette[(float(self.links[edge.links_index()][colorIndex].value) - minValue) / (maxValue - minValue)]
                           if str(self.links[edge.links_index()][colorIndex].value) != '?' else
                           self.discPalette[0] for edge in self.networkCurve.edges()]
 
-        elif colorIndex is not None and self.links.domain[colorIndex].varType == orange.VarTypes.Discrete:
+        elif colorIndex is not None and self.links.domain[colorIndex].varType == core.VarTypes.Discrete:
             colors = [self.discEdgePalette[colorIndices[self.links[edge.links_index()][colorIndex].value]] for edge in self.networkCurve.edges()]
 
         else:
@@ -591,7 +586,7 @@ class OWNxCanvas(OWPlot):
             self.edge_label_attributes = attributes
 
         label_attributes = []
-        if self.links is not None and isinstance(self.links, orange.ExampleTable):
+        if self.links is not None and isinstance(self.links, data.Table):
             label_attributes = [self.links.domain[att] for att in \
                 self.edge_label_attributes if att in self.links.domain]
 
@@ -607,12 +602,12 @@ class OWNxCanvas(OWPlot):
 
     def set_tooltip_attributes(self, attributes):
         if self.graph is None or self.items is None or \
-           not isinstance(self.items, orange.ExampleTable):
+           not isinstance(self.items, data.Table):
             return
 
         tooltip_attributes = [self.items.domain[att] for att in \
                                  attributes if att in self.items.domain]
-        self.networkCurve.set_node_tooltips(dict((node, ', '.join(str(\
+        self.networkCurve.set_node_tooltips(dict((node, ', '.join(str( \
                    self.items[node][att]) for att in tooltip_attributes)) \
                                                         for node in self.graph))
 
