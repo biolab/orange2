@@ -101,6 +101,10 @@ def readCategories(silent=False):
                 pass
         except ImportError, err:
             print "While loading, importing widgets '%s' failed: %s" % (entry_point.name, err)
+        except pkg_resources.DistributionNotFound, err:
+            print "Loading add-on '%s' failed because of a missing dependency: '%s'" % (entry_point.name, err)
+        except Exception, err:
+            print "An exception occurred during the loading of '%s':\n%r" %(entry_point.name, err)
 
     categories = {}     
     for defCat, dirName, addOn, isPrototype, module in directories:
