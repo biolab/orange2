@@ -57,6 +57,15 @@ def add_history_to_items(G, lblhistory):
         G.set_items(Orange.data.Table([items, data]))
 
 
+class CommunityDetection(object):
+
+    def __init__(self, algorithm, **kwargs):
+        self.algorithm = algorithm
+        self.kwargs = kwargs
+
+    def __call__(self, G):
+        return self.algorithm(G, **self.kwargs)
+
 def label_propagation_hop_attenuation(G, results2items=0, \
                                       resultHistory2items=0, iterations=1000, \
                                       delta=0.1, node_degree_preference=0):

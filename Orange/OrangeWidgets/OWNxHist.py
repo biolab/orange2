@@ -18,7 +18,6 @@ class OWNxHist():
     def __init__(self, parent=None, type=0):
         self.parent = parent
 
-    def addHistogramControls(self, parent=None):
         # set default settings
         self.spinLowerThreshold = 0
         self.spinLowerChecked = False
@@ -35,6 +34,7 @@ class OWNxHist():
         self.graph = None
         self.graph_matrix = None
 
+    def addHistogramControls(self, parent=None):
         if parent is None:
             parent = self.controlArea
 
@@ -98,7 +98,12 @@ class OWNxHist():
         self.searchStringTimer.start(750)
 
     def setMatrix(self, data):
-        if data == None: return
+        if data == None:
+            self.matrix = None
+            self.histogram.setValues([])
+            self.attributeCombo.clear()
+            self.generateGraph()
+            return
 
         if not hasattr(data, "items") or data.items is None:
             setattr(data, "items", [i for i in range(data.dim)])
@@ -116,15 +121,15 @@ class OWNxHist():
 
         self.attributeCombo.clear()
         vars = []
-        if (self.matrix != None):
-            if hasattr(self.matrix, "items"):
 
-                if isinstance(self.matrix.items, orange.ExampleTable):
-                    vars = list(self.matrix.items.domain.variables)
+        if hasattr(self.matrix, "items"):
 
-                    metas = self.matrix.items.domain.getmetas(0)
-                    for i, var in metas.iteritems():
-                        vars.append(var)
+            if isinstance(self.matrix.items, orange.ExampleTable):
+                vars = list(self.matrix.items.domain.variables)
+
+                metas = self.matrix.items.domain.getmetas(0)
+                for i, var in metas.iteritems():
+                    vars.append(var)
 
         self.icons = self.createAttributeIconDict()
 
@@ -175,8 +180,17 @@ class OWNxHist():
             self.netOption = 1
 
         if self.matrix == None:
-            self.infoa.setText("No data loaded.")
-            self.infob.setText("")
+            if hasattr(self, "infoa"):
+                self.infoa.setText("No data loaded.")
+            if hasattr(self, "infob"):
+                self.infob.setText("")
+            if hasattr(self, "infoc"):
+                self.infoc.setText("")
+            self.pconnected = 0
+            self.nedges = 0
+            self.graph = None
+            if hasattr(self, "sendSignals"):
+                self.sendSignals()
             return
 
         #print len(self.histogram.yData), len(self.histogram.xData)
@@ -265,7 +279,7 @@ class OWNxHist():
                 self.graph = graph
 
         if matrix != None:
-            matrix.items = self.graph.items()
+            matrix.setattr("items", self.graph.items())
         self.graph_matrix = matrix
 
         if self.graph is None:

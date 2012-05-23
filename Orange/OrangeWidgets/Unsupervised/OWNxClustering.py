@@ -12,7 +12,6 @@ import OWGUI
 
 from OWWidget import *
 
-
 class OWNxClustering(OWWidget):
 
     settingsList = ['method', 'iterationHistory', 'autoApply', 'iterations',
@@ -23,7 +22,8 @@ class OWNxClustering(OWWidget):
 
         self.inputs = [("Network", Orange.network.Graph,
                         self.setNetwork, Default)]
-        self.outputs = [("Network", Orange.network.Graph)]
+        self.outputs = [("Network", Orange.network.Graph),
+                        ("Community Detection", cd.CommunityDetection)]
 
         self.net = None
         self.method = 0
@@ -56,6 +56,8 @@ class OWNxClustering(OWWidget):
         OWGUI.button(self.controlArea, self, "Commit",
                      callback=lambda b=True: self.cluster(b))
 
+        self.cluster()
+
     def setNetwork(self, net):
         self.net = net
         if self.autoApply:
@@ -67,21 +69,26 @@ class OWNxClustering(OWWidget):
 
         self.info.setText(' ')
 
+        if self.method == 0:
+            alg = cd.label_propagation
+            kwargs = {'results2items': 1,
+                      'resultHistory2items': self.iterationHistory,
+                      'iterations': self.iterations}
+
+        elif self.method == 1:
+            alg = cd.label_propagation_hop_attenuation
+            kwargs = {'results2items': 1,
+                      'resultHistory2items': self.iterationHistory,
+                      'iterations': self.iterations,
+                      'delta': self.hop_attenuation}
+
+        self.send("Community Detection", cd.CommunityDetection(alg, **kwargs))
+
         if self.net is None:
             self.send("Network", None)
             return
 
-        if self.method == 0:
-            labels = cd.label_propagation(self.net, results2items=1,
-                                    resultHistory2items=self.iterationHistory,
-                                    iterations=self.iterations)
-        if self.method == 1:
-            labels = cd.label_propagation_hop_attenuation(
-                                    self.net,
-                                    results2items=1,
-                                    resultHistory2items=self.iterationHistory,
-                                    iterations=self.iterations,
-                                    delta=self.hop_attenuation)
+        labels = alg(self.net, **kwargs)
 
         self.info.setText('%d clusters found' % len(set(labels.values())))
         self.send("Network", self.net)
