@@ -17,6 +17,24 @@
     You should have received a copy of the GNU General Public License
     along with Orange.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#define USE_TR1 1
+
+#if USE_TR1
+    #if _MSC_VER
+        #define HAVE_TR1_DIR 0
+    #else
+        #define HAVE_TR1_DIR 1
+    #endif
+    // Diffrent includes required
+    #if HAVE_TR1_DIR
+        #include <tr1/unordered_map>
+    #else
+        #include <unordered_map>
+    #endif
+#endif
+
+
 #include "progress.hpp"
 
 #include "hclust.ppp"
@@ -653,20 +671,8 @@ ordering_element::ordering_element(const ordering_element & other):
 	   right(other.right), w(other.w), k(other.k)
 {}
 
-#define USE_TR1 1
 
 #if USE_TR1
-	#if _MSC_VER
-		#define HAVE_TR1_DIR 0
-	#else
-		#define HAVE_TR1_DIR 1
-	#endif
-	// Diffrent includes required 
-	#if HAVE_TR1_DIR
-		#include <tr1/unordered_map>
-	#else
-		#include <unordered_map>
-	#endif
 	typedef std::tr1::unordered_map<m_element, double, m_element_hash> join_scores;
 	typedef std::tr1::unordered_map<m_element, ordering_element, m_element_hash> cluster_ordering;
 #else
