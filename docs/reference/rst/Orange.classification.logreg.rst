@@ -151,6 +151,8 @@ of variables and handling of constant variables and singularities.
 
 .. autofunction:: dump
 
+.. autoclass:: LibLinearLogRegLearner
+   :members:
 
 
 Examples
@@ -262,3 +264,5 @@ The output of this script is::
      8 x a6
     10 x a9
     10 x a8
+
+..
