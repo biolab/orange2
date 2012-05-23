@@ -22,8 +22,8 @@
 #ifndef __ROOT_HPP
 #define __ROOT_HPP
 
-#include "garbage.hpp"
 #include "errors.hpp"
+#include "garbage.hpp"
 
 
 class TValue;

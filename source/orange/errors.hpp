@@ -22,6 +22,7 @@
 #define __ERRORS_HPP
 
 #include <string>
+#include "px/orange_globals.hpp"
 
 using namespace std;
 
@@ -45,8 +46,6 @@ public:
    { return err_desc.c_str(); };
 };
 #endif
-
-#include "garbage.hpp"
 
 void ORANGE_API raiseError(const char *anerr, ...);
 void ORANGE_API raiseErrorWho(const char *who, const char *anerr, ...);

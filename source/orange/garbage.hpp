@@ -55,6 +55,7 @@ using namespace std;
 
 // Not the most appropriate, but surely the most suitable place:
 #include "px/orange_globals.hpp"
+#include "errors.hpp"
 
 #define WRAPPER ORANGE_WRAPPER
 #define VWRAPPER ORANGE_VWRAPPER

@@ -24,7 +24,7 @@
 #include "stladdon.hpp"
 #include "errors.hpp"
 #include <stdio.h>
-
+#include <string.h>
 
 TProgArguments::TProgArguments() :
 allowSpaces(false)
