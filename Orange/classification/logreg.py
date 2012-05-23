@@ -1018,12 +1018,13 @@ class LibLinearLogRegLearner(Orange.core.LinearLearner):
     __new__ = Orange.utils._orange__new__(base=Orange.core.LinearLearner)
 
     def __init__(self, solver_type=L2R_LR, C=1.0, eps=0.01, normalization=True,
-                 **kwargs):
+            bias=-1.0, **kwargs):
         """
         :param solver_type: One of the following class constants: 
             ``L2_LR`` or``L2_LR_DUAL``
         
-        :param C: Regularization parameter (default 1.0)
+        :param C: Regularization parameter (default 1.0). Higher values of C mean 
+            less regularization (C is a coefficient for the loss function).
         :type C: float
         
         :param eps: Stopping criteria (default 0.01)
@@ -1032,14 +1033,18 @@ class LibLinearLogRegLearner(Orange.core.LinearLearner):
         :param normalization: Normalize the input data prior to learning
             (default True)
         :type normalization: bool
+
+        :param bias: If positive, use it as a bias (default -1).
+        :type bias: float
         
         """
         self.solver_type = solver_type
         self.C = C
         self.eps = eps
         self.normalization = normalization
+        self.bias = bias
 
-        for name, valu in kwargs.items():
+        for name, value in kwargs.items():
             setattr(self, name, value)
 
     def __call__(self, data, weight_id=None):
