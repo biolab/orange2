@@ -1014,6 +1014,7 @@ class LibLinearLogRegLearner(Orange.core.LinearLearner):
 
     L2R_LR = Orange.core.LinearLearner.L2R_LR
     L2R_LR_DUAL = Orange.core.LinearLearner.L2R_LR_Dual
+    L1R_LR = Orange.core.LinearLearner.L1R_LR
 
     __new__ = Orange.utils._orange__new__(base=Orange.core.LinearLearner)
 
@@ -1021,7 +1022,7 @@ class LibLinearLogRegLearner(Orange.core.LinearLearner):
             bias=-1.0, **kwargs):
         """
         :param solver_type: One of the following class constants: 
-            ``L2_LR`` or``L2_LR_DUAL``
+            ``L2_LR``, ``L2_LR_DUAL``, ``L1R_LR``.
         
         :param C: Regularization parameter (default 1.0). Higher values of C mean 
             less regularization (C is a coefficient for the loss function).
