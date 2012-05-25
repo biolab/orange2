@@ -1042,7 +1042,7 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
       futureQuality /= rule->classDistribution->atint(targetClass);
     }
   }
-
+ 
   // store best rule as best rule and return expected quality of this rule
   rule->quality = quality;
   if (improved >= min_improved &&
