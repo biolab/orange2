@@ -11,7 +11,7 @@ below. Module :obj:`Orange.evaluation.scoring` uses such data to
 compute various performance scores like classification accuracy and
 AUC.
 
-There is a third module, which is unrelated to this
+There is a third module available as an add-on, which is unrelated to this
 scheme,:obj:`Orange.evaluation.reliability`, that assesses the reliability
 of individual predictions.
 
@@ -20,7 +20,6 @@ of individual predictions.
 
    Orange.evaluation.testing
    Orange.evaluation.scoring
-   Orange.evaluation.reliability
 
 Classes for storing the experimental results
 --------------------------------------------
