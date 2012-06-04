@@ -144,7 +144,7 @@ def label_propagation_hop_attenuation(G, results2items=0, \
 
 
 def label_propagation(G, results2items=0, \
-                      resultHistory2items=0, iterations=1000):
+                      resultHistory2items=0, iterations=1000, seed=None):
     """Label propagation for community detection, Raghavan et al., 2007
 
     :param G: A Orange graph.
@@ -163,6 +163,12 @@ def label_propagation(G, results2items=0, \
 
     """
 
+    if seed is not None:
+        random.seed(seed)
+
+    vertices = sorted(G.nodes_iter())
+    labels = dict(zip(vertices, range(G.number_of_nodes())))
+
     def next_label(neighbors):
         """Updating rule as described by Raghavan et al., 2007
 
@@ -173,8 +179,6 @@ def label_propagation(G, results2items=0, \
         m = max(lbls)[0]
         return [l for c, l in lbls if c >= m]
 
-    vertices = G.nodes()
-    labels = dict(zip(vertices, range(G.number_of_nodes())))
     lblhistory = []
     for i in range(iterations):
         random.shuffle(vertices)
