@@ -1485,7 +1485,7 @@ def replace_use_weights(fun):
 
 def replace_discrete_probabilities_with_list(method=False):
     if environ.orange_no_deprecated_members:
-        return fun
+        return lambda fun: fun
 
     def decorator(fun):
         @functools.wraps(fun)
