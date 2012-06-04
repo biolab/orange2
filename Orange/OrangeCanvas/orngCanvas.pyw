@@ -4,6 +4,7 @@
 
 # This module has to be imported first because it takes care of the system PATH variable
 # Namely, it throws out the MikTeX directories which contain an incompatible Qt .dll's
+import Orange
 import orngEnviron, Orange.utils.addons
 
 from PyQt4.QtCore import *
