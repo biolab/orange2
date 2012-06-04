@@ -38,7 +38,7 @@ class StackedClassificationLearner(Orange.classification.Learner):
         domain = Orange.data.Domain(features + [data.domain.class_var])
         p_data = Orange.data.Table(domain)
         for r in res.results:
-            p_data.append([p for ps in r.probabilities for p in ps[:-1]] + [r.actual_class])
+            p_data.append([p for ps in r.probabilities for p in list(ps)[:-1]] + [r.actual_class])
         meta_classifier = self.meta_learner(p_data)
 
         classifiers = [l(data, weight) for l in self.learners]

@@ -1483,6 +1483,30 @@ def replace_use_weights(fun):
         return fun(*args, **kwargs)
     return wrapped
 
+def replace_discrete_probabilities_with_list(method=False):
+    if environ.orange_no_deprecated_members:
+        return fun
+
+    def decorator(fun):
+        @functools.wraps(fun)
+        def wrapped(*args, **kwargs):
+            res = args[method] if len(args)>method else kwargs.get("res", kwargs.get("test_results", None))
+            convert = res is not None
+
+            if convert:
+                old_probs = []
+                for r in res.results:
+                    old_probs.append(r.probabilities)
+                    r.probabilities = [list(p) if type(p) is Orange.statistics.distribution.Discrete
+                                       else p for p in r.probabilities]
+            result = fun(*args, **kwargs)
+            if convert:
+                for r, old in zip(res.results, old_probs):
+                    r.probabilities = old
+            return result
+        return wrapped
+    return decorator
+
 class AUC(list):
     """
     Compute the area under ROC curve given a set of experimental results.
@@ -1538,6 +1562,7 @@ class AUC(list):
         if test_results is not None:
             self[:] = self.__call__(test_results)
 
+    @replace_discrete_probabilities_with_list(method=True)
     def __call__(self, test_results):
         if len(test_results.class_values) < 2:
             raise ValueError("Cannot compute AUC on a single-class problem")
@@ -1721,6 +1746,7 @@ class AUC_for_single_class(AUC):
 
         super(AUC_for_single_class, self).__init__(test_results, ignore_weights=ignore_weights)
 
+    @replace_discrete_probabilities_with_list(method=True)
     def __call__(self, test_results):
         return self._compute_for_single_class(test_results, self.class_index)
 
@@ -1736,6 +1762,7 @@ class AUC_for_pair_of_classes(AUC):
 
         super(AUC_for_pair_of_classes, self).__init__(test_results, ignore_weights=ignore_weights)
 
+    @replace_discrete_probabilities_with_list(method=True)
     def __call__(self, test_results):
         return self._compute_for_pair_of_classes(test_results, self.class_index1, self.class_index2)
 
@@ -1747,6 +1774,7 @@ class AUC_matrix(AUC):
     are -1.
     """
 
+    @replace_discrete_probabilities_with_list(method=True)
     def __call__(self, test_results):
         numberOfClasses = len(test_results.class_values)
         number_of_learners = test_results.number_of_learners
@@ -1772,12 +1800,14 @@ class AUC_matrix(AUC):
 
 #Backward compatibility
 @replace_use_weights
+@replace_discrete_probabilities_with_list
 def AUC_binary(res, ignore_weights=False):
     auc = deprecated_function_name(AUC)(ignore_weights=ignore_weights)
     auc._compute_for_binary_class(res)
     return auc
 
 @replace_use_weights
+@replace_discrete_probabilities_with_list
 def AUC_multi(res, ignore_weights=False, method=0):
     auc = deprecated_function_name(AUC)(ignore_weights=ignore_weights,
         method=method)
@@ -1826,6 +1856,7 @@ AUC_matrix = replace_use_weights(AUC_matrix)
 
 
 @deprecated_keywords({"unweighted": "ignore_weights"})
+@replace_discrete_probabilities_with_list
 def McNemar(res, ignore_weights=False, **argkw):
     """
     Compute a triangular matrix with McNemar statistics for each pair of
@@ -1873,7 +1904,7 @@ def McNemar(res, ignore_weights=False, **argkw):
 
     return mcm
 
-
+@replace_discrete_probabilities_with_list
 def McNemar_of_two(res, lrn1, lrn2, ignore_weights=False):
     """
     McNemar_of_two computes a McNemar statistics for a pair of classifier,
@@ -1903,7 +1934,7 @@ def McNemar_of_two(res, lrn1, lrn2, ignore_weights=False):
     else:
         return 0
 
-
+@replace_discrete_probabilities_with_list
 def Friedman(res, stat=CA):
     """
     Compare classifiers with Friedman test, treating folds as different examles.
@@ -1928,7 +1959,7 @@ def Friedman(res, stat=CA):
 
     return F, statc.chisqprob(F, k - 1), sums
 
-
+@replace_discrete_probabilities_with_list
 def Wilcoxon_pairs(res, avgranks, stat=CA):
     """
     Return a triangular matrix, where element[i][j] stores significance of
