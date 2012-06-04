@@ -42,6 +42,43 @@ def gettotsize(res):
     else:
         raise ValueError, "Cannot compute the score: no examples."
 
+# Backward compatibility
+def replace_use_weights(fun):
+    if environ.orange_no_deprecated_members:
+        return fun
+
+    @functools.wraps(fun)
+    def wrapped(*args, **kwargs):
+        use_weights = kwargs.pop("useWeights", None)
+        if use_weights is not None:
+            deprecation_warning("useWeights", "ignore_weights")
+            kwargs["ignore_weights"] = not use_weights
+        return fun(*args, **kwargs)
+    return wrapped
+
+def replace_discrete_probabilities_with_list(method):
+    if environ.orange_no_deprecated_members:
+        return lambda fun: fun
+
+    def decorator(fun):
+        @functools.wraps(fun)
+        def wrapped(*args, **kwargs):
+            res = args[method] if len(args)>method else kwargs.get("res", kwargs.get("test_results", None))
+            convert = res is not None
+
+            if convert:
+                old_probs = []
+                for r in res.results:
+                    old_probs.append(r.probabilities)
+                    r.probabilities = [list(p) if type(p) is Orange.statistics.distribution.Discrete
+                                       else p for p in r.probabilities]
+            result = fun(*args, **kwargs)
+            if convert:
+                for r, old in zip(res.results, old_probs):
+                    r.probabilities = old
+            return result
+        return wrapped
+    return decorator
 
 def split_by_iterations(res):
     """Split ExperimentResults of a multiple iteratation test into a list
@@ -997,6 +1034,7 @@ recall = Recall
 
 @deprecated_keywords({"classIndex": "class_index",
                       "unweighted": "ignore_weights"})
+@replace_discrete_probabilities_with_list(False)
 def AUCWilcoxon(res, class_index= -1, ignore_weights=False, **argkw):
     """Compute the area under ROC (AUC) and its standard error using
     Wilcoxon's approach proposed by Hanley and McNeal (1982). If 
@@ -1040,6 +1078,7 @@ AROC = AUCWilcoxon # for backward compatibility, AROC is obsolete
 
 @deprecated_keywords({"classIndex": "class_index",
                       "unweighted": "ignore_weights"})
+@replace_discrete_probabilities_with_list(False)
 def compare_2_AUCs(res, lrn1, lrn2, class_index= -1,
                    ignore_weights=False, **argkw):
     return corn.compare2ROCs(res, lrn1, lrn2, class_index,
@@ -1050,6 +1089,7 @@ compare_2_AROCs = compare_2_AUCs
 
 
 @deprecated_keywords({"classIndex": "class_index"})
+@replace_discrete_probabilities_with_list(False)
 def compute_ROC(res, class_index= -1):
     """Compute a ROC curve as a list of (x, y) tuples, where x is 
     1-specificity and y is sensitivity.
@@ -1109,6 +1149,7 @@ def ROC_add_point(P, R, keep_concavities=1):
 
 @deprecated_keywords({"classIndex": "class_index",
                       "keepConcavities": "keep_concavities"})
+@replace_discrete_probabilities_with_list(False)
 def TC_compute_ROC(res, class_index= -1, keep_concavities=1):
     problists, tots = corn.computeROCCumulative(res, class_index)
 
@@ -1337,6 +1378,7 @@ def TC_threshold_average_ROC(roc_curves, samples=10):
 ##  - yesClassRugPoints is an array of (x, 1) points
 ##  - noClassRugPoints is an array of (x, 0) points
 @deprecated_keywords({"classIndex": "class_index"})
+@replace_discrete_probabilities_with_list(False)
 def compute_calibration_curve(res, class_index= -1):
     ## merge multiple iterations into one
     mres = Orange.evaluation.testing.ExperimentResults(1, res.classifier_names,
@@ -1403,6 +1445,7 @@ def compute_calibration_curve(res, class_index= -1):
 ##  - curve is an array of points ((TP + FP) / (P + N), TP / P, (th, FP / N))
 ##    on the Lift Curve
 @deprecated_keywords({"classIndex": "class_index"})
+@replace_discrete_probabilities_with_list(False)
 def compute_lift_curve(res, class_index= -1):
     ## merge multiple iterations into one
     mres = Orange.evaluation.testing.ExperimentResults(1, res.classifier_names,
@@ -1441,6 +1484,7 @@ def is_CDT_empty(cdt):
 
 @deprecated_keywords({"classIndex": "class_index",
                       "unweighted": "ignore_weights"})
+@replace_discrete_probabilities_with_list(False)
 def compute_CDT(res, class_index= -1, ignore_weights=False, **argkw):
     """Obsolete, don't use."""
     if class_index < 0:
@@ -1468,44 +1512,6 @@ def compute_CDT(res, class_index= -1, ignore_weights=False, **argkw):
         return CDTs
     else:
         return corn.computeCDT(res, class_index, useweights)
-
-# Backward compatibility
-def replace_use_weights(fun):
-    if environ.orange_no_deprecated_members:
-        return fun
-
-    @functools.wraps(fun)
-    def wrapped(*args, **kwargs):
-        use_weights = kwargs.pop("useWeights", None)
-        if use_weights is not None:
-            deprecation_warning("useWeights", "ignore_weights")
-            kwargs["ignore_weights"] = not use_weights
-        return fun(*args, **kwargs)
-    return wrapped
-
-def replace_discrete_probabilities_with_list(method=False):
-    if environ.orange_no_deprecated_members:
-        return lambda fun: fun
-
-    def decorator(fun):
-        @functools.wraps(fun)
-        def wrapped(*args, **kwargs):
-            res = args[method] if len(args)>method else kwargs.get("res", kwargs.get("test_results", None))
-            convert = res is not None
-
-            if convert:
-                old_probs = []
-                for r in res.results:
-                    old_probs.append(r.probabilities)
-                    r.probabilities = [list(p) if type(p) is Orange.statistics.distribution.Discrete
-                                       else p for p in r.probabilities]
-            result = fun(*args, **kwargs)
-            if convert:
-                for r, old in zip(res.results, old_probs):
-                    r.probabilities = old
-            return result
-        return wrapped
-    return decorator
 
 class AUC(list):
     """
@@ -1800,14 +1806,14 @@ class AUC_matrix(AUC):
 
 #Backward compatibility
 @replace_use_weights
-@replace_discrete_probabilities_with_list
+@replace_discrete_probabilities_with_list(False)
 def AUC_binary(res, ignore_weights=False):
     auc = deprecated_function_name(AUC)(ignore_weights=ignore_weights)
     auc._compute_for_binary_class(res)
     return auc
 
 @replace_use_weights
-@replace_discrete_probabilities_with_list
+@replace_discrete_probabilities_with_list(False)
 def AUC_multi(res, ignore_weights=False, method=0):
     auc = deprecated_function_name(AUC)(ignore_weights=ignore_weights,
         method=method)
@@ -1856,7 +1862,7 @@ AUC_matrix = replace_use_weights(AUC_matrix)
 
 
 @deprecated_keywords({"unweighted": "ignore_weights"})
-@replace_discrete_probabilities_with_list
+@replace_discrete_probabilities_with_list(False)
 def McNemar(res, ignore_weights=False, **argkw):
     """
     Compute a triangular matrix with McNemar statistics for each pair of
@@ -1904,7 +1910,7 @@ def McNemar(res, ignore_weights=False, **argkw):
 
     return mcm
 
-@replace_discrete_probabilities_with_list
+@replace_discrete_probabilities_with_list(False)
 def McNemar_of_two(res, lrn1, lrn2, ignore_weights=False):
     """
     McNemar_of_two computes a McNemar statistics for a pair of classifier,
@@ -1934,7 +1940,7 @@ def McNemar_of_two(res, lrn1, lrn2, ignore_weights=False):
     else:
         return 0
 
-@replace_discrete_probabilities_with_list
+@replace_discrete_probabilities_with_list(False)
 def Friedman(res, stat=CA):
     """
     Compare classifiers with Friedman test, treating folds as different examles.
@@ -1959,7 +1965,7 @@ def Friedman(res, stat=CA):
 
     return F, statc.chisqprob(F, k - 1), sums
 
-@replace_discrete_probabilities_with_list
+@replace_discrete_probabilities_with_list(False)
 def Wilcoxon_pairs(res, avgranks, stat=CA):
     """
     Return a triangular matrix, where element[i][j] stores significance of
