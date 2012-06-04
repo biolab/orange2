@@ -63,7 +63,7 @@ class TestedExample:
             self.probabilities.append(aprob)
         else:
             self.classes.append(int(aclass))
-            self.probabilities.append(list(aprob))
+            self.probabilities.append(aprob)
 
     def set_result(self, i, aclass, aprob):
         """Set the result of the i-th classifier to the given values."""
@@ -75,7 +75,7 @@ class TestedExample:
             self.probabilities[i] = aprob
         else:
             self.classes[i] = int(aclass)
-            self.probabilities[i] = list(aprob)
+            self.probabilities[i] = aprob
 
     def __repr__(self):
         return str(self.__dict__)
