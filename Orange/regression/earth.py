@@ -358,7 +358,9 @@ class EarthClassifier(Orange.core.ClassifierFD):
         terms = []
         dirs = self.dirs[self.best_set]
         cuts = self.cuts[self.best_set]
-
+        # For faster domain translation all the features share
+        # this _instance_cache.
+        _instance_cache = {}
         for dir, cut in zip(dirs[1:], cuts[1:]):  # Drop the intercept (first column)
             hinge = [_format_knot(self, attr.name, dir1, cut1) \
                      for (attr, dir1, cut1) in \
@@ -366,7 +368,11 @@ class EarthClassifier(Orange.core.ClassifierFD):
                      if dir1 != 0.0]
             term_name = " * ".join(hinge)
             term = Orange.feature.Continuous(term_name)
-            term.get_value_from = term_computer(term, self.domain, dir, cut)
+            term.get_value_from = term_computer(
+                term, self.domain, dir, cut,
+                _instance_cache=_instance_cache
+            )
+
             terms.append(term)
         return terms
 
@@ -491,28 +497,65 @@ class term_computer(Orange.core.ClassifierFD):
     a :obj:`~Orange.feature.Descriptior.get_value_from` member.
 
     """
-    def __init__(self, term_var=None, domain=None, dir=None, cut=None):
+    def __init__(self, term_var=None, domain=None, dir=None, cut=None,
+                 _instance_cache=None):
         self.class_var = term_var
         self.domain = domain
+
         self.dir = dir
         self.cut = cut
 
+        if dir is not None:
+            self.mask = self.dir != 0
+            self.masked_dir = self.dir[self.mask]
+            self.masked_cut = self.cut[self.mask]
+        else:
+            # backcompat. with old pickled format.
+            self.mask = self.masked_dir = self.masked_cut = None
+
+        self._instance_cache = _instance_cache
+
     def __call__(self, instance, return_what=Orange.core.GetValue):
-        instance = Orange.data.Table(self.domain, [instance])
-        (instance,) = instance.to_numpy_MA("A")
-        instance = instance[0]
+        instance = self._instance_as_masked_array(instance)
 
-        mask = self.dir != 0
-        dir = self.dir[mask]
-        cut = self.cut[mask]
+        if self.mask is None:
+            self.mask = self.dir != 0
+            self.masked_dir = self.dir[self.mask]
+            self.masked_cut = self.cut[self.mask]
 
-        values = instance[mask] - cut
-        values *= dir
+        values = instance[self.mask]
+        if numpy.ma.is_masked(values):
+            # Can't compute the term.
+            return self.class_var("?")
 
-        values = numpy.where(values > 0, values, 0)
-        value = numpy.prod(values.filled(0))
+        # Works faster with plain arrays
+        values = numpy.array(values)
+        values -= self.masked_cut
+        values *= self.masked_dir
 
-        return self.class_var(value if value is not numpy.ma.masked else "?")
+        values[values < 0] = 0
+        value = numpy.prod(values)
+
+        return self.class_var(value)
+
+    def _instance_as_masked_array(self, instance):
+        array = None
+        if self._instance_cache is not None:
+            array = self._instance_cache.get(instance, None)
+
+        if array is None:
+            table = Orange.data.Table(self.domain, [instance])
+            (array,) = table.to_numpy_MA("A")
+            array = array[0]
+
+            if self._instance_cache is not None:
+                self._instance_cache.clear()
+                self._instance_cache[instance] = array
+        return array
+
+    def __reduce__(self):
+        return (type(self), (self.class_var, self.domain, self.dir, self.cut),
+                dict(self.__dict__.items()))
 
 
 """
