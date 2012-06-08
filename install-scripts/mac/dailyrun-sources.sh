@@ -41,6 +41,6 @@ fi
 # Build source packages
 ./build-source.sh https://bitbucket.org/biolab/orange orange tip $REPO_DIR Orange $PUBLISH_DIR $FORCE
 ./build-source.sh https://bitbucket.org/biolab/orange-bioinformatics bioinformatics tip $REPO_DIR Orange-Bioinformatics $PUBLISH_DIR $FORCE
-./build-source.sh https://bitbucket.org/biolab/orange-addon-text text tip $REPO_DIR Orange-Text-Mining $PUBLISH_DIR $FORCE
+./build-source.sh https://bitbucket.org/biolab/orange-text text tip $REPO_DIR Orange-Text $PUBLISH_DIR $FORCE
 
 true

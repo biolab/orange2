@@ -21,18 +21,18 @@ FORCE=true
 # First build all the source packages
 ./build-source.sh https://bitbucket.org/biolab/orange orange tip $WORK_DIR Orange
 ./build-source.sh https://bitbucket.org/biolab/orange-bioinformatics bioinformatics tip $WORK_DIR Orange-Bioinformatics
-./build-source.sh https://bitbucket.org/biolab/orange-addon-text text tip $WORK_DIR Orange-Text-Mining
+./build-source.sh https://bitbucket.org/biolab/orange-text text tip $WORK_DIR Orange-Text
 
 # Get versions from PKG-INFO files
 ORANGE_VERSION=`grep "^Version:" $WORK_DIR/Orange.egg-info/PKG-INFO | cut -d " " -f 2`
 BIOINFORMATICS_VERSION=`grep "^Version:" $WORK_DIR/Orange_Bioinformatics.egg-info/PKG-INFO | cut -d " " -f 2`
-TEXT_VERSION=`grep "^Version:" $WORK_DIR/Orange_Text_Mining.egg-info/PKG-INFO | cut -d " " -f 2`
+TEXT_VERSION=`grep "^Version:" $WORK_DIR/Orange_Text.egg-info/PKG-INFO | cut -d " " -f 2`
 
 
 # Source filenames
 ORANGE_SOURCE="Orange-${ORANGE_VERSION}.tar.gz"
 BIOINFORMATICS_SOURCE="Orange-Bioinformatics-${BIOINFORMATICS_VERSION}.tar.gz"
-TEXT_SOURCE="Orange-Text-Mining-${TEXT_VERSION}.tar.gz"
+TEXT_SOURCE="Orange-Text-${TEXT_VERSION}.tar.gz"
 
 
 # Get source packages md5 checksum
@@ -87,7 +87,7 @@ if [[ $NEW_BIOINFORMATICS || $FORCE ]]; then
 fi
 
 if [[ $NEW_TEXT || $FORCE ]]; then
-	FINK_TEXT_SOURCE_TEMPLATE="Orange-Text-Mining-%v.tar.gz"
+	FINK_TEXT_SOURCE_TEMPLATE="Orange-Text-%v.tar.gz"
 	./fink-register-info.sh "$FINK_TEMPLATES/orange-text-gui-dev-py.info" $BASE_URL/$FINK_TEXT_SOURCE_TEMPLATE $TEXT_SOURCE_MD5 $TEXT_VERSION $FINKINFO_DIR/orange-text-gui-dev-py.info
 fi
 

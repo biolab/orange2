@@ -41,7 +41,7 @@ fi
 # Get old source addon versions from PKG-INFO files (these are updated by dailyrun-sources)
 OLD_ORANGE_VERSION=`grep "^Version:" $SOURCES_DIR/Orange.egg-info/PKG-INFO | cut -d " " -f 2`
 OLD_BIOINFORMATICS_VERSION=`grep "^Version:" $SOURCES_DIR/Orange_Bioinformatics.egg-info/PKG-INFO | cut -d " " -f 2`
-OLD_TEXT_VERSION=`grep "^Version:" $SOURCES_DIR/Orange_Text_Mining.egg-info/PKG-INFO | cut -d " " -f 2`
+OLD_TEXT_VERSION=`grep "^Version:" $SOURCES_DIR/Orange_Text.egg-info/PKG-INFO | cut -d " " -f 2`
 
 
 SOURCE_LOG=$WORK_DIR/sources-daily-build.log
@@ -58,13 +58,13 @@ cat $SOURCE_LOG >> "$LOG_DIR/source-daily-build-hg.log"
 # Get new versions from PKG-INFO files (these are updated by dailyrun-sources)
 ORANGE_VERSION=`grep "^Version:" $SOURCES_DIR/Orange.egg-info/PKG-INFO | cut -d " " -f 2`
 BIOINFORMATICS_VERSION=`grep "^Version:" $SOURCES_DIR/Orange_Bioinformatics.egg-info/PKG-INFO | cut -d " " -f 2`
-TEXT_VERSION=`grep "^Version:" $SOURCES_DIR/Orange_Text_Mining.egg-info/PKG-INFO | cut -d " " -f 2`
+TEXT_VERSION=`grep "^Version:" $SOURCES_DIR/Orange_Text.egg-info/PKG-INFO | cut -d " " -f 2`
 
 
 # Source filenames
 ORANGE_SOURCE="Orange-${ORANGE_VERSION}.tar.gz"
 BIOINFORMATICS_SOURCE="Orange-Bioinformatics-${BIOINFORMATICS_VERSION}.tar.gz"
-TEXT_SOURCE="Orange-Text-Mining-${TEXT_VERSION}.tar.gz"
+TEXT_SOURCE="Orange-Text-${TEXT_VERSION}.tar.gz"
 
 
 # Get source packages md5 checksum
@@ -171,7 +171,7 @@ if [[ $NEW_BIOINFORMATICS || $FORCE ]]; then
 fi
 
 if [[ $NEW_TEXT || $FORCE ]]; then
-	FINK_TEXT_SOURCE_TEMPLATE="Orange-Text-Mining-%v.tar.gz"
+	FINK_TEXT_SOURCE_TEMPLATE="Orange-Text-%v.tar.gz"
 	./fink-register-info.sh "$FINK_TEMPLATES/orange-text-gui-dev-py.info" $BASE_URL/$FINK_TEXT_SOURCE_TEMPLATE $TEXT_SOURCE_MD5 $TEXT_VERSION $FINK_INFO_DIR/orange-text-gui-dev-py.info >> $FINK_LOG 2>&1
 	FINK_TEXT_INFO_EXIT_VALUE=$?
 fi
