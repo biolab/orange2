@@ -10,7 +10,7 @@
 # $6 source and egg distribution dir ($4 by default)
 # $7 force
 #
-# Example ./build-source.sh http://bitbucket.org/biolab/orange orange tip /private/tmp/repos Orange
+# Example ./build-source.sh https://bitbucket.org/biolab/orange orange tip /private/tmp/repos Orange
 
 HG_REPO=$1
 REPO_DIRNAME=$2
@@ -25,10 +25,10 @@ UDIST_NAME=`echo $DIST_NAME | sed s/-/_/g`
 
 LOCAL_REPO=$WORK_DIR/$REPO_DIRNAME
 
-LATEST_REVISION=`hg id $HG_REPO`
+LATEST_REVISION=`hg id -r $HG_REV $HG_REPO`
 
-if [ -e $WORK_DIR/$UDIST_NAME.egg-info/PKG-INFO ]; then
-	CURRENT_REVISION=`grep "^Version: " $WORK_DIR/$UDIST_NAME.egg-info/PKG-INFO | cut -d "-" -f 3`
+if [ -e $DIST_DIR/$UDIST_NAME.egg-info/PKG-INFO ]; then
+	CURRENT_REVISION=`grep "^Version: " $DIST_DIR/$UDIST_NAME.egg-info/PKG-INFO | cut -d "-" -f 3`
 else
 	CURRENT_REVISION=""
 fi
@@ -36,6 +36,7 @@ fi
 if [[ $CURRENT_REVISION != $LATEST_REVISION  || $FORCE ]]; then
 	BUILD=1
 else
+	echo "$DIST_NAME source distribution rev:$CURRENT_REVISION already exists."
 	BUILD=
 fi
 
