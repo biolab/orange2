@@ -180,6 +180,9 @@ Section ""
 		Rename "$SITEDIR\orange" "$SITEDIR\orange-old-backup"
 		
 	no_old_orange_conflict:
+
+	SetOutPath "$SITEDIR\Orange.egg-info"
+	File /r "${ORANGEDIR}.egg-info\*"
 	
 	StrCpy $INSTDIR  "$PythonDir\lib\site-packages\Orange"
 	SetOutPath "$INSTDIR"

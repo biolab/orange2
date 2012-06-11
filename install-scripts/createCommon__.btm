@@ -75,7 +75,11 @@ for %pyver in (%PYTHONVERSIONS) do (
   )
 
   if direxist %PARTY (
-	REM # pack
+    REM # pack
+    cdd %TMPDIR
+    rem "Make sure the egg.info dir is in TMPDIR
+    %PYTHON\python.exe setup.py egg_info
+
     cdd %SCRIPTDIR
     set COMMON_NSI_OPTIONS=/DORANGEDIR=%TMPDIR\Orange /DPYVER=%pyver /DNPYVER=%npver /DPARTY=%PARTY /DQTVER=%@SUBSTR[%THIRD_PARTY_DIR,2,2] install3.nsi
     nsis /O%TMPDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-py%npver.log /DOUTFILENAME="%TMPDIR\%PURE_ORANGE-py%npver.exe" %COMMON_NSI_OPTIONS %+
