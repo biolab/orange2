@@ -1,6 +1,7 @@
 import math
 import functools
 from operator import add
+from collections import Iterable
 
 import numpy
 
@@ -2670,7 +2671,7 @@ def mt_average_score(res, score, weights=None):
     n_classes = len(res.results[0].actual_class)
     if weights is None:
         weights = [1.] * n_classes
-    if not hasattr(score, '__len__'):
+    if not isinstance(score, Iterable):
         score = [score] * n_classes
     elif len(score) != n_classes:
         raise ValueError, "Number of scoring methods and targets do not match."
