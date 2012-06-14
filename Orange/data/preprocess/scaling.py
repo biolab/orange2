@@ -850,7 +850,7 @@ class ScaleLinProjData(ScaleData):
             sum_i = numpy.add.reduce(numpy.transpose(numpy.transpose(data)*anchor_radius))
         else:
             sum_i = numpy.add.reduce(data)
-        if len(numpy.nonzero(sum_i)) < len(sum_i):    # test if there are zeros in sum_i
+        if len(sum_i[numpy.nonzero(sum_i)]) < len(sum_i):    # test if there are zeros in sum_i
             sum_i += numpy.where(sum_i == 0, 1.0, 0.0)
         return sum_i
     
