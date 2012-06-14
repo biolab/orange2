@@ -323,7 +323,14 @@ class OWLinProj(OWVisWidget):
 
     # EVENTS
     def resetGraphData(self):
+
+        tmp = self.graph.jitter_size      # do not jitter Radviz before final projection,
+        if self.graph.normalize_examples: # or points in the center will be scattered all over the place
+            self.graph.jitter_size = 0
+
         self.graph.rescaleData()
+        self.graph.jitter_size = tmp
+
         self.updateGraph()
 
     def selectionChanged(self):

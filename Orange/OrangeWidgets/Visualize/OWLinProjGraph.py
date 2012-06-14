@@ -146,7 +146,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         useDifferentSymbols = self.useDifferentSymbols and self.dataHasDiscreteClass and len(self.dataDomain.classVar.values) < len(self.curveSymbols)
         dataSize = len(self.rawData)
         validData = self.getValidList(indices)
-        transProjData = self.createProjectionAsNumericArray(indices, validData = validData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = -1, useAnchorData = 1, removeMissingData = 0)
+        # jitter point if Radviz
+        transProjData = self.createProjectionAsNumericArray(indices, validData = validData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = self.jitter_size if self.normalizeExamples else -1, useAnchorData = 1, removeMissingData = 0)
         if transProjData == None:
             return
         projData = transProjData.T
@@ -258,7 +259,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             YAnchors = numpy.array([val[1] for val in self.anchorData])
             anchorRadius = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
             validSubData = self.getValidSubsetList(indices)
-            projSubData = self.createProjectionAsNumericArray(indices, validData = validSubData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = -1, useAnchorData = 1, removeMissingData = 0, useSubsetData = 1).T
+            # jitter points if Radviz
+            projSubData = self.createProjectionAsNumericArray(indices, validData = validSubData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = self.jitter_size if self.normalizeExamples else -1, useAnchorData = 1, removeMissingData = 0, useSubsetData = 1).T
             sub_x_positions = projSubData[0]
             sub_y_positions = projSubData[1]
 

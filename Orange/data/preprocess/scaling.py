@@ -362,7 +362,7 @@ class ScaleData:
                                          self.no_jittering_scaled_subset_data],
                                          axis = 1)
 
-        # Random generators for jittering 
+        # Random generators for jittering
         random = numpy.random.RandomState(seed=self.jitter_seed)
         rand_seeds = random.random_integers(0, sys.maxint - 1, size=len(data.domain))
         for index, rseed in zip(range(len(data.domain)), rand_seeds):
