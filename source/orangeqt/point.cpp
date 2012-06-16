@@ -492,7 +492,14 @@ void Point::set_label(const QString& label)
 
 QString Point::text() const
 {
-    return label->toPlainText();
+    if (label == NULL)
+    {
+        return "";
+    }
+    else
+    {
+        return label->toPlainText();
+    }
 }
 
 #include "point.moc"
