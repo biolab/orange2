@@ -488,10 +488,11 @@ void Point::set_label(const QString& label)
 {
     m_label = label;
 }
-
-QString Point::label() const
-{
-    return m_label;
-}
 */
+
+QString Point::text() const
+{
+    return label->toPlainText();
+}
+
 #include "point.moc"

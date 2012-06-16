@@ -155,7 +155,7 @@ public:
     void set_coordinates(const DataPoint& data_point);
     
     //void set_label(const QString& label);
-    //QString label() const;
+    QString text() const;
     
     /**
     * Creates a path from a symbol and a size
@@ -174,6 +174,8 @@ public:
     static QHash<PointData, QPixmap> pixmap_cache;
 
     LabelItem* label;
+
+
 
 private:
     static QPainterPath trianglePath(double d, double rot);
