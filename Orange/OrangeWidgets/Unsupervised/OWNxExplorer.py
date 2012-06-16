@@ -651,8 +651,8 @@ try:
                     if len(value.split(',')) > 1:
                         self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), "num of " + unicode(var.name))
 
-                elif var.varType in [feature.Type.Continuous]:
-                    self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
+                if var.varType in [feature.Type.String] and var.name == "label":
+                    self.colorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
                 self.nameComponentCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
                 self.showComponentCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))

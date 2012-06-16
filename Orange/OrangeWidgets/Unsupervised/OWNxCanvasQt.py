@@ -503,6 +503,9 @@ class OWNxCanvas(OWPlot):
         elif colorIndex is not None and self.items.domain[colorIndex].varType == core.VarTypes.Discrete:
             colors.update((v, self.discPalette[colorIndices[self.items[v][colorIndex].value]]) for v in nodes)
 
+        elif colorIndex is not None and self.items.domain[colorIndex].varType == core.VarTypes.String and self.items.domain[colorIndex].name == "label":
+            colorIndices = {v: i for i, v in enumerate(set(inst[colorIndex].value for inst in self.items))}
+            colors.update((v, self.discPalette[colorIndices[self.items[v][colorIndex].value]]) for v in nodes)
         else:
             colors.update((node, self.discPalette[0]) for node in nodes)
 
