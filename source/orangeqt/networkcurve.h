@@ -136,6 +136,7 @@ private:
     
     QList<EdgeItem*> m_connected_edges;
     QTransform m_graph_transform;
+    void scale_axes();
 };
 
 class ModelItem : public NodeItem

@@ -591,6 +591,28 @@ QRectF NetworkCurve::data_rect() const
     return r;
 }
 
+void NetworkCurve::scale_axes()
+{
+    QRectF r2 = QRectF(plot()->contentsRect());
+    r2.adjust(1, 1, -1, -1);
+    double t = r2.top();
+    r2.setTop(r2.bottom());
+    r2.setBottom(t);
+
+    QPair< int, int > axes_;
+    axes_ = axes();
+    QRectF r1 = plot()->data_rect_for_axes(axes_.first, axes_.second);
+
+    double dx = r1.width() / 20.0;
+    double dy = r1.height() / 20.0;
+    r1.adjust(-dx, -dy, dx, dy);
+
+    QTransform tr1 = QTransform().translate(-r1.left(), -r1.top());
+    QTransform ts = QTransform().scale(r2.width()/r1.width(), r2.height()/r1.height());
+    QTransform tr2 = QTransform().translate(r2.left(), r2.top());
+    set_graph_transform(tr1 * ts * tr2);
+}
+
 int NetworkCurve::random()
 {
 	Nodes::ConstIterator uit = m_nodes.constBegin();
@@ -656,7 +678,7 @@ int NetworkCurve::circular(CircularLayoutType type)
 		}
 		fi = fi - step;
 	}
-	//register_points();
+
 	return 0;
 }
 
@@ -821,9 +843,7 @@ int NetworkCurve::circular_crossing_reduction()
 	original.clear();
 	vertices.clear();
 	qvertices.clear();
-        
-    //register_points();
-        
+
 	return 0;
 }
 
@@ -890,8 +910,8 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	// iterations
 	//clock_t refresh_time = clock() + 0.05 * CLOCKS_PER_SEC;
 	Plot *p = plot();
-	bool animation_enabled = p->animate_points;
-	p->animate_points = false;
+	//bool animation_enabled = p->animate_points;
+	//p->animate_points = false;
 
 	QTime refresh_time = QTime::currentTime();
 	for (i = 0; i < steps; ++i)
@@ -985,29 +1005,10 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		QTime before_refresh_time = QTime::currentTime();
 		if (before_refresh_time > refresh_time && i % 2 == 0)
 		{
-		    QRectF r2 = QRectF(plot()->contentsRect());
-		    r2.adjust(1, 1, -1, -1);
-            double t = r2.top();
-            r2.setTop(r2.bottom());
-            r2.setBottom(t);
-
-            QPair< int, int > axes_;
-            axes_ = axes();
-		    QRectF r1 = plot()->data_rect_for_axes(axes_.first, axes_.second);
-
-		    double dx = r1.width() / 20.0;
-            double dy = r1.height() / 20.0;
-            r1.adjust(-dx, -dy, dx, dy);
-
-            QTransform tr1 = QTransform().translate(-r1.left(), -r1.top());
-            QTransform ts = QTransform().scale(r2.width()/r1.width(), r2.height()/r1.height());
-            QTransform tr2 = QTransform().translate(r2.left(), r2.top());
-            set_graph_transform(tr1 * ts * tr2);
-
+            scale_axes();
 			update_properties();
             QCoreApplication::processEvents();
 			int refresh_duration = before_refresh_time.msecsTo(QTime::currentTime());
-
 			refresh_time = before_refresh_time.addMSecs(qMax(refresh_duration * 3, 10));
 		}
 		if (m_stop_optimization)
@@ -1024,8 +1025,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		}
 	}
 
-	p->animate_points = animation_enabled;
-	//register_points();
+	//p->animate_points = animation_enabled;
 	return 0;
 }
 
@@ -1040,7 +1040,6 @@ void NetworkCurve::set_labels(const NetworkCurve::Labels& labels)
     qDeleteAll(m_labels);
     m_labels = labels;
     //Q_ASSERT(m_labels.uniqueKeys() == m_labels.keys());
-    //register_points();
 }
 
 void NetworkCurve::add_labels(const NetworkCurve::Labels& labels)
@@ -1060,7 +1059,6 @@ void NetworkCurve::add_labels(const NetworkCurve::Labels& labels)
 
 	m_labels.unite(labels);
     Q_ASSERT(m_labels.uniqueKeys() == m_labels.keys());
-	//register_points();
 }
 
 void NetworkCurve::remove_label(int index)
@@ -1090,7 +1088,6 @@ void NetworkCurve::remove_labels(const QList<int>& labels)
     {
         remove_label(i);
     }
-
 }
 
 void NetworkCurve::set_edges(const NetworkCurve::Edges& edges)
