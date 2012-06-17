@@ -898,6 +898,8 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		cooling_2 = 0;
 	}
 
+	QTime refresh_time = QTime::currentTime();
+
 	if (smooth_cooling)
 	{
 		if (steps < 20)
@@ -908,14 +910,17 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		cooling_1 = 0;
 		cooling_2 = (cooling_switch - sqrt(area) / 2000 ) / steps;
 	}
+	else
+	{
+	    // start refreshing after 1/2s
+        refresh_time.addMSecs(500);
+	}
 
-	// iterations
-	//clock_t refresh_time = clock() + 0.05 * CLOCKS_PER_SEC;
 	Plot *p = plot();
-	//bool animation_enabled = p->animate_points;
-	//p->animate_points = false;
+	bool animation_enabled = p->animate_points;
+	p->animate_points = false;
 
-	QTime refresh_time = QTime::currentTime();
+    // iterations
 	for (i = 0; i < steps; ++i)
 	{
 		foreach (const NodeItem* node, m_nodes)
@@ -1007,16 +1012,12 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		QTime before_refresh_time = QTime::currentTime();
 		if (before_refresh_time > refresh_time && i % 2 == 0)
 		{
-		    // if using animations, update if no current update in progress
-		    if (!use_animations() || m_currentUpdate.size() <= 0)
-		    {
-                scale_axes();
-			    update_properties();
-			}
+		    scale_axes();
+			update_properties();
 
             QCoreApplication::processEvents();
             int refresh_duration = before_refresh_time.msecsTo(QTime::currentTime());
-            refresh_time = before_refresh_time.addMSecs(qMax(refresh_duration * 3, 10));
+            refresh_time = before_refresh_time.addMSecs(qMax(refresh_duration * 3, 40));
 		}
 		if (m_stop_optimization)
 		{
@@ -1032,7 +1033,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		}
 	}
 
-	//p->animate_points = animation_enabled;
+	p->animate_points = animation_enabled;
 	return 0;
 }
 
@@ -1340,27 +1341,13 @@ void NetworkCurve::set_node_labels(const QMap<int, QString>& labels)
 		item->setZValue(0.6);
 		item->setFont(plot()->font());
 		item->setFlag(ItemIgnoresTransformations);
-		//item->setPos(m_nodes[it.key()]->pos() - QPointF(item->boundingRect().width() / 2, 0));
 		item->setPos(m_nodes[it.key()]->pos());
 
-		/*
-        QFontMetrics fm(item->font());
-        QTransform t;
-        t.translate(-(fm.width(it.value()) / 2), -5);
-		item->setTransform(t);
-        item->setTextWidth(item->boundingRect().width());
-        QTextBlockFormat format;
-        format.setAlignment(Qt::AlignHCenter);
-        QTextCursor cursor = item->textCursor();
-        cursor.select(QTextCursor::Document);
-        cursor.mergeBlockFormat(format);
-        cursor.clearSelection();
-        item->setTextCursor(cursor);
-        */
 		if (labels_on_marked() && !(m_nodes[it.key()]->is_marked() || m_nodes[it.key()]->is_selected()))
 		{
 			item->hide();
 		}
+
 		m_nodes[it.key()]->label = item;
 		m_labels.insert(it.key(), item);
 	}
@@ -1411,7 +1398,6 @@ void NetworkCurve::set_node_coordinates(const QMap<int, QPair<double, double> >&
 		node->set_x(it.value().first);
 		node->set_y(it.value().second);
 	}
-	//register_points();
 }
 
 void NetworkCurve::set_edge_colors(const QList<QColor>& colors)
