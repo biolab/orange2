@@ -1179,11 +1179,14 @@ void NetworkCurve::remove_node(int index)
 
 void NetworkCurve::add_edges(const NetworkCurve::Edges& edges)
 {
+    cancel_all_updates();
     m_edges.append(edges);
 }
 
 void NetworkCurve::add_nodes(const NetworkCurve::Nodes& nodes)
 {
+    cancel_all_updates();
+
     Nodes::ConstIterator it = nodes.constBegin();
     Nodes::ConstIterator end = nodes.constEnd();
     QList<int> indices;
@@ -1204,6 +1207,8 @@ void NetworkCurve::add_nodes(const NetworkCurve::Nodes& nodes)
 
 void NetworkCurve::set_node_colors(const QMap<int, QColor>& colors)
 {
+    cancel_all_updates();
+
 	QMap<int, QColor>::ConstIterator it;
 	for (it = colors.constBegin(); it != colors.constEnd(); ++it)
 	{
