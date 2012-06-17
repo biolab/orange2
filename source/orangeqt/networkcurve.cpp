@@ -991,8 +991,9 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
             r2.setTop(r2.bottom());
             r2.setBottom(t);
 
-            QPair<int, int> axes = axes();
-		    QRectF r1 = plot()->data_rect_for_axes(axes.first, axes.second);
+            QPair< int, int > axes_;
+            axes_ = axes();
+		    QRectF r1 = plot()->data_rect_for_axes(axes_.first, axes_.second);
 
             QTransform tr1 = QTransform().translate(-r1.left(), -r1.top());
             QTransform ts = QTransform().scale(r2.width()/r1.width(), r2.height()/r1.height());
