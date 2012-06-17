@@ -566,6 +566,7 @@ void NetworkCurve::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 
 void NetworkCurve::update_properties()
 {
+    cancel_all_updates();
     update_point_positions();
 }
 
@@ -593,6 +594,7 @@ QRectF NetworkCurve::data_rect() const
 
 void NetworkCurve::scale_axes()
 {
+    cancel_all_updates();
     QRectF r2 = QRectF(plot()->contentsRect());
     r2.adjust(1, 1, -1, -1);
     double t = r2.top();
@@ -620,7 +622,7 @@ int NetworkCurve::random()
 
 	for (; uit != uend; ++uit)
 	{
-		uit.value()->set_coordinates(((qreal)(qrand() % 1000)) * 1000, ((qreal)(qrand() % 1000)) * 1000);
+		uit.value()->set_coordinates(((qreal)(qrand() % 1000)), ((qreal)(qrand() % 1000)));
 	}
 
 	return 0;
@@ -1044,6 +1046,7 @@ void NetworkCurve::set_labels(const NetworkCurve::Labels& labels)
 
 void NetworkCurve::add_labels(const NetworkCurve::Labels& labels)
 {
+    cancel_all_updates();
     Labels::ConstIterator it = labels.constBegin();
     Labels::ConstIterator end = labels.constEnd();
     QList<int> indices;
@@ -1389,6 +1392,7 @@ void NetworkCurve::clear_node_marks()
 
 void NetworkCurve::set_node_coordinates(const QMap<int, QPair<double, double> >& coordinates)
 {
+    cancel_all_updates();
 	NodeItem *node;
 	QMap<int, QPair<double, double> >::ConstIterator it = coordinates.constBegin();
 	for (; it != coordinates.constEnd(); ++it)

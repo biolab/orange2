@@ -113,7 +113,6 @@ class NetworkCurve(orangeqt.NetworkCurve):
             #                        for i in range(len(self.graph.coors))]
             #    self.mds.freshD = 0
 
-            #self.update_properties()
             self.plot().update_layout()
             qApp.processEvents()
 
@@ -184,7 +183,6 @@ class NetworkCurve(orangeqt.NetworkCurve):
         self.set_node_coordinates({key: (node.x() * d_mds / d_fr, node.y() * d_mds / d_fr) \
                                    for key, node in nodes.iteritems()})
 
-        #self.update_properties()
         p.update_layout()
         qApp.processEvents()
 
@@ -745,7 +743,6 @@ class OWNxCanvas(OWPlot):
                                   for (i, j) in self.graph.edges_iter()]
 
         self.networkCurve.set_edges(edges)
-        self.networkCurve.update_properties()
         self.replot()
 
     def update_animations(self, use_animations=None):
