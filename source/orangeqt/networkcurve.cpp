@@ -1007,7 +1007,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		QTime before_refresh_time = QTime::currentTime();
 		if (before_refresh_time > refresh_time && i % 2 == 0)
 		{
-            //scale_axes();
+            scale_axes();
 			update_properties();
             QCoreApplication::processEvents();
 			int refresh_duration = before_refresh_time.msecsTo(QTime::currentTime());
