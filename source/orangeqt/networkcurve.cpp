@@ -1007,11 +1007,14 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		QTime before_refresh_time = QTime::currentTime();
 		if (before_refresh_time > refresh_time && i % 2 == 0)
 		{
-            scale_axes();
-			update_properties();
-            QCoreApplication::processEvents();
-			int refresh_duration = before_refresh_time.msecsTo(QTime::currentTime());
-			refresh_time = before_refresh_time.addMSecs(qMax(refresh_duration * 3, 10));
+		    if (!use_animations() or m_currentUpdate.size() <= 0)
+		    {
+                scale_axes();
+			    update_properties();
+                QCoreApplication::processEvents();
+			    int refresh_duration = before_refresh_time.msecsTo(QTime::currentTime());
+			    refresh_time = before_refresh_time.addMSecs(qMax(refresh_duration * 3, 10));
+			}
 		}
 		if (m_stop_optimization)
 		{

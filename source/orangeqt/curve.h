@@ -212,6 +212,8 @@ public:
   bool labels_on_marked();
   void set_labels_on_marked(bool value);
 
+  QMap<UpdateFlag, QFuture<void> > m_currentUpdate;
+
 protected:
   Curve::UpdateFlags needs_update();
   void set_updated(Curve::UpdateFlags flags);
@@ -248,7 +250,6 @@ private:
   QPen m_pen;
   QBrush m_brush;
   QTransform m_zoom_transform;
-  QMap<UpdateFlag, QFuture<void> > m_currentUpdate;
   QMap<QByteArray, QFuture<void> > m_property_updates;
   QFutureWatcher<QPointF> m_pos_watcher;
   QFutureWatcher<void> m_coords_watcher;

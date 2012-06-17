@@ -113,7 +113,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
             #                        for i in range(len(self.graph.coors))]
             #    self.mds.freshD = 0
 
-            self.plot().update_layout()
+            self.plot().update_graph_layout()
             qApp.processEvents()
 
             if progress_callback is not None:
@@ -183,7 +183,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
         self.set_node_coordinates({key: (node.x() * d_mds / d_fr, node.y() * d_mds / d_fr) \
                                    for key, node in nodes.iteritems()})
 
-        p.update_layout()
+        p.update_graph_layout()
         qApp.processEvents()
 
         if opt_from_curr:
@@ -221,7 +221,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
 
             self.set_node_coordinates({n: (mds.points[i][0], \
                                            mds.points[i][1]) for i, n in enumerate(sorted(self.nodes()))})
-            self.plot().update_layout()
+            self.plot().update_graph_layout()
             qApp.processEvents()
 
             if progress_callback is not None:
@@ -268,7 +268,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
         self.set_node_coordinates(dict(
            (n, (nodes[n].x() * d_mds / d_fr, nodes[n].y() * d_mds / d_fr)) for n in nodes))
 
-        p.update_layout()
+        p.update_graph_layout()
         qApp.processEvents()
 
         if opt_from_curr:
@@ -758,11 +758,10 @@ class OWNxCanvas(OWPlot):
         self.networkCurve.set_show_component_distances(self.show_component_distances)
         self.replot()
 
-    def update_layout(self):
-        #self._bounds_cache = {}
-        #self._transform_cache = {}
+    def update_graph_layout(self):
+        self._bounds_cache = {}
+        self._transform_cache = {}
         OWPlot.update_layout(self)
-        #self.replot()
 
     def replot(self):
         self.drawComponentKeywords()
