@@ -555,7 +555,7 @@ NetworkCurve::~NetworkCurve()
 
 void NetworkCurve::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
-	NetworkCurve::paint(painter, option, widget);
+	Curve::paint(painter, option, widget);
 
 	if (m_show_component_distances)
 	{
