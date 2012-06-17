@@ -1050,7 +1050,7 @@ try:
                 self.graph_layout_pivot_mds()
 
             self.optButton.setChecked(False)
-            self.networkCanvas.update_layout()
+            self.networkCanvas.replot()
 
         def graph_layout_method(self, method=None):
             self.information()

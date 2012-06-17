@@ -759,9 +759,10 @@ class OWNxCanvas(OWPlot):
         self.replot()
 
     def update_layout(self):
-        self._bounds_cache = {}
-        self._transform_cache = {}
+        #self._bounds_cache = {}
+        #self._transform_cache = {}
         OWPlot.update_layout(self)
+        #self.replot()
 
     def replot(self):
         self.drawComponentKeywords()
