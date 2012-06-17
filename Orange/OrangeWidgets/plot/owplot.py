@@ -1446,8 +1446,8 @@ class OWPlot(orangeqt.Plot):
                 r |= QRectF(axis.data_line.p1(), axis.data_line.p2())
         ## We leave a 5% margin on each side so the graph doesn't look overcrowded
         ## TODO: Perhaps change this from a fixed percentage to always round to a round number
-        dx = r.width()/20.0
-        dy = r.height()/20.0
+        dx = r.width() / 20.0
+        dy = r.height() / 20.0
         r.adjust(-dx, -dy, dx, dy)
         return r
         
@@ -1506,9 +1506,9 @@ class OWPlot(orangeqt.Plot):
         if try_auto_scale:
             lower, upper = orangeqt.Plot.bounds_for_axis(self, axis_id)
             if lower != upper:
-	      lower = lower - (upper-lower)/20.0
-	      upper = upper + (upper-lower)/20.0
-	    return lower, upper
+                lower = lower - (upper-lower)/20.0
+                upper = upper + (upper-lower)/20.0
+            return lower, upper
         else:
             return None, None
             
@@ -1716,11 +1716,17 @@ class OWPlot(orangeqt.Plot):
         self.zoom_rect = r
 
     def zoom_to_rect(self, rect):
+        print len(self.zoom_stack)
         self.ensure_inside(rect, self.graph_area)
-        self.zoom_stack.append(self.zoom_rect)
+
+        # add to zoom_stack if zoom_rect is larger
+        if self.zoom_rect.width() > rect.width() or self.zoom_rect.height() > rect.height():
+            self.zoom_stack.append(self.zoom_rect)
+
         self.animate(self, 'zoom_rect', rect, start_val = self.get_zoom_rect())
         
     def zoom_back(self):
+        print len(self.zoom_stack)
         if self.zoom_stack:
             rect = self.zoom_stack.pop()
             self.animate(self, 'zoom_rect', rect, start_val = self.get_zoom_rect())
@@ -1739,6 +1745,7 @@ class OWPlot(orangeqt.Plot):
         self.zoom(point, scale = 0.5)
         
     def zoom(self, point, scale):
+        print len(self.zoom_stack)
         t, ok = self._zoom_transform.inverted()
         point = point * t
         r = QRectF(self.zoom_rect)
@@ -1747,6 +1754,11 @@ class OWPlot(orangeqt.Plot):
         r.setBottomRight(point*(1-i) + r.bottomRight()*i)
         
         self.ensure_inside(r, self.graph_area)
+
+        # remove smaller zoom rects from stack
+        while len(self.zoom_stack) > 0 and r.width() >= self.zoom_stack[-1].width() and r.height() >= self.zoom_stack[-1].height():
+            self.zoom_stack.pop()
+
         self.zoom_to_rect(r)
         
     def get_zoom_rect(self):
