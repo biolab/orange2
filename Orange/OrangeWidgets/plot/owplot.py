@@ -992,12 +992,13 @@ class OWPlot(orangeqt.Plot):
             self.graph_area = QRectF(graph_rect)
             self.set_graph_rect(self.graph_area)
             self._transform_cache = {}
-            if self._zoom_rect:
-                data_zoom_rect = self.map_transform.inverted()[0].mapRect(self._zoom_rect)
-                self.map_transform = self.transform_for_axes()
-                self.set_zoom_rect(self.map_transform.mapRect(data_zoom_rect))
-            else:
-                self.map_transform = self.transform_for_axes()
+
+        if self._zoom_rect:
+            data_zoom_rect = self.map_transform.inverted()[0].mapRect(self._zoom_rect)
+            self.map_transform = self.transform_for_axes()
+            self.set_zoom_rect(self.map_transform.mapRect(data_zoom_rect))
+        else:
+            self.map_transform = self.transform_for_axes()
         
         for c in self.plot_items():
             x,y = c.axes()
@@ -1252,7 +1253,7 @@ class OWPlot(orangeqt.Plot):
             animate_points = self.animate_points
             self.animate_points = False
             x1, y1 = self._pressed_point_coor
-            x2, y2 = self.map_from_graph(point)
+            x2, y2 = self.map_from_graph(point, zoom=True)
             self.move_selected_points((x2 - x1, y2 - y1))
             self.replot()
             if self._pressed_point is not None:

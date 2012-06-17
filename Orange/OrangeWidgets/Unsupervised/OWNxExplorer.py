@@ -651,6 +651,9 @@ try:
                     if len(value.split(',')) > 1:
                         self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), "num of " + unicode(var.name))
 
+                elif var.varType in [feature.Type.Continuous]:
+                    self.vertexSizeCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
+
                 if var.varType in [feature.Type.String] and var.name == "label":
                     self.colorCombo.addItem(self.icons.get(var.varType, self.icons[-1]), unicode(var.name))
 
@@ -774,7 +777,7 @@ try:
             self.networkCanvas.animate_points = animation_enabled
             qApp.processEvents()
             self.networkCanvas.networkCurve.layout_fr(100, weighted=False, smooth_cooling=True)
-            self.networkCanvas.update_canvas()
+            self.networkCanvas.replot()
 
         def set_graph_none(self):
             self.graph = None
@@ -1006,7 +1009,7 @@ try:
                 self.optButton.setChecked(False)
                 return
 
-            if not self.optButton.isChecked() and not self.optMethod in [2, 3, 9, 10]:
+            if not self.optButton.isChecked() and not self.optMethod in [2, 3, 8, 9, 10]:
                 self.optButton.setChecked(False)
                 return
 
@@ -1047,7 +1050,7 @@ try:
                 self.graph_layout_pivot_mds()
 
             self.optButton.setChecked(False)
-            self.networkCanvas.update_canvas()
+            self.networkCanvas.replot()
 
         def graph_layout_method(self, method=None):
             self.information()
@@ -1246,7 +1249,7 @@ try:
             xy = zip(list(x), list(y))
             coors = dict(zip(sorted(self.graph.nodes()), xy))
             self.networkCanvas.networkCurve.set_node_coordinates(coors)
-            self.networkCanvas.update_canvas()
+            self.networkCanvas.replot()
 
         #######################################################################
         ### Network Visualization                                           ###

@@ -140,7 +140,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
         avgLinkage = True
         rotationOnly = False
         minStressDelta = 0
-        mdsRefresh = int(steps / 20)
+        mdsRefresh = 10#int(steps / 20)
 
         self.mdsStep = 1
         self.stopMDS = False
@@ -369,11 +369,6 @@ class OWNxCanvas(OWPlot):
         self._legend_margin = QRectF(0, 0, 0, 0)
 
         #self.setFocusPolicy(Qt.StrongFocus)
-
-    def update_canvas(self):
-        self.networkCurve.update_properties()
-        self.drawComponentKeywords()
-        self.replot()
 
     def set_hidden_nodes(self, nodes):
         self.networkCurve.set_hidden_nodes(nodes)
@@ -767,8 +762,7 @@ class OWNxCanvas(OWPlot):
         self.replot()
 
     def replot(self):
+        self.networkCurve.update_properties()
+        self.drawComponentKeywords()
         self.set_dirty()
         OWPlot.replot(self)
-        if hasattr(self, 'networkCurve') and self.networkCurve is not None:
-            self.networkCurve.update()
-

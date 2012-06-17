@@ -566,7 +566,6 @@ void NetworkCurve::paint(QPainter* painter, const QStyleOptionGraphicsItem* opti
 
 void NetworkCurve::update_properties()
 {
-    const QTransform t = graph_transform();
     update_point_positions();
 }
 
@@ -657,7 +656,7 @@ int NetworkCurve::circular(CircularLayoutType type)
 		}
 		fi = fi - step;
 	}
-	register_points();
+	//register_points();
 	return 0;
 }
 
@@ -823,7 +822,7 @@ int NetworkCurve::circular_crossing_reduction()
 	vertices.clear();
 	qvertices.clear();
         
-        register_points();
+    //register_points();
         
 	return 0;
 }
@@ -1007,7 +1006,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	}
 
 	p->animate_points = animation_enabled;
-	register_points();
+	//register_points();
 	return 0;
 }
 
@@ -1382,7 +1381,7 @@ void NetworkCurve::set_node_coordinates(const QMap<int, QPair<double, double> >&
 		node->set_x(it.value().first);
 		node->set_y(it.value().second);
 	}
-	register_points();
+	//register_points();
 }
 
 void NetworkCurve::set_edge_colors(const QList<QColor>& colors)
