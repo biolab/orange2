@@ -1066,7 +1066,7 @@ class OWPlot(orangeqt.Plot):
             
             This functions redraws everything on the graph, so it can be very slow
         '''
-        self.setBackgroundBrush(self.color(OWPalette.Canvas))
+        #self.setBackgroundBrush(self.color(OWPalette.Canvas))
         self._bounds_cache = {}
         self._transform_cache = {}
         self.set_clean()

@@ -1050,7 +1050,7 @@ try:
                 self.graph_layout_pivot_mds()
 
             self.optButton.setChecked(False)
-            self.networkCanvas.replot()
+            self.networkCanvas.update_layout()
 
         def graph_layout_method(self, method=None):
             self.information()
@@ -1249,7 +1249,7 @@ try:
             xy = zip(list(x), list(y))
             coors = dict(zip(sorted(self.graph.nodes()), xy))
             self.networkCanvas.networkCurve.set_node_coordinates(coors)
-            self.networkCanvas.replot()
+            self.networkCanvas.update_layout()
 
         #######################################################################
         ### Network Visualization                                           ###

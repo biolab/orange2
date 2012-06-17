@@ -985,6 +985,20 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 		QTime before_refresh_time = QTime::currentTime();
 		if (before_refresh_time > refresh_time && i % 2 == 0)
 		{
+		    QRectF r2 = QRectF(plot().contentsRect());
+		    r2.adjust(1, 1, -1, -1);
+            double t = r2.top();
+            r2.setTop(r2.bottom());
+            r2.setBottom(t);
+
+            QPair<int, int> axes = axes();
+		    QRectF r1 = plot().data_rect_for_axes(axes.first, axes.second);
+
+            QTransform tr1 = QTransform().translate(-r1.left(), -r1.top());
+            QTransform ts = QTransform().scale(r2.width()/r1.width(), r2.height()/r1.height());
+            QTransform tr2 = QTransform().translate(r2.left(), r2.top());
+            set_graph_transform(tr1 * ts * tr2);
+
 			update_properties();
             QCoreApplication::processEvents();
 			int refresh_duration = before_refresh_time.msecsTo(QTime::currentTime());

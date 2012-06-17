@@ -114,7 +114,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
             #    self.mds.freshD = 0
 
             #self.update_properties()
-            self.plot().replot()
+            self.plot().update_layout()
             qApp.processEvents()
 
             if progress_callback is not None:
@@ -185,7 +185,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
                                    for key, node in nodes.iteritems()})
 
         #self.update_properties()
-        p.replot()
+        p.update_layout()
         qApp.processEvents()
 
         if opt_from_curr:
@@ -223,7 +223,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
 
             self.set_node_coordinates({n: (mds.points[i][0], \
                                            mds.points[i][1]) for i, n in enumerate(sorted(self.nodes()))})
-            self.plot().replot()
+            self.plot().update_layout()
             qApp.processEvents()
 
             if progress_callback is not None:
@@ -270,7 +270,7 @@ class NetworkCurve(orangeqt.NetworkCurve):
         self.set_node_coordinates(dict(
            (n, (nodes[n].x() * d_mds / d_fr, nodes[n].y() * d_mds / d_fr)) for n in nodes))
 
-        p.replot()
+        p.update_layout()
         qApp.processEvents()
 
         if opt_from_curr:
@@ -426,7 +426,7 @@ class OWNxCanvas(OWPlot):
 
     def drawComponentKeywords(self):
         self.clear_markers()
-        if self.showComponentAttribute == None or self.graph is None or self.items is None:
+        if not hasattr(self, "showComponentAttribute") or self.showComponentAttribute is None or self.graph is None or self.items is None:
             return
 
         if str(self.showComponentAttribute) not in self.items.domain:
@@ -761,10 +761,11 @@ class OWNxCanvas(OWPlot):
         self.networkCurve.set_show_component_distances(self.show_component_distances)
         self.replot()
 
-    def replot(self):
-        if hasattr(self, "networkCurve") and self.networkCurve is not None:
-            self.networkCurve.update_properties()
-            self.drawComponentKeywords()
-            #self.set_dirty()
+    def update_layout(self):
+        self._bounds_cache = {}
+        self._transform_cache = {}
+        OWPlot.update_layout(self)
 
+    def replot(self):
+        self.drawComponentKeywords()
         OWPlot.replot(self)
