@@ -762,7 +762,9 @@ class OWNxCanvas(OWPlot):
         self.replot()
 
     def replot(self):
-        self.networkCurve.update_properties()
-        self.drawComponentKeywords()
-        self.set_dirty()
+        if hasattr(self, "networkCurve") and self.networkCurve is not None:
+            self.networkCurve.update_properties()
+            self.drawComponentKeywords()
+            #self.set_dirty()
+
         OWPlot.replot(self)

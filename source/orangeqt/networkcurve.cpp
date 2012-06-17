@@ -843,7 +843,7 @@ int NetworkCurve::fr(int steps, bool weighted, bool smooth_cooling)
 	QMap<int, DataPoint> disp;
 	foreach (const NodeItem*   node, m_nodes)
 	{
-		disp[node->index()] = node->coordinates();
+		//disp[node->index()] = node->coordinates();
 
 		double x = node->x();
 		double y = node->y();
