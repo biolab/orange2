@@ -1567,7 +1567,10 @@ class AUC(list):
         self.method = multiclass
 
         if test_results is not None:
-            self[:] = self.__call__(test_results)
+            r = self.__call__(test_results)
+            if r == False: #when the test is invalid it can return a single False
+                r = [ False ] * test_results.number_of_learners
+            self[:] = r
 
     @replace_discrete_probabilities_with_list(method=True)
     def __call__(self, test_results):
@@ -1673,7 +1676,7 @@ class AUC(list):
                 self._compute_one_class_against_all, split_by_iterations(res),
                 (class_index, res, res.number_of_iterations))
         else:
-            return self._compute_one_class_against_all(res, class_index)
+            return self._compute_one_class_against_all(res, class_index)[0]
 
     # Computes AUC for a pair of classes (as if there were no other classes)
     # results over folds are averages
