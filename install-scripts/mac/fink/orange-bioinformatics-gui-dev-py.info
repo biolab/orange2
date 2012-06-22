@@ -47,30 +47,22 @@ SplitOff: <<
 		This package provides a Python module for bioinformatics add-on.
 	<<
 	Files: <<
-		lib/python%type_raw[python]/site-packages/Orange/add-ons/Bioinformatics/*.py
-		lib/python%type_raw[python]/site-packages/Orange/add-ons/Bioinformatics/addon.xml
-		lib/python%type_raw[python]/site-packages/orange-bioinformatics.pth
-		share/doc/orange-bioinformatics-dev-py%type_pkg[python]
+		lib/python%type_raw[python]/site-packages/_bioinformatics/*
+		lib/python%type_raw[python]/site-packages/Orange_Bioinformatics-*-py%type_raw[python].egg-info
+		share/doc/orange-bioinformatics-dev-py%type_pkg[python]/*
 	<<
 <<
 CompileScript: <<
 	#!/bin/bash -ev
-	# Nothing to do
-	# %p/bin/python%type_raw[python] setup.py build
+	%p/bin/python%type_raw[python] setup.py build
 <<
 InstallScript: <<
 	#!/bin/bash -ev
 	
-	# Documentation for orange-bioinformatics-gui-dev-py
-	mkdir -p %i/share/doc/orange-bioinformatics-gui-dev-py%type_pkg[python]/
-	cp LICENSE.txt %i/share/doc/orange-bioinformatics-gui-dev-py%type_pkg[python]/
-	cp doc/style.css %i/share/doc/orange-bioinformatics-gui-dev-py%type_pkg[python]/
-	mv doc/widgets/ %i/share/doc/orange-bioinformatics-gui-dev-py%type_pkg[python]/
-	
 	# Documentation for orange-bioinformatics-dev-py
 	mkdir -p %i/share/doc/orange-bioinformatics-dev-py%type_pkg[python]/
-	cp LICENSE.txt %i/share/doc/orange-bioinformatics-dev-py%type_pkg[python]/
-	mv doc/* %i/share/doc/orange-bioinformatics-dev-py%type_pkg[python]/
+	cp LICENSE %i/share/doc/orange-bioinformatics-dev-py%type_pkg[python]/
+	mv docs %i/share/doc/orange-bioinformatics-dev-py%type_pkg[python]/
 		
 	# Install files for both orange-bioinformatics-gui-dev-py and orange-bioinformatics-dev-py
 	%p/bin/python%type_raw[python] setup.py install --root=%d --single-version-externally-managed

@@ -65,6 +65,7 @@ SplitOff: <<
 	Files: <<
 		lib/python%type_raw[python]/site-packages/Orange/*
 		lib/python%type_raw[python]/site-packages/Orange-orng-modules.pth
+		lib/python%type_raw[python]/site-packages/Orange-*-py%type_raw[python].egg-info
 		share/doc/orange-dev-py%type_pkg[python]
 		bin/orange-canvas%type_raw[python]
 	<<

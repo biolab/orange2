@@ -43,10 +43,8 @@ SplitOff: <<
 		This package provides a Python module for text mining add-on.
 	<<
 	Files: <<
-		lib/python%type_raw[python]/site-packages/Orange/add-ons/Text/*.so
-		lib/python%type_raw[python]/site-packages/Orange/add-ons/Text/*.py
-		lib/python%type_raw[python]/site-packages/Orange/add-ons/Text/addon.xml
-		lib/python%type_raw[python]/site-packages/orange-text.pth
+		lib/python%type_raw[python]/site-packages/_text/*
+		lib/python%type_raw[python]/site-packages/Orange_Text-*-py%type_raw[python].egg-info
 		share/doc/orange-text-dev-py%type_pkg[python]
 	<<
 <<
@@ -59,21 +57,14 @@ CompileScript: <<
 InstallScript: <<
 	#!/bin/bash -ev
 	
-	# Documentation for orange-text-gui-dev-py
-	mkdir -p %i/share/doc/orange-text-gui-dev-py%type_pkg[python]/
-	cp LICENSE.txt %i/share/doc/orange-text-gui-dev-py%type_pkg[python]/
-	cp doc/style.css %i/share/doc/orange-text-gui-dev-py%type_pkg[python]/
-	mv doc/widgets/ %i/share/doc/orange-text-gui-dev-py%type_pkg[python]/
-	
 	# Documentation for orange-text-dev-py
 	mkdir -p %i/share/doc/orange-text-dev-py%type_pkg[python]/
-	cp LICENSE.txt %i/share/doc/orange-text-dev-py%type_pkg[python]/
-	mv doc/* %i/share/doc/orange-text-dev-py%type_pkg[python]/
+	cp LICENSE %i/share/doc/orange-text-dev-py%type_pkg[python]/
+	mv docs %i/share/doc/orange-text-dev-py%type_pkg[python]/
+	
 		
 	# Files for both orange-text-gui-dev-py and orange-text-dev-py
 	%p/bin/python%type_raw[python] setup.py install --root=%d --single-version-externally-managed
-	
-	# Installation registration
-	echo "datasetsPath=\"%p/share/doc/orange-text-dev-py%type_pkg[python]/datasets/\"" > %i/lib/python%type_raw[python]/site-packages/Orange/add-ons/Text/textConfiguration.py
+
 <<
 <<
