@@ -18,6 +18,7 @@ DISC_METHODS = \
      ("Random", ),
      ("First", ),
      ("Last", ),
+     ("Count", ),
      ]
 
 CONT_METHODS = \
@@ -39,12 +40,14 @@ STR_METHODS = \
      ("Random", ),
      ("First", ),
      ("Last", ),
+     ("Count", ),
      ]
     
 PYTHON_METHODS = \
     [("Random", ),
      ("First", ),
      ("Last", ),
+     ("Count", ),
      ]
     
 DEFAULT_METHOD = "First"
@@ -60,7 +63,7 @@ class OWGroupBy(OWWidget):
         self.inputs = [("Data", Table, self.set_data)]
         self.outputs = [("Data", Table)]
         
-        self.auto_commit = False
+        self.auto_commit = True
         self.hints = {}
         
         self.state_changed_flag = False
@@ -114,10 +117,10 @@ values to 'Aggregate Attributes' to remove them from this group).")
         
         OWGUI.rubber(self.controlArea)
         box = OWGUI.widgetBox(self.controlArea, "Commit")
-#        cb = OWGUI.checkBox(box, self, "auto_commit", "Commit on any change.",
-#                            tooltip="Send the data on output on any change of settings or inputs.",
-#                            callback=self.commit_if
-#                            )
+        cb = OWGUI.checkBox(box, self, "auto_commit", "Commit on input change.",
+                            tooltip="Send the data on output on change of input.",
+                            callback=self.commit_if
+                            )
         b = OWGUI.button(box, self, "Commit", callback=self.commit, 
                          tooltip="Send data on output.", 
                          autoDefault=True)
