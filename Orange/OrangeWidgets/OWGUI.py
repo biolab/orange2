@@ -746,7 +746,10 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
         else:
             format = " %s.%df" % ("%", precision)
 
-        return hSlider(widget, master, value, box, minValue, maxValue, step, callback, labelFormat=format, width=maxWidth, intOnly=0)
+        return hSlider(widget, master, value, box, minValue, maxValue, step,
+                       callback, label=label, labelFormat=format,
+                       width=maxWidth, tooltip=tooltip,
+                       debuggingEnabled=debuggingEnabled, intOnly=0)
 
     import PyQt4.Qwt5 as qwt
 
