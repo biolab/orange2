@@ -549,36 +549,63 @@ class recursion_limit(object):
         
 """
 Some utility functions common to Orange classes.
- 
+
 """
 
-def _orange__new__(base=None):
-    """ Return an orange 'schizofrenic' __new__ class method.
-    
-    :param base: base orange class (default orange.Learner)
-    :type base: type
-         
-    Example::
-        class NewOrangeLearner(orange.Learner):
-            __new__ = _orange__new(orange.Learner)
-        
-    """
-    if base is None:
-        import Orange
-        base = Orange.core.Learner
-        
-    @wraps(base.__new__)
-    def _orange__new_wrapped(cls, data=None, **kwargs):
-        if base == object:
-            self = base.__new__(cls)
-        else:
-            self = base.__new__(cls, **kwargs)
 
-        if data:
+def _orange_learner__new__(base):
+    """Return an 'schizophrenic' __new__ class method following
+    `Orange.core.Lerner.__new__` calling convention.
+
+    :param base: base class.
+    :type base: type
+
+    """
+    import Orange
+
+    @wraps(base.__new__)
+    def _orange_learner__new__wrapped(cls, data=None, weight=0, **kwargs):
+        self = base.__new__(cls, **kwargs)
+        if data is not None:
             self.__init__(**kwargs)
-            return self.__call__(data)
+            return self.__call__(data, weight)
         else:
             return self
+
+    return _orange_learner__new__wrapped
+
+
+def _orange__new__(base=None):
+    """Return an orange 'schizophrenic' __new__ class method.
+
+    :param base: base orange class (default `Orange.core.Learner`)
+    :type base: type
+
+    Example::
+        class NewOrangeLearner(Orange.core.Learner):
+            __new__ = _orange__new(Orange.core.Learner)
+
+    """
+    import Orange
+    if base is None:
+        base = Orange.core.Learner
+
+    if issubclass(base, Orange.core.Learner):
+        return _orange_learner__new__(base)
+    else:
+        @wraps(base.__new__)
+        def _orange__new_wrapped(cls, data=None, **kwargs):
+            if base == object:
+                self = base.__new__(cls)
+            else:
+                self = base.__new__(cls, **kwargs)
+
+            if data:
+                self.__init__(**kwargs)
+                return self.__call__(data)
+            else:
+                return self
+
     return _orange__new_wrapped
 
 
@@ -586,11 +613,11 @@ def _orange__reduce__(self):
     """ A default __reduce__ method for orange types. Assumes the object
     can be reconstructed with the call `constructor(__dict__)` where __dict__
     if the stored (pickled) __dict__ attribute.
-    
+
     Example::
-        class NewOrangeType(orange.Learner):
+        class NewOrangeType(Orange.core.Learner):
             __reduce__ = _orange__reduce()
-    """ 
+    """
     return type(self), (), dict(self.__dict__)
 
 demangleExamples = deprecated_function_name(demangle_examples)
@@ -599,4 +626,3 @@ printVerbose = deprecated_function_name(print_verbose)
 import warnings
 
 import selection
-
