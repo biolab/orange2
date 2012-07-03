@@ -28,13 +28,13 @@ for %pyver in (%PYTHONVERSIONS) do (
   set PYTHON=%PYTHONBASE%%pyver
   set OBJPOSTFIX=-%PKG_TYPE%
   REM # we expect Python to be on same drive
-  set PYORANGEDIR=%PYTHON\lib\site-packages\orange
+  set PYORANGEDIR=%PYTHON\lib\site-packages\Orange
   set PARTY=%SCRIPTDIR\%THIRD_PARTY_DIR\%pyver
 
   REM # compile
   pushd
   cdd %PYORANGEDIR
-  del /eq orange.pyd corn.pyd statc.pyd orangene.pyd orangeom.pyd
+  del /eq orange.pyd corn.pyd statc.pyd orangene.pyd orangeom.pyd orangeqt.pyd
   popd
   vcexpress orange.sln /build Release /out %COMPILELOG
   break_on_error
@@ -55,16 +55,19 @@ for %pyver in (%PYTHONVERSIONS) do (
     copy orangeqt.pyd %PYORANGEDIR
     REM #break_on_error
   )
-  
+
+  REM # Delete existing orangeqt.pyd in TMPDIR (It will be moved into place later)
+  if exist %TMPDIR\Orange\orangeqt.pyd del /q %TMPDIR\Orange\orangeqt.pyd
+
   REM # compress pyd and create stamps_pyd.txt, needed for update from web (accessed by updateFromSVN.bat)
   set TMPBINDIR=%TMPDIR\binaries\%pyver
   if not direxist %TMPBINDIR\%pyver mkdir /s %TMPBINDIR
 
   cdd %PYORANGEDIR
   except (*_d.pyd) for %pydf in (*.pyd) do (
-    if exist %TMPDIR\orange\%pydf del /q %TMPDIR\orange\%pydf
-    upx %pydf -o %TMPDIR\orange\%pydf
-    copy %TMPDIR\orange\%pydf %TMPBINDIR
+    if exist %TMPDIR\Orange\%pydf del /q %TMPDIR\Orange\%pydf
+    upx %pydf -o %TMPDIR\Orange\%pydf
+    copy %TMPDIR\Orange\%pydf %TMPBINDIR
   )
 
   cdd %TMPBINDIR
