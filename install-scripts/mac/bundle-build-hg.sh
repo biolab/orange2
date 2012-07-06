@@ -51,6 +51,10 @@ export PATH=$APP/Contents/Resources/Qt4/bin:$PATH
 $PYTHON setup.py install
 cd $CUR_DIR
 
+echo "Fixing Qt plugins search path"
+echo "[Paths]
+Plugins = ../../../../../Resources/Qt4/plugins/" > $APP/Contents/Frameworks/Python.framework/Resources/Python.app/Contents/Resources/qt.conf
+
 echo "Checkouting and building bioinformatics addon"
 echo "============================================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-bioinformatics bioinformatics $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
