@@ -214,7 +214,11 @@ class PyListModel(QAbstractListModel):
         self.endRemoveRows()
 
     def __delslice__(self, i, j):
-        if j > i:
+        max_i = len(self)
+        i = max(0, min(i, max_i))
+        j = max(0, min(j, max_i))
+
+        if j > i and i < max_i:
             self.beginRemoveRows(QModelIndex(), i, j - 1)
             del self._list[i:j]
             del self._other_data[i:j]
