@@ -76,6 +76,7 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
   }
 
   classVector = false;
+  multiclassVector = false;
   weightVector = false;
 
   if (*cp)
