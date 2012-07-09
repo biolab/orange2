@@ -74,6 +74,7 @@ public:
 private:
 	model *linmodel;
 	double dbias;
+	int get_nr_values();
 };
 
 WRAPPER(LinearLearner)

@@ -328,10 +328,10 @@ PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &we
 	if (error_msg){
 		delete param;
 		destroy_problem(prob);
-		raiseError("LIBLINEAR error: %s" , error_msg);
+		raiseError("LIBLINEAR error: %s", error_msg);
 	}
 	/* The solvers in liblinear use rand() function.
-	 * To make the results reporoducible we set the seed from the data table's
+	 * To make the results reproducible we set the seed from the data table's
 	 * crc
 	 */
 	PExampleTable extable(examples);
@@ -352,35 +352,94 @@ TLinearClassifier::TLinearClassifier(const PVariable &var, PExampleTable _exampl
 	dbias = _model->bias;
 
 	computesProbabilities = check_probability_model(linmodel) != 0;
-	int nr_classifier = (linmodel->nr_class==2 && linmodel->param.solver_type != MCSVM_CS)? 1 : linmodel->nr_class;
+	// Number of class values
+	int nr_values = this->get_nr_values();
+
+	/* Number of liblinear classifiers (if some class values are missing
+	 * from the training set they are not present in the liblinear model).
+	 */
+	int nr_classifier = linmodel->nr_class;
+	if (linmodel->nr_class == 2 && linmodel->param.solver_type != MCSVM_CS)
+	{
+	    nr_classifier = 1;
+	}
+
+	// Number of weight vectors exposed in orange.
+	int nr_orange_weights = nr_values;
+	if (nr_values == 2 && linmodel->param.solver_type != MCSVM_CS)
+	{
+	    nr_orange_weights = 1;
+	}
 
 	int nr_feature = linmodel->nr_feature;
+
 	if (linmodel->bias >= 0.0)
+	{
 	    nr_feature++;
+	}
 
 	int* labels = new int[linmodel->nr_class];
 	get_labels(linmodel, labels);
 
-	weights = mlnew TFloatListList(nr_classifier);
-	for (int i = 0; i < nr_classifier; i++)
-	{
-		weights->at(i) = mlnew TFloatList(nr_feature);
-	}
+	// Initialize nr_orange_weights vectors
+    weights = mlnew TFloatListList(nr_orange_weights);
+    for (int i = 0; i < nr_orange_weights; i++)
+    {
+        weights->at(i) = mlnew TFloatList(nr_feature, 0.0f);
+    }
 
-	for (int i = 0; i < nr_classifier; i++)
-	{
-		for (int j = 0; j < nr_feature; j++)
-		{
-            weights->at((nr_classifier > 1)? labels[i]: 0)->at(j) = \
-                    linmodel->w[j*nr_classifier + i];
-		}
-	}
-	delete[] labels;
+    if (nr_classifier > 1)
+    {
+        for (int i = 0; i < nr_classifier; i++)
+        {
+            for (int j = 0; j < nr_feature; j++)
+            {
+                weights->at(labels[i])->at(j) = \
+                        linmodel->w[j*nr_classifier + i];
+            }
+        }
+}
+    else
+    {
+        for (int j = 0; j < nr_feature; j++)
+        {
+            /* If there are more than 2 class values
+             */
+            if (nr_orange_weights > 1)
+            {
+                weights->at(labels[0])->at(j) = linmodel->w[j];
+                weights->at(labels[1])->at(j) = - linmodel->w[j];
+            }
+            else
+            {
+                weights->at(0)->at(j) = linmodel->w[j];
+            }
+        }
+    }
+    delete[] labels;
 }
 
 TLinearClassifier::~TLinearClassifier(){
 	if (linmodel)
 		free_and_destroy_model(&linmodel);
+}
+
+/* Return the number of discrete class values, or raise an error
+ * if the class_var is not discrete.
+ */
+int TLinearClassifier::get_nr_values()
+{
+    int nr_values = 0;
+    TEnumVariable * enum_var = NULL;
+    enum_var = dynamic_cast<TEnumVariable*>(classVar.getUnwrappedPtr());
+    if (enum_var)
+    {
+        nr_values = enum_var->noOfValues();
+    }
+    else
+    {
+        raiseError("Discrete class expected.");
+    }
 }
 
 PDistribution TLinearClassifier::classDistribution(const TExample &example){
