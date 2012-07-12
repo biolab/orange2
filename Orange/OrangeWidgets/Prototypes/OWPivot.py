@@ -220,7 +220,7 @@ class OWPivot(OWWidget):
                 features = [ Orange.feature.Descriptor.make(name, vtype)[0] for name in self.horizontalValues]
             domain = Orange.data.Domain([self.data.domain[self.rowAttribute], aggfeature] + features)
             outtable = Orange.data.Table(domain, outdata) if outdata else Orange.data.Table(domain)
-            self.send("Pivot Table", outdata)
+            self.send("Pivot Table", outtable)
         
     def selectionChanged(self):
         selected = [(x.row(), x.column()) for x in self.table.selectedIndexes()]
