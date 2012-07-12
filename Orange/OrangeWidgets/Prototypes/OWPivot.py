@@ -25,7 +25,7 @@ class OWPivot(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Pivot")
         self.inputs = [("Data", ExampleTable, self.setData, Default)]
-        self.outputs = [("Selected Group", ExampleTable, Default)]
+        self.outputs = [("Selected Group", ExampleTable, Default), ("Pivot Table", ExampleTable)]
         self.settingsList = [a[1] for a in self.aggregates]
         self.icons = self.createAttributeIconDict() 
 
@@ -174,7 +174,9 @@ class OWPivot(OWWidget):
                 w.setBackground(aggBrush if coli>1 else whiteBrush)
                 w.setTextAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
                 self.table.setItem(0, coli, w)
-
+            
+            outdata = []
+            outsets = [set() for col in self.horizontalValues]
             rrowi = 1
             for rowi, row in enumerate(self.stats):
                 lastRow = rowi == len(self.stats)-1
@@ -192,6 +194,14 @@ class OWPivot(OWWidget):
                         w.setBackground(aggBrush)
                     self.table.setItem(rrowi, 1, w)
                     values = self.rowData(shw, row)
+                    if shw and not lastRow:
+                        if vtype == disctype:
+                            outvalues = [str(v) for v in values[:-1]]
+                            for p in zip(outsets,outvalues):
+                                p[0].add(p[1])
+                        else:
+                            outvalues = values[:-1]
+                        outdata.append([verticalValues[rowi],shw] + outvalues)
                     for coli, val in enumerate(values):
                         w = QTableWidgetItem(val)
                         w.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -202,6 +212,15 @@ class OWPivot(OWWidget):
                     rrowi += 1
             self.table.resizeColumnsToContents()
             self.table.resizeRowsToContents()
+            
+            aggfeature = Orange.feature.Descriptor.make("(Aggregate)", Orange.feature.Type.Discrete, [a[0] for a in self.aggregates])[0]
+            if vtype == disctype:
+                features = [ Orange.feature.Descriptor.make(p[0], vtype, list(p[1]))[0] for p in zip(self.horizontalValues,outsets)]
+            else:
+                features = [ Orange.feature.Descriptor.make(name, vtype)[0] for name in self.horizontalValues]
+            domain = Orange.data.Domain([self.data.domain[self.rowAttribute], aggfeature] + features)
+            outtable = Orange.data.Table(domain, outdata) if outdata else Orange.data.Table(domain)
+            self.send("Pivot Table", outdata)
         
     def selectionChanged(self):
         selected = [(x.row(), x.column()) for x in self.table.selectedIndexes()]
@@ -250,3 +269,16 @@ class OWPivot(OWWidget):
                     res += '</tr>'
             res += '</table>'
             self.reportRaw(res)
+
+
+if __name__ == "__main__":
+    import sys
+    app = QApplication(sys.argv)
+    w = OWPivot()
+    w.show()
+    data = Orange.data.Table("adult.tab")
+    w.setData(data)
+    app.exec_()
+    w.setData(None)
+    w.saveSettings()
+    
