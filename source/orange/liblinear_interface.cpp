@@ -440,6 +440,7 @@ int TLinearClassifier::get_nr_values()
     {
         raiseError("Discrete class expected.");
     }
+    return nr_values;
 }
 
 PDistribution TLinearClassifier::classDistribution(const TExample &example){
