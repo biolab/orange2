@@ -222,11 +222,27 @@ class EarthLearner(Orange.regression.base.BaseRegressionLearner):
         else:
             raise ValueError("Class variable expected.")
 
+        # check for non-finite values in y.
+        if not numpy.isfinite(y).all():
+            raise ValueError("Non-finite values present in Y")
+
+        # mask non-finite values in x.
+        x = numpy.ma.masked_invalid(x, copy=False)
+
         if self.scale_resp and y.shape[1] == 1:
-            sy = y - numpy.mean(y, axis=0)
-            sy = sy / numpy.std(sy, axis=0)
+            sy = y - numpy.ma.mean(y, axis=0)
+            sy = sy / numpy.ma.std(sy, axis=0)
         else:
             sy = y
+
+        # replace masked values with means.
+        if numpy.ma.is_masked(sy):
+            mean_sy = numpy.ma.mean(sy, axis=0)
+            sy = numpy.where(sy.mask, mean_sy, sy)
+
+        if numpy.ma.is_masked(x):
+            mean_x = numpy.ma.mean(x, axis=0)
+            x = numpy.where(x.mask, mean_x, x)
 
         terms = self.terms
         if terms is None:
@@ -707,8 +723,12 @@ def subset_selection_xtx(X, Y):
 
     rval = _c_eval_subsets_xtx(subsets, rss_vec, cases, resp_count, var_count,
                         X, Y, weights)
-    if rval != 0:
+    if rval == 1:
         raise numpy.linalg.LinAlgError("Lin. dep. terms in X")
+    elif rval == 2:
+        raise Exception("Trying to prune the intercept.")
+    elif rval != 0:
+        raise Exception("Error %i" % rval)
 
     subsets_ind = numpy.zeros((var_count, var_count), dtype=int)
     for i, used in enumerate(subsets.T):
