@@ -2562,7 +2562,13 @@ static int EvalSubsetsUsingXtx(
                 iTerm1++;
             }
         }
-        ASSERT(iDelete > 0);
+        //ASSERT(iDelete > 0);
+        if (iDelete < 1)
+        {
+            // Trying to delete the intercept.
+            error_code = 2;
+            break;
+        }
         WorkingSet[iDelete] = false;
     }
     if (WeightsArg)
