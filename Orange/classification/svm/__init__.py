@@ -44,6 +44,15 @@ def max_nu(data):
 
 maxNu = max_nu
 
+
+def is_discrete(feature):
+    return isinstance(feature, Orange.feature.Discrete)
+
+
+def is_continuous(feature):
+    return isinstance(feature, Orange.feature.Continuous)
+
+
 class SVMLearner(_SVMLearner):
     """
     :param svm_type: the SVM type
@@ -252,21 +261,23 @@ class SVMLearner(_SVMLearner):
         newdomain = dc(data)
         return data.translate(newdomain)
 
+
 SVMLearner = Orange.utils.deprecated_members({
     "learnClassifier": "learn_classifier",
     "tuneParameters": "tune_parameters",
-    "kernelFunc" : "kernel_func",
+    "kernelFunc": "kernel_func",
     },
     wrap_methods=["__init__", "tune_parameters"])(SVMLearner)
+
 
 class SVMClassifier(_SVMClassifier):
     def __new__(cls, *args, **kwargs):
         if args and isinstance(args[0], _SVMClassifier):
-            # Will wrap a C++ object 
+            # Will wrap a C++ object
             return _SVMClassifier.__new__(cls, name=args[0].name)
         elif args and isinstance(args[0], variable.Descriptor):
             # The constructor call for the C++ object.
-            # This is a hack to support loading of old pickled classifiers  
+            # This is a hack to support loading of old pickled classifiers
             return _SVMClassifier.__new__(_SVMClassifier, *args, **kwargs)
         else:
             raise ValueError
@@ -280,9 +291,9 @@ class SVMClassifier(_SVMClassifier):
         self.kernel_func = wrapped.kernel_func
         self.kernel_type = wrapped.kernel_type
         self.__wrapped = wrapped
-        
+
         assert(type(wrapped) in [_SVMClassifier, _SVMClassifierSparse])
-        
+
         if self.svm_type in [SVMLearner.C_SVC, SVMLearner.Nu_SVC] \
                 and len(wrapped.support_vectors) > 0:
             # Reorder the support vectors of the binary classifiers
@@ -290,27 +301,31 @@ class SVMClassifier(_SVMClassifier):
             start = 0
             support_vectors = []
             for n in wrapped.n_SV:
-                support_vectors.append(wrapped.support_vectors[start: start + n])
+                support_vectors.append(
+                    wrapped.support_vectors[start: start + n]
+                )
                 start += n
-            support_vectors = [support_vectors[i] for i in label_map]
-            self.support_vectors = Orange.data.Table(reduce(add, support_vectors))
+            support_vectors = [support_vectors[i] for i in label_map \
+                               if i is not None]
+            support_vectors = reduce(add, support_vectors)
+            self.support_vectors = Orange.data.Table(support_vectors)
         else:
             self.support_vectors = wrapped.support_vectors
-    
+
     @property
     def coef(self):
         """Coefficients of the underlying svm model.
-        
+
         If this is a classification model then this is a list of
         coefficients for each binary 1vs1 classifiers, i.e.
         #Classes * (#Classses - 1) list of lists where
         each sublist contains tuples of (coef, support_vector_index)
-        
+
         For regression models it is still a list of lists (for consistency)
-        but of length 1 e.g. [[(coef, support_vector_index), ... ]] 
-           
+        but of length 1 e.g. [[(coef, support_vector_index), ... ]]
+
         """
-        if isinstance(self.class_var, variable.Discrete):
+        if is_discrete(self.class_var):
             # We need to reorder the coef values
             # see http://www.csie.ntu.edu.tw/~cjlin/libsvm/faq.html#f804
             # for more information on how the coefs are stored by libsvm
@@ -318,8 +333,7 @@ class SVMClassifier(_SVMClassifier):
             import numpy as np
             c_map = self._get_libsvm_bin_classifier_map()
             label_map = self._get_libsvm_labels_map()
-            libsvm_coef = self.__wrapped.coef
-            coef = [] #[None] * len(c_map)
+            coef = []
             n_class = len(label_map)
             n_SV = self.__wrapped.n_SV
             coef_array = np.array(self.__wrapped.coef)
@@ -330,78 +344,88 @@ class SVMClassifier(_SVMClassifier):
                 for j in range(i + 1, n_class):
                     ni = label_map[i]
                     nj = label_map[j]
+
+                    if ni is None or nj is None:
+                        # One of the classes is missing from the model.
+                        continue
+
                     bc_index, mult = c_map[p]
-                    
+
                     if ni > nj:
+                        # The order in libsvm model is switched.
                         ni, nj = nj, ni
-                    
+
                     # Original class indices
                     c1_range = range(libsvm_class_indices[ni],
                                      libsvm_class_indices[ni + 1])
-                    c2_range = range(libsvm_class_indices[nj], 
+                    c2_range = range(libsvm_class_indices[nj],
                                      libsvm_class_indices[nj + 1])
-                    
+
                     coef1 = mult * coef_array[nj - 1, c1_range]
                     coef2 = mult * coef_array[ni, c2_range]
-                    
+
                     # Mapped class indices
                     c1_range = range(class_indices[i],
                                      class_indices[i + 1])
-                    c2_range = range(class_indices[j], 
+                    c2_range = range(class_indices[j],
                                      class_indices[j + 1])
                     if mult == -1.0:
                         c1_range, c2_range = c2_range, c1_range
-                        
+
                     nonzero1 = np.abs(coef1) > 0.0
                     nonzero2 = np.abs(coef2) > 0.0
-                    
+
                     coef1 = coef1[nonzero1]
                     coef2 = coef2[nonzero2]
-                    
-                    c1_range = [sv_i for sv_i, nz in zip(c1_range, nonzero1) if nz]
-                    c2_range = [sv_i for sv_i, nz in zip(c2_range, nonzero2) if nz]
-                    
-                    coef.append(list(zip(coef1, c1_range)) + list(zip(coef2, c2_range)))
-                    
+
+                    c1_range = [sv_i for sv_i, nz in zip(c1_range, nonzero1)
+                                if nz]
+                    c2_range = [sv_i for sv_i, nz in zip(c2_range, nonzero2)
+                                if nz]
+
+                    coef.append(list(zip(coef1, c1_range)) + \
+                                list(zip(coef2, c2_range)))
+
                     p += 1
         else:
-            coef = [zip(self.__wrapped.coef[0], range(len(self.support_vectors)))]
-            
+            coef = [zip(self.__wrapped.coef[0],
+                        range(len(self.support_vectors)))]
+
         return coef
-    
+
     @property
     def rho(self):
         """Constant (bias) terms of the svm model.
-        
-        For classification models this is a list of bias terms 
+
+        For classification models this is a list of bias terms
         for each binary 1vs1 classifier.
-        
+
         For regression models it is a list with a single value.
-         
+
         """
         rho = self.__wrapped.rho
-        if isinstance(self.class_var, variable.Discrete):
+        if is_discrete(self.class_var):
             c_map = self._get_libsvm_bin_classifier_map()
             return [rho[i] * m for i, m in c_map]
         else:
             return list(rho)
-    
+
     @property
     def n_SV(self):
         """Number of support vectors for each class.
         For regression models this is `None`.
-        
+
         """
-        if self.__wrapped.n_SV is not None:
-            c_map = self._get_libsvm_labels_map()
-            n_SV= self.__wrapped.n_SV
-            return [n_SV[i] for i in c_map]
+        n_SV = self.__wrapped.n_SV
+        if n_SV is not None:
+            labels_map = self._get_libsvm_labels_map()
+            return [n_SV[i] if i is not None else 0 for i in labels_map]
         else:
             return None
-    
+
     # Pairwise probability is expresed as:
-    #   1.0 / (1.0 + exp(dec_val[i] * prob_a[i] + prob_b[i])) 
-    # Since dec_val already changes signs if we switch the 
+    #   1.0 / (1.0 + exp(dec_val[i] * prob_a[i] + prob_b[i]))
+    # Since dec_val already changes signs if we switch the
     # classifier direction only prob_b must change signs
     @property
     def prob_a(self):
@@ -415,7 +439,7 @@ class SVMClassifier(_SVMClassifier):
                 return list(self.__wrapped.prob_a)
         else:
             return None
-    
+
     @property
     def prob_b(self):
         if self.__wrapped.prob_b is not None:
@@ -425,7 +449,7 @@ class SVMClassifier(_SVMClassifier):
             return [prob_b[i] * m for i, m in c_map]
         else:
             return None
-    
+
     def __call__(self, instance, what=Orange.core.GetValue):
         """Classify a new ``instance``
         """
@@ -441,7 +465,7 @@ class SVMClassifier(_SVMClassifier):
     def get_decision_values(self, instance):
         """Return the decision values of the binary 1vs1
         classifiers for the ``instance`` (:class:`~Orange.data.Instance`).
-        
+
         """
         instance = Orange.data.Instance(self.domain, instance)
         dec_values = self.__wrapped.get_decision_values(instance)
@@ -452,43 +476,66 @@ class SVMClassifier(_SVMClassifier):
             return [dec_values[i] * m for i, m in c_map]
         else:
             return list(dec_values)
-        
+
     def get_model(self):
         """Return a string representing the model in the libsvm model format.
         """
         return self.__wrapped.get_model()
-    
+
     def _get_libsvm_labels_map(self):
-        """Get the internal libsvm label mapping. 
+        """Get the mapping from indices in `class_var.values` to
+        internal libsvm labels. If a class value is missing from the libsvm
+        model the returned corresponding entry is `None`)
+
         """
-        labels = [line for line in self.__wrapped.get_model().splitlines() \
+        if is_discrete(self.class_var):
+            n_classes = len(self.class_var.values)
+        else:
+            # OneClass/Regression models
+            n_classes = 1
+        model_string = self.__wrapped.get_model()
+        # Get the labels definition line from the model string
+        # (the labels, if present, are always integer strings
+        # indexing self.class_var.values)
+        labels = [line for line in model_string.splitlines() \
                   if line.startswith("label")]
         labels = labels[0].split(" ")[1:] if labels else ["0"]
         labels = [int(label) for label in labels]
-        return [labels.index(i) for i in range(len(labels))]
+        labels_map = dict((cls_index, i) for i, cls_index in enumerate(labels))
+        return [labels_map.get(i) for i in range(n_classes)]
 
     def _get_libsvm_bin_classifier_map(self):
         """Return the libsvm binary classifier mapping (due to label ordering).
         """
-        if not isinstance(self.class_var, variable.Discrete):
+        if not is_discrete(self.class_var):
             raise TypeError("SVM classification model expected")
+
         label_map = self._get_libsvm_labels_map()
         bin_c_map = []
-        n_class = len(self.class_var.values)
-        p = 0
-        for i in range(n_class - 1):
-            for j in range(i + 1, n_class):
+        n_class_values = len(self.class_var.values)
+        nr_class = len([i for i in label_map if i is not None])
+        for i in range(n_class_values - 1):
+            for j in range(i + 1, n_class_values):
                 ni = label_map[i]
                 nj = label_map[j]
                 mult = 1
+
+                if ni is None or nj is None:
+                    # One or both classes are missing from the libsvm model.
+                    continue
+
                 if ni > nj:
+                    # The order in libsvm is switched
                     ni, nj = nj, ni
                     mult = -1
+
                 # classifier index
-                cls_index = n_class * (n_class - 1) / 2 - (n_class - ni - 1) * (n_class - ni - 2) / 2 - (n_class - nj)
+                cls_index = nr_class * (nr_class - 1) / 2 - \
+                            (nr_class - ni - 1) * (nr_class - ni - 2) / 2 - \
+                            (nr_class - nj)
                 bin_c_map.append((cls_index, mult))
         return bin_c_map
-                
+
     def __reduce__(self):
         return SVMClassifier, (self.__wrapped,), dict(self.__dict__)
     
