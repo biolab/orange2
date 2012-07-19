@@ -390,7 +390,7 @@ static PyMethodDef PyOrange_DictProxy_methods[] = {
 
 
 static PyMappingMethods PyOrange_DictProxy_as_mapping = {
-	(inquiry)PyOrange_DictProxy_length,
+	(lenfunc)PyOrange_DictProxy_length,
 	(binaryfunc)PyOrange_DictProxy_subscript, /*mp_subscript*/
 	(objobjargproc)PyOrange_DictProxy_ass_sub, /*mp_ass_subscript*/
 };
