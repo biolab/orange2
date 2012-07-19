@@ -24,17 +24,19 @@ from Orange import feature as variable
 
 from Orange.utils import _orange__new__
 
+
 def max_nu(data):
     """
     Return the maximum nu parameter for the given data table for
     Nu_SVC learning.
-    
+
     :param data: Data with discrete class variable
     :type data: Orange.data.Table
-    
+
     """
     nu = 1.0
     dist = list(Orange.core.Distribution(data.domain.classVar, data))
+
     def pairs(seq):
         for i, n1 in enumerate(seq):
             for n2 in seq[i + 1:]:
@@ -61,7 +63,8 @@ class SVMLearner(_SVMLearner):
     :type kernel_type: SVMLearner.Kernel
     :param degree: kernel parameter (only for ``Polynomial``)
     :type degree: int
-    :param gamma: kernel parameter; if 0, it is set to 1.0/#features (for ``Polynomial``, ``RBF`` and ``Sigmoid``)
+    :param gamma: kernel parameter; if 0, it is set to 1.0/#features
+        (for ``Polynomial``, ``RBF`` and ``Sigmoid``)
     :type gamma: float
     :param coef0: kernel parameter (for ``Polynomial`` and ``Sigmoid``)
     :type coef0: int
@@ -80,16 +83,18 @@ class SVMLearner(_SVMLearner):
     :type eps: float
     :param probability: build a probability model
     :type probability: bool
-    :param shrinking: use shrinking heuristics 
+    :param shrinking: use shrinking heuristics
     :type shrinking: bool
     :param normalization: normalize the input data prior to learning
         (default ``True``)
     :type normalization: bool
     :param weight: a list of class weights
     :type weight: list
+    :param verbose: If `True` show training progress (default is `False`).
+    :type verbose: bool
 
     Example:
-    
+
         >>> import Orange
         >>> from Orange.classification import svm
         >>> from Orange.evaluation import testing, scoring
@@ -100,8 +105,7 @@ class SVMLearner(_SVMLearner):
         CA:  0.7908
         >>> print "AUC: %.4f" % scoring.AUC(results)[0]
         AUC: 0.9565
-        
-    
+
     """
     __new__ = _orange__new__(_SVMLearner)
 
@@ -141,10 +145,10 @@ class SVMLearner(_SVMLearner):
 
     def __call__(self, data, weight=0):
         """Construct a SVM classifier
-        
+
         :param table: data with continuous features
         :type table: Orange.data.Table
-        
+
         :param weight: ignored (required due to base class signature);
         """
 
@@ -157,18 +161,17 @@ class SVMLearner(_SVMLearner):
         if self.svm_type in [0, 1] and \
             isinstance(class_var, Orange.feature.Continuous):
             self.svm_type += 3
-            #raise AttributeError, "Cannot learn a discrete classifier from non descrete class data. Use EPSILON_SVR or NU_SVR for regression"
+
         if self.svm_type in [3, 4] and \
             isinstance(class_var, Orange.feature.Discrete):
             self.svm_type -= 3
-            #raise AttributeError, "Cannot do regression on descrete class data. Use C_SVC or NU_SVC for classification"
+
         if self.kernel_type == kernels.Custom and not self.kernel_func:
             raise ValueError("Custom kernel function not supplied")
 
-        import warnings
-
         nu = self.nu
-        if self.svm_type == SVMLearner.Nu_SVC: #is nu feasible
+        if self.svm_type == SVMLearner.Nu_SVC:
+            # Check if nu is feasible
             max_nu = self.max_nu(examples)
             if self.nu > max_nu:
                 if getattr(self, "verbose", 0):
@@ -180,12 +183,13 @@ class SVMLearner(_SVMLearner):
                      "gamma", "degree", "coef0", "shrinking", "probability",
                      "verbose", "cache_size", "eps"]:
             setattr(self.learner, name, getattr(self, name))
+
         self.learner.nu = nu
         self.learner.set_weights(self.weight)
 
         if self.svm_type == SVMLearner.OneClass and self.probability:
             self.learner.probability = False
-            warnings.warn("One-class SVM probability output not supported yet.")
+            warnings.warn("One-class SVM probability output not supported.")
         return self.learn_classifier(examples)
 
     def learn_classifier(self, data):
@@ -197,11 +201,11 @@ class SVMLearner(_SVMLearner):
     @Orange.utils.deprecated_keywords({"progressCallback": "progress_callback"})
     def tune_parameters(self, data, parameters=None, folds=5, verbose=0,
                        progress_callback=None):
-        """Tune the ``parameters`` on the given ``data`` using 
+        """Tune the ``parameters`` on the given ``data`` using
         internal cross validation.
-        
+
         :param data: data for parameter tuning
-        :type data: Orange.data.Table 
+        :type data: Orange.data.Table
         :param parameters: names of parameters to tune
             (default: ["nu", "C", "gamma"])
         :type parameters: list of strings
@@ -211,13 +215,13 @@ class SVMLearner(_SVMLearner):
         :type verbose: bool
         :param progress_callback: callback function for reporting progress
         :type progress_callback: callback function
-            
+
         Here is example of tuning the `gamma` parameter using
         3-fold cross validation. ::
 
             svm = Orange.classification.svm.SVMLearner()
             svm.tune_parameters(table, parameters=["gamma"], folds=3)
-                    
+
         """
 
         import orngWrap
@@ -232,7 +236,6 @@ class SVMLearner(_SVMLearner):
             self.normalization = False
         if self.svm_type in [SVMLearner.Nu_SVC, SVMLearner.Nu_SVR] \
                     and "nu" in parameters:
-            numOfNuValues = 9
             if isinstance(data.domain.class_var, variable.Discrete):
                 max_nu = max(self.max_nu(data) - 1e-7, 0.0)
             else:
@@ -241,14 +244,17 @@ class SVMLearner(_SVMLearner):
                                         i / 10.0 < max_nu] + [max_nu]))
         elif "C" in parameters:
             searchParams.append(("C", [2 ** a for a in  range(-5, 15, 2)]))
+
         if self.kernel_type == 2 and "gamma" in parameters:
-            searchParams.append(("gamma", [2 ** a for a in range(-5, 5, 2)] + [0]))
+            searchParams.append(("gamma",
+                                 [2 ** a for a in range(-5, 5, 2)] + [0])
+                                )
         tunedLearner = orngWrap.TuneMParameters(object=self,
                             parameters=searchParams,
                             folds=folds,
                             returnWhat=orngWrap.TuneMParameters.returnLearner,
                             progressCallback=progress_callback
-                            if progress_callback else lambda i:None)
+                            if progress_callback else lambda i: None)
         tunedLearner(data, verbose=verbose)
         if normalization:
             self.normalization = normalization
@@ -538,75 +544,77 @@ class SVMClassifier(_SVMClassifier):
 
     def __reduce__(self):
         return SVMClassifier, (self.__wrapped,), dict(self.__dict__)
-    
+
     def get_binary_classifier(self, c1, c2):
         """Return a binary classifier for classes `c1` and `c2`.
         """
         import numpy as np
         if self.svm_type not in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
             raise TypeError("SVM classification model expected.")
-        
+
         c1 = int(self.class_var(c1))
         c2 = int(self.class_var(c2))
-                
+
         n_class = len(self.class_var.values)
-        
+
         if c1 == c2:
             raise ValueError("Different classes expected.")
-        
+
         bin_class_var = Orange.feature.Discrete("%s vs %s" % \
                         (self.class_var.values[c1], self.class_var.values[c2]),
                         values=["0", "1"])
-        
+
         mult = 1.0
         if c1 > c2:
             c1, c2 = c2, c1
             mult = -1.0
-            
-        classifier_i = n_class * (n_class - 1) / 2 - (n_class - c1 - 1) * (n_class - c1 - 2) / 2 - (n_class - c2)
-        
+
+        classifier_i = n_class * (n_class - 1) / 2 - \
+                       (n_class - c1 - 1) * (n_class - c1 - 2) / 2 - \
+                       (n_class - c2)
+
         coef = self.coef[classifier_i]
-        
+
         coef1 = [(mult * alpha, sv_i) for alpha, sv_i in coef \
                  if int(self.support_vectors[sv_i].get_class()) == c1]
         coef2 = [(mult * alpha, sv_i) for alpha, sv_i in coef \
-                 if int(self.support_vectors[sv_i].get_class()) == c2] 
-        
+                 if int(self.support_vectors[sv_i].get_class()) == c2]
+
         rho = mult * self.rho[classifier_i]
-        
-        model = self._binary_libsvm_model_string(bin_class_var, 
+
+        model = self._binary_libsvm_model_string(bin_class_var,
                                                  [coef1, coef2],
                                                  [rho])
-        
+
         all_sv = [self.support_vectors[sv_i] \
-                  for c, sv_i in coef1 + coef2] 
-                  
+                  for c, sv_i in coef1 + coef2]
+
         all_sv = Orange.data.Table(all_sv)
-        
+
         svm_classifier_type = type(self.__wrapped)
-        
+
         # Build args for svm_classifier_type constructor
         args = (bin_class_var, self.examples, all_sv, model)
-        
+
         if isinstance(svm_classifier_type, _SVMClassifierSparse):
             args = args + (int(self.__wrapped.use_non_meta),)
-        
+
         if self.kernel_type == kernels.Custom:
             args = args + (self.kernel_func,)
-            
+
         native_classifier = svm_classifier_type(*args)
         return SVMClassifier(native_classifier)
-    
+
     def _binary_libsvm_model_string(self, class_var, coef, rho):
         """Return a libsvm formated model string for binary classifier
         """
         import itertools
-        
+
         if not isinstance(self.class_var, variable.Discrete):
             raise TypeError("SVM classification model expected")
-        
+
         model = []
-        
+
         # Take the model up to nr_classes
         libsvm_model = self.__wrapped.get_model()
         for line in libsvm_model.splitlines():
@@ -614,22 +622,22 @@ class SVMClassifier(_SVMClassifier):
                 break
             else:
                 model.append(line.rstrip())
-        
-        model.append("nr_class %i" % len(class_var.values))
+        nr_class = len(class_var.values)
+        model.append("nr_class %i" % nr_class)
         model.append("total_sv %i" % reduce(add, [len(c) for c in coef]))
         model.append("rho " + " ".join(str(r) for r in rho))
-        model.append("label " + " ".join(str(i) for i in range(len(class_var.values))))
+        model.append("label " + " ".join(str(i) for i in range(nr_class)))
         # No probA and probB
-        
+
         model.append("nr_sv " + " ".join(str(len(c)) for c in coef))
         model.append("SV")
-        
+
         def instance_to_svm(inst):
             values = [(i, float(inst[v])) \
                       for i, v in enumerate(inst.domain.attributes) \
                       if not inst[v].is_special() and float(inst[v]) != 0.0]
             return " ".join("%i:%f" % (i + 1, v) for i, v in values)
-        
+
         def sparse_instance_to_svm(inst):
             non_meta = []
             base = 1
@@ -641,18 +649,19 @@ class SVMClassifier(_SVMClassifier):
                 if not value.isSpecial() and float(value) != 0:
                     metas.append("%i:%f" % (base - m_id, float(value)))
             return " ".join(non_meta + metas)
-                
+
         if isinstance(self.__wrapped, _SVMClassifierSparse):
             converter = sparse_instance_to_svm
         else:
             converter = instance_to_svm
-        
+
         if self.kernel_type == kernels.Custom:
             SV = libsvm_model.split("SV\n", 1)[1]
             # Get the sv indices (the last entry in the SV lines)
-            indices = [int(s.split(":")[-1]) for s in SV.splitlines() if s.strip()]
-            
-            # Reorder the indices 
+            indices = [int(s.split(":")[-1]) for s in SV.splitlines() \
+                       if s.strip()]
+
+            # Reorder the indices
             label_map = self._get_libsvm_labels_map()
             start = 0
             reordered_indices = []
@@ -661,25 +670,29 @@ class SVMClassifier(_SVMClassifier):
                 start += n
             reordered_indices = [reordered_indices[i] for i in label_map]
             indices = reduce(add, reordered_indices)
-            
+
             for (c, sv_i) in itertools.chain(*coef):
                 model.append("%f 0:%i" % (c, indices[sv_i]))
         else:
             for (c, sv_i) in itertools.chain(*coef):
-                model.append("%f %s" % (c, converter(self.support_vectors[sv_i])))
-                
+                model.append(
+                    "%f %s" % (c, converter(self.support_vectors[sv_i]))
+                )
+
         model.append("")
         return "\n".join(model)
-        
+
 
 SVMClassifier = Orange.utils.deprecated_members({
     "classDistribution": "class_distribution",
     "getDecisionValues": "get_decision_values",
     "getModel" : "get_model",
     }, wrap_methods=[])(SVMClassifier)
-    
+
+
 # Backwards compatibility (pickling)
 SVMClassifierWrapper = SVMClassifier
+
 
 class SVMLearnerSparse(SVMLearner):
 
@@ -698,37 +711,37 @@ class SVMLearnerSparse(SVMLearner):
     def _normalize(self, data):
         if self.use_non_meta:
             dc = preprocess.DomainContinuizer()
-            dc.class_treatment = preprocess.DomainContinuizer.Ignore
-            dc.continuous_treatment = preprocess.DomainContinuizer.NormalizeBySpan
-            dc.multinomial_treatment = preprocess.DomainContinuizer.NValues
+            dc.class_treatment = dc.Ignore
+            dc.continuous_treatment = dc.NormalizeBySpan
+            dc.multinomial_treatment = dc.NValues
             newdomain = dc(data)
             data = data.translate(newdomain)
         return data
 
-class SVMLearnerEasy(SVMLearner):
 
+class SVMLearnerEasy(SVMLearner):
     """A class derived from :obj:`SVMLearner` that automatically
     scales the data and performs parameter optimization using
     :func:`SVMLearner.tune_parameters`. The procedure is similar to
     that implemented in easy.py script from the LibSVM package.
-    
+
     """
 
     def __init__(self, folds=4, verbose=0, **kwargs):
         """
         :param folds: the number of folds to use in cross validation
         :type folds:  int
-        
+
         :param verbose: verbosity of the tuning procedure.
         :type verbose: int
-        
+
         ``kwargs`` is passed to :class:`SVMLearner`
-        
+
         """
         SVMLearner.__init__(self, **kwargs)
         self.folds = folds
         self.verbose = verbose
-        
+
         self.learner = SVMLearner(**kwargs)
 
     def learn_classifier(self, data):
@@ -739,13 +752,11 @@ class SVMLearnerEasy(SVMLearner):
         transformer.classTreatment = preprocess.DomainContinuizer.Ignore
         newdomain = transformer(data)
         newexamples = data.translate(newdomain)
-        #print newexamples[0]
-        params = {}
+
         parameters = []
-        self.learner.normalization = False ## Normalization already done
+        self.learner.normalization = False  # Normalization already done
 
         if self.svm_type in [1, 4]:
-            numOfNuValues = 9
             if self.svm_type == SVMLearner.Nu_SVC:
                 max_nu = max(self.max_nu(newexamples) - 1e-7, 0.0)
             else:
@@ -755,13 +766,17 @@ class SVMLearnerEasy(SVMLearner):
         else:
             parameters.append(("C", [2 ** a for a in  range(-5, 15, 2)]))
         if self.kernel_type == 2:
-            parameters.append(("gamma", [2 ** a for a in range(-5, 5, 2)] + [0]))
+            parameters.append(
+                ("gamma", [2 ** a for a in range(-5, 5, 2)] + [0])
+            )
+
         import orngWrap
         tunedLearner = orngWrap.TuneMParameters(learner=self.learner,
                                                 parameters=parameters,
                                                 folds=self.folds)
 
         return tunedLearner(newexamples, verbose=self.verbose)
+
 
 class SVMLearnerSparseEasy(SVMLearnerEasy):
     def __init__(self, folds=4, verbose=0, **kwargs):
@@ -774,6 +789,7 @@ class SVMLearnerSparseEasy(SVMLearnerEasy):
 LIBLINEAR learners interface
 """
 
+
 class LinearSVMLearner(Orange.core.LinearLearner):
     """Train a linear SVM model."""
 
@@ -784,41 +800,42 @@ class LinearSVMLearner(Orange.core.LinearLearner):
 
     __new__ = _orange__new__(base=Orange.core.LinearLearner)
 
-    def __init__(self, solver_type=L2R_L2LOSS_DUAL, C=1.0, eps=0.01, 
+    def __init__(self, solver_type=L2R_L2LOSS_DUAL, C=1.0, eps=0.01,
                  bias=1.0, normalization=True, **kwargs):
         """
         :param solver_type: One of the following class constants:
             ``L2R_L2LOSS_DUAL``, ``L2R_L2LOSS``,
             ``L2R_L1LOSS_DUAL``, ``L1R_L2LOSS``
-            
-            The first part (``L2R`` or ``L1R``) is the regularization term 
+
+            The first part (``L2R`` or ``L1R``) is the regularization term
             on the weight vector (squared or absolute norm respectively),
             the ``L1LOSS`` or ``L2LOSS`` indicate absolute or squared
             loss function ``DUAL`` means the optimization problem is
             solved in the dual space (for more information see the
             documentation on `LIBLINEAR`_).
-        
+
         :param C: Regularization parameter (default 1.0)
         :type C: float
-        
+
         :param eps: Stopping criteria (default 0.01)
         :type eps: float
-        
+
         :param bias: If non negative then each instance is appended a constant
             bias term (default 1.0).
-            
+
         :type bias: float
-        
+
         :param normalization: Normalize the input data prior to learning
             (default True)
         :type normalization: bool
-        
+
         Example
-        
-            >>> linear_svm = LinearSVMLearner(solver_type=LinearSVMLearner.L1R_L2LOSS,
-            ...                               C=2.0)
+
+            >>> linear_svm = LinearSVMLearner(
+            ...     solver_type=LinearSVMLearner.L1R_L2LOSS,
+            ...     C=2.0)
             ...
-        
+
         """
         self.solver_type = solver_type
         self.eps = eps
@@ -830,9 +847,8 @@ class LinearSVMLearner(Orange.core.LinearLearner):
             setattr(self, name, val)
         if self.solver_type not in [self.L2R_L2LOSS_DUAL, self.L2R_L2LOSS,
                 self.L2R_L1LOSS_DUAL, self.L1R_L2LOSS]:
-            import warnings
             warnings.warn("""\
-Deprecated 'solver_type', use 
+Deprecated 'solver_type', use
 'Orange.classification.logreg.LibLinearLogRegLearner'
 to build a logistic regression model using LIBLINEAR.
 """,
@@ -855,9 +871,9 @@ to build a logistic regression model using LIBLINEAR.
 
 LinearLearner = LinearSVMLearner
 
+
 class MultiClassSVMLearner(Orange.core.LinearLearner):
     """ Multi-class SVM (Crammer and Singer) from the `LIBLINEAR`_ library.
-    
     """
     __new__ = _orange__new__(base=Orange.core.LinearLearner)
 
@@ -865,20 +881,20 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
                  normalization=True, **kwargs):
         """\
         :param C: Regularization parameter (default 1.0)
-        :type C: float  
-        
+        :type C: float
+
         :param eps: Stopping criteria (default 0.01)
         :type eps: float
-        
+
         :param bias: If non negative then each instance is appended a constant
             bias term (default 1.0).
-            
+
         :type bias: float
-        
+
         :param normalization: Normalize the input data prior to learning
             (default True)
         :type normalization: bool
-        
+
         """
         self.C = C
         self.eps = eps
@@ -906,16 +922,17 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
 
 #TODO: Unified way to get attr weights for linear SVMs.
 
+
 def get_linear_svm_weights(classifier, sum=True):
     """Extract attribute weights from the linear SVM classifier.
-    
+
     For multi class classification, the result depends on the argument
     :obj:`sum`. If ``True`` (default) the function computes the
     squared sum of the weights over all binary one vs. one
     classifiers. If :obj:`sum` is ``False`` it returns a list of
     weights for each individual binary classifier (in the order of
     [class1 vs class2, class1 vs class3 ... class2 vs class3 ...]).
-        
+
     """
 
     def update_weights(w, key, val, mul):
@@ -931,13 +948,13 @@ def get_linear_svm_weights(classifier, sum=True):
     class_var = SVs.domain.class_var
 
     if classifier.svm_type in [SVMLearner.C_SVC, SVMLearner.Nu_SVC]:
-        weights = []    
+        weights = []
         classes = classifier.class_var.values
         for i in range(len(classes) - 1):
             for j in range(i + 1, len(classes)):
                 # Get the coef and rho values from the binary sub-classifier
-                # Easier then using the full coef matrix (due to libsvm internal
-                # class  reordering)
+                # Easier then using the full coef matrix (due to libsvm
+                # internal class  reordering)
                 bin_classifier = classifier.get_binary_classifier(i, j)
                 n_sv0 = bin_classifier.n_SV[0]
                 SVs = bin_classifier.support_vectors
@@ -970,9 +987,10 @@ def get_linear_svm_weights(classifier, sum=True):
                 if attr.varType == Orange.feature.Type.Continuous:
                     update_weights(weights, attr, to_float(SV[attr]), coef)
 
-    return weights 
+    return weights
 
 getLinearSVMWeights = get_linear_svm_weights
+
 
 def example_weighted_sum(example, weights):
     sum = 0
@@ -982,15 +1000,16 @@ def example_weighted_sum(example, weights):
 
 exampleWeightedSum = example_weighted_sum
 
+
 class ScoreSVMWeights(Orange.feature.scoring.Score):
     """
     Score a feature using squared weights of a linear SVM model.
-        
+
     Example:
-    
+
         >>> table = Orange.data.Table("vehicle.tab")
         >>> score = Orange.classification.svm.ScoreSVMWeights()
-        >>> svm_scores = [(score(f, table), f) for f in table.domain.features] 
+        >>> svm_scores = [(score(f, table), f) for f in table.domain.features]
         >>> for feature_score, feature in sorted(svm_scores, reverse=True):
         ...     print "%-35s: %.3f" % (feature.name, feature_score)
         pr.axis aspect ratio               : 44.263
@@ -1034,13 +1053,14 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
     def __init__(self, learner=None, **kwargs):
         """
         :param learner: Learner used for weight estimation
-            (by default ``LinearSVMLearner(solver_type=L2R_L2LOSS_DUAL, C=1.0)``
+            (by default
+            ``LinearSVMLearner(solver_type=L2R_L2LOSS_DUAL, C=1.0)``
             will be used for classification problems and
             ``SVMLearner(svm_type=Epsilon_SVR, kernel_type=Linear, C=1.0, p=0.25)``
-            for regression problems.
-            
-        :type learner: Orange.core.LinearLearner 
-        
+            for regression problems).
+
+        :type learner: Orange.core.LinearLearner
+
         """
         self.learner = learner
         self._cached_data = None
@@ -1055,9 +1075,10 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
         if self.learner is not None:
             learner = self.learner
         elif isinstance(data.domain.class_var, variable.Discrete):
-            learner = LinearSVMLearner(solver_type=
-                                LinearSVMLearner.L2R_L2LOSS_DUAL,
-                                C=1.0)
+            learner = LinearSVMLearner(
+                            solver_type=LinearSVMLearner.L2R_L2LOSS_DUAL,
+                            C=1.0)
+
         elif isinstance(data.domain.class_var, variable.Continuous):
             learner = SVMLearner(svm_type=SVMLearner.Epsilon_SVR,
                                  kernel_type=kernels.Linear,
@@ -1079,16 +1100,16 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
         return weights.get(attr, 0.0)
 
     def _extract_weights(self, classifier, original_features):
-        """Extract weights from a svm classifer (``SVMClassifier`` or a 
+        """Extract weights from a svm classifer (``SVMClassifier`` or a
         ``LinearLearner`` instance).
-        
+
         """
         import numpy as np
         if isinstance(classifier, SVMClassifier):
             weights = get_linear_svm_weights(classifier, sum=True)
             if isinstance(classifier.class_var, variable.Continuous):
                 # The weights are in the the original non squared form
-                weights = dict((f, w ** 2) for f, w in weights.items()) 
+                weights = dict((f, w ** 2) for f, w in weights.items())
         elif isinstance(classifier, Orange.core.LinearClassifier):
             weights = np.array(classifier.weights)
             weights = np.sum(weights ** 2, axis=0)
@@ -1105,7 +1126,7 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
                 source_weights[f] = weights[f]
             elif f not in weights and f in sources:
                 dummys = sources[f]
-                # Use averege weight  
+                # Use averege weight
                 source_weights[f] = np.average([weights[d] for d in dummys])
             else:
                 raise ValueError(f)
@@ -1116,55 +1137,57 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
         """ Given a list of variables ``var``, return a mapping from source
         variables (``source_variable`` or ``get_value_from.variable`` members)
         back to the variables in ``vars``.
-        
+
         """
         source = defaultdict(list)
         for var in vars:
-            svar = None
             if var.source_variable:
                 source[var.source_variable].append(var)
             elif isinstance(var.get_value_from, Orange.core.ClassifierFromVar):
                 source[var.get_value_from.variable].append(var)
             elif isinstance(var.get_value_from, Orange.core.ImputeClassifier):
-                source[var.get_value_from.classifier_from_var.variable].append(var)
+                imputer = var.get_value_from.classifier_from_var
+                source[imputer.variable].append(var)
             else:
                 source[var].append(var)
         return dict(source)
 
 MeasureAttribute_SVMWeights = ScoreSVMWeights
 
+
 class RFE(object):
 
     """Iterative feature elimination based on weights computed by
     linear SVM.
-    
+
     Example::
-    
+
         >>> table = Orange.data.Table("promoters.tab")
         >>> svm_l = Orange.classification.svm.SVMLearner(
-        ...     kernel_type=Orange.classification.svm.kernels.Linear) 
-        ... 
+        ...     kernel_type=Orange.classification.svm.kernels.Linear)
+        ...
         >>> rfe = Orange.classification.svm.RFE(learner=svm_l)
         >>> data_with_subset_of_features = rfe(table, 10)
         >>> data_with_subset_of_features.domain
         [p-45, p-36, p-35, p-34, p-33, p-31, p-18, p-12, p-10, p-04, y]
-        
+
     """
 
     def __init__(self, learner=None):
         """
-        :param learner: A linear svm learner for use with 
+        :param learner: A linear svm learner for use with
             :class:`ScoreSVMWeights`.
-        
+
         """
         self.learner = learner
 
-    @Orange.utils.deprecated_keywords({"progressCallback": "progress_callback", "stopAt": "stop_at" })
+    @Orange.utils.deprecated_keywords({"progressCallback": "progress_callback",
+                                       "stopAt": "stop_at"})
     def get_attr_scores(self, data, stop_at=0, progress_callback=None):
         """Return a dictionary mapping attributes to scores.
         A score is a step number at which the attribute
         was removed from the recursive evaluation.
-        
+
         """
         iter = 1
         attrs = data.domain.attributes
@@ -1185,16 +1208,19 @@ class RFE(object):
             iter += 1
         return attr_scores
 
-    @Orange.utils.deprecated_keywords({"numSelected": "num_selected", "progressCallback": "progress_callback"})
+    @Orange.utils.deprecated_keywords(
+        {"numSelected": "num_selected",
+         "progressCallback": "progress_callback"})
     def __call__(self, data, num_selected=20, progress_callback=None):
-        """Return a new dataset with only `num_selected` best scoring attributes
-        
+        """Return a new dataset with only `num_selected` best scoring
+        attributes.
+
         :param data: Data
         :type data: Orange.data.Table
-        
+
         :param num_selected: number of features to preserve
         :type num_selected: int
-        
+
         """
         scores = self.get_attr_scores(data, progress_callback=progress_callback)
         scores = sorted(scores.items(), key=lambda item: item[1])
@@ -1206,9 +1232,11 @@ class RFE(object):
         data = Orange.data.Table(domain, data)
         return data
 
+
 RFE = Orange.utils.deprecated_members({
     "getAttrScores": "get_attr_scores"},
     wrap_methods=["get_attr_scores", "__call__"])(RFE)
+
 
 def example_table_to_svm_format(table, file):
     warnings.warn("Deprecated. Use table_to_svm_format", DeprecationWarning)
@@ -1216,14 +1244,15 @@ def example_table_to_svm_format(table, file):
 
 exampleTableToSVMFormat = example_table_to_svm_format
 
+
 def table_to_svm_format(data, file):
     """Save :obj:`Orange.data.Table` to a format used by LibSVM.
-    
+
     :param data: Data
     :type data: Orange.data.Table
     :param file: file pointer
     :type file: file
-    
+
     """
 
     attrs = data.domain.attributes + data.domain.getmetas().values()
