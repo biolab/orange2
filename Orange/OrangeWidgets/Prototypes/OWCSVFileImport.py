@@ -16,6 +16,20 @@ MakeStatus = Orange.feature.Descriptor.MakeStatus
 
 from OWDataTable import ExampleTableModel
 
+# Hints used when the sniff_csv cannot determine the dialect.
+DEFAULT_HINTS = \
+    {"quote": "'",
+     "quotechar": "'",
+     "doublequote": False,
+     "quoting": 0,
+     "escapechar": "\\",
+     "delimiter": ",",
+     "has_header": True,
+     "has_orange_header": False,
+     "skipinitialspace": True,
+     "DK": "?",
+     }
+
 
 class standard_icons(object):
     def __init__(self, qwidget=None, style=None):
@@ -272,11 +286,20 @@ class OWCSVFileImport(OWWidget):
             self.recent_combo.removeItem(index_to_remove + 1)
             self.recent_files.pop(index_to_remove + 1)
 
+        self.warning(1)
         if filename in self.hints:
             hints = self.hints[filename]
         else:
-            hints = sniff_csv(filename)
-            self.hints[filename] = hints
+            try:
+                hints = sniff_csv(filename)
+            except csv.Error, ex:
+                self.warning(1, str(ex))
+                hints = dict(DEFAULT_HINTS)
+
+        if not hints:
+            hints = dict(DEFAULT_HINTS)
+
+        self.hints[filename] = hints
 
         delimiter = hints["delimiter"]
 
@@ -327,7 +350,7 @@ class OWCSVFileImport(OWWidget):
             hints = self.hints[self.selected_file]
 
             # Save hints for the selected file
-            hints["quote"] = self.quote
+            hints["quotechar"] = self.quote
             hints["delimiter"] = self.delimiter or self.other_delimiter
             hints["has_header"] = self.has_header
             hints["has_orange_header"] = self.has_orange_header
