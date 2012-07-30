@@ -1248,8 +1248,10 @@ Orange must be installed prior to building C4.5.
    from the `Rule Quest's site <http://www.rulequest.com/>`_ and extract
    them. The files will be modified in the
    further process.
-#. Copy orng/ensemble.c and orng/buildC45.py from the
-   Orange package into into the directory R8/Src of the C4.5 sources
+#. Download
+   `ensemble.c <http://orange.biolab.si/trac/browser/orange/Orange/orng/ensemble.c?format=txt>`_
+   and `buildC45.py <http://orange.biolab.si/trac/browser/orange/Orange/orng/buildC45.py?format=txt>`_
+   into the directory R8/Src of the C4.5 sources
    (this directory contains, for instance, the file average.c).
 #. Run buildC45.py, which will build the plug-in and put it next to
    orange.pyd (or orange.so on Linux/Mac). If the script fails, try
@@ -1262,8 +1264,7 @@ Orange must be installed prior to building C4.5.
 The buildC45.py creates .h files that wrap Quinlan's .i files and
 ensure that they are not included twice. It modifies C4.5 sources to
 include .h's instead of .i's (this step can hardly fail). Then it compiles
-ensemble.c into c45.dll or c45.so and puts it next to Orange. In the end
-it checks if the built C4.5 gives the same results as the original.
+ensemble.c into c45.dll or c45.so and puts it next to Orange.
 
 .. autoclass:: C45Learner
     :members:
