@@ -30,6 +30,8 @@ for filename in filter(lambda x: x[-2:] in [".c", ".i"], os.listdir(".")):
 
 # Compile ensemble.c and prepare dynamic library
 
+import Orange
+
 import orange
 orangedir, orange = os.path.split(orange.__file__)
 
@@ -68,8 +70,8 @@ if sys.platform == "win32":
 
     
 
-elif sys.platform == "linux2":
-    ret = os.system('gcc ensemble.c -o %s/c45.so -shared -lstdc++' % orangedir)
+elif sys.platform.startswith("linux"):
+    ret = os.system('gcc ensemble.c -o %s/c45.so -shared -lstdc++ -fPIC' % orangedir)
     if ret:
         print "compiler/linker exited abnormally"
 
