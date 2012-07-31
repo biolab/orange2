@@ -30,7 +30,6 @@ enum { completion_no, completion_default, completion_bayes };
 
 PClassifier completeTable(PExampleGenerator examples, int completion, int weightID=0);
 
-
 WRAPPER(ExampleCluster);
 WRAPPER(Example);
 
@@ -51,9 +50,8 @@ public:
 };
 
 
-#define TExampleSets TOrangeVector<PExampleGenerator> 
-VWRAPPER(ExampleSets)
-
+#define PExampleSets PExampleGeneratorList
+#define TExampleSets TExampleGeneratorList
 
 WRAPPER(Classifier)
 WRAPPER(Variable)

@@ -29,58 +29,58 @@ class TPriorityQueue : public vector<TPQNode *> {
 public:
   ~TPriorityQueue()
     { typedef typename vector<TPQNode *>::iterator iterator;
-      for(iterator ii(begin()); ii!=end(); mldelete *(ii++)); 
+      for(iterator ii(this->begin()); ii!=this->end(); mldelete *(ii++)); 
     }
 
   void sink(int i)
-    { TPQNode *sank=at(i);
+    { TPQNode *sank=this->at(i);
 
-      int msize = size();
+      int msize = this->size();
       for(int newi = 2*i+1; newi < msize; newi = 2*(i=newi)+1) {
         if (newi+1<msize) {
-          int cmp = at(newi)->compare(*at(newi+1));
+          int cmp = this->at(newi)->compare(*this->at(newi+1));
           if (cmp<0)
             newi++;
         }
 
-        int cmp = at(newi)->compare(*sank);
+        int cmp = this->at(newi)->compare(*sank);
         if (cmp>0)
-          (at(i) = at(newi))->queueIndex = i;
+          (this->at(i) = this->at(newi))->queueIndex = i;
         else 
           break;
       }
 
-      (operator[](i) = sank)->queueIndex = i;
+      (this->operator[](i) = sank)->queueIndex = i;
     }
 
 
   void insert(TPQNode *node)
-    { push_back((TPQNode *)NULL);
-      int down = size()-1;
+    { this->push_back((TPQNode *)NULL);
+      int down = this->size()-1;
       for(int up; down; down=up) {
         up = (down-1)/2;
-        int cmp=node->compare(*at(up));
+        int cmp=node->compare(*this->at(up));
         if (cmp>0)
-          (at(down) = at(up))->queueIndex = down;
+          (this->at(down) = this->at(up))->queueIndex = down;
         else
           break;
       }
 
-      (at(down) = node)->queueIndex = down;
+      (this->at(down) = node)->queueIndex = down;
     }
 
 
   void remove(int oldi)
-    { mldelete at(oldi);
-      if (oldi == int(size()-1)) {
-        at(oldi) = NULL;
-        erase(end()-1);
+    { mldelete this->at(oldi);
+      if (oldi == int(this->size()-1)) {
+        this->at(oldi) = NULL;
+        this->erase(this->end()-1);
       }
       else {
-        (at(oldi) = back())->queueIndex = oldi;
-        back() = NULL;
-        erase(end()-1);
-        sink(oldi);
+        (this->at(oldi) = this->back())->queueIndex = oldi;
+        this->back() = NULL;
+        this->erase(this->end()-1);
+        this->sink(oldi);
       }
     }
 };

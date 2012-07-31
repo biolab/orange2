@@ -329,6 +329,8 @@ PyObject *Preprocessor_selectionVector(PyObject *self, PyObject *args, PyObject 
 
 typedef MapMethods<PVariableFilterMap, TVariableFilterMap, PVariable, PValueFilter> TMM_VariableFilterMap;
 
+INITIALIZE_MAPMETHODS(TMM_VariableFilterMap, &PyOrVariable_Type, &PyOrValueFilter_Type, _orangeValueFromPython<PVariable>, _orangeValueFromPython<PValueFilter>, _orangeValueToPython<PVariable>, _orangeValueToPython<PValueFilter>)
+
 int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObject *pyvalue)
 {
   PValueFilter value;
@@ -489,7 +491,6 @@ PyObject *kaplanMeier(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(example
 
 
 // modified setitem to accept intervals/names of values
-INITIALIZE_MAPMETHODS(TMM_VariableFilterMap, &PyOrVariable_Type, &PyOrValueFilter_Type, _orangeValueFromPython<PVariable>, _orangeValueFromPython<PValueFilter>, _orangeValueToPython<PVariable>, _orangeValueToPython<PValueFilter>)
 
 PVariableFilterMap PVariableFilterMap_FromArguments(PyObject *arg) { return TMM_VariableFilterMap::P_FromArguments(arg); }
 PyObject *VariableFilterMap_FromArguments(PyTypeObject *type, PyObject *arg) { return TMM_VariableFilterMap::_FromArguments(type, arg); }

@@ -21,9 +21,7 @@
 
 #include "boolcnt.hpp"
 #include "root.hpp"
-
-VWRAPPER(VarList);
-VWRAPPER(VarListList);
+#include "vars.hpp"
 
 WRAPPER(SubsetsGenerator_iterator)
 

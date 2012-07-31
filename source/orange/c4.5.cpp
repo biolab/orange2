@@ -27,9 +27,11 @@
 #include "learn.hpp"
 #include "getarg.hpp"
 
-#include "c4.5.ppp"
+#include "c4.5.hpp"
 
 DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList", true, ORANGE_API)
+
+#include "c4.5.ppp"
 
 bool c45Loaded = false;
 

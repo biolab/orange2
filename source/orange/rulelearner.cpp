@@ -26,12 +26,12 @@
 #include "distvars.hpp"
 #include "classfromvar.hpp"
 #include "progress.hpp"
-
-
-#include "rulelearner.ppp"
+#include "rulelearner.hpp"
 
 DEFINE_TOrangeVector_classDescription(PRule, "TRuleList", true, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PEVDist, "TEVDistList", true, ORANGE_API)
+
+#include "rulelearner.ppp"
 
 #ifdef _MSC_VER
 #if _MSC_VER < 1300

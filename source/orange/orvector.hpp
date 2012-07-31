@@ -84,6 +84,7 @@ For instructions on exporting those vectors to Python, see vectortemplates.hpp.
  #pragma warning (disable : 4786 4114 4018 4267)
 #endif
 
+#include <cstddef>
 #include <vector>
 #include "root.hpp"
 #include "stladdon.hpp"
@@ -102,23 +103,50 @@ For instructions on exporting those vectors to Python, see vectortemplates.hpp.
 #else
   #define DEFINE_TOrangeVector_classDescription(_TYPE, _NAME, _WRAPPED, _API) \
     template<> \
-    TClassDescription TOrangeVector< _TYPE, _WRAPPED >::st_classDescription = { _NAME, &typeid(TOrangeVector< _TYPE, _WRAPPED >), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
+    TClassDescription TOrangeVector< _TYPE, _WRAPPED >::st_classDescription = { \
+      _NAME, \
+      &typeid(TOrangeVector< _TYPE, _WRAPPED >), \
+      &TOrange::st_classDescription, \
+      TOrange_properties, \
+      TOrange_components }; \
+  \
+  template<> \
+  TClassDescription const *TOrangeVector< _TYPE, _WRAPPED >::classDescription() const { \
+      return &st_classDescription; \
+  }
 #endif
 
 
 
-  #define DEFINE_AttributedList_classDescription(_NAME, _PARENT) \
+#define DEFINE_AttributedList_classDescription(_NAME, _PARENT) \
   TPropertyDescription _NAME##_properties[] = { \
-    {"attributes", "list of attributes (for indexing)", &typeid(POrange), &TVarList::st_classDescription, offsetof(_NAME, attributes), false, false}, \
+    {"attributes", \
+     "list of attributes (for indexing)", \
+     &typeid(POrange), \
+     &TVarList::st_classDescription, \
+     offsetof(_NAME, attributes), \
+     false, \
+     false}, \
     {NULL} \
   }; \
-   \
+  \
   size_t const _NAME##_components[] = { offsetof(_NAME, attributes), 0}; \
-   \
-  TClassDescription _NAME::st_classDescription = { #_NAME, &typeid(_NAME), &_PARENT::st_classDescription, _NAME##_properties, _NAME##_components }; \
-  TClassDescription const *_NAME::classDescription() const { return &_NAME::st_classDescription; } \
-  TOrange *_NAME::clone() const { return mlnew _NAME(*this); }
-
+  \
+  TClassDescription _NAME::st_classDescription = { \
+     #_NAME, \
+     &typeid(_NAME), \
+     &_PARENT::st_classDescription, \
+     _NAME##_properties, \
+     _NAME##_components \
+  }; \
+  \
+  TClassDescription const *_NAME::classDescription() const { \
+      return &_NAME::st_classDescription; \
+  } \
+  \
+  TOrange *_NAME::clone() const { \
+      return mlnew _NAME(*this); \
+  }
 
 
 int ORANGE_API _RoundUpSize(const int &n);
@@ -132,7 +160,7 @@ class TOrangeVector : public TOrange
     iterator _First, _Last, _End;
 
     static TClassDescription st_classDescription;
-    virtual TClassDescription const *classDescription() const     { return &st_classDescription; }
+    virtual TClassDescription const *classDescription() const;
     virtual TOrange *clone() const                                { return mlnew TOrangeVector<T, Wrapped>(*this); }
 
     class reverse_iterator {
@@ -453,7 +481,6 @@ ORANGE_EXTERN template class ORANGE_API TOrangeVector<string, false>;
 #define TFloatFloatList TOrangeVector<pair<float, float>, false >
 #define TDoubleList TOrangeVector<double, false>
 #define TStringList TOrangeVector<string, false>
-
 #define TFloatListList TOrangeVector<PFloatList>
 
 VWRAPPER(BoolList)
@@ -466,188 +493,16 @@ VWRAPPER(FloatListList)
 VWRAPPER(DoubleList)
 VWRAPPER(StringList)
 
-WRAPPER(Variable)
-
-#include "values.hpp"
-#include "vars.hpp"
-
-#ifdef _MSC_VER
-  #pragma warning(push)
-  #pragma warning(disable: 4275)
-#endif
-
-/* This is to fool pyprops
-#define TValueList _TOrangeVector<float>
-*/
-
-
-
-#define TVarList TOrangeVector<PVariable> 
-VWRAPPER(VarList)
-
-
-#define __REGISTER_NO_PYPROPS_CLASS __REGISTER_CLASS
-
-class ORANGE_API TAttributedFloatList : public TOrangeVector<float, false>
-{
-public:
-  __REGISTER_NO_PYPROPS_CLASS
-
-  PVarList attributes;
-
-  inline TAttributedFloatList()
-  {}
-
-  inline TAttributedFloatList(PVarList vlist)
-  : attributes(vlist)
-  {}
-
-  inline TAttributedFloatList(PVarList vlist, const int &i_N, const float &f = 0.0)
-  : TOrangeVector<float, false>(i_N, f),
-    attributes(vlist)
-  {}
-
-  inline TAttributedFloatList(PVarList vlist, const vector<float> &i_X)
-  : TOrangeVector<float,false>(i_X),
-    attributes(vlist)
-  {}
-};
-
-
-class ORANGE_API TAttributedBoolList : public TOrangeVector<bool, false>
-{
-public:
-  __REGISTER_NO_PYPROPS_CLASS
-
-  PVarList attributes;
-
-  inline TAttributedBoolList()
-  {}
-
-  inline TAttributedBoolList(PVarList vlist)
-  : attributes(vlist)
-  {}
-
-  inline TAttributedBoolList(PVarList vlist, const int &i_N, const bool b= false)
-  : TOrangeVector<bool, false>(i_N, b),
-    attributes(vlist)
-  {}
-
-  inline TAttributedBoolList(PVarList vlist, const vector<bool> &i_X)
-  : TOrangeVector<bool, false>(i_X),
-    attributes(vlist)
-  {}
-};
-
-
-
-class ORANGE_API TValueList : public TOrangeVector<TValue, false>
-{
-public:
-  __REGISTER_CLASS
-
-  PVariable variable; //P the variable to which the list applies
-
-  inline TValueList(PVariable var = PVariable())
-  : TOrangeVector<TValue, false>(),
-    variable(var)
-  {}
- 
-  inline TValueList(const int &N, const TValue &V = TValue(), PVariable var = PVariable())
-  : TOrangeVector<TValue, false>(N, V),
-    variable(var)
-  {}
-
-  inline TValueList(const TOrangeVector<TValue, false> &i_X, PVariable var = PVariable())
-  : TOrangeVector<TValue, false>(i_X),
-    variable(var)
-  {}
-
-  inline TValueList(const TValueList &other)
-  : TOrangeVector<TValue, false>(other),
-    variable(other.variable)
-  {}
-
-  int traverse(visitproc visit, void *arg) const
-  { 
-    TRAVERSE(TOrange::traverse);
-
-    for(TValue *p = _First; p != _Last; p++)
-      if (p->svalV)
-        PVISIT(p->svalV);
-
-    return 0;
-  }
-
-  int dropReferences()
-  { DROPREFERENCES(TOrange::dropReferences);
-    return 0;
-  }
-};
-
-
-WRAPPER(ValueList)
-
-#ifdef _MSC_VER
-  #pragma warning(pop)
-#endif
-
-/* This is to fool pyprops.py
-#define TAttributedFloatList _TOrangeVector<float>
-#define TAttributedBoolList _TOrangeVector<bool>
-*/
-WRAPPER(AttributedFloatList)
-WRAPPER(AttributedBoolList)
 
 #ifdef _MSC_VER
   #pragma warning (push)
   #pragma warning (disable : 4290)
   template class ORANGE_API std::vector<int>;
   template class ORANGE_API std::vector<float>;
-  #pragma warning (pop)
-#endif
 
-/* These are defined as classes, not templates, so that 
-class TIntIntPair {
-public:
-  int first, second;
-  TIntIntPair(const int &f, const int &s)
-  : first(f),
-    second(s)
-  {}
-};
-
-class TIntIntPair {
-public:
-  int first, second;
-  TIntIntPair(const int &f, const int &s)
-  : first(f),
-    second(s)
-  {}
-};
-
-class TIntIntPair {
-public:
-  int first, second;
-  TIntIntPair(const int &f, const int &s)
-  : first(f),
-    second(s)
-  {}
-};
-
-class TIntIntPair {
-public:
-  int first, second;
-  TIntIntPair(const int &f, const int &s)
-  : first(f),
-    second(s)
-  {}
-};
-*/
-
-#ifdef _MSC_VER
   template class ORANGE_API std::vector<pair<int, int> >;
   template class ORANGE_API std::vector<int>;
+  #pragma warning (pop)
 #endif
 
 #endif

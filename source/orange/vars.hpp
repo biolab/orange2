@@ -26,7 +26,9 @@
 #include <list>
 #include <set>
 #include <map>
+
 #include "orvector.hpp"
+#include "values.hpp"
 
 using namespace std;
 
@@ -158,7 +160,7 @@ public:
 
 WRAPPER(Variable)
 
-#define TVarList TOrangeVector<PVariable> 
+#define TVarList TOrangeVector<PVariable>
 VWRAPPER(VarList)
 
 #define TVarListList TOrangeVector<PVarList> 
@@ -231,5 +233,131 @@ public:
   virtual bool str2val_try(const string &valname, TValue &valu);
   int str2val_low(const string &valname, TValue &valu);
 };
+
+
+#ifdef _MSC_VER
+  #pragma warning(push)
+  #pragma warning(disable: 4275)
+#endif
+
+/* This is to fool pyprops
+#define TValueList _TOrangeVector<float>
+*/
+
+
+
+#define __REGISTER_NO_PYPROPS_CLASS __REGISTER_CLASS
+
+class ORANGE_API TAttributedFloatList : public TOrangeVector<float, false>
+{
+public:
+  __REGISTER_NO_PYPROPS_CLASS
+
+  PVarList attributes;
+
+  inline TAttributedFloatList()
+  {}
+
+  inline TAttributedFloatList(PVarList vlist)
+  : attributes(vlist)
+  {}
+
+  inline TAttributedFloatList(PVarList vlist, const int &i_N, const float &f = 0.0)
+  : TOrangeVector<float, false>(i_N, f),
+    attributes(vlist)
+  {}
+
+  inline TAttributedFloatList(PVarList vlist, const vector<float> &i_X)
+  : TOrangeVector<float,false>(i_X),
+    attributes(vlist)
+  {}
+};
+
+
+class ORANGE_API TAttributedBoolList : public TOrangeVector<bool, false>
+{
+public:
+  __REGISTER_NO_PYPROPS_CLASS
+
+  PVarList attributes;
+
+  inline TAttributedBoolList()
+  {}
+
+  inline TAttributedBoolList(PVarList vlist)
+  : attributes(vlist)
+  {}
+
+  inline TAttributedBoolList(PVarList vlist, const int &i_N, const bool b= false)
+  : TOrangeVector<bool, false>(i_N, b),
+    attributes(vlist)
+  {}
+
+  inline TAttributedBoolList(PVarList vlist, const vector<bool> &i_X)
+  : TOrangeVector<bool, false>(i_X),
+    attributes(vlist)
+  {}
+};
+
+
+
+class ORANGE_API TValueList : public TOrangeVector<TValue, false>
+{
+public:
+  __REGISTER_CLASS
+
+  PVariable variable; //P the variable to which the list applies
+
+  inline TValueList(PVariable var = PVariable())
+  : TOrangeVector<TValue, false>(),
+    variable(var)
+  {}
+ 
+  inline TValueList(const int &N, const TValue &V = TValue(), PVariable var = PVariable())
+  : TOrangeVector<TValue, false>(N, V),
+    variable(var)
+  {}
+
+  inline TValueList(const TOrangeVector<TValue, false> &i_X, PVariable var = PVariable())
+  : TOrangeVector<TValue, false>(i_X),
+    variable(var)
+  {}
+
+  inline TValueList(const TValueList &other)
+  : TOrangeVector<TValue, false>(other),
+    variable(other.variable)
+  {}
+
+  int traverse(visitproc visit, void *arg) const
+  { 
+    TRAVERSE(TOrange::traverse);
+
+    for(TValue *p = _First; p != _Last; p++)
+      if (p->svalV)
+        PVISIT(p->svalV);
+
+    return 0;
+  }
+
+  int dropReferences()
+  { DROPREFERENCES(TOrange::dropReferences);
+    return 0;
+  }
+};
+
+
+WRAPPER(ValueList)
+
+#ifdef _MSC_VER
+  #pragma warning(pop)
+#endif
+
+/* This is to fool pyprops.py
+#define TAttributedFloatList _TOrangeVector<float>
+#define TAttributedBoolList _TOrangeVector<bool>
+*/
+WRAPPER(AttributedFloatList)
+WRAPPER(AttributedBoolList)
+
 
 #endif

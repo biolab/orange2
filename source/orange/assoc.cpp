@@ -28,10 +28,11 @@
 #include "spec_gen.hpp"
 #include "table.hpp"
 
-#include "assoc.ppp"
+#include "assoc.hpp"
 
 DEFINE_TOrangeVector_classDescription(PAssociationRule, "TAssociationRules", true, ORANGE_API)
 
+#include "assoc.ppp"
 
 TItemSetValue::TItemSetValue(int al)
 : value(al),

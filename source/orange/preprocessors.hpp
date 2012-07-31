@@ -36,7 +36,6 @@
 
 WRAPPER(Filter);
 WRAPPER(ExampleTable);
-VWRAPPER(ExampleGeneratorList);
 
 
 class ORANGE_API TPreprocessor : public TOrange {

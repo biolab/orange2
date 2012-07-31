@@ -23,7 +23,7 @@
   #pragma warning (disable : 4290)
 #endif
 
-#include "orvector.ppp"
+#include "orvector.hpp"
 
 DEFINE_TOrangeVector_classDescription(bool, "TBoolList", false, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(char, "TBoolList", false, ORANGE_API)
@@ -35,25 +35,11 @@ DEFINE_TOrangeVector_classDescription(string, "TStringList", false, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PFloatList, "TFloatListList", true, ORANGE_API)
 
 
-DEFINE_AttributedList_classDescription(TAttributedFloatList, TFloatList)
-DEFINE_AttributedList_classDescription(TAttributedBoolList, TBoolList)
-
-// TValueList's properties are defined in vars.cpp
-
 #define pff pair<float, float>
 DEFINE_TOrangeVector_classDescription(pff, "TFloatFloatList", false, ORANGE_API)
 
 #define pif pair<int, float>
 DEFINE_TOrangeVector_classDescription(pif, "TIntFloatList", false, ORANGE_API)
-
-#ifdef _MSC_VER_60
-TClassDescription template TOrangeVector<TValue, false>::st_classDescription;
-ORANGE_EXTERN template class ORANGE_API TOrangeVector<TValue, false>;
-#else
- DEFINE_TOrangeVector_classDescription(TValue, "TOrangeVector<TValue, false>", false, ORANGE_API)
-//template<> TClassDescription TOrangeVector<TValue, false>::st_classDescription; // =  = { "StringList", &typeid(TValueList), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
-#endif
-
 
 
 /* This function is stolen from Python 2.3 (file listobject.c):

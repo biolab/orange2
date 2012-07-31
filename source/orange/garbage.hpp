@@ -290,7 +290,7 @@ public:
 
   inline bool operator < (const GCPtr<T> &ps) const
   { return    (!counter && ps.counter)
-           || (int(counter->ptr) < int(ps.counter->ptr)); }
+           || (uintptr_t(counter->ptr) < uintptr_t(ps.counter->ptr)); }
 
 
   inline T *getUnwrappedPtr()

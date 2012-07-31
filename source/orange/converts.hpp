@@ -41,7 +41,9 @@ bool convertFromPython(PyObject *, bool &);
 PyObject *convertToPython(const string &);
 PyObject *convertToPython(const float &);
 PyObject *convertToPython(const pair<float, float> &);
+PyObject *convertToPython(const pair<int, float> &);
 PyObject *convertToPython(const int &);
+PyObject *convertToPython(const long &);
 PyObject *convertToPython(const unsigned char &);
 PyObject *convertToPython(const bool &);
 
@@ -52,7 +54,9 @@ PyObject *convertToPython(const vector<int> &v);
 string convertToString(const string &);
 string convertToString(const float &);
 string convertToString(const pair<float, float> &);
+string convertToString(const pair<int, float> &);
 string convertToString(const int &);
+string convertToString(const long &);
 string convertToString(const unsigned char &);
 //string convertToString(const PContingency &);
 

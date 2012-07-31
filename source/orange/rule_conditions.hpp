@@ -46,8 +46,8 @@ public:
   typedef typename vector<TCondition<T> *>::iterator iterator;
 
   virtual bool operator()(T example) {
-    if (!size()) return true;
-    iterator ci(begin()), ce(end());
+    if (!this->size()) return true;
+    iterator ci(this->begin()), ce(this->end());
     for( ; (ci!=ce) && (**ci)(example); ci++);
     return (ci==ce);
   }
@@ -60,8 +60,8 @@ public:
   typedef typename vector<TCondition<T> *>::iterator iterator;
 
   virtual bool operator()(T example) {
-    if (!size()) return true;
-    iterator ci(begin()), ce(end());
+    if (!this->size()) return true;
+    iterator ci(this->begin()), ce(this->end());
     for( ; (ci!=ce) && !(**ci)(example); ci++);
     return (ci!=ce);
   }

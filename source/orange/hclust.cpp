@@ -37,9 +37,12 @@
 
 #include "progress.hpp"
 
-#include "hclust.ppp"
+#include "hclust.hpp"
 
 DEFINE_TOrangeVector_classDescription(PHierarchicalCluster, "THierarchicalClusterList", true, ORANGE_API)
+
+#include "hclust.ppp"
+
 
 class TClusterW {
 public:

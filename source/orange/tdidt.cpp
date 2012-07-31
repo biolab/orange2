@@ -37,11 +37,11 @@
 #include "tdidt_split.hpp"
 #include "tdidt_stop.hpp"
 
-#include "tdidt.ppp"
-
+#include "tdidt.hpp"
 
 DEFINE_TOrangeVector_classDescription(PTreeNode, "TTreeNodeList", true, ORANGE_API)
 
+#include "tdidt.ppp"
 
 /* Default components for split constructor -- split constructors for
    discrete and continuous attributes and classes, and the corresponding

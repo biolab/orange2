@@ -32,11 +32,13 @@
 #include "distvars.hpp"
 #include "examplegen.hpp"
 
-#include "filter.ppp"
-
+#include "filter.hpp"
 
 DEFINE_TOrangeVector_classDescription(PValueFilter, "TValueFilterList", true, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PFilter, "TFilterList", true, ORANGE_API)
+
+#include "filter.ppp"
+
 
 // Sets the negate field (default is false)
 TFilter::TFilter(bool anegate, PDomain dom) 

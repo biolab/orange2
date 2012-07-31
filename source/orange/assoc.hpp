@@ -29,9 +29,9 @@
 #include "examples.hpp"
 #include "classify.hpp"
 #include "learn.hpp"
+#include "orvector.hpp"
 
 WRAPPER(Example)
-VWRAPPER(IntList)
 WRAPPER(ExampleTable)
 
 class ORANGE_API TAssociationRule : public TOrange {

@@ -121,9 +121,11 @@ bool TFilter_Python::operator()(const TExample &ex)
 }
 
 PFilter TFilter_Python::deepCopy() const
-{   
+{
+    const char * method = PyObject_HasAttrString((PyObject *)myWrapper, "deep_copy") ? "deep_copy" : "deepCopy";
+
     PyObject *result = PyObject_CallMethod((PyObject *) myWrapper,
-            PyObject_HasAttrString((PyObject *)myWrapper, "deep_copy") ? "deep_copy" : "deepCopy",
+            (char *) method,
             NULL);
     if (!result)
         raiseError("An exception has been thrown in method deepCopy!");

@@ -8,6 +8,8 @@
  * @summary: Binary heap PQ implementation with 'decrease key'
  */
 
+#include <stdlib.h>
+
 #include "pq.hpp"
 
 template <class Key>
@@ -29,7 +31,7 @@ bool PQNode<Key>::operator<(const PQNode<Key> &b)
 }
 
 template <class Key>
-PQHeap<Key>::PQHeap(int size=DEFAULT_SIZE)
+PQHeap<Key>::PQHeap(int size)
   : m_size(size),
     m_noNodes(0),
     m_nodes(size)

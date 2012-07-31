@@ -22,10 +22,10 @@
 #define __PNN_HPP
 
 #include "classify.hpp"
+#include "orvector.hpp"
+#include "domain.hpp"
+#include "examplegen.hpp"
 
-WRAPPER(Domain)
-WRAPPER(ExampleGenerator)
-VWRAPPER(FloatList)
 
 class ORANGE_API TPNN : public TClassifierFD {
 public:

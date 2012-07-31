@@ -40,10 +40,12 @@
 #include "learn.hpp"
 
 #include <string>
-#include "preprocessors.ppp"
+#include "preprocessors.hpp"
 
 DEFINE_TOrangeMap_classDescription(TOrangeMap_KV, PVariable, PValueFilter, "VariableFilterMap")
 DEFINE_TOrangeMap_classDescription(TOrangeMap_K, PVariable, float, "VariableFloatMap")
+
+#include "preprocessors.ppp"
 
 #ifdef _MSC_VER
   #pragma warning (disable : 4100) // unreferenced local parameter (macros name all arguments)

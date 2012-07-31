@@ -85,7 +85,7 @@ public:
 
   static const TIdentifierDeclaration typeIdentifiers[] ;
 
-  TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old);
+  TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old);
   TTabDelimExampleGenerator(const string &, bool autoDetect, bool csv, 
                             const int createNewOn, vector<int> &status, vector<pair<int, int> > &metaStatus,
                             const char *aDK = NULL, const char *aDC = NULL, bool noCodedDiscrete = false, bool noClass = false);

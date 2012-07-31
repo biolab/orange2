@@ -23,13 +23,15 @@
 #include "contingency.hpp"
 #include "examplegen.hpp"
 
-#include "estimateprob.ppp"
+#include "estimateprob.hpp"
 #include "stat.hpp"
 #include "random.hpp"
 
 
 DEFINE_TOrangeVector_classDescription(PProbabilityEstimator, "TProbabilityEstimatorList", true, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PConditionalProbabilityEstimator, "TConditionalProbabilityEstimatorList", true, ORANGE_API)
+
+#include "estimateprob.ppp"
 
 TProbabilityEstimator::TProbabilityEstimator(const bool &disc, const bool &cont)
 : supportsDiscrete(disc),

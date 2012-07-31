@@ -24,6 +24,7 @@
 
 #include "root.hpp"
 #include "orvector.hpp"
+#include "vars.hpp"
 
 WRAPPER(TransformValue);
 WRAPPER(Domain);

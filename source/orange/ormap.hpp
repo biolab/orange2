@@ -74,7 +74,7 @@ class TOrangeMap_K : public TOrangeMap<K, V>
 { public:
     int traverse(visitproc visit, void *arg) const
     { TRAVERSE(TOrange::traverse);
-      for(typename TOrangeMap<K, V>::const_iterator be=begin(), ee=end(); be!=ee; be++)
+      for(typename TOrangeMap<K, V>::const_iterator be=this->begin(), ee=this->end(); be!=ee; be++)
         PVISIT((*be).first);
       return 0;
     }
@@ -91,7 +91,7 @@ class TOrangeMap_V : public TOrangeMap<K, V>
 { public:
     int traverse(visitproc visit, void *arg) const
     { TRAVERSE(TOrange::traverse);
-      for(typename TOrangeMap<K,V>::const_iterator be=begin(), ee=end(); be!=ee; be++)
+      for(typename TOrangeMap<K,V>::const_iterator be=this->begin(), ee=this->end(); be!=ee; be++)
         if (this->value_is_orange)
           PVISIT((*be).second);
       return 0;
@@ -111,7 +111,7 @@ class TOrangeMap_KV : public TOrangeMap<K, V>
 
     int traverse(visitproc visit, void *arg) const
     { TRAVERSE(TOrange::traverse);
-      for(const_iterator be=begin(), ee=end(); be!=ee; be++) {
+      for(const_iterator be=this->begin(), ee=this->end(); be!=ee; be++) {
         PVISIT((*be).first);
         PVISIT((*be).second);
       }

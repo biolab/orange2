@@ -25,6 +25,8 @@
 #include "examples.hpp"
 #include "distvars.hpp"
 #include "trindex.hpp"
+#include "orvector.hpp"
+#include "vars.hpp"
 
 
 WRAPPER(Filter);

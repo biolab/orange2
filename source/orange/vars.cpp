@@ -45,6 +45,21 @@
 #include "orvector.hpp"
 #include "stringvars.hpp"
 
+#include "vars.hpp"
+
+DEFINE_TOrangeVector_classDescription(PVariable, "TVarList", true, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(PVarList, "TVarListList", true, ORANGE_API)
+
+DEFINE_AttributedList_classDescription(TAttributedFloatList, TFloatList)
+DEFINE_AttributedList_classDescription(TAttributedBoolList, TBoolList)
+
+
+#ifdef _MSC_VER_60
+ TClassDescription template TOrangeVector<TValue, false>::st_classDescription;
+ ORANGE_EXTERN template class ORANGE_API TOrangeVector<TValue, false>;
+#else
+ DEFINE_TOrangeVector_classDescription(TValue, "TOrangeVector<TValue, false>", false, ORANGE_API)
+#endif
 
 #include "vars.ppp"
 
@@ -64,8 +79,6 @@ public:
 	}
 };
 
-DEFINE_TOrangeVector_classDescription(PVariable, "TVarList", true, ORANGE_API)
-DEFINE_TOrangeVector_classDescription(PVarList, "TVarListList", true, ORANGE_API)
 
 MMV TVariable::allVariablesMap;
 
@@ -856,3 +869,4 @@ void TFloatVariable::val2str(const TValue &valu, string &vname) const
     vname = buf;
   }
 }
+

@@ -297,6 +297,17 @@ T mean(const vector<T> &flist)
 
 
 template<class T>
+T middleelement(const vector<T> &med)
+{ DEFINE_TYPENAME
+  const_iterator medmid(med.begin()+med.size()/2);
+  if (med.size()%2)
+    return *min_element(medmid, med.end());
+  else
+    return (*max_element(med.begin(), medmid) + *min_element(medmid, med.end()))/2.0;
+}
+
+
+template<class T>
 T median(const vector<T> &med)
 { if (!med.size())
     throw StatException("median: empty list");
@@ -315,17 +326,6 @@ T median(const vector<T> &med, const C &compare)
   vector<T> med2(med);
   nth_element(med2.begin(), med2.begin()+med2.size()/2, med2.end(), compare);
   return middleelement(med2);
-}
-
-
-template<class T>
-T middleelement(const vector<T> &med)
-{ DEFINE_TYPENAME
-  const_iterator medmid(med.begin()+med.size()/2);
-  if (med.size()%2)
-    return *min_element(medmid, med.end());
-  else
-    return (*max_element(med.begin(), medmid) + *min_element(medmid, med.end()))/2.0;
 }
 
 
@@ -393,6 +393,11 @@ int mode(const vector<T> &flist, vector<T> &mode, const C &compare)
 
 
 /* *********** MOMENTS ************/
+
+
+template<class T> T samplevar(const vector<T>&);
+template<class T> T samplestdev(const vector<T>&);
+
 
 template<class T>
 T moment(const vector<T> &flist, const int &mom)
@@ -502,9 +507,9 @@ void histogram (const vector<T> &flist,
 
   min=*min_element(flist.begin(), flist.end());
   max=*max_element(flist.begin(), flist.end());
-  T ebw=(max-min)/T(numbins) + 1.0;
+  T ebw=(max-min)/T(numbins) + T(1.0);
   binsize=(max-min+ebw)/T(numbins);
-  min-=binsize/2;
+  min-=binsize/T(2);
 
   counts=vector<int>(numbins, 0);
   extrapoints=0;
@@ -680,8 +685,8 @@ T gammln(const T &xx)
 {
     static T cof[6] = {76.18009173, -86.50532033, 24.01409822, -1.231739516, 0.120858003e-2, -0.536382e-5};
 
-    T x=xx, y=xx, tmp=x+5.5;
-    tmp-=(x+0.5)*log(tmp);
+    T x=xx, y=xx, tmp=x+T(5.5);
+    tmp-=(x+T(0.5))*log(tmp);
     T ser=1.000000000190015;
     for(int j=0; j<6; j++)
      ser+=cof[j]/++y;
@@ -696,13 +701,13 @@ T gammcf(const T &a, const T &x, T &gln)
   const T EPS=3.0e-7;
 
   gln = gammln(a);
-  T b=x+1.0-a;
+  T b=x+T(1.0)-a;
   T c=T(1.0)/FPMIN;
   T d=T(1.0)/b;
   T h=d;
   for(int i=1; i<=ITMAX; i++) {
-    T an=(a-double(i))*i;
-    b += 2.0;
+    T an=(a-T(double(i)))*i;
+    b += T(2.0);
     d=an*d+b;
     if (abs(d) < FPMIN) d=FPMIN;
     c=b+an/c;
@@ -710,7 +715,7 @@ T gammcf(const T &a, const T &x, T &gln)
     d=T(1.0)/d;
     T del=d*c;
     h *= del;
-    if (abs(del-1.0) < EPS)
+    if (abs(del-T(1.0)) < EPS)
       return exp(-x+a*log(x)-gln)*h;
   }
 
@@ -723,7 +728,7 @@ T gammser(const T &a, const T &x, T &gln)
 { const int ITMAX=100;
   const T EPS=3.0e-7;
   gln=gammln(a);
-  if (x<=0.0)
+  if (x<=T(0.0))
     throw StatException("gser: negative x");
 
   T ap=a;
@@ -743,21 +748,21 @@ T gammser(const T &a, const T &x, T &gln)
 
 template<class T>
 T gammp(const T &a, const T &x)
-{ if ((x<0.0) || (a<=0.0))
+{ if ((x<T(0.0)) || (a<=T(0.0)))
     throw StatException("gammp: invalid arguments");
 
   T gln;
-  return (x<(a+1.0)) ? gammser(a, x, gln) : -gammcf(a, x, gln)+1.0;
+  return (x<(a+T(1.0))) ? gammser(a, x, gln) : -gammcf(a, x, gln)+T(1.0);
 }
 
 
 template<class T>
 T gammq(const T &a, const T &x)
-{ if ((x<0.0) || (a<=0.0))
+{ if ((x<T(0.0)) || (a<=T(0.0)))
     throw StatException("gammp: invalid arguments");
 
   T gln;
-  return (x<(a+1.0)) ? -gammser(a, x, gln)+1.0 : gammcf(a, x, gln);
+  return (x<(a+T(1.0))) ? -gammser(a, x, gln)+T(1.0) : gammcf(a, x, gln);
 }
 
       
@@ -786,9 +791,9 @@ T betacf(const T &a, const T &b, const T &x)
     T bm=1.0, az=1.0, am=1.0;
 
     T qab=a+b;
-    T qap=a+1.0;
-    T qam=a-1.0;
-    T bz= -qab*x/qap + 1.0;
+    T qap=a+T(1.0);
+    T qam=a-T(1.0);
+    T bz= -qab*x/qap + T(1.0);
     for(int i=0; i<=ITMAX; i++) {
 	    T em = i+1;
 	    T tem = em*2;
@@ -816,8 +821,8 @@ T betai(const T &a, const T &b, const T &x)
 { if ((x<0.0) || (x>1.0))
     throw StatException("betai: bad x");
 
-  T bt= ((x==0.0) || (x==1.0)) ? 0.0 : exp(gammln(a+b)-gammln(a)-gammln(b)+a*log(x)+b*log(- x + 1.0));
-  return (x < (a+1.0)/(a+b+2.0)) ? bt*betacf(a,b,x)/a : -bt*betacf(b,a, -x+1.0)/b + 1.0;
+  T bt= ((x==0.0) || (x==1.0)) ? 0.0 : exp(gammln(a+b)-gammln(a)-gammln(b)+a*log(x)+b*log(- x + T(1.0)));
+  return (x < (a+T(1.0))/(a+b+T(2.0))) ? bt*betacf(a,b,x)/a : -bt*betacf(b,a, -x+T(1.0))/b + T(1.0);
 }
 
 
@@ -837,25 +842,25 @@ T zprob(const T &z)
     else if (y < 1.0) {
       T w = sqr(y);
 	    x = ((((((((w * 0.000124818987
-                  -0.001075204047) * w +0.005198775019) * w
-                -0.019198292004) * w +0.059054035642) * w
-              -0.151968751364) * w +0.319152932694) * w
-            -0.531923007300) * w +0.797884560593) * y * 2.0;
+                  -T(0.001075204047)) * w + T(005198775019.0)) * w
+                -T(0.019198292004)) * w + T(0.059054035642)) * w
+              -T(0.151968751364)) * w + T(0.319152932694)) * w
+            -T(0.531923007300)) * w + T(0.797884560593)) * y * 2.0;
     }
 	  else {
 	    y -= 2.0;
-	    x = (((((((((((((y * -0.000045255659
-                       +0.000152529290) * y -0.000019538132) * y
-                     -0.000676904986) * y +0.001390604284) * y
-                   -0.000794620820) * y -0.002034254874) * y
-                 +0.006549791214) * y -0.010557625006) * y
-               +0.011630447319) * y -0.009279453341) * y
-             +0.005353579108) * y -0.002141268741) * y
-           +0.000535310849) * y +0.999936657524;
+	    x = (((((((((((((y * T(-0.000045255659)
+                       +T(0.000152529290)) * y - T(0.000019538132)) * y
+                     -T(0.000676904986)) * y + T(0.001390604284)) * y
+                   -T(0.000794620820)) * y - T(0.002034254874)) * y
+                 +T(0.006549791214)) * y - T(0.010557625006)) * y
+               +T(0.011630447319)) * y - T(0.009279453341)) * y
+             +T(0.005353579108)) * y - T(0.002141268741)) * y
+           +T(0.000535310849)) * y + T(0.999936657524);
     }
   }
 
-  return (z > 0.0) ? (x+1.0)*0.5 : (-x+1.0)*0.5;
+  return (z > 0.0) ? (x+T(1.0))*T(0.5) : (-x+T(1.0))*T(0.5);
 }
 
 
@@ -866,9 +871,9 @@ inline double fprob(const int &dfnum, const int &dfden, const double &F)
 template<class T>
 T erfcc(const T& x)
 { T z = abs(x);
-  T t = T(1.0) / (z*0.5+1.0);
-  T ans = t * exp(-z*z-1.26551223 + t*(t*(t*(t*(t*(t*(t*(t*(t*0.17087277-0.82215223)+1.48851587)-1.13520398)+0.27886807)-0.18628806)+0.9678418)+0.37409196)+1.00002368));
-  return (x >= 0.0) ?  ans : -ans +2.0;
+  T t = T(1.0) / (z*T(0.5)+T(1.0));
+  T ans = t * exp(-z*z-T(1.26551223) + t*(t*(t*(t*(t*(t*(t*(t*(t*T(0.17087277-0.82215223))+T(1.48851587))-T(1.13520398))+T(0.27886807))-T(0.18628806))+T(0.9678418))+T(0.37409196))+T(1.00002368)));
+  return (x >= 0.0) ?  ans : -ans + T(2.0);
 }
 
 
@@ -921,7 +926,7 @@ T pearsonr(const vector<T> flist1, const vector<T> &flist2, T &probrs)
   T r_den = sqrt( (sumx2*n - sqr(sumx) ) * (sumy2*n - sqr(sumy)) );
   T r = r_num / r_den;
   T df=n-2;
-  T t = r * sqrt( df / ( (-r+1.0+TINY)*(r+1.0+TINY) ) );
+  T t = r * sqrt( df / ( (-r+T(1.0)+T(TINY))*(r+T(1.0)+T(TINY)) ) );
   probrs=betai(df*0.5, T(0.5), df/(df+t*t));
   return r;
 }
@@ -1007,14 +1012,14 @@ void linregress(const vector<T> flist1, const vector<T> &flist2,
   T r_den = sqrt( (sumx2*n - sqr(sumx) ) * (sumy2*n - sqr(sumy)) );
   r = r_num / r_den;
   T df=n-2;
-  T t = r * sqrt( df / ( (-r+1.0+TINY)*(r+1.0+TINY) ) );
+  T t = r * sqrt( df / ( (-r+T(1.0)+T(TINY))*(r+T(1.0)+T(TINY)) ) );
   probrs=betai(df*0.5, T(0.5), df/(df+t*t));
 
 //  T z = log((r+1.0+TINY)/(-r+1.0+TINY));
 
   slope = r_num / (sumx2*n - sqr(sumx));
   intercepr = meany - slope*meanx;
-  sterrest = sqrt(-sqr(r)+1.0) * samplestdev(flist2);
+  sterrest = sqrt(-sqr(r)+T(1.0)) * samplestdev(flist2);
 }
 
 
@@ -1024,7 +1029,7 @@ void linregress(const vector<T> flist1, const vector<T> &flist2,
 template<class T>
 T ttest_1samp(const vector<T> &flist, const T &popmean, T &prob)
 {
-  T n=flist.size(), df=n-1.0;
+  T n=flist.size(), df=n-T(1.0);
   T t= (mean(flist) - popmean) / sqrt(var(flist)/n);
   prob=betai(df*0.5, T(0.5), df/(df+t*t));
   return t;
@@ -1033,8 +1038,8 @@ T ttest_1samp(const vector<T> &flist, const T &popmean, T &prob)
 
 template<class T>
 T ttest_ind(const vector<T> &x, const vector<T> &y, T &prob)
-{ T n1=x.size(), n2=y.size(), df=n1+n2-2.0;
-  T svar= ( sqr(stdev(x))*(n1-1.0) + sqr(stdev(y))*(n2-1.0) )  /  df;
+{ T n1=x.size(), n2=y.size(), df=n1+n2-T(2.0);
+  T svar= ( sqr(stdev(x))*(n1-T(1.0)) + sqr(stdev(y))*(n2-T(1.0)) )  /  df;
   T t= ( mean(x) - mean(y) ) / sqrt(svar * ( (n1+n2)/(n1*n2) ) );
   prob=betai(df*0.5, T(0.5), df/(df+t*t));
   return t;
@@ -1053,9 +1058,9 @@ T ttest_rel(const vector<T> &x, const vector<T> &y, T &prob)
   T cov=0.0;
   for(int i=0; i<x.size(); i++)
     cov += (x[i]-meanx) * (y[i]-meany);
-  T df=n-1.0;
+  T df=n-T(1.0);
   cov /= df;
-  T sd = sqrt((var(x)+var(y) - cov*2.0)/n);
+  T sd = sqrt((var(x)+var(y) - cov*T(2.0))/n);
   if (sd==0.0)
     throw StatException("ttest_rel: sd==0, can't divide");
   T t = (mean(x)-mean(y))/sd;

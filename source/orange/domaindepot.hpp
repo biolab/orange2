@@ -27,10 +27,10 @@
 using namespace std;
 
 #include "getarg.hpp"
+#include "orvector.hpp"
+#include "vars.hpp"
+#include "domain.hpp"
 
-VWRAPPER(StringList)
-VWRAPPER(VarList)
-WRAPPER(Domain)
 class TMetaVector;
 
 #define TDomainList TOrangeVector<PDomain> 

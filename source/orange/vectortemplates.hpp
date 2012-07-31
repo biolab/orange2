@@ -72,6 +72,8 @@ This file includes constructors and specialized methods for Orange vectors
 #endif
 
 #include "orvector.hpp"
+#include "cls_orange.hpp"
+#include "converts.hpp"
 #include "c2py.hpp"
 
 
@@ -278,7 +280,7 @@ public:
 
   static PyObject *_new(PyTypeObject *type, PyObject *args, PyObject *)
   { if (!args || (PySequence_Check(args) && !PySequence_Size(args)))
-      return _CreateEmptyList(type);
+      return CommonListMethods<_WrappedListType, _ListType>::_CreateEmptyList(type);
 
     if (PyTuple_Check(args) && PyTuple_Size(args)==1) {
       PyObject *arg=PyTuple_GetItem(args, 0);
@@ -734,7 +736,7 @@ public:
 
   static PyObject *_new(PyTypeObject *type, PyObject *args, PyObject *)
   { if (!args || (PySequence_Check(args) && !PySequence_Size(args)))
-      return _CreateEmptyList(type);
+      return CommonListMethods<_WrappedListType, _ListType>::_CreateEmptyList(type);
 
     if (PyTuple_Check(args) && PyTuple_Size(args)==1) {
       PyObject *arg=PyTuple_GetItem(args, 0);
