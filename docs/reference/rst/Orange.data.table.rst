@@ -157,7 +157,8 @@ when empty.
         tables. All tables must have the same length. Domains are
         combined so that each (ordinary) feature appears only once in
         the resulting table. The class attribute is the last class
-        attribute in the list of tables; for instance, if three tables
+        attribute in the list of tables, while all other class attributes
+        are added as ordinary features. For instance, if three tables
         are merged but the last one is class-less, the class attribute
         for the new table will come from the second table. Meta
         attributes for the new domain are merged based on id's: if the
