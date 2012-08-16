@@ -374,20 +374,24 @@ class LearnerTestCase(DataTestCase):
 
         classifier = self.learner(learn)
 
-        # Test for classVar 
+        # Test for classVar
         self.assertTrue(hasattr(classifier, "class_var"))
-        self.assertTrue(classifier.class_var is not None)
+        self.assertIs(classifier.class_var, dataset.domain.class_var)
 
         res = _testing.test_on_data([classifier], test)
 
         for ex in test:
-            self.assertIsInstance(classifier(ex, Orange.core.GetValue), Orange.core.Value)
-            self.assertIsInstance(classifier(ex, Orange.core.GetProbabilities), Orange.core.Distribution)
+            self.assertIsInstance(classifier(ex, Orange.core.GetValue),
+                                  Orange.core.Value)
+            self.assertIsInstance(classifier(ex, Orange.core.GetProbabilities),
+                                  Orange.core.Distribution)
 
             value, dist = classifier(ex, Orange.core.GetBoth)
 
             self.assertIsInstance(value, Orange.core.Value)
             self.assertIsInstance(dist, Orange.core.Distribution)
+
+            self.assertIs(dist.variable, classifier.class_var)
 
             if isinstance(dist, Orange.core.ContDistribution):
                 dist_sum = sum(dist.values())
