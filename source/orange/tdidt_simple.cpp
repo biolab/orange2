@@ -881,6 +881,7 @@ TSimpleTreeClassifier::classDistribution(const TExample &ex)
 		dist = predict_classification(ex, tree, &free_dist, this->cls_vals);
 
 		PDistribution pdist = mlnew TDiscDistribution(this->cls_vals, 0.0);
+		pdist->variable = this->classVar;
 		for (i = 0; i < this->cls_vals; i++)
 			pdist->setint(i, dist[i]);
 		pdist->normalize();
