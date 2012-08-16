@@ -272,7 +272,10 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_loess::operator()(PDistri
 
   map<float, float> loesscurve;
   loess(cdist->distribution, nPoints, windowProportion, loesscurve, distributionMethod);
-  return mlnew TProbabilityEstimator_FromDistribution(mlnew TContDistribution(loesscurve));
+
+  TContDistribution *prob = mlnew TContDistribution(loesscurve);
+  prob->variable = frequencies->variable;
+  return mlnew TProbabilityEstimator_FromDistribution(prob);
 }
 
 
