@@ -28,6 +28,19 @@ import os, time, tempfile, shutil, re, shutil, pickle, binascii
 import xml.dom.minidom
 
 report = None
+
+
+def get_instance():
+    """Return the global ReportWindow instance or None if it was not yet
+    initialized.
+
+    """
+    if hasattr(qApp, "canvasDlg") and hasattr(qApp.canvasDlg, "reportWindow"):
+        return qApp.canvasDlg.reportWindow
+    else:
+        return report
+
+
 def escape(s):
     return s.replace("\\", "\\\\").replace("\n", "\\n").replace("'", "\\'")
 

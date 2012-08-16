@@ -57,7 +57,7 @@ class OWWidget(OWBaseWidget):
         
 
         self.__reportData = None
-        if OWReport.report and not noReport and hasattr(self, "sendReport"):
+        if OWReport.get_instance() and not noReport and hasattr(self, "sendReport"):
             self.buttonBackground.show()
             self.reportButton = OWGUI.button(self.buttonBackground, self, "&Report", self.reportAndFinish, debuggingEnabled=0)
             self.reportButton.setAutoDefault(0)
@@ -176,7 +176,7 @@ class OWWidget(OWBaseWidget):
         self.reportName = name or self.windowTitle()
         self.__reportData = ""
         if needDirectory:
-            return OWReport.report.createDirectory()
+            return OWReport.get_instance().createDirectory()
         else:
             return True
 
@@ -199,10 +199,10 @@ class OWWidget(OWBaseWidget):
         self.finishReportList()
 
     def getUniqueFileName(self, patt):
-        return OWReport.report.getUniqueFileName(patt)
+        return OWReport.get_instance().getUniqueFileName(patt)
 
     def getUniqueImageName(self, nm="img", ext=".png"):
-        return OWReport.report.getUniqueFileName(nm + "%06i" + ext)
+        return OWReport.get_instance().getUniqueFileName(nm + "%06i" + ext)
 
     def reportImage(self, filenameOrFunc, *args):
         if self.__reportData is None:
@@ -287,7 +287,7 @@ class OWWidget(OWBaseWidget):
        
     def finishReport(self):
         if self.__reportData is not None:
-            OWReport.report(self.reportName, self.__reportData or "", self.widgetId, self.windowIcon())#, self.getSettings(False))
+            OWReport.get_instance()(self.reportName, self.__reportData or "", self.widgetId, self.windowIcon())#, self.getSettings(False))
             self.__reportData = None
 
 import OWReport
