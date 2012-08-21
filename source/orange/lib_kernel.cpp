@@ -5713,13 +5713,12 @@ PyObject *Classifier_call(PyObject *self, PyObject *args, PyObject *keywords) PY
   PyCATCH
 }
 
-/* ************ MULTI-TARGET LEARNER AND CLASSIFIER ************ */
+/* ************ MULTI LEARNER AND CLASSIFIER ************ */
 
 #include "multi_classifier.hpp"
 #include "multi_learner.hpp"
 
-ABSTRACT(MultiLearner - Orange.classification.MultiLearner, Orange)
-
+ABSTRACT(MultiLearner - Orange.core.MultiLearner, Orange)
 PyObject *MultiLearner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDOC("(examples) -> Classifier")
 {
   PyTRY
@@ -5744,9 +5743,7 @@ PyObject *MultiLearner_call(PyObject *self, PyObject *targs, PyObject *keywords)
   PyCATCH
 }
 
-/* ************ MULTI LEARNER and MULTI CLASSIFIER ************ */
-
-ABSTRACT(MultiClassifier - Orange.classification.MultiClassifier, Orange)
+ABSTRACT(MultiClassifier - Orange.core.MultiClassifier, Orange)
 
 PyObject *MultiClassifier_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example[, format]) -> Value | distribution | (Value, distribution)")
 { PyTRY

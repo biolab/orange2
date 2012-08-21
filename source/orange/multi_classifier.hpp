@@ -29,9 +29,8 @@ using namespace std;
 WRAPPER(MultiClassifier)
 WRAPPER(EFMDataDescription);
 
-//TODO: decide what to do with this
-//#define TMultiClassifierList TOrangeVector<PMultiClassifier> 
-//VWRAPPER(MultiClassifierList)
+#define TMultiClassifierList TOrangeVector<PMultiClassifier> 
+VWRAPPER(MultiClassifierList)
 
 /* Classifiers have three methods for classification.
  - operator() returns TValue
@@ -46,7 +45,6 @@ WRAPPER(EFMDataDescription);
 class ORANGE_API TMultiClassifier: public TOrange {
 public:
 	__REGISTER_CLASS
-	//__REGISTER_ABSTRACT_CLASS TODO:??
 
 	PVarList classVars; //P class variables
 	PDomain domain; //P domain

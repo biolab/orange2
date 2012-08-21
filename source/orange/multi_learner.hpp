@@ -35,8 +35,6 @@ WRAPPER (ExampleGenerator)
 class ORANGE_API TMultiLearner : public TOrange {
 public:
 	__REGISTER_CLASS
-	//__REGISTER_ABSTRACT_CLASS TODO:???
-
 
 	enum {NeedsNothing, NeedsClassDistribution, NeedsDomainDistribution, NeedsDomainContingency, NeedsExampleGenerator};
 	int needs; //PR the kind of data that learner needs
@@ -47,7 +45,7 @@ public:
 
 	virtual PMultiClassifier operator()(PVarList);
 	virtual PMultiClassifier operator()(PDistributionList);
-	virtual PMultiClassifier operator()(PDomainDistributions); //TODO: remove form header
+	virtual PMultiClassifier operator()(PDomainDistributions);
 	virtual PMultiClassifier operator()(PDomainContingency);
 	virtual PMultiClassifier operator()(PExampleGenerator, const int &weight = 0);
 

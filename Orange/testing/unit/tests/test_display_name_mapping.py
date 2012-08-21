@@ -18,7 +18,7 @@ class TestNameMapping(unittest.TestCase):
         for cls in orange.__dict__.values():
             if type(cls) == type:
                 if cls.__module__ in exempt:
-                    pass
+                    continue
                 try:
                     cls2 = eval(cls.__module__ + "." + cls.__name__)
                 except AttributeError as err:

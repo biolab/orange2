@@ -30,9 +30,9 @@
 
 #include "multi_classifier.ppp"
 
-DEFINE_TOrangeVector_classDescription(PClassifier, "TClassifierList", true, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(PMultiClassifier, "TMultiClassifierList", true, ORANGE_API)
 
-/* ***** TClassifier methods */
+/* ***** TMultiClassifier methods */
 
 TMultiClassifier::TMultiClassifier(const PVarList &acv, const bool &cp) :
 		classVars(acv), computesProbabilities(cp) {
@@ -49,7 +49,7 @@ TMultiClassifier::TMultiClassifier(const TMultiClassifier &old) :
 				old.computesProbabilities) {
 }
 ;
-//TODO: ask janez how this is supposed to work, it seems like a deadlock to me
+
 PValueList TMultiClassifier::operator ()(const TExample &exam) {
 	if (!computesProbabilities)
 		raiseError("invalid setting of 'computesProbabilities'");

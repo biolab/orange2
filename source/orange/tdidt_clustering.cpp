@@ -222,7 +222,7 @@ float** protottype_d(struct Example *examples, int size, int attr, struct Argume
 	for (i = 0; i < attr_vals; ++i) {
 		for (j = 0; j < n_classes; ++j) {
 			if (n_ptypes[i][j] == 0.0)
-				ptypes[i][j] = INFINITY; //TODO: right?
+				ptypes[i][j] = INFINITY;
 			else
 				ptypes[i][j] = ptypes[i][j] / n_ptypes[i][j];
 		}
@@ -808,7 +808,7 @@ PMultiClassifier TClusteringTreeLearner::operator()(PExampleGenerator ogen,
 	for(int i = 0; i < ogen->domain->classVars->size(); i++){
 		if((args.type == Classification && ogen->domain->classVars->at(i)->varType != TValue::INTVAR) ||
 			(args.type == Regression && ogen->domain->classVars->at(i)->varType == TValue::INTVAR))
-			raiseError("all classes must be of the same type"); //TODO: correct? ask someone
+			raiseError("all classes must be of the same type"); //TODO: temporary?
 	}
 
 	ASSERT(cls_vals = (int *) calloc(ogen->domain->classVars->size(), sizeof(int)));
