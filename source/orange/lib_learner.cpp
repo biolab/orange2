@@ -52,6 +52,41 @@
 
 #include "externs.px"
 
+/* ************ CLUSTERING TREE LEARNER ************ */
+
+#include "tdidt_clustering.hpp"
+C_CALL(ClusteringTreeLearner - Orange.multitarget.tree.ClusteringTreeLearner, MultiLearner, "([examples], [minMajority=, minMSE=, minExamples=, maxDepth=, method=])")
+C_NAMED(ClusteringTreeClassifier - Orange.multitarget.tree.ClusteringTreeClassifier, MultiClassifier, "()")
+
+PyObject *ClusteringTreeClassifier__reduce__(PyObject *self)
+{
+	PyTRY
+	ostringstream ss;
+
+	CAST_TO(TClusteringTreeClassifier, classifier);
+	classifier->save_model(ss);
+	return Py_BuildValue("O(s)N", getExportedFunction("__pickleLoaderClusteringTreeClassifier"), 
+		ss.str().c_str(), packOrangeDictionary(self));
+	PyCATCH
+}
+
+PyObject *__pickleLoaderClusteringTreeClassifier(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(buffer)")
+{
+	PyTRY
+	char *cbuf;
+	istringstream ss;
+
+	int buffer_size = 0;
+	if (!PyArg_ParseTuple(args, "s:__pickleLoaderClusteringTreeClassifier", &cbuf))
+		return NULL;
+	ss.str(string(cbuf));
+	PClusteringTreeClassifier classifier = mlnew TClusteringTreeClassifier();
+	classifier->load_model(ss);
+	return WrapOrange(classifier);
+	PyCATCH
+}
+
+
 /* ************ SIMPLE TREE LEARNER ************ */
 
 #include "tdidt_simple.hpp"

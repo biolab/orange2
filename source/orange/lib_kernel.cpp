@@ -5713,6 +5713,84 @@ PyObject *Classifier_call(PyObject *self, PyObject *args, PyObject *keywords) PY
   PyCATCH
 }
 
+/* ************ MULTI-TARGET LEARNER AND CLASSIFIER ************ */
+
+#include "multi_classifier.hpp"
+#include "multi_learner.hpp"
+
+ABSTRACT(MultiLearner - Orange.classification.MultiLearner, Orange)
+
+PyObject *MultiLearner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDOC("(examples) -> Classifier")
+{
+  PyTRY
+    NO_KEYWORDS
+
+    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrLearner_Type) {
+      PyErr_Format(PyExc_SystemError, "Learner.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
+    PExampleGenerator egen;
+    int weight = 0;
+    if (!PyArg_ParseTuple(targs, "O&|O&", pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weight))
+      PYERROR(PyExc_AttributeError, "Learner.__call__: examples and, optionally, weight attribute expected", PYNULL);
+
+    PMultiClassifier classfr = SELF_AS(TMultiLearner)(egen, weight);
+
+    if (!classfr)
+      PYERROR(PyExc_SystemError, "learning failed", PYNULL);
+	
+    return WrapOrange(classfr);
+  PyCATCH
+}
+
+/* ************ MULTI LEARNER and MULTI CLASSIFIER ************ */
+
+ABSTRACT(MultiClassifier - Orange.classification.MultiClassifier, Orange)
+
+PyObject *MultiClassifier_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example[, format]) -> Value | distribution | (Value, distribution)")
+{ PyTRY
+    NO_KEYWORDS
+
+    CAST_TO(TMultiClassifier, multi_classifier);
+
+    if ((PyOrange_OrangeBaseClass(self->ob_type) == &PyOrClassifier_Type) && !dynamic_cast<TClassifier_Python *>(multi_classifier)) { 
+      PyErr_Format(PyExc_SystemError, "Classifier.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
+    if (!multi_classifier)
+      PYERROR(PyExc_SystemError, "attribute error", PYNULL);
+
+    TExample *example;
+    int dist=0;
+    if (!PyArg_ParseTuple(args, "O&|i", ptr_Example, &example, &dist))
+      PYERROR(PyExc_TypeError, "attribute error; example (and, optionally, return type) expected", PYNULL);
+	PyObject *returnValues;
+	PValueList classValues;
+    switch (dist) {
+      case 0:
+		classValues = (*multi_classifier)(*example);
+		returnValues = PyList_New(multi_classifier->classVars->size());
+		for(int i = 0; i< multi_classifier->classVars->size(); i++)
+			PyList_SET_ITEM(returnValues, i, Value_FromVariableValue(multi_classifier->classVars->at(i), classValues->at(i)));
+        return returnValues;
+      case 1:
+        return WrapOrange(multi_classifier->classDistribution(*example));
+      case 2:
+        PDistributionList classDists;
+        multi_classifier->predictionAndDistribution(*example, classValues, classDists);
+		returnValues = PyList_New(multi_classifier->classVars->size());
+		for(int i = 0; i< multi_classifier->classVars->size(); i++)
+			PyList_SET_ITEM(returnValues, i, Value_FromVariableValue(multi_classifier->classVars->at(i), classValues->at(i)));
+
+        return Py_BuildValue("NN", returnValues, WrapOrange(classDists)); 
+    }
+
+    PYERROR(PyExc_AttributeError, "invalid parameter for classifier call", PYNULL);
+
+  PyCATCH
+}
 
 
 // We override its [gs]etattr to add the classVar
