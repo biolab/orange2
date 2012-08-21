@@ -5,6 +5,7 @@ import Orange.feature.scoring
 import random
 import copy
 from Orange.utils import deprecated_keywords
+from operator import add
 
 def _default_small_learner(attributes=None, rand=None, base=None):
     # tree learner assembled as suggested by Breiman (2001)
@@ -21,7 +22,7 @@ def _default_simple_learner(base, randorange):
     return _RandomForestSimpleTreeLearner(base=base, rand=randorange)
 
 def _wrap_learner(base, rand, randorange):
-    if base == None or isinstance(base, Orange.classification.tree.SimpleTreeLearner):
+    if base == None or isinstance(base, Orange.classification.tree.SimpleTreeLearner) or isinstance(base, Orange.core.ClusteringTreeLearner):
         return _default_simple_learner(base, randorange)
     elif isinstance(base, Orange.classification.tree.TreeLearner):
         return _default_small_learner(None, rand, base)
@@ -49,7 +50,6 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
         return r
 
 _RandomForestSimpleTreeLearner = Orange.utils.deprecated_members({"weightID":"weight_id", "examples":"instances"})(_RandomForestSimpleTreeLearner)
-
 
 class _RandomForestTreeLearner(Orange.core.Learner):
     """ A learner which wraps an ordinary TreeLearner with
@@ -138,7 +138,7 @@ class RandomForestLearner(Orange.core.Learner):
     """
 
     __new__ = Orange.utils._orange__new__(Orange.core.Learner)
-
+    
     def __init__(self, trees=100, attributes=None,\
                     name='Random Forest', rand=None, callback=None, base_learner=None, learner=None):
         self.trees = trees
@@ -198,7 +198,8 @@ class RandomForestLearner(Orange.core.Learner):
         return RandomForestClassifier(classifiers = classifiers, name=self.name,\
                     domain=instances.domain, class_var=instances.domain.class_var, \
                     class_vars=instances.domain.class_vars)
-           
+
+
 RandomForestLearner = Orange.utils.deprecated_members({"examples":"instances"})(RandomForestLearner)
 
 class RandomForestClassifier(orange.Classifier):
@@ -248,9 +249,7 @@ class RandomForestClassifier(orange.Classifier):
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
-        from operator import add
 
-        instance = Orange.data.Instance(self.domain, instance)
         # get results to avoid multiple calls
         res_both = [c(instance, orange.GetBoth) for c in self.classifiers]
 

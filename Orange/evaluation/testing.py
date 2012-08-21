@@ -186,6 +186,7 @@ class ExperimentResults(object):
                 else:
                     self.converter = float
             elif test_type in (TEST_TYPE_MLC, TEST_TYPE_MULTITARGET):
+                self.class_values = [list(cv.values) if cv.var_type == cv.Discrete else None for cv in domain.class_vars]
                 self.labels = [var.name for var in domain.class_vars]
                 self.converter = mt_vals
 

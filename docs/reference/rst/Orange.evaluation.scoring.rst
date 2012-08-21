@@ -124,58 +124,6 @@ Utility Functions
 
 .. autofunction:: split_by_iterations
 
-
-.. _mt-scoring:
-
-============
-Multi-target
-============
-
-:doc:`Multi-target <Orange.multitarget>` classifiers predict values for
-multiple target classes. They can be used with standard
-:obj:`~Orange.evaluation.testing` procedures (e.g.
-:obj:`~Orange.evaluation.testing.Evaluation.cross_validation`), but require
-special scoring functions to compute a single score from the obtained
-:obj:`~Orange.evaluation.testing.ExperimentResults`.
-Since different targets can vary in importance depending on the experiment,
-some methods have options to indicate this e.g. through weights or customized
-distance functions. These can also be used for normalization in case target
-values do not have the same scales.
-
-.. autofunction:: mt_flattened_score
-.. autofunction:: mt_average_score
-
-The whole procedure of evaluating multi-target methods and computing
-the scores (RMSE errors) is shown in the following example
-(:download:`mt-evaluate.py <code/mt-evaluate.py>`). Because we consider
-the first target to be more important and the last not so much we will
-indicate this using appropriate weights.
-
-.. literalinclude:: code/mt-evaluate.py
-
-Which outputs::
-
-    Weighted RMSE scores:
-        Majority    0.8228
-          MTTree    0.3949
-             PLS    0.3021
-           Earth    0.2880
-
-Two more accuracy measures based on the article by Zaragoza et al.(2011); applicable to discrete classes:
-
-Global accuracy (accuracy per example) over d-dimensional class variable:
-
-.. autofunction:: mt_global_accuracy
-
-Mean accuracy (accuracy per class or per label) over d class variables: 
-
-.. autofunction:: mt_mean_accuracy   
-
-References
-==========
-
-Zaragoza, J.H., Sucar, L.E., Morales, E.F.,Bielza, C., Larranaga, P.  (2011). 'Bayesian Chain Classifiers for Multidimensional Classification', Proc. of the International Joint Conference on Artificial Intelligence (IJCAI-2011),  pp:2192-2197.
-
 ==========================
 Multi-label classification
 ==========================

@@ -2648,109 +2648,61 @@ def mlc_recall(res):
 #def mlc_hierarchical_loss(res):
 #    pass
 
-
-def mt_average_score(res, score, weights=None):
+def logloss(res):
     """
-    Compute individual scores for each target and return the (weighted) average.
-
-    One method can be used to compute scores for all targets or a list of
-    scoring methods can be passed to use different methods for different
-    targets. In the latter case, care has to be taken if the ranges of scoring
-    methods differ.
-    For example, when the first target is scored from -1 to 1 (1 best) and the
-    second from 0 to 1 (0 best), using `weights=[0.5,-1]` would scale both
-    to a span of 1, and invert the second so that higher scores are better.
-
-    :param score: Single-target scoring method or a list of such methods
-                  (one for each target).
-    :param weights: List of real weights, one for each target,
-                    for a weighted average.
-
-    """
-    if not len(res.results):
-        raise ValueError, "Cannot compute the score: no examples."
-    if res.number_of_learners < 1:
-        return []
-    n_classes = len(res.results[0].actual_class)
-    if weights is None:
-        weights = [1.] * n_classes
-    if not isinstance(score, Iterable):
-        score = [score] * n_classes
-    elif len(score) != n_classes:
-        raise ValueError, "Number of scoring methods and targets do not match."
-    # save original classes
-    clsss = [te.classes for te in res.results]
-    aclsss = [te.actual_class for te in res.results]
-    # compute single target scores
-    single_scores = []
-    for i in range(n_classes):
-        for te, clss, aclss in zip(res.results, clsss, aclsss):
-            te.classes = [cls[i] for cls in clss]
-            te.actual_class = aclss[i]
-        single_scores.append(score[i](res))
-    # restore original classes
-    for te, clss, aclss in zip(res.results, clsss, aclsss):
-        te.classes = clss
-        te.actual_class = aclss
-    return [sum(w * s for w, s in zip(weights, scores)) / sum(weights)
-        for scores in zip(*single_scores)]
-
-def mt_flattened_score(res, score):
-    """
-    Flatten (concatenate into a single list) the predictions of multiple
-    targets and compute a single-target score.
-    
-    :param score: Single-target scoring method.
-    """
-    res2 = Orange.evaluation.testing.ExperimentResults(res.number_of_iterations,
-        res.classifier_names, class_values=res.class_values,
-        weights=res.weights, classifiers=res.classifiers, loaded=res.loaded,
-        test_type=Orange.evaluation.testing.TEST_TYPE_SINGLE, labels=res.labels)
-    for te in res.results:
-        for i, ac in enumerate(te.actual_class):
-            te2 = Orange.evaluation.testing.TestedExample(
-                iteration_number=te.iteration_number, actual_class=ac)
-            for c, p in zip(te.classes, te.probabilities):
-                te2.add_result(c[i], p[i])
-            res2.results.append(te2)
-    return score(res2)
-
-def mt_global_accuracy(res):
-    """
-    :math:`Acc = \\frac{1}{N}\\sum_{i=1}^{N}\\delta(\\mathbf{c_{i}'},\\mathbf{c_{i}}) \\newline`
-	
-    :math:`\\delta (\\mathbf{c_{i}'},\\mathbf{c_{i}} )=\\left\\{\\begin{matrix}1:\\mathbf{c_{i}'}=\\mathbf{c_{i}}\\\\ 0: otherwise\\end{matrix}\\right.`
+    Calculates LogLoss, n is the number of all test results and :math:`p_{i}` is the probability
+     withw hich the classifier predicted the actual class.
+     :math:`LogLoss = \\frac{1}{n}\\sum_{i = 1}^{n} -max(log(p_{i}), log \\frac{1}{n}) \\newline`
     """
     results = []
-    for l in xrange(res.number_of_learners):
-        n_results = len(res.results)
-        n_correct = 0.
-
+    n_results = len(res.results)
+    min_log = math.log(1.0/n_results)
+    for l in xrange(res.number_of_learners):       
+        temp = 0.0
         for r in res.results:
-            if list(r.classes[l]) == r.actual_class:
-                n_correct+=1
+            if not r.probabilities[l]:
+                raise ValueError, "Probabilities are needed to compute logloss"
+            temp-=max(math.log(max(r.probabilities[l][int(r.actual_class)],1e-20)),min_log)
 
-        results.append(n_correct/n_results)
+        results.append(temp/n_results)
     return results
 
 
-def mt_mean_accuracy(res):
+def mlc_F1_micro(res):
     """
-    :math:`\\overline{Acc_{d}} = \\frac{1}{d}\\sum_{j=1}^{d}Acc_{j} = \\frac{1}{d}\\sum_{j=1}^{d} \\frac{1}{N}\\sum_{i=1}^{N}\\delta(c_{ij}',c_{ij} ) \\newline`
-	
-    :math:`\\delta (c_{ij}',c_{ij} )=\\left\\{\\begin{matrix}1:c_{ij}'=c_{ij}\\\\ 0: otherwise\\end{matrix}\\right.`
+    F1_{micro} = 2 * \frac{\overline{precision}  * \overline{recall}}{\overline{precision} + \overline{recall}}
     """
-    results = []
-    for l in xrange(res.number_of_learners):
-        n_classes = len(res.results[0].actual_class)
-        n_results = len(res.results)
-        n_correct = 0.
 
+    precision = mlc_precision(res)
+    recall = mlc_recall(res)
+    return [2 * p * r / (p + r) for p,r in zip(precision, recall)]
+
+
+def mlc_F1_macro(res):
+    """
+    F1_{macro} = \frac{1}{d}\sum_{j=0}^{d} 2 * \frac{precision_j * recall_j}{precision_j + recall_j}
+    """
+
+    results = []
+    n_results = gettotsize(res)
+    n_classes =  len(res.results[0].actual_class)
+
+    for l in xrange(res.number_of_learners): 
+        true_positive = [0.0] * n_classes
+        sum_fptp = [0.0] * n_classes
+        sum_fntp = [0.0] * n_classes
         for r in res.results:
-            for i in xrange(n_classes):
-                if r.classes[l][i] == r.actual_class[i]:
-                    n_correct+=1
-        results.append(n_correct/n_classes/n_results)
+            aclass = r.actual_class
+            for i, cls_val in enumerate(r.classes[l]):
+                if aclass[i] and cls_val:
+                    true_positive[i] += 1
+                if cls_val:
+                    sum_fptp[i] += 1
+                if aclass[i]:
+                    sum_fntp[i] += 1
+
+        results.append(sum([ 2*(tp/fptp * tp/fntp)/(tp/fptp + tp/fntp) for tp, fptp, fntp in \
+            zip(true_positive, sum_fptp, sum_fntp)] ) / n_classes)
     return results
 
 

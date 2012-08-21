@@ -6,6 +6,10 @@ except:
 import orange, Orange
 
 class TestNameMapping(unittest.TestCase):
+
+    exempt = ["Orange.multitarget.tree",
+        ]
+
     def test_qualified_names(self):
         """ Test that qualified names of core C++ objects 
         map to the correct name in the Orange.* hierarchy.
@@ -13,6 +17,8 @@ class TestNameMapping(unittest.TestCase):
         """
         for cls in orange.__dict__.values():
             if type(cls) == type:
+                if cls.__module__ in exempt:
+                    pass
                 try:
                     cls2 = eval(cls.__module__ + "." + cls.__name__)
                 except AttributeError as err:
