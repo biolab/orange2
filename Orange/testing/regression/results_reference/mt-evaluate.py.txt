@@ -1,5 +1,0 @@
-Weighted RMSE scores:
-    Majority	0.8228
-     MT Tree	0.3949
-         PLS	0.3021
-       Earth	0.2880

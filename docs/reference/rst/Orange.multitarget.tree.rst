@@ -1,1 +1,0 @@
-.. automodule:: Orange.multitarget.tree

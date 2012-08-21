@@ -7,14 +7,14 @@ import orange, Orange
 
 class TestNameMapping(unittest.TestCase):
 
-    exempt = ["Orange.multitarget.tree",
-        ]
-
     def test_qualified_names(self):
         """ Test that qualified names of core C++ objects 
         map to the correct name in the Orange.* hierarchy.
           
         """
+        #modules in exempt contain source files intended for addons
+        exempt = ["Orange.multitarget.tree",  ]
+
         for cls in orange.__dict__.values():
             if type(cls) == type:
                 if cls.__module__ in exempt:
