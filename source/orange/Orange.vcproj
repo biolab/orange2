@@ -693,6 +693,22 @@
 				>
 			</File>
 			<File
+				RelativePath=".\multi_classifier.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\multi_classifier.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\multi_learner.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\multi_learner.hpp"
+				>
+			</File>
+			<File
 				RelativePath="nearest.cpp"
 				>
 			</File>
@@ -894,6 +910,14 @@
 			</File>
 			<File
 				RelativePath="tdidt.hpp"
+				>
+			</File>
+			<File
+				RelativePath=".\tdidt_clustering.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\tdidt_clustering.hpp"
 				>
 			</File>
 			<File
