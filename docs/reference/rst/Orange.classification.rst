@@ -44,6 +44,7 @@ separate pages.
    Orange.classification.lookup
    Orange.classification.classfromvar
    Orange.classification.constant
+   Orange.classification.neural
    
 
 All learning algorithms and prediction models are derived from the following two clases.

@@ -21,8 +21,6 @@ Orange Scripting Reference
 
    Orange.multilabel
    
-   Orange.multitarget
-
    Orange.associate
 
    Orange.clustering
