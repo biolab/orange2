@@ -713,6 +713,7 @@ SETUP_REQUIRES = (
 INSTALL_REQUIRES = (
     'setuptools',
     'numpy',
+    'numpydoc',
 )
 
 EXTRAS_REQUIRE = {
