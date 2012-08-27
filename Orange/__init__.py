@@ -131,9 +131,6 @@ _import("regression.mean")
 _import("regression.pls")
 _import("regression.tree")
 
-_import("multitarget")
-_import("multitarget.tree")
-
 _import("multilabel")
 _import("multilabel.multibase")
 _import("multilabel.br")
