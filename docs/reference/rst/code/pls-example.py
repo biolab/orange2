@@ -10,7 +10,7 @@ data = Orange.data.Table("multitarget-synthetic.tab")
 print "Input variables:    ", data.domain.features
 print "Response variables: ", data.domain.class_vars
     
-learner = Orange.multitarget.pls.PLSRegressionLearner()
+learner = Orange.regression.pls.PLSRegressionLearner()
 classifier = learner(data)
 
 print "Prediction for the first 2 data instances: \n" 
