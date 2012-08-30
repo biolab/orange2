@@ -130,7 +130,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.UpdateToolTip()
 
     def UpdateToolTip(self):
-        state = {0:"local, updataed", 1:"local, needs update", 2:"on server, download for local use", 3:"obsolete"}
+        state = {0:"local, updated", 1:"local, needs update", 2:"on server, download for local use", 3:"obsolete"}
         tooltip = "State: %s\nTags: %s" % (state[self.state], ", ".join(self.tags))
         if self.state != 2:
             tooltip += "\nFile: %s" % orngServerFiles.localpath(self.domain, self.filename)
