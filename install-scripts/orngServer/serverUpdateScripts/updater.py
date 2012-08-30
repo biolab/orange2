@@ -19,6 +19,7 @@ parser.add_option("-m", "--mailto", help="e-mail the results to EMAIL", metavar=
 option, args = parser.parse_args()
 
 if not args:
+    #names of all scripts to call
     args = ["updateTaxonomy.py", "updateGO.py", "updateMeSH.py", "updateNCBI_geneinfo.py",
             "updateHomoloGene.py", "updateDictyBase.py", "updatePPI.py"]
     
