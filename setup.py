@@ -168,19 +168,24 @@ class pyxtract_build_ext(build_ext):
         if isinstance(ext, PyXtractSharedExtension):
             # Fix extension modules so they can be linked
             # by other modules
+            if self.dry_run:
+                # No need to do anything here.
+                return
+
             if isinstance(self.compiler, MSVCCompiler):
                 # Copy ${TEMP}/orange/orange.lib to ${BUILD}/orange.lib
                 ext_fullpath = self.get_ext_fullpath(ext.name)
                 # Get the last component of the name
                 ext_name = ext.name.rsplit(".", 1)[-1]
-                libs = glob.glob(os.path.join(self.build_temp, 
+                libs = glob.glob(os.path.join(self.build_temp,
                                               "*", "*", ext_name + ".lib"))
                 if not libs:
                     log.info("Could not locate library %r in directory %r" \
-                             %(ext_name, self.build_temp))
+                             % (ext_name, self.build_temp))
                 else:
                     lib = libs[0]
-                    copy_file(lib, os.path.splitext(ext_fullpath)[0] + ".lib")
+                    lib_path = os.path.splitext(ext_fullpath)[0] + ".lib"
+                    copy_file(lib, lib_path, dry_run=self.dry_run)
             else:
                 # Make lib{name}.so link to {name}.so
                 ext_path = self.get_ext_fullpath(ext.name)
@@ -192,7 +197,8 @@ class pyxtract_build_ext(build_ext):
                     _, name = ext.name.rsplit(".", 1)
                     lib_filename = self.compiler.library_filename(name, lib_type="shared")
                     # Create the link
-                    copy_file(ext_filename, lib_filename, link="sym")
+                    copy_file(ext_filename, lib_filename, link="sym",
+                              dry_run=self.dry_run)
                 except OSError, ex:
                     log.info("failed to create shared library for %s: %s" % (ext.name, str(ex)))
                 finally:
@@ -440,35 +446,42 @@ class orange_build(build):
     if orangeqt_setup:
         sub_commands += [("build_pyqt_ext", has_pyqt_extensions)]
 
+
 class orange_install_lib(install_lib):
     """ An command to install orange (preserves liborange.so -> orange.so symlink)
     """
     def run(self):
         install_lib.run(self)
 
-    def copy_tree(self, infile, outfile, preserve_mode=1, preserve_times=1, preserve_symlinks=1, level=1):
+    def copy_tree(self, infile, outfile, preserve_mode=1, preserve_times=1,
+                  preserve_symlinks=1, level=1):
         """ Run copy_tree with preserve_symlinks=1 as default
-        """ 
-        install_lib.copy_tree(self, infile, outfile, preserve_mode, preserve_times, preserve_symlinks, level)
+        """
+        install_lib.copy_tree(self, infile, outfile, preserve_mode,
+                              preserve_times, preserve_symlinks, level)
 
     def install(self):
         """ Copy build_dir to install_dir
         """
         # A Hack to unlink liborange.so -> orange.so if it already exists,
         # because copy_tree fails to overwrite it
-        # 
+        #
         liborange = os.path.join(self.install_dir, "Orange", "liborange.so")
         if os.path.exists(liborange) and os.path.islink(liborange):
-            log.info("unlinking %s -> %s", liborange, os.path.join(self.install_dir, "orange.so"))
-            os.unlink(liborange)
+            log.info("unlinking %s -> %s", liborange,
+                     os.path.join(self.install_dir, "orange.so"))
+
+            if not self.dry_run:
+                os.unlink(liborange)
 
         return install_lib.install(self)
 
+
 class orange_install(install):
     """ A command to install orange while also creating
-    a .pth path to access the old orng* modules and orange, 
-    orangeom etc. 
-    
+    a .pth path to access the old orng* modules and orange,
+    orangeom etc.
+
     """
     def run(self):
         install.run(self)
@@ -479,6 +492,7 @@ class orange_install(install):
         log.info("creating portal path for orange compatibility.")
         self.create_path_file()
         self.path_file, self.extra_dirs = None, None
+
 
 def get_source_files(path, ext="cpp", exclude=[]):
     files = glob.glob(os.path.join(path, "*." + ext))
