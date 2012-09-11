@@ -104,7 +104,7 @@ float gini(float *probs, int n_vals){
 }
 
 
-float distance_gini(struct Example *examples, int size, int attr, int *cls_vals, struct Arguments *args)
+float distance_gini(struct Example *examples, int size, int attr, int *cls_vals, float gini_prior, struct Arguments *args)
 {
 	TValue *cls, *cls_end;
 	struct Example *ex, *ex_end;
@@ -172,7 +172,7 @@ float distance_gini(struct Example *examples, int size, int attr, int *cls_vals,
 	free(cls_dist);
 	free(size_weight);
 
-	return score;
+	return score - gini_prior;
 }
 
 float** protottype_d(struct Example *examples, int size, int attr, struct Arguments *args,
@@ -297,69 +297,85 @@ float dist_intra(float **ptypes, int ptypes_size, struct Example *examples, int 
 
 float dist_silhuette(float **ptypes, int ptypes_size, struct Example *examples, int size, int attr, struct Arguments *args, float split) {
 	int i, j, n_classes, attr_val, n_dist=0;
-	float dist = 0, temp, d, inter_dist, intra_dist;
-	struct Example *ex, *ex_end;
+	float dist = 0, temp, d, *cls_vals, *cls_vals_n, inter_dist, intra_dist;
+	struct Example *ex,  *ex_end;
 	TValue *cls, *cls_end;
 
 	n_classes = args->domain->classVars->size();
 	
+	ASSERT(cls_vals = (float *)calloc(n_classes, sizeof(float)));
+	ASSERT(cls_vals_n = (float *)calloc(n_classes, sizeof(float)));
+	
 	for (ex = examples, ex_end = examples + size; ex < ex_end; ex++) {
 		if (!ex->example->values[attr].isSpecial()) {
+			for (i = 0; i < n_classes; i++)
+				cls_vals_n[i] = 0;
+			
+			for (cls = ex->example->values_end,  cls_end = ex->example->classes_end;
+					cls < cls_end; cls++) {
+				i = cls  + n_classes - cls_end;
+				if (!cls->isSpecial()) {
+					cls_vals[i] = args->type == Classification ? cls->intV : cls->floatV;
+					cls_vals_n[i] += ex->weight;
+				}else
+					cls_vals[i]=-INFINITY;
+			}
+			
 			if (split != INFINITY){
 				attr_val = ex->example->values[attr].floatV;
 				attr_val = attr_val >= split ? 1 : 0;
 			}else
 				attr_val = ex->example->values[attr].intV;
+			
 
-			inter_dist = INFINITY;
-			intra_dist = 0;
-			n_dist = 0;
-			for (cls = ex->example->values_end, cls_end = ex->example->classes_end;
-					cls < cls_end; cls++) {
-				if (!cls->isSpecial()) {
-					i = cls  + n_classes - cls_end;
-					temp = args->type == Classification ? cls->intV : cls->floatV;
-					d = ptypes[attr_val][i] - temp;
-					intra_dist += d * d;
-					n_dist++;
-				}
+			for (i = 0; i < n_classes; i++){
+				if(cls_vals_n[i]!=0)
+					cls_vals[i] = cls_vals[i] / cls_vals_n[i];
+				else
+					cls_vals[i]=INFINITY;
 			}
-			intra_dist /= n_dist;
-			for (j = 0; j < ptypes_size; j++) {
-				if(j==attr_val)
-					continue;
+
+			intra_dist = 0;
+			intra_dist = INFINITY;
+			for (i = 0; i < ptypes_size; i++){
 				temp = 0;
-				n_dist = 0;
-				for (cls = ex->example->values_end, cls_end = ex->example->classes_end;
-					cls < cls_end; cls++) {
-					if (!cls->isSpecial()) {
-						i = cls  + n_classes - cls_end;
-						
-						d = ptypes[j][i] - cls->intV;
-						temp += d * d;
-						n_dist++;
-					}
+				for(j = 0; j < n_classes; j++){
+					d = ptypes[i][j] - cls_vals[i];
+					temp += d*d;
 				}
-				inter_dist /= n_dist;
-				if( temp < inter_dist)
+				if(i == attr_val){
 					inter_dist = temp;
+				}else{
+					if(temp < intra_dist)
+						intra_dist = temp;
+				}
 			}
 			
 			temp = inter_dist - intra_dist;
 			if (intra_dist > inter_dist)
-				temp/= intra_dist;
+				temp /= intra_dist;
 			else
-				temp/=inter_dist;
+				temp /= inter_dist;
 			dist += temp;
+			n_dist++;
 		}
 	}
-	return dist / size;
+	free(cls_vals);
+	free(cls_vals_n);
+	dist = dist / n_dist;
+
+	if(dist < -1)
+		return -1;
+	else if (dist > 1)
+		return 1;
+	else
+		return dist;
 }
 
 float distance_d(struct Example *examples, int size, int attr, struct Arguments *args) {
 	int i;
 	float dist = 0, ptypes_size, **ptypes;
-
+	
 	ptypes = protottype_d(examples, size, attr, args, &ptypes_size);
 
 	if (ptypes_size == -1){
@@ -369,10 +385,11 @@ float distance_d(struct Example *examples, int size, int attr, struct Arguments 
 	}
 	ASSERT(ptypes);
 	
-	if(args->method == Silhouette)
-		dist = dist_silhuette(ptypes, ptypes_size, examples, size, attr, args, INFINITY);
-	else if (args->method == Intra)
-		dist_intra(ptypes, ptypes_size, examples, size, attr, args, INFINITY);
+	
+	if (args->method == Intra)
+		dist = dist_intra(ptypes, ptypes_size, examples, size, attr, args, INFINITY);
+	else if(args->method == Silhouette)
+		return dist_silhuette(ptypes, ptypes_size, examples, size, attr, args, INFINITY);
 	else
 		dist = dist_inter(ptypes, ptypes_size, args);
 
@@ -442,7 +459,7 @@ float distance_c(struct Example *examples, int size, int attr, struct Arguments 
 		if(args->method == Silhouette)
 			dist = dist_silhuette(ptypes, 2, examples, size, attr, args, split);
 		else if (args->method == Intra)
-			dist_intra(ptypes, 2, examples, size, attr, args, split);
+			dist = dist_intra(ptypes, 2, examples, size, attr, args, split);
 		else
 			dist = dist_inter(ptypes, 2, args);
 
@@ -476,7 +493,7 @@ make_predictor(struct ClusteringTreeNode *node, struct Example *examples, int si
 struct ClusteringTreeNode *build_tree(struct Example *examples, int size, int depth,
 		struct ClusteringTreeNode *parent, struct Arguments *args) {
 	int i, j, n_classes, best_attr, *cls_vals, stop_maj;
-	float cls_mse, best_score, score, *size_weight, best_split, split;
+	float cls_mse, best_score, score, *size_weight, best_split, split, gini_prior;
 	struct ClusteringTreeNode *node;
 	struct Example *ex, *ex_end;
 	TValue *cls, *cls_end;
@@ -532,6 +549,15 @@ struct ClusteringTreeNode *build_tree(struct Example *examples, int size, int de
 		if (stop_maj == n_classes){
 			free(cls_vals);
 			return make_predictor(node, examples, size, args);
+		}
+		
+		if(args->method == Gini){
+			gini_prior = 0.0;
+			for (i = 0; i < n_classes; i++){
+				for (j=0; j < cls_vals[i]; j++) 
+					gini_prior  = node->dist[i][j] / size_weight[i] * node->dist[i][j] / size_weight[i];
+			}
+			gini_prior /= n_classes;
 		}
 
 	} else {
@@ -603,7 +629,7 @@ struct ClusteringTreeNode *build_tree(struct Example *examples, int size, int de
 				continue;
 			
 			if ((*it)->varType == TValue::INTVAR) {
-				score = args->method == Gini ? distance_gini(examples, size, i, cls_vals, args) :
+				score = args->method == Gini ? distance_gini(examples, size, i, cls_vals, gini_prior, args) :
 					distance_d(examples, size, i, args);
 				if (score > best_score) {
 					best_score = score;
