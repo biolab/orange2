@@ -256,7 +256,9 @@ class OWTestLearners(OWWidget):
         usestat = self.get_usestat()
         for i in range(len(self.stat)):
             if i not in usestat:
-                self.tab.hideColumn(i+1)
+                self.tab.hideColumn(i + 1)
+            else:
+                self.tab.showColumn(i + 1)
 
     def sendReport(self):
         exset = []
