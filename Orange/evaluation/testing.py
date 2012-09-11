@@ -88,7 +88,7 @@ def mt_vals(vals):
     """
     Substitution for the unpicklable lambda function for multi-target classifiers.
     """
-    return [int(val) if val.variable.var_type == Orange.feature.Type.Discrete
+    return [val if val.is_DK() else int(val) if val.variable.var_type == Orange.feature.Type.Discrete
                                             else float(val) for val in vals]
 
 class ExperimentResults(object):
