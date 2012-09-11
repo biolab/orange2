@@ -2,7 +2,7 @@
 .. index:: Neural Network Learner
 
 ***************************************
-Neural Network Learner
+Neural Network Learner  (``neural``)
 ***************************************
 
 

@@ -2636,7 +2636,6 @@ def mlc_recall(res):
                     actual += 1
             if actual:
                 recalls[i] += intersection / actual
-
     return [x / example_num for x in recalls]
 
 #def mlc_ranking_loss(res):
@@ -2675,7 +2674,7 @@ def mlc_F1_micro(res):
 
     precision = mlc_precision(res)
     recall = mlc_recall(res)
-    return [2 * p * r / (p + r) for p,r in zip(precision, recall)]
+    return [0.0 if p == 0 and r == 0 else 2 * p * r / (p + r) for p,r in zip(precision, recall)]
 
 
 def mlc_F1_macro(res):
@@ -2688,17 +2687,18 @@ def mlc_F1_macro(res):
     n_classes =  len(res.results[0].actual_class)
 
     for l in xrange(res.number_of_learners): 
-        true_positive = [0.0] * n_classes
-        sum_fptp = [0.0] * n_classes
-        sum_fntp = [0.0] * n_classes
+        true_positive = [0.0000001] * n_classes
+        sum_fptp = [0.0000001] * n_classes
+        sum_fntp = [0.0000001] * n_classes
         for r in res.results:
             aclass = r.actual_class
+
             for i, cls_val in enumerate(r.classes[l]):
-                if aclass[i] and cls_val:
+                if aclass[i]==1 and int(cls_val)==1:
                     true_positive[i] += 1
-                if cls_val:
+                if int(cls_val)==1:
                     sum_fptp[i] += 1
-                if aclass[i]:
+                if aclass[i]==1:
                     sum_fntp[i] += 1
 
         results.append(sum([ 2*(tp/fptp * tp/fntp)/(tp/fptp + tp/fntp) for tp, fptp, fntp in \
