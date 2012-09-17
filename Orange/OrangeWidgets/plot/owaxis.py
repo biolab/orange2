@@ -46,7 +46,7 @@ class OWAxis(QGraphicsItem):
     
     Role = OWPalette.Axis
     
-    def __init__(self, id, title = '', title_above = False, title_location = AxisMiddle, line = None, arrows = AxisEnd, plot = None):
+    def __init__(self, id, title = '', title_above = False, title_location = AxisMiddle, line = None, arrows = 0, plot = None):
         QGraphicsItem.__init__(self)
         self.setFlag(QGraphicsItem.ItemHasNoContents)
         self.setZValue(AxisZValue)
