@@ -144,8 +144,8 @@ class NetworkCurve(orangeqt.NetworkCurve):
         self.mdsStep = 1
         self.stopMDS = False
 
-        nodes_inds = {n: i for i, n in enumerate(sorted(graph.nodes_iter()))}
-        inds_nodes = {i: n for i, n in enumerate(sorted(graph.nodes_iter()))}
+        nodes_inds = dict((n, i) for i, n in enumerate(sorted(graph.nodes_iter())))
+        inds_nodes = dict((i, n) for i, n in enumerate(sorted(graph.nodes_iter())))
 
         graph_components = network.nx.algorithms.connected_components(graph)
         matrix_components = [[nodes_inds[n] for n in c] for c in graph_components]
@@ -180,8 +180,8 @@ class NetworkCurve(orangeqt.NetworkCurve):
             d_mds = 1
             d_fr = 1
 
-        self.set_node_coordinates({key: (node.x() * d_mds / d_fr, node.y() * d_mds / d_fr) \
-                                   for key, node in nodes.iteritems()})
+        self.set_node_coordinates(dict( (key,(node.x() * d_mds / d_fr, node.y() * d_mds / d_fr)) \
+                                   for key, node in nodes.iteritems()))
 
         p.update_graph_layout()
         qApp.processEvents()
@@ -219,8 +219,8 @@ class NetworkCurve(orangeqt.NetworkCurve):
 
         if not self.mdsStep % mdsRefresh:
 
-            self.set_node_coordinates({n: (mds.points[i][0], \
-                                           mds.points[i][1]) for i, n in enumerate(sorted(self.nodes()))})
+            self.set_node_coordinates(dict((n, (mds.points[i][0], \
+                                           mds.points[i][1])) for i, n in enumerate(sorted(self.nodes()))))
             self.plot().update_graph_layout()
             qApp.processEvents()
 
@@ -497,7 +497,7 @@ class OWNxCanvas(OWPlot):
             colors.update((v, self.discPalette[colorIndices[self.items[v][colorIndex].value]]) for v in nodes)
 
         elif colorIndex is not None and self.items.domain[colorIndex].varType == core.VarTypes.String and self.items.domain[colorIndex].name == "label":
-            colorIndices = {v: i for i, v in enumerate(set(inst[colorIndex].value for inst in self.items))}
+            colorIndices = dict((v, i) for i, v in enumerate(set(inst[colorIndex].value for inst in self.items)))
             colors.update((v, self.discPalette[colorIndices[self.items[v][colorIndex].value]]) for v in nodes)
         else:
             colors.update((node, self.discPalette[0]) for node in nodes)
