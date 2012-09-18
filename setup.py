@@ -724,10 +724,11 @@ SETUP_REQUIRES = (
     'setuptools',
 )
 
+# If you change the requirements, check whether all ADD-ons still work!
+
 INSTALL_REQUIRES = (
     'setuptools',
     'numpy',
-    'numpydoc',
 )
 
 EXTRAS_REQUIRE = {
@@ -737,6 +738,9 @@ EXTRAS_REQUIRE = {
     ),
     'NETWORK': (
         'networkx',
+    ),
+    'reST': (
+        'numpydoc',
     ),
 }
 
