@@ -448,10 +448,13 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
             *dis0 = CAST_TO_DISCDISTRIBUTION(distr[valueIndices[0]]);
             *dis1 *= 0;
             vector<int>::const_iterator ii(valueIndices.begin());
+            ii++;
             for(TBoolCount::const_iterator bi(selection.begin()), be(selection.end()); bi!=be; bi++, ii++)
                *(*bi ? dis1 : dis0) += distr[*ii];
+            cont->outerDistribution->setint(0, dis0->abs);
+            cont->outerDistribution->setint(1, dis1->abs);
 
-            if ((dis0->abs<minSubset) || (dis1->abs<minSubset))
+            if ((dis0->abs < minSubset) || (dis1->abs < minSubset))
               continue; // cannot split like that, to few examples in one of the branches
 
             float thisMeas = measure->operator()(cont, classDistribution, apriorClass);
@@ -498,7 +501,7 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
           bestMapping = mlnew TIntList(distr.size(), -1);
           vector<int>::const_iterator ii = valueIndices.begin();
           bestMapping->at(*(ii++)) = 0;
-          ITERATE(TBoolCount, bi, selection)
+          ITERATE(TBoolCount, bi, bestSelection)
             bestMapping->at(*(ii++)) = *bi ? 1 : 0;
         }
       }
