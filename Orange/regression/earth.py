@@ -1023,11 +1023,11 @@ def plot_evimp(evimp):
     imp = [s for _, s in evimp]
     imp = numpy.array(imp)
     X = range(len(attrs))
-    l1 = axes1.plot(X, imp[:, 0], "b-",)
+    l1 = axes1.plot(X, imp[:, 0], "b-", label="nsubsets")
     axes2 = axes1.twinx()
 
-    l2 = axes2.plot(X, imp[:, 1], "g-",)
-    l3 = axes2.plot(X, imp[:, 2], "r-",)
+    l2 = axes2.plot(X, imp[:, 1], "g-", label="gcv")
+    l3 = axes2.plot(X, imp[:, 2], "r-", label="rss")
 
     x_axis = axes1.xaxis
     x_axis.set_ticks(X)
@@ -1036,7 +1036,8 @@ def plot_evimp(evimp):
     axes1.yaxis.set_label_text("nsubsets")
     axes2.yaxis.set_label_text("normalized gcv or rss")
 
-    axes1.legend([l1, l2, l3], ["nsubsets", "gcv", "rss"])
+    axes1.legend((l1[0], l2[0], l3[0]), ("nsubsets", "gcv", "rss"))
+
     axes1.set_title("Variable importance")
     fig.show()
 
