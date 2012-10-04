@@ -6,18 +6,34 @@
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
 
-# OWDataTable.py
-#
-# wishes:
-# ignore attributes, filter examples by attribute values, do
-# all sorts of preprocessing (including discretization) on the table,
-# output a new table and export it in variety of formats.
-
 from OWWidget import *
 import OWGUI
 import math
 from orngDataCaching import *
 import OWColorPalette
+
+
+NAME = "Data Table"
+
+DESCRIPTION = "Shows data in a spreadsheet."
+
+LONG_DESCRIPTION = """Data Table widget takes one or more data sets
+on its input and presents them in a spreadsheet format.
+
+"""
+
+ICON = "icons/DataTable.png"
+
+PRIORITY = 100
+
+AUTHOR = "Peter Juvan"
+
+AUTHOR_EMAIL = "peter.juvan(@at@)fri.uni-lj.si"
+
+INPUTS = [("Data", ExampleTable, "dataset", Multiple + Default)]
+
+OUTPUTS = [("Selected Data", ExampleTable, Default),
+           ("Other Data", ExampleTable)]
 
 ##############################################################################
 

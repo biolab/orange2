@@ -11,6 +11,20 @@ import OWGUI, orange
 from orngWrap import PreprocessedLearner
 from exceptions import Exception
 
+NAME = "Naive Bayes"
+DESCRIPTION = "Naive Bayesian learner/classifier."
+
+ICON = "icons/NaiveBayes.png"
+CATEGORY = "Classify"
+PRIORITY = 10
+
+INPUTS = [("Data", ExampleTable, "setData"),
+          ("Preprocess", PreprocessedLearner, "setPreprocessor")]
+
+OUTPUTS = [("Learner", orange.Learner),
+           ("Naive Bayesian Classifier", orange.BayesClassifier)]
+
+
 import warnings
 warnings.filterwarnings("ignore", r"'BayesLearner': invalid conditional probability or no attributes \(the classifier will use apriori probabilities\)", orange.KernelWarning, ".*OWNaiveBayes", 136)
 

@@ -5,10 +5,30 @@
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>2100</priority>
 """
+
 import orange
 from OWWidget import *
 from OWGraph import *
 import OWGUI
+
+
+NAME = "Discretize"
+DESCRIPTION = "Discretization of continuous attributes."
+
+MAINTAINER = "Ales Erjavec"
+MAINTAINER_EMAIL = "ales.erjavec < at > fri.uni-lj.si"
+
+CATEGORY = "Data"
+PRIORITY = 2100
+ICON = "icons/Discretize.png"
+
+HELP = "docs/html/data/discretize.html"
+
+INPUTS = [("Data", orange.ExampleTable, "setData")]
+OUTPUTS = [("Data", orange.ExampleTable,)]
+
+WIDGET_CLASS = "OWDiscretize"
+
 
 def frange(low, up, steps):
     inc=(up-low)/steps

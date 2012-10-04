@@ -28,7 +28,25 @@ def addOrigin(examples, filename):
     for var in strings:
         if "type" in var.attributes and "origin" not in var.attributes:
             var.attributes["origin"] = dirname
-                 
+
+
+NAME = "File"
+DESCRIPTION = "Reads data from a file."
+
+LONG_DESCRIPTION = """Read a data table from a supported file format on
+the the filesystem and send it to the the output."""
+
+ICON = "icons/File.png"
+AUTHOR = "Janez Demsar"
+MAINTAINER_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
+PRIORITY = 10
+CATEGORY = "Data"
+HELP = "docs/html/data/file.html"
+
+OUTPUTS = [("Data", orange.ExampleTable,)]
+
+WIDGET_CLASS = "OWFile"
+
 
 class OWFile(OWWidget):
     settingsList=["recentFiles", "createNewOn", "showAdvanced"]
