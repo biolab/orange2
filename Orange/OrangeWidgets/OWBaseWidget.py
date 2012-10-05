@@ -329,7 +329,10 @@ class OWBaseWidget(QDialog):
     # variables into settings and last widget shape is restored after restart
     def resizeEvent(self, ev):
         QDialog.resizeEvent(self, ev)
-        if self.savePosition:
+        # Don't store geometry if the widget is not visible
+        # (the widget receives the resizeEvent before showEvent and we must not
+        # overwrite the the savedGeometry before then)
+        if self.savePosition and self.isVisible():
             self.widgetWidth = self.width()
             self.widgetHeight = self.height()
             self.savedWidgetGeometry = str(self.saveGeometry())
@@ -717,39 +720,60 @@ class OWBaseWidget(QDialog):
                         self.linksIn[signalName][i] = (1, widget, handler, self.linksIn[signalName][i][3] + [(value, id, signalNameFrom)])
         self.needProcessing = 1
 
-
     # ############################################
     # PROGRESS BAR FUNCTIONS
+
+    progressBarValueChanged = pyqtSignal(float)
+    """Progress bar value has changed"""
+
+    processingStateChanged = pyqtSignal(int)
+    """Processing state has changed"""
+
     def progressBarInit(self):
         self.progressBarValue = 0
         self.startTime = time.time()
         self.setWindowTitle(self.captionTitle + " (0% complete)")
         if self.progressBarHandler:
             self.progressBarHandler(self, 0)
+        self.processingStateChanged.emit(1)
 
     def progressBarSet(self, value):
         if value > 0:
-            self.progressBarValue = value
+            self.__progressBarValue = value
             usedTime = max(1, time.time() - self.startTime)
-            totalTime = (100.0*usedTime)/float(value)
+            totalTime = (100.0 * usedTime) / float(value)
             remainingTime = max(0, totalTime - usedTime)
-            h = int(remainingTime/3600)
-            min = int((remainingTime - h*3600)/60)
-            sec = int(remainingTime - h*3600 - min*60)
-            if h > 0: text = "%(h)d:%(min)02d:%(sec)02d" % vars()
-            else:     text = "%(min)d:%(sec)02d" % vars()
+            h = int(remainingTime / 3600)
+            min = int((remainingTime - h * 3600) / 60)
+            sec = int(remainingTime - h * 3600 - min * 60)
+            if h > 0:
+                text = "%(h)d:%(min)02d:%(sec)02d" % vars()
+            else:
+                text = "%(min)d:%(sec)02d" % vars()
             self.setWindowTitle(self.captionTitle + " (%(value).2f%% complete, remaining time: %(text)s)" % vars())
         else:
-            self.setWindowTitle(self.captionTitle + " (0% complete)" )
-        if self.progressBarHandler: self.progressBarHandler(self, value)
+            self.setWindowTitle(self.captionTitle + " (0% complete)")
+        if self.progressBarHandler:
+            self.progressBarHandler(self, value)
+
+        self.progressBarValueChanged.emit(value)
+
         qApp.processEvents()
 
+    def progressBarValue(self):
+        return self.__progressBarValue
+
+    progressBarValue = pyqtProperty(float, fset=progressBarSet,
+                                    fget=progressBarValue)
+
     def progressBarAdvance(self, value):
-        self.progressBarSet(self.progressBarValue+value)
+        self.progressBarSet(self.progressBarValue + value)
 
     def progressBarFinished(self):
         self.setWindowTitle(self.captionTitle)
-        if self.progressBarHandler: self.progressBarHandler(self, 101)
+        if self.progressBarHandler:
+            self.progressBarHandler(self, 101)
+        self.processingStateChanged.emit(0)
 
     # handler must be a function, that receives 2 arguments. First is the widget instance, the second is the value between -1 and 101
     def setProgressBarHandler(self, handler):
