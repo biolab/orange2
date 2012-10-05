@@ -1,7 +1,7 @@
 """
 <name>Random Forest</name>
 <description>Random forest learner/classifier.</description>
-<icon>icons/RandomForest.png</icon>
+<icon>icons/RandomForest.svg</icon>
 <contact>Marko Toplak (marko.toplak(@at@)gmail.com)</contact>
 <priority>320</priority>
 """

@@ -1,7 +1,7 @@
 """
 <name>Mean</name>
 <description>Mean regression</description>
-<icon>icons/Mean.png</icon>
+<icon>icons/Mean.svg</icon>
 <priority>5</priority>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <keywords>mean, average</keywords>

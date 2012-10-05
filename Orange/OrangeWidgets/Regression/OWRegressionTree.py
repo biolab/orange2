@@ -1,7 +1,7 @@
 """
 <name>Regression Tree</name>
 <description>Constructs a tree regression learner and given data a regression tree classifier</description>
-<icon>RegressionTree.png</icon>
+<icon>icons/RegressionTree.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>110</priority>
 

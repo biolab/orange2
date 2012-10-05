@@ -1,7 +1,7 @@
 """
 <name>Ensemble</name>
 <description>Ensemble classification</description>
-<icons>icons/Ensemble.png</icons>
+<icon>icons/Ensemble.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>330</priority>
 <keywords>ensemble, bagging, boosting, adaboost</keywords>

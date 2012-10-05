@@ -1,7 +1,7 @@
 """
 <name>Select Data</name>
 <description>Selects instances from the data set based on conditions over attributes.</description>
-<icon>icons/SelectData.png</icon>
+<icon>icons/SelectData.svg</icon>
 <priority>1150</priority>
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """

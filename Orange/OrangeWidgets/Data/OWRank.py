@@ -1,7 +1,7 @@
 """
 <name>Rank</name>
 <description>Ranks and filters attributes by their relevance.</description>
-<icon>icons/Rank.png</icon>
+<icon>icons/Rank.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>1102</priority>
 """

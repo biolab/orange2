@@ -2,7 +2,7 @@
 <name>Survey Plot</name>
 <description>Survey plot (multiattribute) visualization.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-<icon>icons/SurveyPlot.png</icon>
+<icon>icons/SurveyPlot.svg</icon>
 <priority>3250</priority>
 """
 # OWSurveyPlot.py

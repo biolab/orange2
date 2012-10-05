@@ -2,7 +2,7 @@
 <name>Parallel Coordinates</name>
 <description>Parallel coordinates (multiattribute) visualization.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-<icon>icons/ParallelCoordinates.png</icon>
+<icon>icons/ParallelCoordinates.svg</icon>
 <priority>3200</priority>
 """
 # ParallelCoordinates.py

@@ -22,7 +22,7 @@ on its input and presents them in a spreadsheet format.
 
 """
 
-ICON = "icons/DataTable.png"
+ICON = "icons/DataTable.svg"
 
 PRIORITY = 100
 

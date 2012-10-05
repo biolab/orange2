@@ -1,7 +1,7 @@
 """
 <name>Discretize</name>
 <description>Discretization of continuous attributes.</description>
-<icon>icons/Discretize.png</icon>
+<icon>icons/Discretize.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>2100</priority>
 """
@@ -20,7 +20,7 @@ MAINTAINER_EMAIL = "ales.erjavec < at > fri.uni-lj.si"
 
 CATEGORY = "Data"
 PRIORITY = 2100
-ICON = "icons/Discretize.png"
+ICON = "icons/Discretize.svg"
 
 HELP = "docs/html/data/discretize.html"
 

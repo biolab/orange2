@@ -1,7 +1,7 @@
 """
 <name>Select Attributes</name>
 <description>Manual selection of attributes.</description>
-<icon>icons/SelectAttributes.png</icon>
+<icon>icons/SelectAttributes.svg</icon>
 <priority>1100</priority>
 <contact>Ales Erjavec (ales.erjavec@fri.uni-lj.si)</contact>
 """

@@ -1,7 +1,7 @@
 """
 <name>Naive Bayes</name>
 <description>Naive Bayesian learner/classifier.</description>
-<icon>icons/NaiveBayes.png</icon>
+<icon>icons/NaiveBayes.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>10</priority>
 """
@@ -14,7 +14,7 @@ from exceptions import Exception
 NAME = "Naive Bayes"
 DESCRIPTION = "Naive Bayesian learner/classifier."
 
-ICON = "icons/NaiveBayes.png"
+ICON = "icons/NaiveBayes.svg"
 CATEGORY = "Classify"
 PRIORITY = 10
 

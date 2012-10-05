@@ -1,7 +1,7 @@
 """
 <name>Python Script</name>
 <description>Executes python script.</description>
-<icon>icons/PythonScript.png</icon>
+<icon>icons/PythonScript.svg</icon>
 <contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact> 
 <priority>3150</priority>
 """

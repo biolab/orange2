@@ -2,7 +2,7 @@
 <name>Sieve multigram</name>
 <description>Sieve multigram.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-<icon>icons/SieveMultigram.png</icon>
+<icon>icons/SieveMultigram.svg</icon>
 <priority>4300</priority>
 """
 

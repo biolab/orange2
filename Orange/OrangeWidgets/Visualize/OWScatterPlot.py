@@ -2,7 +2,7 @@
 <name>Scatterplot</name>
 <description>Scatterplot visualization.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-<icon>icons/ScatterPlot.png</icon>
+<icon>icons/ScatterPlot.svg</icon>
 <priority>1000</priority>
 """
 # ScatterPlot.py

@@ -1,7 +1,7 @@
 """
 <name>File</name>
 <description>Reads data from a file.</description>
-<icon>icons/File.png</icon>
+<icon>icons/File.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>10</priority>
 """
@@ -31,12 +31,12 @@ def addOrigin(examples, filename):
 
 
 NAME = "File"
-DESCRIPTION = "Reads data from a file."
+DESCRIPTION = "Reads a data table from a file."
 
 LONG_DESCRIPTION = """Read a data table from a supported file format on
 the the filesystem and send it to the the output."""
 
-ICON = "icons/File.png"
+ICON = "icons/File.svg"
 AUTHOR = "Janez Demsar"
 MAINTAINER_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
 PRIORITY = 10

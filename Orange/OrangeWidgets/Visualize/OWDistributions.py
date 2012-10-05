@@ -2,7 +2,7 @@
 <name>Distributions</name>
 <description>Displays attribute value distributions.</description>
 <contact>Tomaz Curk</contact>
-<icon>icons/Distribution.png</icon>
+<icon>icons/Distribution.svg</icon>
 <priority>100</priority>
 """
 

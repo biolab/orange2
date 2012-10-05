@@ -1,6 +1,6 @@
 """<name>Multi Correspondence Analysis</name>
 <description>Takes a ExampleTable and runs multi correspondence analysis</description>
-<icon>icons/CorrespondenceAnalysis.png</icon>
+<icon>icons/CorrespondenceAnalysis.svg</icon>
 <priority>3350</priority>
 <contact>Ales Erjavec (ales.erjavec(@ at @)fri.uni-lj.si</contact>
 """

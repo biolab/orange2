@@ -2,7 +2,7 @@
 """
 <name>SVM</name>
 <description>Support Vector Machines learner/classifier.</description>
-<icon>icons/BasicSVM.png</icon>
+<icon>icons/SVM.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>100</priority>
 """

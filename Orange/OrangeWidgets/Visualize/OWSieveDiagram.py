@@ -2,7 +2,7 @@
 <name>Sieve Diagram</name>
 <description>Sieve diagram.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-<icon>icons/SieveDiagram.png</icon>
+<icon>icons/SieveDiagram.svg</icon>
 <priority>4200</priority>
 """
 # OWSieveDiagram.py

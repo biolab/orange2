@@ -2,7 +2,7 @@
 """
 <name>SVM Regression</name>
 <description>Support Vector Machine Regression.</description>
-<icon>icons/BasicSVM.png</icon>
+<icon>icons/SVMRegression.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>100</priority>
 <keywords>Support, Vector, Machine, Regression</keywords>

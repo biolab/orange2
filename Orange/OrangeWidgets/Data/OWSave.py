@@ -1,7 +1,7 @@
 """
 <name>Save</name>
 <description>Saves data to a file.</description>
-<icon>icons/Save.png</icon>
+<icon>icons/Save.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>90</priority>
 """

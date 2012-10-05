@@ -1,7 +1,7 @@
 """
 <name>Multi-key Merge Data</name>
 <description>Merge datasets based on values of selected tuples of attributes.</description>
-<icon>icons/MergeData.png</icon>
+<icon>icons/MergeData.svg</icon>
 <priority>100</priority>
 <contact>Peter Husen (phusen@bmb.sdu.dk)</contact>
 """

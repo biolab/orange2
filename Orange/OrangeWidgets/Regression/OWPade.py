@@ -1,7 +1,7 @@
 """
 <name>Pade</name>
 <description>Computes local partial derivatives</description>
-<icon>icons/Pade.png</icon>
+<icon>icons/Pade.svg</icon>
 <priority>3500</priority>
 """
 

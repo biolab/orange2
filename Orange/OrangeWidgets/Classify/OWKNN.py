@@ -1,7 +1,7 @@
 """
 <name>k Nearest Neighbours</name>
 <description>K-nearest neighbours learner/classifier.</description>
-<icon>icons/kNearestNeighbours.png</icon>
+<icon>icons/kNearestNeighbours.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>25</priority>
 """

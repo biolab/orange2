@@ -2,7 +2,7 @@
 <name>Attribute Statistics</name>
 <description>Basic attribute statistics.</description>
 <contact>Jure Zabkar (jure.zabkar@fri.uni-lj.si)</contact>
-<icon>icons/AttributeStatistics.png</icon>
+<icon>icons/AttributeStatistics.svg</icon>
 <priority>200</priority>
 """
 #

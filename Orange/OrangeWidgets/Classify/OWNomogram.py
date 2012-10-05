@@ -1,7 +1,7 @@
 """
 <name>Nomogram</name>
 <description>Nomogram viewer for Naive Bayesian, logistic regression or CN2 (EVC only) classifiers.</description>
-<icon>icons/Nomogram.png</icon>
+<icon>icons/Nomogram.svg</icon>
 <contact>Martin Mozina (martin.mozina(@at@)fri.uni-lj.si)</contact>
 <priority>2500</priority>
 """

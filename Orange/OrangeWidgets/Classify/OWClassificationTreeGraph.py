@@ -1,6 +1,6 @@
 """<name>Classification Tree Graph</name>
 <description>Classification tree viewer (graph view).</description>
-<icon>icons/ClassificationTreeGraph.png</icon>
+<icon>icons/ClassificationTreeGraph.svg</icon>
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>2110</priority>
 """

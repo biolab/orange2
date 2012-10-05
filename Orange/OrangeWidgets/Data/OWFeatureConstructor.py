@@ -1,7 +1,7 @@
 """
 <name>Feature Constructor</name>
 <description>Construct a new continuous attribute computed from existing attributes.</description>
-<icon>icons/FeatureConstructor.png</icon>
+<icon>icons/FeatureConstructor.svg</icon>
 <priority>3100</priority>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 """

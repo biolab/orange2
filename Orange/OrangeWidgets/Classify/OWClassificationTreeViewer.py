@@ -1,7 +1,7 @@
 """
 <name>Classification Tree Viewer</name>
 <description>Classification tree viewer (hierarchical list view).</description>
-<icon>icons/ClassificationTreeViewer.png</icon>
+<icon>icons/ClassificationTreeViewer.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>2100</priority>
 """

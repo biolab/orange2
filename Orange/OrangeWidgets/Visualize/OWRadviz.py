@@ -2,7 +2,7 @@
 <name>Radviz</name>
 <description>Create a radviz projection.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-<icon>icons/Radviz.png</icon>
+<icon>icons/Radviz.svg</icon>
 <priority>3100</priority>
 """
 # Radviz.py

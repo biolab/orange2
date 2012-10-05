@@ -1,7 +1,7 @@
 """
 <name>Linear Regression</name>
 <description>Linear Regression</name>
-<icon>icons/LinearRegression.png</icon>
+<icon>icons/LinearRegression.svg</icon>
 <priority>10</priority>
 <category>Regression</category>
 <keywords>linear, model, ridge, regression, lasso, least, absolute, shrinkage</keywords>

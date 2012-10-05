@@ -2,7 +2,7 @@
 <name>Mosaic Display</name>
 <description>Shows a mosaic display.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-<icon>icons/MosaicDisplay.png</icon>
+<icon>icons/MosaicDisplay.svg</icon>
 <priority>4100</priority>
 """
 # OWMosaicDisplay.py

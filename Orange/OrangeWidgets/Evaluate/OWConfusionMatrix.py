@@ -2,7 +2,7 @@
 <name>Confusion Matrix</name>
 <description>Shows a confusion matrix.</description>
 <contact>Janez Demsar</contact>
-<icon>icons/ConfusionMatrix.png</icon>
+<icon>icons/ConfusionMatrix.svg</icon>
 <priority>1001</priority>
 """
 from OWWidget import *

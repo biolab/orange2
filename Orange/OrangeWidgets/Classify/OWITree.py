@@ -1,7 +1,7 @@
 """
 <name>Interactive Tree Builder</name>
 <description>Interactive Tree Builder</description>
-<icon>icons/ITree.png</icon>
+<icon>icons/InteractiveTreeBuilder.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>50</priority>
 """

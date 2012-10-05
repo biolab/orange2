@@ -1,7 +1,7 @@
 """
 <name>Edit Domain</name>
 <description>Edit domain variables</description>
-<icon>icons/EditDomain.png</icon>
+<icon>icons/EditDomain.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@ at @)fri.uni-lj.si)</contact>
 <priority>3125</priority>
 <keywords>change,name,variable,domain</keywords>

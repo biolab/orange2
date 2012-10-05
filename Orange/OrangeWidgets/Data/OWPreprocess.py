@@ -1,6 +1,6 @@
 """<name>Preprocess</name>
 <description>Construct and apply data preprocessors</description>
-<icon>icons/Preprocess.png</icon>
+<icon>icons/Preprocess.svg</icon>
 <priority>2105</priority>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 """

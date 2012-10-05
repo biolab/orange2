@@ -1,6 +1,6 @@
 """<name>Save Classifier</name>
 <description>Save orange classifiers to a file</description>
-<icon>icons/SaveClassifier.png</icon>
+<icon>icons/SaveClassifier.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>3000</priority>
 """

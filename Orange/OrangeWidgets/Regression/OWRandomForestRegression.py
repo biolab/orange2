@@ -1,7 +1,7 @@
 """
 <name>Random Forest Regression</name>
 <description>Random forest regression.</description>
-<icon>icons/RandomForest.png</icon>
+<icon>icons/RandomForestRegression.svg</icon>
 <contact>Marko Toplak (marko.toplak(@at@)gmail.com)</contact>
 <priority>320</priority>
 <keywords>bagging, ensemble</keywords>

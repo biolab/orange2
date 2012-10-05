@@ -1,7 +1,7 @@
 """
 <name>Concatenate</name>
 <description>Concatenates Example Tables.</description>
-<icon>icons/Concatenate.png</icon>
+<icon>icons/Concatenate.svg</icon>
 <priority>1111</priority>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 """

@@ -1,7 +1,7 @@
 """
 <name>Merge Data</name>
 <description>Merge datasets based on values of selected attributes.</description>
-<icon>icons/MergeData.png</icon>
+<icon>icons/MergeData.svg</icon>
 <priority>1110</priority>
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """

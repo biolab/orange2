@@ -1,7 +1,7 @@
 """
 <name> Regression Tree Graph</name>
 <description>Regression tree viewer (graph view).</description>
-<icon>icons/RegressionTreeGraph.png</icon>
+<icon>icons/RegressionTreeGraph.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>2110</priority>
 """

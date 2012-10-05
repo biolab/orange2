@@ -1,7 +1,7 @@
 """
 <name>Outliers</name>
 <description>Indentification of outliers</description>
-<icon>icons/Outliers.png</icon>
+<icon>icons/Outliers.svg</icon>
 <contact>Marko Toplak (marko.toplak(@at@)gmail.com)</contact> 
 <priority>2150</priority>
 """

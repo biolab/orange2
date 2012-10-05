@@ -2,7 +2,7 @@
 <name>Calibration Plot</name>
 <description>Displays calibration plot based on evaluation of classifiers.</description>
 <contact>Tomaz Curk</contact>
-<icon>icons/CalibrationPlot.png</icon>
+<icon>icons/CalibrationPlot.svg</icon>
 <priority>1030</priority>
 """
 from OWColorPalette import ColorPixmap

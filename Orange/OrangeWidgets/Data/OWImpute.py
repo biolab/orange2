@@ -1,7 +1,7 @@
 """
 <name>Impute</name>
 <description>Imputes unknown values.</description>
-<icon>icons/Impute.png</icon>
+<icon>icons/Impute.svg</icon>
 <priority>2130</priority>
 <contact>Janez Demsar</contact>
 """
