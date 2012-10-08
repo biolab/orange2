@@ -205,9 +205,9 @@ class OWKMeans(OWWidget):
 
         # display of clustering results
         self.optimizationReportBox = OWGUI.widgetBox(self.mainArea)
-        tableBox = OWGUI.widgetBox(self.optimizationReportBox,
-                                   "Optimization Report")
-        self.table = OWGUI.table(tableBox,
+        self.tableBox = OWGUI.widgetBox(self.optimizationReportBox,
+                                        "Optimization Report")
+        self.table = OWGUI.table(self.tableBox,
                                  selectionMode=QTableWidget.SingleSelection)
 
         self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
@@ -398,8 +398,15 @@ class OWKMeans(OWWidget):
 
     def showResults(self):
         self.table.setRowCount(len(self.optimizationRun))
+        scoring = self.scoringMethods[self.scoring][1]
+        minimize = getattr(scoring, "minimize", False)
+
         bestScore = self.bestRun[1].score
         worstScore = self.optimizationRunSorted[0][1].score
+
+        if minimize:
+            bestScore, worstScore = worstScore, bestScore
+
         scoreSpan = (bestScore - worstScore) or 1
 
         for i, (k, run) in enumerate(self.optimizationRun):
@@ -414,7 +421,7 @@ class OWKMeans(OWWidget):
 
             fmt = self.scoreFmt(run.score)
             item = OWGUI.tableItem(self.table, i, 2, fmt % run.score)
-            barRatio = 0.95 * (bestScore - run.score) / scoreSpan
+            barRatio = 0.95 * (run.score - worstScore) / scoreSpan
 
             item.setData(OWGUI.TableBarItem.BarRole, QVariant(barRatio))
             if (k, run) == self.bestRun:
@@ -424,6 +431,11 @@ class OWKMeans(OWWidget):
             self.table.resizeColumnToContents(i)
 
         self.table.show()
+
+        if minimize:
+            self.tableBox.setTitle("Optimization Report (smaller is better)")
+        else:
+            self.tableBox.setTitle("Optimization Report (bigger is better)")
 
         QTimer.singleShot(0, self.adjustSize)
 
