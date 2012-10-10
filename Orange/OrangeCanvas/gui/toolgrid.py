@@ -10,7 +10,7 @@ from PyQt4.QtGui import (
     QSizePolicy, QStyleOptionToolButton, QStylePainter, QStyle
 )
 
-from PyQt4.QtCore import Qt, QObject, QSize, QVariant, QEvent
+from PyQt4.QtCore import Qt, QObject, QSize, QVariant, QEvent, QSignalMapper
 from PyQt4.QtCore import pyqtSignal as Signal
 
 from . import utils
@@ -128,6 +128,9 @@ class ToolGrid(QWidget):
         self._buttonListener.buttonEnter.connect(
                 self._onButtonEnter)
 
+        self.__mapper = QSignalMapper()
+        self.__mapper.mapped[QObject].connect(self.__onClicked)
+
         self.setupUi()
 
     def setupUi(self):
@@ -202,7 +205,8 @@ class ToolGrid(QWidget):
             index, _ToolGridSlot(button, action, row, column)
         )
 
-        button.triggered.connect(self.actionTriggered)
+        self.__mapper.setMapping(button, action)
+        button.clicked.connect(self.__mapper.map)
         button.installEventFilter(self._buttonListener)
 
     def setActions(self, actions):
@@ -221,11 +225,11 @@ class ToolGrid(QWidget):
         slot = self._gridSlots.pop(index)
 
         slot.button.removeEventFilter(self._buttonListener)
+        self.__mapper.removeMappings(slot.button)
 
         self.layout().removeWidget(slot.button)
         self._shiftGrid(index + 1, -1)
 
-        slot.button.triggered.disconnect(self.actionTriggered)
         slot.button.deleteLater()
 
     def buttonForAction(self, action):
@@ -323,6 +327,9 @@ class ToolGrid(QWidget):
     def _onButtonEnter(self, button):
         action = button.defaultAction()
         self.actionHovered.emit(action)
+
+    def __onClicked(self, action):
+        self.actionTriggered.emit(action)
 
 #    def keyPressEvent(self, event):
 #        key = event.key()
