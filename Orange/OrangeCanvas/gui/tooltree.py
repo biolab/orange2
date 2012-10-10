@@ -1,0 +1,350 @@
+"""
+A ToolTree widget presenting the user with a set of actions
+organized in a tree structure.
+
+"""
+
+import sys
+import logging
+
+from PyQt4.QtGui import (
+    QTreeView, QWidget, QVBoxLayout, QSizePolicy, QStandardItemModel,
+    QAbstractProxyModel, QStyledItemDelegate, QAction, QIcon
+)
+
+from PyQt4.QtCore import Qt, QModelIndex
+from PyQt4.QtCore import pyqtSignal as Signal, pyqtProperty as Property
+
+log = logging.getLogger(__name__)
+
+
+class ToolTree(QWidget):
+    """A ListView like presentation of a list of actions.
+    """
+    triggered = Signal(QAction)
+    hovered = Signal(QAction)
+
+    def __init__(self, parent=None, title=None, icon=None, **kwargs):
+        QTreeView.__init__(self, parent, **kwargs)
+        self.setSizePolicy(QSizePolicy.MinimumExpanding,
+                           QSizePolicy.Expanding)
+
+        if title is None:
+            title = ""
+
+        if icon is None:
+            icon = QIcon()
+
+        self.__title = title
+        self.__icon = icon
+
+        self.__model = QStandardItemModel()
+        self.__flattened = False
+        self.__actionRole = Qt.UserRole
+        self.__view = None
+
+        self.__setupUi()
+
+    def __setupUi(self):
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        view = QTreeView(objectName="tool-tree-view")
+        view.setUniformRowHeights(True)
+        view.setFrameStyle(QTreeView.NoFrame)
+        view.setModel(self.__model)
+        view.setRootIsDecorated(False)
+        view.setHeaderHidden(True)
+        view.setItemsExpandable(True)
+        view.setEditTriggers(QTreeView.NoEditTriggers)
+        view.setItemDelegate(ToolTreeItemDelegate(self))
+
+        view.activated.connect(self.__onActivated)
+        view.pressed.connect(self.__onPressed)
+        view.entered.connect(self.__onEntered)
+
+        self.__view = view
+
+        if sys.platform == "darwin":
+            view.verticalScrollBar().setAttribute(Qt.WA_MacMiniSize, True)
+
+        layout.addWidget(view)
+
+        self.setLayout(layout)
+
+    def setTitle(self, title):
+        """Set the title
+        """
+        if self.__title != title:
+            self.__title = title
+            self.update()
+
+    def title(self):
+        """Return the title of this tool tree.
+        """
+        return self.__title
+
+    title_ = Property(unicode, fget=title, fset=setTitle)
+
+    def setIcon(self, icon):
+        """Set icon for this tool tree.
+        """
+        if self.__icon != icon:
+            self.__icon = icon
+            self.update()
+
+    def icon(self):
+        """Return the icon of this tool tree.
+        """
+        return self.__icon
+
+    icon_ = Property(QIcon, fget=icon, fset=setIcon)
+
+    def setFlattened(self, flatten):
+        """Show the actions in a flattened view.
+        """
+        if self.__flattened != flatten:
+            self.__flattened = flatten
+            if flatten:
+                model = FlattenedTreeItemModel()
+                model.setSourceModel(self.__model)
+            else:
+                model = self.__model
+
+            self.__view.setModel(model)
+
+    def flattened(self):
+        return self.__flattened
+
+    def setModel(self, model):
+        if self.__model is not model:
+            self.__model = model
+
+            if self.__flattened:
+                model = FlattenedTreeItemModel()
+                model.setSourceModel(self.__model)
+
+            self.__view.setModel(model)
+
+    def model(self):
+        return self.__model
+
+    def setRootIndex(self, index):
+        """Set the root index
+        """
+        self.__view.setRootIndex(index)
+
+    def rootIndex(self):
+        """Return the root index.
+        """
+        return self.__view.rootIndex()
+
+    def view(self):
+        """Return the QTreeView instance used.
+        """
+        return self.__view
+
+    def setActionRole(self, role):
+        """Set the action role. By default this is UserRole
+        """
+        self.__actionRole = role
+
+    def actionRole(self):
+        return self.__actionRole
+
+    def __actionForIndex(self, index):
+        val = index.data(self.__actionRole)
+        if val.isValid():
+            action = val.toPyObject()
+            if isinstance(action, QAction):
+                return action
+            else:
+                log.debug("index does not have an QAction")
+        else:
+            log.debug("index does not have a value for action role")
+
+    def __onActivated(self, index):
+        """The item was activated, if index has an action we
+        need to trigger it.
+
+        """
+        if index.isValid():
+            action = self.__actionForIndex(index)
+            if action is not None:
+                action.trigger()
+                self.triggered.emit(action)
+
+    def __onPressed(self, index):
+        self.__onActivated(index)
+
+    def __onEntered(self, index):
+        if index.isValid():
+            action = self.__actionForIndex(index)
+            if action is not None:
+                self.hovered.emit(action)
+
+    def ensureCurrent(self):
+        """Ensure the view has a current item if one is available.
+        """
+        model = self.__view.model()
+        curr = self.__view.currentIndex()
+        if not curr.isValid():
+            for i in range(model.rowCount()):
+                index = model.index(i, 0)
+                if index.flags() & Qt.ItemIsEnabled:
+                    self.__view.setCurrentIndex(index)
+                    break
+
+
+class ToolTreeItemDelegate(QStyledItemDelegate):
+    def paint(self, painter, option, index):
+        QStyledItemDelegate.paint(self, painter, option, index)
+
+
+class FlattenedTreeItemModel(QAbstractProxyModel):
+    """An Proxy Item model containing a flattened view of a column in a tree
+    like item model.
+
+    """
+    Default = 1
+    InternalNodesDisabled = 2
+    LeavesOnly = 4
+
+    def __init__(self, parent=None):
+        QAbstractProxyModel.__init__(self, parent)
+        self.sourceColumn = 0
+        self.flatteningMode = 0
+        self.sourceRootIndex = QModelIndex()
+
+    def setSourceModel(self, model):
+        curr_model = self.sourceModel()
+        if curr_model is not None:
+            curr_model.dataChanged.disconnect(self._sourceDataChanged)
+        QAbstractProxyModel.setSourceModel(self, model)
+        self._updateRowMapping()
+        self.reset()
+        model.dataChanged.connect(self._sourceDataChanged)
+        model.rowsInserted.connect(self._sourceRowsInserted)
+        model.rowsRemoved.connect(self._sourceRowsRemoved)
+
+    def setSourceColumn(self, column):
+        raise NotImplementedError
+
+        self.beginResetModel()
+        self.sourceColumn = column
+        self._updateRowMapping()
+        self.endResetModel()
+
+    def setSourceRootIndex(self, rootIndex):
+        self.beginResetModel()
+        self.sourceRootIndex = rootIndex
+        self._updateRowMapping()
+        self.endResetModel()
+
+    def setFlatteningMode(self, mode):
+        if mode != self.flatteningMode:
+            self.beginResetModel()
+            self.flatteningMode = mode
+            self._updateRowMapping()
+            self.endResetModel()
+
+    def mapFromSource(self, sourceIndex):
+        if sourceIndex.isValid():
+            key = self._indexKey(sourceIndex)
+            offset = self._source_offset[key]
+            row = offset + sourceIndex.row()
+            return self.index(row, 0)
+        else:
+            return sourceIndex
+
+    def mapToSource(self, index):
+        if index.isValid():
+            row = index.row()
+            source_key_path = self._source_key[row]
+            return self._indexFromKey(source_key_path)
+        else:
+            return index
+
+    def index(self, row, column=0, parent=QModelIndex()):
+        if not parent.isValid():
+            return self.createIndex(row, column, object=row)
+        else:
+            return QModelIndex()
+
+    def parent(self, child):
+        return QModelIndex()
+
+    def rowCount(self, parent=QModelIndex()):
+        if parent.isValid():
+            return 0
+        else:
+            return len(self._source_key)
+
+    def columnCount(self, parent=QModelIndex()):
+        if parent.isValid():
+            return 0
+        else:
+            return 1
+
+    def flags(self, index):
+        flags = QAbstractProxyModel.flags(self, index)
+        if self.flatteningMode & self.InternalNodesDisabled:
+            sourceIndex = self.mapToSource(index)
+            sourceModel = self.sourceModel()
+            if sourceModel.rowCount(sourceIndex) > 0 and \
+                    flags & Qt.ItemIsEnabled:
+                # Internal node, enabled in the source model, disable it
+                flags ^= Qt.ItemIsEnabled
+        return flags
+
+    def _indexKey(self, index):
+        key_path = []
+        parent = index
+        while parent.isValid():
+            key_path.append(parent.row())
+            parent = parent.parent()
+        return tuple(reversed(key_path))
+
+    def _indexFromKey(self, key_path):
+        index = self.sourceModel().index(key_path[0], 0)
+        for row in key_path[1:]:
+            index = index.child(row, 0)
+        return index
+
+    def _updateRowMapping(self):
+        source = self.sourceModel()
+        source_key_map = {}
+        source_key = []
+        source_offset_map = {}
+
+        def create_mapping(index, key_path):
+            source_offset_map[key_path] = len(source_key_map)
+            source_key_map[key_path] = len(source_key_map)
+            source_key.append(key_path)
+            for i in range(source.rowCount(index)):
+                source_offset_map[key_path + (i, )] = len(source_key_map)
+                source_key_map[key_path + (i,)] = len(source_key_map)
+                source_key.append(key_path + (i,))
+
+        for i in range(source.rowCount()):
+            create_mapping(source.index(i, 0), (i,))
+
+        self._source_map = source_key_map
+        self._source_key = source_key
+        self._source_offset = source_offset_map
+
+    def _sourceDataChanged(self, top, bottom):
+        parent = top.parent()
+        changed_indexes = []
+        for i in range(top.row(), bottom.row() + 1):
+            source_ind = parent.row(i)
+            changed_indexes.append(source_ind)
+
+        for ind in changed_indexes:
+            self.dataChanged.emit(ind, ind)
+
+    def _sourceRowsInserted(self, parent, start, end):
+        pass
+
+    def _sourceRowsRemoved(self, parent, start, end):
+        pass
