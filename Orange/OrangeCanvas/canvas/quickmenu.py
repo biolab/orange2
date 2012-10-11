@@ -79,6 +79,8 @@ class MenuStackWidget(QStackedWidget):
         if count:
             height = view.sizeHintForRow(0)
             height = height * count
+        else:
+            height = hint.height()
 
         return QSize(max(width, hint.width()), max(height, hint.height()))
 
