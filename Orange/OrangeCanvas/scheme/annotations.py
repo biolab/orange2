@@ -61,7 +61,7 @@ class SchemeTextAnnotation(BaseSchemeAnnotation):
     def rect(self):
         return self.__rect
 
-    rect = Property(tuple, fget=rect)
+    rect = Property(tuple, fget=rect, fset=set_rect)
 
     def set_text(self, text):
         if self.__text != text:

@@ -10,7 +10,7 @@ from .. import Scheme, SchemeNode, SchemeLink, \
                SchemeTopologyError, IncompatibleChannelTypeError
 
 
-class TestScheme(test.QAppTestCase):
+class TestScheme(test.QCoreAppTestCase):
     def test_scheme(self):
         import Orange
         reg = small_testing_registry()
@@ -27,10 +27,16 @@ class TestScheme(test.QAppTestCase):
 
         nodes_added = []
         links_added = []
+        annotations_added = []
 
         scheme.node_added.connect(nodes_added.append)
+        scheme.node_removed.connect(nodes_added.remove)
+
         scheme.link_added.connect(links_added.append)
         scheme.link_removed.connect(links_added.remove)
+
+        scheme.annotation_added.connect(annotations_added.append)
+        scheme.annotation_removed.connect(annotations_added.remove)
 
         w1 = scheme.new_node(file_desc)
         self.assertTrue(len(nodes_added) == 1)
@@ -80,3 +86,18 @@ class TestScheme(test.QAppTestCase):
         # Add a link to a node with no input channels
         self.assertRaises(ValueError, scheme.new_link,
                           w2, "Data", w1, "Data")
+
+        text_annot = SchemeTextAnnotation((0, 0, 100, 20), "Text")
+        scheme.add_annotation(text_annot)
+        self.assertSequenceEqual(annotations_added, [text_annot])
+        self.assertSequenceEqual(scheme.annotations, annotations_added)
+
+        arrow_annot = SchemeTextAnnotation((0, 100), (100, 100))
+        scheme.add_annotation(arrow_annot)
+        self.assertSequenceEqual(annotations_added, [text_annot, arrow_annot])
+        self.assertSequenceEqual(scheme.annotations, annotations_added)
+
+        scheme.remove_annotation(text_annot)
+        self.assertSequenceEqual(annotations_added, [arrow_annot])
+        self.assertSequenceEqual(scheme.annotations, annotations_added)
+

@@ -46,8 +46,8 @@ class Scheme(QObject):
     node_state_changed = Signal()
     channel_state_changed = Signal()
 
-    annotation_added = Signal()
-    annotation_removed = Signal()
+    annotation_added = Signal(BaseSchemeAnnotation)
+    annotation_removed = Signal(BaseSchemeAnnotation)
 
     node_property_changed = Signal(SchemeNode, str, object)
 
