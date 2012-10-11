@@ -114,7 +114,7 @@ def parse_scheme_v_2_0(etree, scheme, widget_registry=None):
         if annot_el.tag == "text":
             rect = annot_el.attrib.get("rect", "(0, 0, 20, 20)")
             rect = literal_eval(rect)
-            annot = SchemeTextAnnotation(rect, annot_el.text)
+            annot = SchemeTextAnnotation(rect, annot_el.text or "")
         elif annot_el.tag == "arrow":
             start = annot_el.attrib.get("start", "(0, 0)")
             end = annot_el.attrib.get("end", "(0, 0)")
@@ -260,7 +260,7 @@ def scheme_to_ows_stream(scheme, stream):
     builder.start("annotations", {})
     for annotation in scheme.annotations:
         annot_id = annotation_ids[annotation]
-        attrs = {"id": annot_id}
+        attrs = {"id": str(annot_id)}
         data = None
         if isinstance(annotation, SchemeTextAnnotation):
             tag = "text"
