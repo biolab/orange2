@@ -344,7 +344,7 @@ class ToolBox(QFrame):
     def widget(self, index):
         """Return the widget at index.
         """
-        self.__pages[index].widget
+        return self.__pages[index].widget
 
     def createTabButton(self, widget, text, icon=None, toolTip=None):
         """Create the tab button for `widget`.

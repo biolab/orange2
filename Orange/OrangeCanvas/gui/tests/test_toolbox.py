@@ -6,7 +6,7 @@ Tests for ToolBox widget.
 from .. import test
 from .. import toolbox
 
-from PyQt4.QtGui import QLabel, QListView, QSpinBox, QIcon
+from PyQt4.QtGui import QLabel, QListView, QSpinBox, QIcon, QAbstractButton
 
 
 class TestToolBox(test.QAppTestCase):
@@ -18,12 +18,36 @@ class TestToolBox(test.QAppTestCase):
         p2 = QListView()
         p3 = QLabel("Another\nlabel")
         p4 = QSpinBox()
-        w.addItem(p1, "T1", icon)
-        w.addItem(p2, "Tab " * 10, icon, "a tab")
-        w.addItem(p3, "t3")
-        w.addItem(p4, "t4")
+
+        i1 = w.addItem(p1, "T1", icon)
+        i2 = w.addItem(p2, "Tab " * 10, icon, "a tab")
+        i3 = w.addItem(p3, "t3")
+        i4 = w.addItem(p4, "t4")
+
+        self.assertSequenceEqual([i1, i2, i3, i4], range(4))
+        self.assertEqual(w.count(), 4)
+
+        for i, item in enumerate([p1, p2, p3, p4]):
+            self.assertIs(item, w.widget(i))
+            b = w.tabButton(i)
+            a = w.tabAction(i)
+            self.assertIsInstance(b,  QAbstractButton)
+            self.assertIs(b.defaultAction(), a)
+
         w.show()
         w.removeItem(2)
-#        w.insertItem(index, widget, text, icon, toolTip)
+
+        self.assertEquals(w.count(), 3)
+        self.assertIs(w.widget(2), p4)
+
+        p3 = QLabel("Once More Unto the Breach")
+
+        w.insertItem(2, p3, "Dear friend")
+
+        self.assertEquals(w.count(), 4)
+
+        self.assertIs(w.widget(1), p2)
+        self.assertIs(w.widget(2), p3)
+        self.assertIs(w.widget(3), p4)
 
         self.app.exec_()
