@@ -671,29 +671,37 @@ def grab_svg(scene):
     svg_buffer = QBuffer()
     gen = QSvgGenerator()
     gen.setOutputDevice(svg_buffer)
-    aspect_ratio = 1.618
-    items_rect = scene.itemsBoundingRect()
+
+    items_rect = scene.itemsBoundingRect().adjusted(-10, -10, 10, 10)
 
     if items_rect.isNull():
         items_rect = QRectF(0, 0, 10, 10)
 
     width, height = items_rect.width(), items_rect.height()
     rect_ratio = float(width) / height
+
+    # Keep a fixed aspect ratio.
+    aspect_ratio = 1.618
     if rect_ratio > aspect_ratio:
         height = int(height * rect_ratio / aspect_ratio)
     else:
         width = int(width * aspect_ratio / rect_ratio)
 
-    scene_rect = QRectF(0, 0, width + 20, height + 20)
-    scene_rect.moveCenter(items_rect.center())
-    scene.setSceneRect(scene_rect)
+    target_rect = QRectF(0, 0, width, height)
+    source_rect = QRectF(0, 0, width, height)
+    source_rect.moveCenter(items_rect.center())
 
-    gen.setSize(scene_rect.size().toSize())
+    gen.setSize(target_rect.size().toSize())
+    gen.setViewBox(target_rect)
+
     painter = QPainter(gen)
+
+    # Draw background.
     painter.setBrush(QBrush(Qt.white))
-    painter.drawRect(QRectF(0, 0, scene_rect.width(), scene_rect.height()))
-#    print scene_rect, scene_rect.topLeft() - items_rect.topLeft()
-#    painter.translate(items_rect.topLeft() - scene_rect.topLeft())
-    scene.render(painter)
+    painter.drawRect(target_rect)
+
+    # Render the scene
+    scene.render(painter, target_rect, source_rect)
     painter.end()
+
     return unicode(svg_buffer.buffer())
