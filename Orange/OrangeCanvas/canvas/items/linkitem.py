@@ -5,13 +5,10 @@ Link Item
 
 from PyQt4.QtGui import (
     QGraphicsItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsObject,
-    QGraphicsDropShadowEffect,
-    QPen, QBrush, QColor, QPainterPath
+    QGraphicsDropShadowEffect, QPen, QBrush, QColor, QPainterPath
 )
 
-from PyQt4.QtCore import (
-    Qt, QPointF, QRectF
-)
+from PyQt4.QtCore import Qt, QPointF
 
 from .nodeitem import SHADOW_COLOR
 
@@ -40,20 +37,24 @@ class LinkCurveItem(QGraphicsPathItem):
 
         self.__hover = False
 
-    def hoverEnterEvent(self, event):
-        self.setHoverState(True)
-        return QGraphicsPathItem.hoverEnterEvent(self, event)
+    def linkItem(self):
+        """Return the :class:`LinkItem` instance this curve belongs to.
 
-    def hoverLeaveEvent(self, event):
-        self.setHoverState(False)
-        return QGraphicsPathItem.hoverLeaveEvent(self, event)
+        """
+        return self.__canvasLink
 
     def setHoverState(self, state):
         self.__hover = state
-        self._update()
-        self.__canvasLink.setHoverState(state)
+        self.__update()
 
-    def _update(self):
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemEnabledHasChanged:
+            # Update the pen style
+            self.__update()
+
+        return QGraphicsPathItem.itemChange(self, change, value)
+
+    def __update(self):
         shadow_enabled = self.__hover
         if self.shadow.isEnabled() != shadow_enabled:
             self.shadow.setEnabled(shadow_enabled)
@@ -108,6 +109,7 @@ class LinkItem(QGraphicsObject):
         QGraphicsObject.__init__(self, *args)
         self.setFlag(QGraphicsItem.ItemHasNoContents, True)
         self.setAcceptedMouseButtons(Qt.RightButton)
+        self.setAcceptHoverEvents(True)
 
         self.setZValue(self.Z_VALUE)
 
@@ -227,6 +229,7 @@ class LinkItem(QGraphicsObject):
         self.__updateCurve()
 
     def __updateCurve(self):
+        self.prepareGeometryChange()
         if self.sourceAnchor and self.sinkAnchor:
             source_pos = self.sourceAnchor.anchorScenePos()
             sink_pos = self.sinkAnchor.anchorScenePos()
@@ -251,17 +254,23 @@ class LinkItem(QGraphicsObject):
         self.setSourceItem(None)
         self.__updateCurve()
 
-    # TODO: This item should control the hover state not its child.
-    #       (use sceneEventFilter on curveItem??).
     def setHoverState(self, state):
         if self.hover != state:
             self.hover = state
             self.sinkIndicator.setHoverState(state)
             self.sourceIndicator.setHoverState(state)
+            self.curveItem.setHoverState(state)
+
+    def hoverEnterEvent(self, event):
+        self.setHoverState(True)
+        return QGraphicsPathItem.hoverEnterEvent(self, event)
+
+    def hoverLeaveEvent(self, event):
+        self.setHoverState(False)
+        return QGraphicsPathItem.hoverLeaveEvent(self, event)
 
     def boundingRect(self):
-        return QRectF()
+        return self.childrenBoundingRect()
 
-    def setEnabled(self, enabled):
-        QGraphicsObject.setEnabled(self, enabled)
-        self.curveItem._update()
+    def shape(self):
+        return self.curveItem.shape()
