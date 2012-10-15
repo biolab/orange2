@@ -52,15 +52,19 @@ like:</p>
 <p>Now back to channels and tokens. Input and output channels for our
 widget are defined by:</p>
 
-<xmp class="code">self.inputs = [("Data", ExampleTable, self.dataset), ("Learner", orange.Learner, self.learner, 0)]
+<xmp class="code">self.inputs = [("Data", ExampleTable, self.dataset),
+               ("Learner", orange.Learner, self.learner, Multiple)]
 </xmp>
 
 <p>Notice that everything is pretty much the same as it was with
-widgets from previous lessons, the only difference being "0" as the
-last value in the list that defines the <code>Learner</code>
-channel. This "0" says that this is a multi-input channel. If it would
-be "1" (default), it would mean that the widget can receive the input
-only from one widget.</p>
+widgets from previous lessons, the only difference being
+<code>Multiple + Default</code> as the last value in the list that defines
+the <code>Learner</code> channel. This <code>Multiple + Default</code> says
+that this is a multi-input channel and is the default input for its type.
+If it would be unspecified then by default value of
+<code>Single + NonDefault</code> would be used. That would mean that the
+widget can receive the input only from one widget and is not the default input
+channel for its type (more on default channels later).</p>
 
 <p>How does the widget know from which widget did the token come from?
 In Orange, tokens are sent around with an id of a widget that is
@@ -205,7 +209,7 @@ default. Hence, if we have just connected Data Sampler
 
 <img src="datasampler-totable.png">
 
-<p>we would get a following window quering users for information on
+<p>we would get a following window querying users for information on
 which channels to connect:</p>
 
 <img src="datasampler-channelquerry.png">
@@ -223,18 +227,20 @@ Orange Canvas) with the dialog which channel to connect to, as the
 training data set channel will be the default one.</p>
 
 <p>When enlisting the input channel of the same type, the non-default
-channels have a special fourth value in the channel specification
-list. So for our new <a href="OWLearningCurveB.py">learning curve</a>
-widget, the channel specification is:</p>
+channels have a special flag in the channel specification list. So for
+our new <a href="OWLearningCurveB.py">learning curve</a> widget, the
+channel specification is:</p>
 
-<xmp class="code">self.inputs = [("Train Data", ExampleTable, self.trainset), ("Test Data", ExampleTable, self.testset, 1, 1), ("Learner", orange.Learner, self.learner, 0)]
+<xmp class="code">self.inputs = [("Train Data", ExampleTable, self.trainset, Default),
+               ("Test Data", ExampleTable, self.testset),
+               ("Learner", orange.Learner, self.learner, Multiple)]
 </xmp>
 
-<p>That is, the <code>Test Data</code> channel is a single-token
-channel (third parameter) which is not a default one (where "1"
-indicates that this is a so-called minor channel). To test how this
-works, connect a file widget to a learning curve widget and - nothing
-will really happen:</p>
+<p>That is, the <code>Train Data</code> channel is a single-token
+channel which is a default one (third parameter). Note that the flags can
+be added (or OR-d) together so <code>Default + Multi</code> is a valid flag.
+To test how this works, connect a file widget to a learning curve widget and
+- nothing will really happen:</p>
 
 <img src="file-to-learningcurveb.png">
 

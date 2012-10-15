@@ -90,14 +90,12 @@ passed around with IDs (pointers to widgets that sent them). To
 declare a widget is interested about these IDs, one needs to define an
 input channel in the following way:</p>
 
-<xmp class="code">self.inputs = [("Learners", orange.Learner, self.learner, 0)]
+<xmp class="code">self.inputs = [("Learners", orange.Learner, self.learner, Multiple)]
 </xmp>
 
-<p>where the last argument refers if we have a "single token channel"
-(last argument should be 1, default) or a "multitoken" one (0 as a
-fourth element of the list holding channel definition). For the above
-declared channel, the receiving function should include an extra
-argument for the ID, like:</p>
+<p>where the last argument refers if we have a "Single" (default if not
+specified) or a "Multiple" channel. For the above declared channel, the
+receiving function should include an extra argument for the ID, like:</p>
 
 <xmp class="code">def learner(self, learnertoken, tokenid):
    # handle learnertoken and tokeid in some way
@@ -109,21 +107,21 @@ schema.</p>
 <p>Finally, we may have input channels of the same type. If a widget
 would declare input channels like:</p>
 
-<xmp class="code">self.inputs = [("Data", orange.ExampleTable, self.maindata), ("Additional Data", orange.ExampleTable, self.otherdata)]
+<xmp class="code">self.inputs = [("Data", orange.ExampleTable, self.maindata),
+               ("Additional Data", orange.ExampleTable, self.otherdata)]
 </xmp>
 
 <p>and we connect this widget in Orange Canvas to a sending widget
 that has a single orange.ExampleTable output channel, Canvas would
-bring up Set Channels dialog. There, a sending widget's channel would
+bring up Set Channels dialog. There, a sending widget's channel could
 be connected to both receiving channels. As we would often prefer to
 connect to a single (default) channel instead (still allowing user of
-Orange Canvas to set up a different schema manually), we set all the
-channels to which we do not want an automatic connection into a "minor
-mode". We do this by the using the fifth element in the channel
+Orange Canvas to set up a different schema manually), we set that channel
+as the default. We do this by the using the fourth element in the channel
 definition list, like:</p>
 
-<xmp class="code">self.inputs = [("Data", orange.ExampleTable, self.maindata),
-("Additional Data", orange.ExampleTable, self.otherdata, 1, 1)]
+<xmp class="code">self.inputs = [("Data", orange.ExampleTable, self.maindata, Default),
+               ("Additional Data", orange.ExampleTable, self.otherdata)]
 </xmp>
 
 <hr>
