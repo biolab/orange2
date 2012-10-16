@@ -750,6 +750,9 @@ DEPENDENCY_LINKS = (
 # TODO: Use entry points for automatic script creation
 # http://packages.python.org/distribute/setuptools.html#automatic-script-creation
 ENTRY_POINTS = {
+    'gui_scripts': (
+            'orange-canvas = Orange.OrangeCanvas.main:main',
+    )
 }
 
 def setup_package():
@@ -779,9 +782,9 @@ def setup_package():
         # TODO: Should migrate those for distribute (using entry points)
         cmdclass = cmdclass,
         ext_modules = ext_modules,
-        scripts = (
-            "bin/orange-canvas",
-        ),
+#        scripts = (
+#            "bin/orange-canvas",
+#        ),
     )
 
 if __name__ == '__main__':
