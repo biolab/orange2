@@ -22,7 +22,7 @@ from Orange.OrangeCanvas.gui.splashscreen import SplashScreen, QPixmap
 from Orange.OrangeCanvas.config import rc, open_config, cache_dir
 from Orange.OrangeCanvas import config
 
-from Orange.OrangeCanvas.registry import models
+from Orange.OrangeCanvas.registry import qt
 from Orange.OrangeCanvas.registry import WidgetRegistry, set_global_registry
 from Orange.OrangeCanvas.registry import cache
 
@@ -124,9 +124,9 @@ def main(argv=None):
     else:
         reg_cache = None
 
-    widget_discovery = models.QtWidgetDiscovery(cached_descriptions=reg_cache)
+    widget_discovery = qt.QtWidgetDiscovery(cached_descriptions=reg_cache)
 
-    widget_registry = models.QtWidgetRegistry()
+    widget_registry = qt.QtWidgetRegistry()
 
     widget_discovery.found_category.connect(
         widget_registry.register_category
@@ -160,7 +160,7 @@ def main(argv=None):
     cache_filename = os.path.join(cache_dir(), "widget-registry.pck")
     if options.no_discovery:
         widget_registry = cPickle.load(open(cache_filename, "rb"))
-        widget_registry = models.QtWidgetRegistry(widget_registry)
+        widget_registry = qt.QtWidgetRegistry(widget_registry)
     else:
         widget_discovery.run()
         # Store cached descriptions
