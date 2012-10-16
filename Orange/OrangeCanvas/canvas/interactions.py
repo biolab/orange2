@@ -269,6 +269,9 @@ class NewLinkAction(UserInteraction):
                     # Do nothing.
                     continue
 
+                # Remove temp items before creating a new link
+                self.cleanup()
+
                 link = scheme.SchemeLink(source_node, source, sink_node, sink)
                 self.scene.add_link(link)
                 self.scene.commit_scheme_link(link)
@@ -290,32 +293,33 @@ class NewLinkAction(UserInteraction):
         self.end()
 
     def end(self):
-        # Remove temporary scene objects.
-        if self.cursor_anchor_point and self.cursor_anchor_point.scene():
-            self.scene.removeItem(self.cursor_anchor_point)
-
-        if self.current_target_item:
-            self.remove_tmp_anchor()
-
-        if self.tmp_link_item:
-            self.tmp_link_item.removeLink()
-
+        self.cleanup()
         UserInteraction.end(self)
 
     def cancel(self):
         if not self.finished:
             log.info("Canceling new link action, reverting scene state.")
-            self.tmp_link_item.setSourceItem(None)
+            self.cleanup()
+
+    def cleanup(self):
+        """Cleanup all temp items in the scene that are left.
+        """
+        if self.tmp_link_item:
             self.tmp_link_item.setSinkItem(None)
-            self.tmp_link_item.hide()
-            self.tmp_link_item.removeLink()
+            self.tmp_link_item.setSourceItem(None)
 
-            self.scene.removeItem(self.tmp_link_item)
-            if self.cursor_anchor_point.scene() is self.scene:
-                self.scene.removeItem(self.cursor_anchor_point)
+            if self.tmp_link_item.scene():
+                self.scene.removeItem(self.tmp_link_item)
 
-            if self.current_target_item:
-                self.remove_tmp_anchor()
+            self.tmp_link_item = None
+
+        if self.current_target_item:
+            self.remove_tmp_anchor()
+            self.current_target_item = None
+
+        if self.cursor_anchor_point and self.cursor_anchor_point.scene():
+            self.scene.removeItem(self.cursor_anchor_point)
+            self.cursor_anchor_point = None
 
 
 class NewNodeAction(UserInteraction):

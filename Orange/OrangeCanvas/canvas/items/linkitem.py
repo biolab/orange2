@@ -274,3 +274,6 @@ class LinkItem(QGraphicsObject):
 
     def shape(self):
         return self.curveItem.shape()
+
+    def setEnabled(self, enabled):
+        QGraphicsObject.setEnabled(self, enabled)
