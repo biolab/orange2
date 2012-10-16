@@ -2,8 +2,9 @@
 Quick widget selector menu for the canvas.
 
 """
-
+import sys
 import logging
+
 from collections import namedtuple
 
 from PyQt4.QtGui import (
@@ -166,6 +167,8 @@ class TabBarWidget(QWidget):
         """Insert a tab at `index`
         """
         button = TabButton(self, objectName="tab-button")
+        button.setSizePolicy(QSizePolicy.Expanding,
+                             QSizePolicy.Expanding)
 
         self.__group.addButton(button)
         tab = _Tab(text, icon, toolTip, button, None, None)
@@ -218,6 +221,10 @@ class TabBarWidget(QWidget):
     def setCurrentIndex(self, index):
         if self.__currentIndex != index:
             self.__currentIndex = index
+
+            if index != -1:
+                self.__tabs[index].button.setChecked(True)
+
             self.currentChanged.emit(index)
 
     def button(self, index):
@@ -297,6 +304,7 @@ class PagedMenu(QWidget):
 
         self.__stack.insertWidget(index, page)
         self.__tab.insertTab(index, title, icon, toolTip)
+        return index
 
     def page(self, index):
         """Return the page at index.
@@ -347,6 +355,11 @@ class PagedMenu(QWidget):
         """Return the index of `page`.
         """
         return self.__stack.indexOf(page)
+
+    def tabButton(self, index):
+        """Return the tab button instance for index.
+        """
+        return self.__tab.button(index)
 
 
 class SuggestMenuPage(ToolTree):
@@ -469,6 +482,11 @@ class QuickMenu(FramelessWindow):
         page.setModel(index.model())
         page.setRootIndex(index)
 
+        view = page.view()
+
+        if sys.platform == "darwin":
+            view.verticalScrollBar().setAttribute(Qt.WA_MacMiniSize, True)
+
         name = unicode(index.data(Qt.DisplayRole))
         page.setTitle(name)
 
@@ -478,18 +496,34 @@ class QuickMenu(FramelessWindow):
 
         page.setToolTip(index.data(Qt.ToolTipRole).toPyObject())
 
-        brush = index.data(Qt.BackgroundRole)
-        if brush.isValid():
-            brush = brush.toPyObject()
         return page
 
     def setModel(self, model):
         root = model.invisibleRootItem()
         for i in range(root.rowCount()):
             item = root.child(i)
-            page = self.createPage(item.index())
+            index = item.index()
+            page = self.createPage(index)
             page.setActionRole(QtWidgetRegistry.WIDGET_ACTION_ROLE)
-            self.addPage(page.title(), page)
+            i = self.addPage(page.title(), page)
+
+            brush = index.data(Qt.BackgroundRole)
+            if brush.isValid():
+                brush = brush.toPyObject()
+                button = self.__pages.tabButton(i)
+                palette = button.palette()
+                button.setStyleSheet(
+                    "QToolButton {\n"
+                    "    qproperty-flat_: false;"
+                    "    background-color: %s;\n"
+                    "    border: none;\n"
+                    "}\n"
+                    "QToolButton:checked {\n"
+                    "    border: 1px solid %s;\n"
+                    "}" % (brush.color().name(),
+                           palette.color(palette.Mid).name())
+                )
+
         self.__model = model
         self.__suggestPage.setModel(model)
 
@@ -498,6 +532,9 @@ class QuickMenu(FramelessWindow):
         """
         if pos is None:
             pos = QPoint()
+
+        self.__search.setText("")
+        self.__suggestPage.setFilterFixedString("")
 
         self.ensurePolished()
         size = self.sizeHint()
@@ -536,6 +573,8 @@ class QuickMenu(FramelessWindow):
 
     def exec_(self, pos=None):
         self.popup(pos)
+        self.setFocus(Qt.PopupFocusReason)
+
         self.__triggeredAction = None
         self.__loop = QEventLoop(self)
         self.__loop.exec_()
@@ -569,13 +608,17 @@ class QuickMenu(FramelessWindow):
     def triggerSearch(self):
         self.__pages.setCurrentWidget(self.__suggestPage)
         self.__search.setFocus(Qt.ShortcutFocusReason)
+
         # Make sure that the first enabled item is set current.
         self.__suggestPage.ensureCurrent()
 
     def keyPressEvent(self, event):
-        self.__search.setFocus(Qt.ShortcutFocusReason)
-        self.setCurrentIndex(0)
-        self.__search.keyPressEvent(event)
+        if event.text():
+            # Ignore modifiers etc.
+            self.__search.setFocus(Qt.ShortcutFocusReason)
+            self.setCurrentIndex(0)
+            self.__search.keyPressEvent(event)
+
         FramelessWindow.keyPressEvent(self, event)
 
 

@@ -4,15 +4,14 @@ organized in a tree structure.
 
 """
 
-import sys
 import logging
 
 from PyQt4.QtGui import (
     QTreeView, QWidget, QVBoxLayout, QSizePolicy, QStandardItemModel,
-    QAbstractProxyModel, QStyledItemDelegate, QAction, QIcon
+    QAbstractProxyModel, QStyledItemDelegate, QStyle, QAction, QIcon
 )
 
-from PyQt4.QtCore import Qt, QModelIndex
+from PyQt4.QtCore import Qt, QEvent, QModelIndex
 from PyQt4.QtCore import pyqtSignal as Signal, pyqtProperty as Property
 
 log = logging.getLogger(__name__)
@@ -63,10 +62,9 @@ class ToolTree(QWidget):
         view.pressed.connect(self.__onPressed)
         view.entered.connect(self.__onEntered)
 
-        self.__view = view
+        view.installEventFilter(self)
 
-        if sys.platform == "darwin":
-            view.verticalScrollBar().setAttribute(Qt.WA_MacMiniSize, True)
+        self.__view = view
 
         layout.addWidget(view)
 
@@ -181,6 +179,7 @@ class ToolTree(QWidget):
         if index.isValid():
             action = self.__actionForIndex(index)
             if action is not None:
+                action.hover()
                 self.hovered.emit(action)
 
     def ensureCurrent(self):
@@ -194,6 +193,25 @@ class ToolTree(QWidget):
                 if index.flags() & Qt.ItemIsEnabled:
                     self.__view.setCurrentIndex(index)
                     break
+
+    def eventFilter(self, obj, event):
+        if obj is self.__view and event.type() == QEvent.KeyPress:
+            key = event.key()
+
+            space_activates = \
+                self.style().styleHint(
+                        QStyle.SH_Menu_SpaceActivatesItem,
+                        None, None)
+
+            if key in [Qt.Key_Enter, Qt.Key_Return, Qt.Key_Select] or \
+                    (key == Qt.Key_Space and space_activates):
+                index = self.__view.currentIndex()
+                if index.isValid() and index.flags() & Qt.ItemIsEnabled:
+                    # Emit activated on behalf of QTreeView.
+                    self.__view.activated.emit(index)
+                return True
+
+        return QWidget.eventFilter(self, obj, event)
 
 
 class ToolTreeItemDelegate(QStyledItemDelegate):
