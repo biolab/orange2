@@ -6,7 +6,7 @@ A DropShadowWidget
 from PyQt4.QtGui import (
     QWidget, QPainter, QPixmap, QGraphicsScene, QGraphicsRectItem,
     QGraphicsDropShadowEffect, QColor, QPen, QPalette, QStyleOption,
-    QAbstractScrollArea, QToolBar
+    QAbstractScrollArea, QToolBar, QRegion
 )
 
 from PyQt4.QtCore import (
@@ -156,7 +156,7 @@ class DropShadowFrame(QWidget):
             self.show()
         elif etype == QEvent.Hide:
             self.hide()
-        return False
+        return QWidget.eventFilter(self, obj, event)
 
     def __updateGeometry(self):
         """Update the shadow geometry to fit the widget's changed
@@ -173,6 +173,15 @@ class DropShadowFrame(QWidget):
         geom.adjust(-radius, -radius, radius, radius)
         if geom != self.geometry():
             self.setGeometry(geom)
+
+        # Set the widget mask (punch a hole through to the `widget` instance.
+        rect = self.rect()
+
+        mask = QRegion(rect)
+        transparent = QRegion(rect.adjusted(radius, radius, -radius, -radius))
+
+        mask = mask.subtracted(transparent)
+        self.setMask(mask)
 
     def __updatePixmap(self):
         """Update the cached shadow pixmap.
