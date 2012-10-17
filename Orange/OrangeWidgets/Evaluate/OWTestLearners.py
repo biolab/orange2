@@ -261,42 +261,57 @@ class OWTestLearners(OWWidget):
                 self.tab.showColumn(i + 1)
 
     def sendReport(self):
+        method = [("Method", self.resamplingMethods[self.resampling])]
+
         exset = []
+
         if self.resampling == 0:
             exset = [("Folds", self.nFolds)]
         elif self.resampling == 2:
-            exset = [("Repetitions", self.pRepeat), ("Proportion of training instances", "%i%%" % self.pLearning)]
+            exset = [("Repetitions", self.pRepeat),
+                     ("Proportion of training instances", "%i%%" \
+                      % self.pLearning)]
         else:
             exset = []
-        if not self.ismultilabel():
-            self.reportSettings("Validation method",
-                            [("Method", self.resamplingMethods[self.resampling])]
-                            + exset +
-                            ([("Target class", self.data.domain.classVar.values[self.targetClass])] if self.data else []))
+
+        if self.data and \
+                isinstance(self.data.domain.classVar, orange.EnumVariable):
+            target = [("Target class",
+                       self.data.domain.classVar.values[self.targetClass])]
         else:
-             self.reportSettings("Validation method",
-                            [("Method", self.resamplingMethods[self.resampling])]
-                            + exset)
-        
+            target = []
+
+        if not self.ismultilabel():
+            self.reportSettings("Validation method", method + exset + target)
+        else:
+            self.reportSettings("Validation method", method + exset)
+
         self.reportData(self.data)
 
-        if self.data:        
+        if self.data:
             self.reportSection("Results")
             learners = [(l.time, l) for l in self.learners.values()]
             learners.sort()
             learners = [lt[1] for lt in learners]
             usestat = self.get_usestat()
-            res = "<table><tr><th></th>"+"".join("<th><b>%s</b></th>" % hr for hr in [s.label for i, s in enumerate(self.stat) if i in usestat])+"</tr>"
-            for i, l in enumerate(learners):
-                res += "<tr><th><b>%s</b></th>" % l.name
-                if l.scores:
+            # table header
+            res = "<table><tr><th></th>" + \
+                  "".join("<th><b>%s</b></th>" % s.label \
+                          for i, s in enumerate(self.stat) \
+                          if i in usestat) + \
+                  "</tr>"
+
+            for i, learner in enumerate(learners):
+                res += "<tr><th><b>%s</b></th>" % learner.name
+                if learner.scores:
                     for j in usestat:
-                        scr = l.scores[j]
-                        res += "<td>" + ("%.4f" % scr if scr is not None else "") + "</td>"
+                        score = learner.scores[j]
+                        score = "%.4f" % score if score is not None else ""
+                        res += "<td>" + score + "</td>"
                 res += "</tr>"
             res += "</table>"
             self.reportRaw(res)
-            
+
     def score(self, ids):
         """compute scores for the list of learners"""
         if (not self.data):
