@@ -55,7 +55,8 @@ class LinearIconView(QListView):
         if not self.model().rowCount():
             return QSize(200, 140)
         else:
-            height = self.sizeHintForRow(0)
+            scrollHint = self.horizontalScrollBar().sizeHint()
+            height = self.sizeHintForRow(0) + scrollHint.height()
             _, top, _, bottom = self.getContentsMargins()
             return QSize(200, height + top + bottom + self.verticalOffset())
 
