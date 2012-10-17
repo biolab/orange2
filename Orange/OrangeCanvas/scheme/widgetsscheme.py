@@ -1,5 +1,7 @@
-
 import logging
+from functools import partial
+
+from PyQt4.QtCore import QTimer
 
 from .. import orngSignalManager
 from .scheme import Scheme
@@ -63,12 +65,13 @@ class WidgetsScheme(Scheme):
         sink_channel = link.sink_channel.name
         self.signal_manager.addLink(source_widget, sink_widget, source_channel,
                                     sink_channel, enabled=link.enabled)
-        from functools import partial
-        self.signal_manager.processNewSignals()
+
         link.enabled_changed.connect(
             partial(self.signal_manager.setLinkEnabled,
                     source_widget, sink_widget)
         )
+
+        QTimer.singleShot(0, self.signal_manager.processNewSignals)
 
     def remove_link(self, link):
         Scheme.remove_link(self, link)
@@ -96,9 +99,6 @@ class WidgetsScheme(Scheme):
             _category=desc.category,
             _settingsFromSchema=node.properties
         )
-        import pprint
-        log.debug("New %r instance properties:\n%s", node.title,
-                  pprint.pformat(node.properties))
 
         widget.__init__(None, self.signal_manager)
         widget.setCaption(node.title)
