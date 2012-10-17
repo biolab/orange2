@@ -72,9 +72,27 @@ class TestNodeItem(TestItems):
         file_item.setPos(110, 100)
         self.assertTrue(len(positions) > 0)
 
+        file_item.setErrorMessage("message")
+        file_item.setWarningMessage("message")
+        file_item.setInfoMessage("I am alive")
+
+        file_item.setErrorMessage(None)
+        file_item.setWarningMessage(None)
+        file_item.setInfoMessage(None)
+
+        file_item.setInfoMessage("I am back.")
+
         def progress():
             self.singleShot(10, progress)
-            nb_item.setProgress((nb_item.progress() + 1) % 100)
+            p = (nb_item.progress() + 1) % 100
+            nb_item.setProgress(p)
+
+            if p > 50:
+                nb_item.setInfoMessage("Over 50%")
+                file_item.setWarningMessage("Second")
+            else:
+                nb_item.setInfoMessage(None)
+                file_item.setWarningMessage(None)
 
         progress()
 

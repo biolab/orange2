@@ -9,7 +9,7 @@ from PyQt4.QtGui import (
     QGraphicsItem, QGraphicsPathItem, QGraphicsPixmapItem, QGraphicsObject,
     QGraphicsTextItem, QGraphicsDropShadowEffect,
     QPen, QBrush, QColor, QPalette, QFont, QIcon, QStyle,
-    QPainter, QPainterPath, QPainterPathStroker
+    QPainter, QPainterPath, QPainterPathStroker, QApplication
 )
 
 from PyQt4.QtCore import Qt, QPointF, QRectF, QTimer
@@ -322,6 +322,17 @@ class AnchorPoint(QGraphicsObject):
         return QRectF(0, 0, 1, 1)
 
 
+class MessageIcon(QGraphicsPixmapItem):
+    def __init__(self, *args, **kwargs):
+        QGraphicsPixmapItem.__init__(self, *args, **kwargs)
+
+
+def message_pixmap(standard_pixmap):
+    style = QApplication.instance().style()
+    icon = style.standardIcon(standard_pixmap)
+    return icon.pixmap(16, 16)
+
+
 class NodeItem(QGraphicsObject):
     """An widget node item in the canvas.
     """
@@ -352,13 +363,32 @@ class NodeItem(QGraphicsObject):
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.setFlag(QGraphicsItem.ItemIsFocusable, True)
 
+        # central body shape item
+        self.shapeItem = None
+
+        # in/output anchor items
+        self.inputAnchorItem = None
+        self.outputAnchorItem = None
+
         # round anchor indicators on the anchor path
         self.inputAnchors = []
         self.outputAnchors = []
 
+        # title text item
+        self.captionTextItem = None
+
+        # error, warning, info items
+        self.errorItem = None
+        self.warningItem = None
+        self.infoItem = None
+
         self.__title = ""
         self.__processingState = 0
         self.__progress = -1
+
+        self.__error = None
+        self.__warning = None
+        self.__info = None
 
         self.setZValue(self.Z_VALUE)
         self.setupGraphics()
@@ -418,6 +448,18 @@ class NodeItem(QGraphicsObject):
         font = QFont("Helvetica", 12)
         self.captionTextItem.setFont(font)
 
+        self.errorItem = MessageIcon(self)
+        self.errorItem.setPixmap(message_pixmap(QStyle.SP_MessageBoxCritical))
+        self.errorItem.hide()
+
+        self.warningItem = MessageIcon(self)
+        self.warningItem.setPixmap(message_pixmap(QStyle.SP_MessageBoxWarning))
+        self.warningItem.hide()
+
+        self.infoItem = MessageIcon(self)
+        self.infoItem.setPixmap(message_pixmap(QStyle.SP_MessageBoxInformation))
+        self.infoItem.hide()
+
     def setWidgetDescription(self, desc):
         """Set widget description.
         """
@@ -465,8 +507,6 @@ class NodeItem(QGraphicsObject):
         if selectedColor is None:
             selectedColor = saturated(color, 150)
         palette = create_palette(color, selectedColor)
-#        gradient = radial_gradient(color, selectedColor)
-#        self.shapeItem.setBrush(QBrush(gradient))
         self.shapeItem.setPalette(palette)
 
     def setPalette(self):
@@ -526,13 +566,19 @@ class NodeItem(QGraphicsObject):
         pass
 
     def setErrorMessage(self, message):
-        pass
+        if self.__error != message:
+            self.__error = message
+            self.__updateMessages()
 
     def setWarningMessage(self, message):
-        pass
+        if self.__warning != message:
+            self.__warning = message
+            self.__updateMessages()
 
-    def setInformationMessage(self, message):
-        pass
+    def setInfoMessage(self, message):
+        if self.__info != message:
+            self.__info = message
+            self.__updateMessages()
 
     def newInputAnchor(self):
         """Create and return a new input anchor point.
@@ -619,16 +665,6 @@ class NodeItem(QGraphicsObject):
         # Should this return the union of all child items?
         return self.shapeItem.shape()
 
-#    def _delegate(self, event):
-#        """Called by child items. Delegate the event actions to the
-#        appropriate actions.
-#
-#        """
-#        if event == "mouseDoubleClickEvent":
-#            self.activated.emit()
-#        elif event == "hoverEnterEvent":
-#            self.hovered.emit()
-
     def __updateTitleText(self):
         """Update the title text item.
         """
@@ -646,6 +682,28 @@ class NodeItem(QGraphicsObject):
         self.captionTextItem.document().adjustSize()
         width = self.captionTextItem.textWidth()
         self.captionTextItem.setPos(-width / 2.0, 33)
+
+    def __updateMessages(self):
+        """Update message items (position, visibility and tool tips).
+        """
+        items = [self.errorItem, self.warningItem, self.infoItem]
+        messages = [self.__error, self.__warning, self.__info]
+        for message, item in zip(messages, items):
+            item.setVisible(bool(message))
+            item.setToolTip(message or "")
+        shown = [item for item in items if item.isVisible()]
+        count = len(shown)
+        if count:
+            spacing = 3
+            rects = [item.boundingRect() for item in shown]
+            width = sum(rect.width() for rect in rects)
+            width += spacing * max(0, count - 1)
+            height = max(rect.height() for rect in rects)
+            origin = self.shapeItem.boundingRect().top() - spacing - height
+            origin = QPointF(-width / 2, origin)
+            for item, rect in zip(shown, rects):
+                item.setPos(origin)
+                origin = origin + QPointF(rect.width() + spacing, 0)
 
     def mousePressEvent(self, event):
         if self.shapeItem.path().contains(event.pos()):

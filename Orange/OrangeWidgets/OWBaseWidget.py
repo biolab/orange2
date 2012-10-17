@@ -859,7 +859,12 @@ class OWBaseWidget(QDialog):
                              QString(stateType), id, QString(text or ""))
             #qApp.processEvents()
         return changed
-    
+
+    widgetStateChanged = pyqtSignal(QString, int, QString)
+    """Widget state has changed first arg is the state type
+    ('Info', 'Warning' or 'Error') the second is the message id
+    and finally the message string."""
+
     def widgetStateToHtml(self, info=True, warning=True, error=True):
         pixmaps = self.getWidgetStateIcons()
         items = [] 
@@ -867,7 +872,7 @@ class OWBaseWidget(QDialog):
                     "Warning": "canvasIcons:warning.png",
                     "Error": "canvasIcons:error.png"}
         for show, what in [(info, "Info"), (warning, "Warning"),(error, "Error")]:
-            if self.widgetState[what]:
+            if show and self.widgetState[what]:
                 items.append('<img src="%s" style="float: left;"> %s' % (iconPath[what], "\n".join(self.widgetState[what].values())))
         return "<br>".join(items)
         

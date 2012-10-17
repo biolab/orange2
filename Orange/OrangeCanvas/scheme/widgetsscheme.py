@@ -5,6 +5,7 @@ from .. import orngSignalManager
 from .scheme import Scheme
 from .utils import name_lookup
 from ..config import rc
+from ..gui.utils import signals_disabled
 
 log = logging.getLogger(__name__)
 
@@ -25,12 +26,19 @@ class WidgetsScheme(Scheme):
 
     def add_node(self, node):
         widget = self.create_widget_instance(node)
-        Scheme.add_node(self, node)
+
+        # don't emit the node_added signal until the widget is successfully
+        # added to signal manager etc.
+        with signals_disabled(self):
+            Scheme.add_node(self, node)
+
         self.widgets.append(widget)
 
         self.widget_for_node[node] = widget
 
         self.signal_manager.addWidget(widget)
+
+        self.node_added.emit(node)
 
     def remove_node(self, node):
         Scheme.remove_node(self, node)

@@ -109,10 +109,12 @@ class SchemeDocumentWidget(QWidget):
 
         self.scene = CanvasScene(self)
         self.scene.setStickyFocus(False)
+
         self.scene.node_item_activated.connect(self._on_node_activate)
         self.scene.node_item_position_changed.connect(
             self._on_node_position_changed
         )
+
         self.scene.set_registry(self.registry)
         self.scene.set_scheme(scheme)
         self.view.setScene(self.scene)
@@ -121,12 +123,14 @@ class SchemeDocumentWidget(QWidget):
         if self.scheme is not None:
             self.scheme.close_all_open_widgets()
             self.scheme.title_changed.disconnect(self.title_changed)
+            self.scheme.node_added.disconnect(self._on_node_added)
 
         self.scheme = scheme
 
         if self.scheme:
             self.scheme.title_changed.connect(self.title_changed)
             self.title_changed.emit(self.scheme.title)
+            self.scheme.node_added.connect(self._on_node_added)
 
     def create_new_node(self, desc, position=None):
         scheme = self.scheme
@@ -134,6 +138,27 @@ class SchemeDocumentWidget(QWidget):
         if position is None:
             item = self.scene.item_for_node(node)
             node.position = (item.pos().x(), item.pos().y())
+
+    def node_for_widget(self, widget):
+        rev = dict(map(reversed, self.scheme.widget_for_node.items()))
+        return rev[widget]
+
+    def _on_node_added(self, node):
+        widget = self.scheme.widget_for_node[node]
+        widget.widgetStateChanged.connect(self._on_widget_state_changed)
+
+    def _on_widget_state_changed(self, *args):
+        widget = self.sender()
+        node = self.node_for_widget(widget)
+        item = self.scene.item_for_node(node)
+
+        info = widget.widgetStateToHtml(True, False, False)
+        warning = widget.widgetStateToHtml(False, True, False)
+        error = widget.widgetStateToHtml(False, False, True)
+
+        item.setInfoMessage(info or None)
+        item.setWarningMessage(warning or None)
+        item.setErrorMessage(error or None)
 
     def _on_node_activate(self, item):
         node = self.scene.node_for_item(item)
