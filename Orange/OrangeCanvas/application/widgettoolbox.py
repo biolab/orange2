@@ -291,11 +291,17 @@ class WidgetToolBox(ToolBox):
         button = self.tabButton(index)
 
         # Set the 'highlight' color
-        brush = item.background()
+        if item.data(Qt.BackgroundRole).isValid():
+            brush = item.background()
+        elif item.data(QtWidgetRegistry.BACKGROUND_ROLE).isValid():
+            brush = item.data(QtWidgetRegistry.BACKGROUND_ROLE).toPyObject()
+        else:
+            brush = self.palette().brush(QPalette.Button)
 
         if not brush.gradient():
             gradient = create_tab_gradient(brush.color())
             brush = QBrush(gradient)
+
         palette = button.palette()
         palette.setBrush(QPalette.Highlight, brush)
         button.setPalette(palette)

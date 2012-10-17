@@ -507,7 +507,8 @@ class QuickMenu(FramelessWindow):
             page.setActionRole(QtWidgetRegistry.WIDGET_ACTION_ROLE)
             i = self.addPage(page.title(), page)
 
-            brush = index.data(Qt.BackgroundRole)
+            brush = index.data(QtWidgetRegistry.BACKGROUND_ROLE)
+
             if brush.isValid():
                 brush = brush.toPyObject()
                 button = self.__pages.tabButton(i)

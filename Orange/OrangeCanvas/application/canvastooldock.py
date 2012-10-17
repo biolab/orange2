@@ -13,6 +13,7 @@ from PyQt4.QtCore import pyqtProperty as Property
 from ..gui.toolgrid import ToolGrid
 from ..gui.toolbar import DynamicResizeToolBar
 from .widgettoolbox import WidgetToolBox, iter_item
+from ..registry.qt import QtWidgetRegistry
 
 
 class SplitterResizer(QObject):
@@ -292,7 +293,13 @@ class QuickCategoryToolbar(ToolGrid):
         button = ToolGrid.createButtonForAction(self, action)
 
         item = action.data().toPyObject()
-        brush = item.background()
+        if item.data(Qt.BackgroundRole).isValid():
+            brush = item.background()
+        elif item.data(QtWidgetRegistry.BACKGROUND_ROLE).isValid():
+            brush = item.data(QtWidgetRegistry.BACKGROUND_ROLE).toPyObject()
+        else:
+            brush = self.palette().brush(QPalette.Button)
+
         palette = button.palette()
         palette.setColor(QPalette.Button, brush.color())
         palette.setColor(QPalette.Window, brush.color())

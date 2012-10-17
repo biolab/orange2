@@ -75,6 +75,11 @@ class QtWidgetRegistry(QObject, WidgetRegistry):
     WIDGET_ACTION_ROLE = Qt.UserRole + 3
     """Widget Action Role"""
 
+    BACKGROUND_ROLE = Qt.UserRole + 4
+    """Background color for widget/category in the canvas
+    (different from Qt.BackgroundRole)
+    """
+
     category_added = Signal(str, CategoryDescription)
     """signal: category_added(name: str, desc: CategoryDescription)
     """
@@ -203,7 +208,7 @@ class QtWidgetRegistry(QObject, WidgetRegistry):
         background = NAMED_COLORS.get(background, background)
 
         brush = QBrush(QColor(background))
-        item.setBackground(brush)
+        item.setData(brush, self.BACKGROUND_ROLE)
 
         tooltip = desc.description if desc.description else desc.name
         item.setToolTip(tooltip)
@@ -234,7 +239,7 @@ class QtWidgetRegistry(QObject, WidgetRegistry):
             brush = None
 
         if brush is not None:
-            item.setBackground(brush)
+            item.setData(brush, self.BACKGROUND_ROLE)
 
         tooltip = tooltip_helper(desc)
         style = "ul { margin-top: 1px; margin-bottom: 1px; }"
