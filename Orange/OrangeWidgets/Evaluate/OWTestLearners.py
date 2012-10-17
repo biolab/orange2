@@ -310,8 +310,8 @@ class OWTestLearners(OWWidget):
         used_ids = []
         n = len(self.data.domain.attributes)*2
         indices = orange.MakeRandomIndices2(p0=min(n, len(self.data)), stratified=orange.MakeRandomIndices2.StratifiedIfPossible)
-        new = self.data.selectref(indices(self.data))
-        
+        new = self.data.selectref(indices(self.data), 0)
+
         multilabel = self.ismultilabel()
         
         self.warning(0)
