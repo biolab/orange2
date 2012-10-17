@@ -108,10 +108,10 @@ def uniform_layout_helper(items, contents_rect, expanding, spacing):
 
     if expanding == Qt.Horizontal:
         space = contents_rect.width() - spacing_space
-        setter = lambda w, s: w.setFixedWidth(s)
+        setter = lambda w, s: w.setFixedWidth(max(s, 0))
     else:
         space = contents_rect.height() - spacing_space
-        setter = lambda w, s: w.setFixedHeight(s)
+        setter = lambda w, s: w.setFixedHeight(max(s, 0))
 
     base_size = space / len(items)
     remainder = space % len(items)
