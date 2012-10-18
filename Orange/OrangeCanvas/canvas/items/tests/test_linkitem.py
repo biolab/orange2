@@ -47,8 +47,8 @@ class TestLinkItem(TestItems):
         anchor1 = file_item.newOutputAnchor()
         anchor2 = discretize_item.newInputAnchor()
 
-        self.assertSequenceEqual(file_item.outputAnchors, [anchor1])
-        self.assertSequenceEqual(discretize_item.inputAnchors, [anchor2])
+        self.assertSequenceEqual(file_item.outputAnchors(), [anchor1])
+        self.assertSequenceEqual(discretize_item.inputAnchors(), [anchor2])
 
         link.setSourceItem(file_item, anchor1)
         link.setSinkItem(discretize_item, anchor2)
@@ -58,12 +58,12 @@ class TestLinkItem(TestItems):
         with self.assertRaises(ValueError):
             link.setSourceItem(file_item, AnchorPoint())
 
-        self.assertSequenceEqual(file_item.outputAnchors, [anchor1])
+        self.assertSequenceEqual(file_item.outputAnchors(), [anchor1])
 
         anchor2 = file_item.newOutputAnchor()
 
         link.setSourceItem(file_item, anchor2)
-        self.assertSequenceEqual(file_item.outputAnchors, [anchor1, anchor2])
+        self.assertSequenceEqual(file_item.outputAnchors(), [anchor1, anchor2])
         self.assertIs(link.sourceAnchor, anchor2)
 
         file_item.removeOutputAnchor(anchor1)
@@ -76,16 +76,16 @@ class TestLinkItem(TestItems):
 
         self.scene.addItem(link)
 
-        self.assertTrue(len(nb_item.inputAnchors) == 1)
-        self.assertTrue(len(discretize_item.outputAnchors) == 1)
-        self.assertTrue(len(discretize_item.inputAnchors) == 1)
-        self.assertTrue(len(file_item.outputAnchors) == 1)
+        self.assertTrue(len(nb_item.inputAnchors()) == 1)
+        self.assertTrue(len(discretize_item.outputAnchors()) == 1)
+        self.assertTrue(len(discretize_item.inputAnchors()) == 1)
+        self.assertTrue(len(file_item.outputAnchors()) == 1)
 
         link.removeLink()
 
-        self.assertTrue(len(nb_item.inputAnchors) == 0)
-        self.assertTrue(len(discretize_item.outputAnchors) == 0)
-        self.assertTrue(len(discretize_item.inputAnchors) == 1)
-        self.assertTrue(len(file_item.outputAnchors) == 1)
+        self.assertTrue(len(nb_item.inputAnchors()) == 0)
+        self.assertTrue(len(discretize_item.outputAnchors()) == 0)
+        self.assertTrue(len(discretize_item.inputAnchors()) == 1)
+        self.assertTrue(len(file_item.outputAnchors()) == 1)
 
         self.app.exec_()

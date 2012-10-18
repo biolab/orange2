@@ -62,18 +62,18 @@ class TestScene(QAppTestCase):
         self.assertTrue(link1.sourceItem is None and link1.sinkItem is None)
         self.assertTrue(link2.sourceItem is None and link2.sinkItem is None)
 
-        self.assertSequenceEqual(file_item.outputAnchors, [])
-        self.assertSequenceEqual(disc_item.inputAnchors, [])
-        self.assertSequenceEqual(disc_item.outputAnchors, [])
-        self.assertSequenceEqual(bayes_item.outputAnchors, [])
+        self.assertSequenceEqual(file_item.outputAnchors(), [])
+        self.assertSequenceEqual(disc_item.inputAnchors(), [])
+        self.assertSequenceEqual(disc_item.outputAnchors(), [])
+        self.assertSequenceEqual(bayes_item.outputAnchors(), [])
 
         # And add one link again
         link1 = self.scene.new_link_item(file_item, "Data", disc_item, "Data")
         link1 = self.scene.add_link_item(link1)
         self.assertSequenceEqual(self.scene.link_items(), [link1])
 
-        self.assertTrue(file_item.outputAnchors)
-        self.assertTrue(disc_item.inputAnchors)
+        self.assertTrue(file_item.outputAnchors())
+        self.assertTrue(disc_item.inputAnchors())
 
         self.app.exec_()
 

@@ -1,22 +1,33 @@
+from PyQt4.QtGui import QPainterPath, QGraphicsEllipseItem
 
-from .. import NodeItem
+from .. import NodeItem, AnchorPoint, NodeAnchorItem
 
 from . import TestItems
 
 
 class TestNodeItem(TestItems):
+    def setUp(self):
+        TestItems.setUp(self)
+        from ....registry.tests import small_testing_registry
+        self.reg = small_testing_registry()
+
+        self.data_desc = self.reg.category("Data")
+        self.classify_desc = self.reg.category("Classify")
+
+        self.file_desc = self.reg.widget(
+            "Orange.OrangeWidgets.Data.OWFile.OWFile"
+        )
+        self.discretize_desc = self.reg.widget(
+            "Orange.OrangeWidgets.Data.OWDiscretize.OWDiscretize"
+        )
+        self.bayes_desc = self.reg.widget(
+            "Orange.OrangeWidgets.Classify.OWNaiveBayes.OWNaiveBayes"
+        )
 
     def test_nodeitem(self):
-        from ....registry.tests import small_testing_registry
-        reg = small_testing_registry()
-
-        data_desc = reg.category("Data")
-
-        file_desc = reg.widget("Orange.OrangeWidgets.Data.OWFile.OWFile")
-
         file_item = NodeItem()
-        file_item.setWidgetDescription(file_desc)
-        file_item.setWidgetCategory(data_desc)
+        file_item.setWidgetDescription(self.file_desc)
+        file_item.setWidgetCategory(self.data_desc)
 
         file_item.setTitle("File Node")
         self.assertEqual(file_item.title(), "File Node")
@@ -41,26 +52,16 @@ class TestNodeItem(TestItems):
         self.scene.addItem(file_item)
         file_item.setPos(100, 100)
 
-        discretize_desc = reg.widget(
-            "Orange.OrangeWidgets.Data.OWDiscretize.OWDiscretize"
-        )
-
         discretize_item = NodeItem()
-        discretize_item.setWidgetDescription(discretize_desc)
-        discretize_item.setWidgetCategory(data_desc)
+        discretize_item.setWidgetDescription(self.discretize_desc)
+        discretize_item.setWidgetCategory(self.data_desc)
 
         self.scene.addItem(discretize_item)
         discretize_item.setPos(300, 100)
 
-        classify_desc = reg.category("Classify")
-
-        bayes_desc = reg.widget(
-            "Orange.OrangeWidgets.Classify.OWNaiveBayes.OWNaiveBayes"
-        )
-
         nb_item = NodeItem()
-        nb_item.setWidgetDescription(bayes_desc)
-        nb_item.setWidgetCategory(classify_desc)
+        nb_item.setWidgetDescription(self.bayes_desc)
+        nb_item.setWidgetCategory(self.classify_desc)
 
         self.scene.addItem(nb_item)
         nb_item.setPos(500, 100)
@@ -94,6 +95,81 @@ class TestNodeItem(TestItems):
                 nb_item.setInfoMessage(None)
                 file_item.setWarningMessage(None)
 
+            discretize_item.setAnchorRotation(50 - p)
+
         progress()
+
+        self.app.exec_()
+
+    def test_nodeanchors(self):
+        file_item = NodeItem()
+        file_item.setWidgetDescription(self.file_desc)
+        file_item.setWidgetCategory(self.data_desc)
+
+        file_item.setTitle("File Node")
+
+        self.scene.addItem(file_item)
+        file_item.setPos(100, 100)
+
+        discretize_item = NodeItem()
+        discretize_item.setWidgetDescription(self.discretize_desc)
+        discretize_item.setWidgetCategory(self.data_desc)
+
+        self.scene.addItem(discretize_item)
+        discretize_item.setPos(300, 100)
+
+        nb_item = NodeItem()
+        nb_item.setWidgetDescription(self.bayes_desc)
+        nb_item.setWidgetCategory(self.classify_desc)
+
+        with self.assertRaises(ValueError):
+            file_item.newInputAnchor()
+
+        anchor = file_item.newOutputAnchor()
+        self.assertIsInstance(anchor, AnchorPoint)
+
+        self.app.exec_()
+
+    def test_anchoritem(self):
+        anchoritem = NodeAnchorItem(None)
+        self.scene.addItem(anchoritem)
+
+        path = QPainterPath()
+        path.addEllipse(0, 0, 100, 100)
+
+        anchoritem.setAnchorPath(path)
+
+        anchor = AnchorPoint()
+        anchoritem.addAnchor(anchor)
+
+        ellipse1 = QGraphicsEllipseItem(-3, -3, 6, 6)
+        ellipse2 = QGraphicsEllipseItem(-3, -3, 6, 6)
+        self.scene.addItem(ellipse1)
+        self.scene.addItem(ellipse2)
+
+        anchor.scenePositionChanged.connect(ellipse1.setPos)
+
+        with self.assertRaises(ValueError):
+            anchoritem.addAnchor(anchor)
+
+        anchor1 = AnchorPoint()
+        anchoritem.addAnchor(anchor1)
+
+        anchor1.scenePositionChanged.connect(ellipse2.setPos)
+
+        self.assertSequenceEqual(anchoritem.anchorPoints(), [anchor, anchor1])
+
+        self.assertSequenceEqual(anchoritem.anchorPositions(), [0.5, 0.5])
+        anchoritem.setAnchorPositions([0.5, 0.0])
+
+        self.assertSequenceEqual(anchoritem.anchorPositions(), [0.5, 0.0])
+
+        def advance():
+            t = anchoritem.anchorPositions()
+            t = map(lambda t: (t + 0.05) % 1.0, t)
+            anchoritem.setAnchorPositions(t)
+            self.singleShot(20, advance)
+
+        advance()
 
         self.app.exec_()

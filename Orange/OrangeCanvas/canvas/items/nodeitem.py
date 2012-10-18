@@ -5,6 +5,8 @@ NodeItem
 
 from xml.sax.saxutils import escape
 
+import numpy
+
 from PyQt4.QtGui import (
     QGraphicsItem, QGraphicsPathItem, QGraphicsPixmapItem, QGraphicsObject,
     QGraphicsTextItem, QGraphicsDropShadowEffect,
@@ -16,7 +18,7 @@ from PyQt4.QtCore import Qt, QPointF, QRectF, QTimer
 from PyQt4.QtCore import pyqtSignal as Signal
 from PyQt4.QtCore import pyqtProperty as Property
 
-from .utils import saturated, radial_gradient, sample_path
+from .utils import saturated, radial_gradient
 
 from ...registry import NAMED_COLORS
 from ...resources import icon_loader
@@ -202,6 +204,47 @@ class NodeBodyItem(QGraphicsPathItem):
         self.__updateShadowState()
 
 
+class AnchorPoint(QGraphicsObject):
+    """A anchor indicator on the NodeAnchorItem
+    """
+
+    scenePositionChanged = Signal(QPointF)
+    anchorDirectionChanged = Signal(QPointF)
+
+    def __init__(self, *args):
+        QGraphicsObject.__init__(self, *args)
+        self.setFlag(QGraphicsItem.ItemSendsScenePositionChanges, True)
+        self.setFlag(QGraphicsItem.ItemHasNoContents, True)
+
+        self.__direction = QPointF()
+
+    def anchorScenePos(self):
+        """Return anchor position in scene coordinates.
+        """
+        return self.mapToScene(QPointF(0, 0))
+
+    def setAnchorDirection(self, direction):
+        """Set the preferred direction (QPointF) in item coordinates.
+        """
+        if self.__direction != direction:
+            self.__direction = direction
+            self.anchorDirectionChanged.emit(direction)
+
+    def anchorDirection(self):
+        """Return the preferred anchor direction.
+        """
+        return self.__direction
+
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemScenePositionHasChanged:
+            self.scenePositionChanged.emit(value.toPointF())
+
+        return QGraphicsObject.itemChange(self, change, value)
+
+    def boundingRect(self,):
+        return QRectF()
+
+
 class NodeAnchorItem(QGraphicsPathItem):
     """The left/right widget input/output anchors.
     """
@@ -226,13 +269,20 @@ class NodeAnchorItem(QGraphicsPathItem):
 
         # Does this item have any anchored links.
         self.anchored = False
+
+        self.__anchorPath = QPainterPath()
+        self.__points = []
+        self.__pointPositions = []
+
         self.__fullStroke = None
         self.__dottedStroke = None
+
+        self.__layoutRequested = False
 
     def setAnchorPath(self, path):
         """Set the anchor's curve path as a QPainterPath.
         """
-        self.anchorPath = path
+        self.__anchorPath = path
         # Create a stroke of the path.
         stroke_path = QPainterPathStroker()
         stroke_path.setCapStyle(Qt.RoundCap)
@@ -251,8 +301,17 @@ class NodeAnchorItem(QGraphicsPathItem):
             self.setPath(self.__dottedStroke)
             self.setBrush(self.normalBrush)
 
+    def anchorPath(self):
+        """Return the QPainterPath of the anchor path (a curve on
+        which the anchor points lie)
+
+        """
+        return self.__anchorPath
+
     def setAnchored(self, anchored):
-        """Set the items anchored state.
+        """Set the items anchored state. When false the item draws it self
+        with a dotted stroke.
+
         """
         self.anchored = anchored
         if anchored:
@@ -269,6 +328,99 @@ class NodeAnchorItem(QGraphicsPathItem):
         """
         raise NotImplementedError
 
+    def count(self):
+        """Return the number of anchor points.
+        """
+        return len(self.__points)
+
+    def addAnchor(self, anchor, position=0.5):
+        """Add a new AnchorPoint to this item and return it's index.
+        """
+        return self.insertAnchor(self.count(), anchor, position)
+
+    def insertAnchor(self, index, anchor, position=0.5):
+        """Insert a new AnchorPoint at `index`.
+        """
+        if anchor in self.__points:
+            raise ValueError("%s already added." % anchor)
+
+        self.__points.insert(index, anchor)
+        self.__pointPositions.insert(index, position)
+
+        anchor.setParentItem(self)
+        anchor.setPos(self.__anchorPath.pointAtPercent(position))
+        anchor.destroyed.connect(self.__onAnchorDestroyed)
+
+        self.__updatePositions()
+
+        self.setAnchored(bool(self.__points))
+
+        return index
+
+    def removeAnchor(self, anchor):
+        """Remove and delete the anchor point.
+        """
+        anchor = self.takeAnchor(anchor)
+
+        anchor.hide()
+        anchor.setParentItem(None)
+        anchor.deleteLater()
+
+    def takeAnchor(self, anchor):
+        """Remove the anchor but don't delete it.
+        """
+        index = self.__points.index(anchor)
+
+        del self.__points[index]
+        del self.__pointPositions[index]
+
+        anchor.destroyed.disconnect(self.__onAnchorDestroyed)
+
+        self.__updatePositions()
+
+        self.setAnchored(bool(self.__points))
+
+        return anchor
+
+    def __onAnchorDestroyed(self, anchor):
+        try:
+            index = self.__points.index(anchor)
+        except ValueError:
+            return
+
+        del self.__points[index]
+        del self.__pointPositions[index]
+
+        self.__scheduleDelayedLayout()
+
+    def anchorPoints(self):
+        """Return a list of anchor points.
+        """
+        return list(self.__points)
+
+    def anchorPoint(self, index):
+        """Return the anchor point at `index`.
+        """
+        return self.__points[index]
+
+    def setAnchorPositions(self, positions):
+        """Set the anchor positions in percentages (0..1) along
+        the path curve.
+
+        """
+        if self.__pointPositions != positions:
+            self.__pointPositions = positions
+
+            self.__updatePositions()
+
+    def anchorPositions(self):
+        """Return the positions of anchor points as a list floats where
+        each float is between 0 and 1 and specifies where along the anchor
+        path does the point lie (0 is at start 1 is at the end).
+
+        """
+        return self.__pointPositions
+
     def shape(self):
         # Use stroke without the doted line (poor mouse cursor collision)
         if self.__fullStroke is not None:
@@ -284,6 +436,20 @@ class NodeAnchorItem(QGraphicsPathItem):
         self.shadow.setEnabled(False)
         return QGraphicsPathItem.hoverLeaveEvent(self, event)
 
+    def __scheduleDelayedLayout(self):
+        if not self.__layoutRequested:
+            self.__layoutRequested = True
+            QTimer.singleShot(0, self.__updatePositions)
+
+    def __updatePositions(self):
+        """Update anchor points positions.
+        """
+        for point, t in zip(self.__points, self.__pointPositions):
+            pos = self.__anchorPath.pointAtPercent(t)
+            point.setPos(pos)
+
+        self.__layoutRequested = False
+
 
 class SourceAnchorItem(NodeAnchorItem):
     """A source anchor item
@@ -297,31 +463,6 @@ class SinkAnchorItem(NodeAnchorItem):
     pass
 
 
-class AnchorPoint(QGraphicsObject):
-    """A anchor indicator on the WidgetAnchorItem
-    """
-    scenePositionChanged = Signal(QPointF)
-
-    def __init__(self, *args):
-        QGraphicsObject.__init__(self, *args)
-        self.setFlag(QGraphicsItem.ItemSendsScenePositionChanges, True)
-        self.setFlag(QGraphicsItem.ItemHasNoContents, True)
-
-    def anchorScenePos(self):
-        """Return anchor position in scene coordinates.
-        """
-        return self.mapToScene(QPointF(0, 0))
-
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.ItemScenePositionHasChanged:
-            self.scenePositionChanged.emit(value.toPointF())
-
-        return QGraphicsObject.itemChange(self, change, value)
-
-    def boundingRect(self,):
-        return QRectF(0, 0, 1, 1)
-
-
 class MessageIcon(QGraphicsPixmapItem):
     def __init__(self, *args, **kwargs):
         QGraphicsPixmapItem.__init__(self, *args, **kwargs)
@@ -331,6 +472,11 @@ def message_pixmap(standard_pixmap):
     style = QApplication.instance().style()
     icon = style.standardIcon(standard_pixmap)
     return icon.pixmap(16, 16)
+
+
+def linspace(count):
+    return map(float,
+               numpy.linspace(0.0, 1.0, count + 2, endpoint=True)[1:-1])
 
 
 class NodeItem(QGraphicsObject):
@@ -371,8 +517,8 @@ class NodeItem(QGraphicsObject):
         self.outputAnchorItem = None
 
         # round anchor indicators on the anchor path
-        self.inputAnchors = []
-        self.outputAnchors = []
+#        self.inputAnchors = []
+#        self.outputAnchors = []
 
         # title text item
         self.captionTextItem = None
@@ -389,6 +535,8 @@ class NodeItem(QGraphicsObject):
         self.__error = None
         self.__warning = None
         self.__info = None
+
+        self.__anchorLayout = None
 
         self.setZValue(self.Z_VALUE)
         self.setupGraphics()
@@ -586,28 +734,23 @@ class NodeItem(QGraphicsObject):
         if not (self.widget_description and self.widget_description.inputs):
             raise ValueError("Widget has no inputs.")
 
-        anchor = AnchorPoint(self)
-        self.inputAnchors.append(anchor)
+        anchor = AnchorPoint()
+        self.inputAnchorItem.addAnchor(anchor)
 
-        self._layoutAnchors(self.inputAnchors,
-                            self.inputAnchorItem.anchorPath)
+        self.inputAnchorItem.setAnchorPositions(
+            linspace(self.inputAnchorItem.count())
+        )
 
-        self.inputAnchorItem.setAnchored(bool(self.inputAnchors))
         return anchor
 
     def removeInputAnchor(self, anchor):
         """Remove input anchor.
         """
-        self.inputAnchors.remove(anchor)
-        anchor.setParentItem(None)
+        self.inputAnchorItem.removeAnchor(anchor)
 
-        if anchor.scene():
-            anchor.scene().removeItem(anchor)
-
-        self._layoutAnchors(self.inputAnchors,
-                            self.inputAnchorItem.anchorPath)
-
-        self.inputAnchorItem.setAnchored(bool(self.inputAnchors))
+        self.inputAnchorItem.setAnchorPositions(
+            linspace(self.inputAnchorItem.count())
+        )
 
     def newOutputAnchor(self):
         """Create a new output anchor indicator.
@@ -616,40 +759,44 @@ class NodeItem(QGraphicsObject):
             raise ValueError("Widget has no outputs.")
 
         anchor = AnchorPoint(self)
+        self.outputAnchorItem.addAnchor(anchor)
 
-        self.outputAnchors.append(anchor)
+        self.outputAnchorItem.setAnchorPositions(
+            linspace(self.outputAnchorItem.count())
+        )
 
-        self._layoutAnchors(self.outputAnchors,
-                            self.outputAnchorItem.anchorPath)
-
-        self.outputAnchorItem.setAnchored(bool(self.outputAnchors))
         return anchor
 
     def removeOutputAnchor(self, anchor):
         """Remove output anchor.
         """
-        self.outputAnchors.remove(anchor)
-        anchor.hide()
-        anchor.setParentItem(None)
+        self.outputAnchorItem.removeAnchor(anchor)
 
-        if anchor.scene():
-            anchor.scene().removeItem(anchor)
+        self.outputAnchorItem.setAnchorPositions(
+            linspace(self.outputAnchorItem.count())
+        )
 
-        self._layoutAnchors(self.outputAnchors,
-                            self.outputAnchorItem.anchorPath)
-
-        self.outputAnchorItem.setAnchored(bool(self.outputAnchors))
-
-    def _layoutAnchors(self, anchors, path):
-        """Layout `anchors` on the `path`.
-        TODO: anchor reordering (spring force optimization?).
-
+    def inputAnchors(self):
+        """Return a list of input anchor points.
         """
-        n_points = len(anchors) + 2
-        if anchors:
-            points = sample_path(path, n_points)
-            for p, anchor in zip(points[1:-1], anchors):
-                anchor.setPos(p)
+        return self.inputAnchorItem.anchorPoints()
+
+    def outputAnchors(self):
+        """Return a list of output anchor points.
+        """
+        return self.outputAnchorItem.anchorPoints()
+
+    def setAnchorRotation(self, angle):
+        """Set the anchor rotation.
+        """
+        self.inputAnchorItem.setRotation(angle)
+        self.outputAnchorItem.setRotation(angle)
+        self.anchorGeometryChanged.emit()
+
+    def anchorRotation(self):
+        """Return the anchor rotation.
+        """
+        return self.inputAnchorItem.rotation()
 
     def boundingRect(self):
         # TODO: Important because of this any time the child

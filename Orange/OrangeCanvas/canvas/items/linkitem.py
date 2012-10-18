@@ -135,7 +135,7 @@ class LinkItem(QGraphicsObject):
 
         """
         if item is not None and anchor is not None:
-            if anchor not in item.outputAnchors:
+            if anchor not in item.outputAnchors():
                 raise ValueError("Anchor must be belong to the item")
 
         if self.sourceItem != item:
@@ -183,7 +183,7 @@ class LinkItem(QGraphicsObject):
         (for instance while mouse dragging one and of the link).
         """
         if item is not None and anchor is not None:
-            if anchor not in item.inputAnchors:
+            if anchor not in item.inputAnchors():
                 raise ValueError("Anchor must be belong to the item")
 
         if self.sinkItem != item:
