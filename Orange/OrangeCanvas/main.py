@@ -103,7 +103,7 @@ def main(argv=None):
         else:
             if not os.path.splitext(stylesheet)[1]:
                 # no extension
-                stylesheet = os.path.extsep.join(stylesheet, "qss")
+                stylesheet = os.path.extsep.join([stylesheet, "qss"])
 
             pkg_name = OrangeCanvas.__name__
             resource = os.path.join("styles", stylesheet)
