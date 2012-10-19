@@ -336,6 +336,10 @@ class CanvasMainWindow(QMainWindow):
             settings.value("canvasdock/expanded", True).toBool()
         )
 
+        self.toogle_margins_action.setChecked(
+            settings.value("scheme_margins_enabled", True).toBool()
+        )
+
     def setup_actions(self):
         """Initialize main window actions.
         """
@@ -577,15 +581,17 @@ class CanvasMainWindow(QMainWindow):
                     icon=icons("Pause.svg")
                     )
 
-        self.dock_help_action = \
-            QAction(self.tr("Help"), self,
-                    objectName="dock-show-help-action",
-                    checkable=True,
-                    toolTip=self.tr("Show dock help."),
-                    icon=icons("Info.svg")
-                    )
+        # Gets assigned in setup_ui (the action is defined in CanvasToolDock)
+        # TODO: This is bad (should be moved here).
+        self.dock_help_action = None
 
-        self.dock_help_action.setChecked(True)
+        self.toogle_margins_action = \
+            QAction(self.tr("Show Scheme Margins"), self,
+                    checkable=True,
+                    checked=True,
+                    toolTip=self.tr("Show margins around the scheme view."),
+                    toggled=self.set_scheme_margins_enabled
+                    )
 
     def setup_menu(self):
         menu_bar = QMenuBar()
@@ -645,7 +651,7 @@ class CanvasMainWindow(QMainWindow):
 
         self.view_menu.addMenu(self.toolbox_menu)
         self.view_menu.addSeparator()
-        self.view_menu.addAction(self.tr("Show Status Bar"))
+        self.view_menu.addAction(self.toogle_margins_action)
         menu_bar.addMenu(self.view_menu)
 
         # Options menu
@@ -782,6 +788,7 @@ class CanvasMainWindow(QMainWindow):
             margins = (margin / 2, 0, margin, 0)
         else:
             margins = (margin, 0, margin / 2, 0)
+
         central.layout().setContentsMargins(*margins)
 
     #################
@@ -1214,7 +1221,9 @@ class CanvasMainWindow(QMainWindow):
         settings.setValue("state", state)
         settings.setValue("canvasdock/expanded",
                           self.dock_widget.expanded())
-        settings.setValue("schememarginsenabled", self.scheme_margins_enabled)
+        settings.setValue("scheme_margins_enabled",
+                          self.scheme_margins_enabled)
+
         settings.endGroup()
 
         event.accept()
