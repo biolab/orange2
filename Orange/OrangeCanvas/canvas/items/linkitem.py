@@ -263,11 +263,11 @@ class LinkItem(QGraphicsObject):
 
     def hoverEnterEvent(self, event):
         self.setHoverState(True)
-        return QGraphicsPathItem.hoverEnterEvent(self, event)
+        return QGraphicsObject.hoverEnterEvent(self, event)
 
     def hoverLeaveEvent(self, event):
         self.setHoverState(False)
-        return QGraphicsPathItem.hoverLeaveEvent(self, event)
+        return QGraphicsObject.hoverLeaveEvent(self, event)
 
     def boundingRect(self):
         return self.childrenBoundingRect()
