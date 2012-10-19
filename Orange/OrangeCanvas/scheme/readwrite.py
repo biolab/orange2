@@ -1,6 +1,7 @@
 """
 Scheme save/load routines.
 """
+import sys
 
 from xml.etree.ElementTree import TreeBuilder, Element, ElementTree
 from collections import defaultdict
@@ -96,7 +97,6 @@ def parse_scheme_v_2_0(etree, scheme, widget_registry=None):
 
     # Load node properties
     for property_el in etree.findall("node_properties/properties"):
-        print "Loading node properties", property_el.attrib, property_el.text
         node_id = property_el.attrib.get("node_id")
         node = id_to_node[node_id]
         data = property_el.text
@@ -307,4 +307,8 @@ def scheme_to_ows_stream(scheme, stream):
     root = builder.close()
     tree = ElementTree(root)
 
-    tree.write(stream, encoding="utf-8")
+    if sys.version_info < (2, 7):
+        # in Python 2.6 the write does not have xml_declaration parameter.
+        tree.write(stream, encoding="utf-8")
+    else:
+        tree.write(stream, encoding="utf-8", xml_declaration=True)

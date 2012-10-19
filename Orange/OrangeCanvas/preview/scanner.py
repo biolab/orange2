@@ -2,6 +2,8 @@
 Scheme file preview parser.
 
 """
+import sys
+
 import os
 import logging
 
@@ -73,6 +75,7 @@ def scheme_svg_thumbnail(scheme_file):
     """
     from .. import scheme
     from ..canvas import scene
+
     scheme = scheme.Scheme()
     scheme.load_from(scheme_file)
     tmp_scene = scene.CanvasScene()
@@ -88,7 +91,12 @@ def scan_update(item):
     items contents.
 
     """
+
     path = unicode(item.path())
+
+    # workaround for bugs.python.org/issue11159
+    path = path.encode(sys.getfilesystemencoding())
+
     try:
         title, desc, svg = preview_parse(path)
     except SAXParseException, ex:

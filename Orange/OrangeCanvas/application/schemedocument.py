@@ -238,7 +238,8 @@ class SchemeDocumentWidget(QWidget):
         """
         name, ok = QInputDialog.getText(
                     self, self.tr("Rename"),
-                    self.tr("Enter a new name for the %r widget") % node.title,
+                    unicode(self.tr("Enter a new name for the %r widget")) \
+                    % node.title,
                     text=node.title
                     )
         if ok:

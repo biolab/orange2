@@ -2,6 +2,8 @@
 Preview item model.
 """
 
+import logging
+
 from PyQt4.QtGui import (
     QStandardItemModel, QStandardItem, QStyledItemDelegate, QIcon
 )
@@ -9,6 +11,8 @@ from PyQt4.QtGui import (
 from PyQt4.QtCore import Qt, QTimer
 
 from . import scanner
+
+log = logging.getLogger(__name__)
 
 # Preview Data Roles
 ####################
@@ -50,7 +54,13 @@ class PreviewModel(QStandardItemModel):
         """
         def iter_update(items):
             for item in items:
-                scanner.scan_update(item)
+                try:
+                    scanner.scan_update(item)
+                except Exception:
+                    log.error("An unexpected error occurred while "
+                              "scanning %r.", unicode(item.text()),
+                              exc_info=True)
+                    item.setEnabled(False)
                 yield
 
         items = [self.item(i) for i in range(self.rowCount())]

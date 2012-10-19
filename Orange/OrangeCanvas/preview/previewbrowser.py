@@ -25,7 +25,7 @@ NO_PREVIEW_SVG = """
 
 
 # Default description template
-DESCRIPTION_TEMPLATE = """
+DESCRIPTION_TEMPLATE = u"""
 <h3 class=item-heading>{name}</h3>
 <p class=item-description>
 {description}
@@ -228,7 +228,7 @@ class PreviewBrowser(QWidget):
 
         self.__label.setText(desc_text)
 
-        path_text = "<b>Path:</b><div class=item-path>{0}</div>".format(path)
+        path_text = u"<b>Path:</b><div class=item-path>{0}</div>".format(path)
         self.__path.setText(path_text)
 
         if not svg:
