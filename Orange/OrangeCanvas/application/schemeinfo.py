@@ -10,6 +10,7 @@ from PyQt4.QtGui import (
 
 from PyQt4.QtCore import Qt
 
+from ..gui.lineedit import LineEdit
 from ..gui.utils import StyledWidget_paintEvent, StyledWidget
 from .. import config
 
@@ -27,7 +28,7 @@ class SchemeInfoEdit(QWidget):
         layout.setRowWrapPolicy(QFormLayout.WrapAllRows)
         layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
 
-        self.name_edit = QLineEdit(self)
+        self.name_edit = LineEdit(self)
         self.name_edit.setPlaceholderText(self.tr("untitled"))
         self.name_edit.setSizePolicy(QSizePolicy.Expanding,
                                      QSizePolicy.Fixed)

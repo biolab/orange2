@@ -16,7 +16,11 @@ from PyQt4.QtGui import (
     QPainter
 )
 
-from PyQt4.QtCore import Qt, QObject, QSize, QSizeF, QPointF, QRectF
+from PyQt4.QtCore import (
+    Qt, QObject, QSize, QSizeF, QPointF, QRectF, qVersion
+)
+
+from PyQt4.QtCore import pyqtSignal as Signal
 
 from ..scheme import SchemeNode, SchemeLink, compatible_channels
 from ..registry import InputSignal, OutputSignal
@@ -410,6 +414,13 @@ class LinksEditWidget(QGraphicsWidget):
         self.sourceNodeTitle = left_title
         self.sinkNodeTitle = right_title
 
+    if qVersion() < "4.7":
+        geometryChanged = Signal()
+
+        def setGeometry(self, rect):
+            QGraphicsWidget.setGeometry(self, rect)
+            self.geometryChanged.emit()
+
 
 class EditLinksNode(QGraphicsWidget):
     """A Node with channel anchors.
@@ -654,6 +665,7 @@ class GraphicsTextWidget(QGraphicsWidget):
     """A QGraphicsWidget subclass that manages a QGraphicsTextItem
 
     """
+
     def __init__(self, parent=None, textItem=None):
         QGraphicsLayoutItem.__init__(self, parent)
         if textItem is None:
