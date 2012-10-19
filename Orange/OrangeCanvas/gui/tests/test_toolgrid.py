@@ -30,7 +30,5 @@ class TestToolGrid(test.QAppTestCase):
         w.actionTriggered.connect(triggered_actions.append)
         action_a.trigger()
 
-        self.assertEqual(triggered_actions, [action_a])
-
         w.show()
         self.app.exec_()

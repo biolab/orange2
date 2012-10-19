@@ -32,7 +32,7 @@ class TestSplashScreen(QAppTestCase):
             i = now.second % 3
             rect = QRect(100, 100 + i * 20, 400, 50)
             w.setTextRect(rect)
-            self.assertEqual((w.textRect(), rect))
+            self.assertEqual(w.textRect(), rect)
 
             self.singleShot(1, advance_time)
 
