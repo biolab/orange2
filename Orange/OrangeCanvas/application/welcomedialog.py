@@ -14,7 +14,6 @@ from PyQt4.QtCore import pyqtSignal as Signal
 
 from ..canvas.items.utils import radial_gradient
 from ..registry import NAMED_COLORS
-from ..config import rc
 
 
 def decorate_welcome_icon(icon, background_color):
@@ -88,8 +87,10 @@ class WelcomeDialog(QDialog):
 
     def __init__(self, *args, **kwargs):
         QDialog.__init__(self, *args, **kwargs)
-        self.setupUi()
+
         self.__triggeredAction = None
+
+        self.setupUi()
 
     def setupUi(self):
         self.setLayout(QVBoxLayout())
@@ -111,9 +112,10 @@ class WelcomeDialog(QDialog):
         bottom_bar.setSizePolicy(QSizePolicy.MinimumExpanding,
                                  QSizePolicy.Maximum)
 
-        check = QCheckBox("Dont'show again at startup", bottom_bar)
-        check.setChecked(not rc.get("startup.show-welcome-dialog", True))
-        check.toggled.connect(self._on_startupCheckChange)
+        check = QCheckBox(self.tr("Dont'show again at startup"), bottom_bar)
+        check.setChecked(False)
+
+        self.__showAtStartupCheck = check
 
         bottom_bar_layout.addWidget(check, alignment=Qt.AlignVCenter | \
                                     Qt.AlignLeft)
@@ -123,6 +125,13 @@ class WelcomeDialog(QDialog):
 
         self.setSizeGripEnabled(False)
         self.setFixedSize(620, 390)
+
+    def setShowAtStartup(self, show):
+        if self.__showAtStartupCheck.isChecked() != (not show):
+            self.__showAtStartupCheck.setChecked(not show)
+
+    def showAtStartup(self):
+        return not self.__showAtStartupCheck.isChecked()
 
     def addRow(self, actions, background="light-orange"):
         """Add a row with `actions`.
@@ -199,7 +208,3 @@ class WelcomeDialog(QDialog):
         """
         self.triggered.emit(action)
         self.__triggeredAction = action
-        self.accept()
-
-    def _on_startupCheckChange(self, state):
-        rc["startup.show-welcome-dialog"] = not state

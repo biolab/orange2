@@ -61,6 +61,15 @@ def style_icons(widget, standard_pixmap):
     return QIcon(widget.style().standardPixmap(standard_pixmap))
 
 
+def canvas_icons(name):
+    """Return the named canvas icon.
+    """
+    return QIcon(pkg_resources.resource_filename(
+                  OrangeCanvas.__name__,
+                  os.path.join("icons", name))
+                 )
+
+
 def message_critical(text, title=None, informative_text=None, details=None,
                      buttons=None, default_button=None, exc_info=False,
                      parent=None):
@@ -230,10 +239,7 @@ class CanvasMainWindow(QMainWindow):
         self.setWindowTitle(self.scheme_widget.scheme.title)
         self.scheme_widget.title_changed.connect(self.setWindowTitle)
 
-        icons = icon_loader()
-
-        if config.rc.get("show-window-title-icon", True):
-            self.setWindowIcon(icons.get("icons/Get Started.svg"))
+        self.setWindowIcon(canvas_icons("Get Started.svg"))
 
         # QMainWindow's Dock widget
         self.dock_widget = CollapsibleDockWidget(objectName="main-area-dock")
@@ -274,7 +280,7 @@ class CanvasMainWindow(QMainWindow):
 
         self.dock_help_action = canvas_tool_dock.toogleQuickHelpAction()
         self.dock_help_action.setText(self.tr("Show Help"))
-        self.dock_help_action.setIcon(icons.get("icons/Info.svg"))
+        self.dock_help_action.setIcon(canvas_icons("Info.svg"))
 
         self.canvas_tool_dock = canvas_tool_dock
 
@@ -352,11 +358,6 @@ class CanvasMainWindow(QMainWindow):
     def setup_actions(self):
         """Initialize main window actions.
         """
-        icons = lambda name: \
-                    QIcon(pkg_resources.resource_filename(
-                              OrangeCanvas.__name__,
-                              os.path.join("icons", name))
-                          )
 
         self.new_action = \
             QAction(self.tr("New"), self,
@@ -364,7 +365,7 @@ class CanvasMainWindow(QMainWindow):
                     toolTip=self.tr("Open a new scheme."),
                     triggered=self.new_scheme,
                     shortcut=QKeySequence.New,
-                    icon=icons("New.svg")
+                    icon=canvas_icons("New.svg")
                     )
 
         self.open_action = \
@@ -373,7 +374,7 @@ class CanvasMainWindow(QMainWindow):
                     toolTip=self.tr("Open a scheme."),
                     triggered=self.open_scheme,
                     shortcut=QKeySequence.Open,
-                    icon=icons("Open.svg")
+                    icon=canvas_icons("Open.svg")
                     )
 
         self.save_action = \
@@ -406,7 +407,7 @@ class CanvasMainWindow(QMainWindow):
                     objectName="get-started-action",
                     toolTip=self.tr("View a 'Getting Started' video."),
                     triggered=self.get_started,
-                    icon=icons("Get Started.svg")
+                    icon=canvas_icons("Get Started.svg")
                     )
 
         self.tutorials_action = \
@@ -414,7 +415,7 @@ class CanvasMainWindow(QMainWindow):
                     objectName="tutorial-action",
                     toolTip=self.tr("View tutorial."),
                     triggered=self.tutorial,
-                    icon=icons("Tutorials.svg")
+                    icon=canvas_icons("Tutorials.svg")
                     )
 
         self.documentation_action = \
@@ -422,7 +423,7 @@ class CanvasMainWindow(QMainWindow):
                     objectName="documentation-action",
                     toolTip=self.tr("View reference documentation."),
                     triggered=self.documentation,
-                    icon=icons("Documentation.svg")
+                    icon=canvas_icons("Documentation.svg")
                     )
 
         self.about_action = \
@@ -446,7 +447,7 @@ class CanvasMainWindow(QMainWindow):
                     triggered=self.recent_scheme,
                     shortcut=QKeySequence(Qt.ControlModifier | \
                                           (Qt.ShiftModifier | Qt.Key_R)),
-                    icon=icons("Recent.svg")
+                    icon=canvas_icons("Recent.svg")
                     )
 
         self.reload_last_action = \
@@ -470,7 +471,7 @@ class CanvasMainWindow(QMainWindow):
                     toolTip=self.tr("Show scheme properties."),
                     triggered=self.show_scheme_properties,
                     shortcut=QKeySequence(Qt.ControlModifier | Qt.Key_I),
-                    icon=icons("Document Info.svg")
+                    icon=canvas_icons("Document Info.svg")
                     )
 
         self.canvas_settings_action = \
@@ -553,7 +554,7 @@ class CanvasMainWindow(QMainWindow):
                     shortcut=QKeySequence.ZoomIn,
                     toolTip=self.tr("Zoom in the scheme."),
                     triggered=self.set_canvas_view_zoom,
-                    icon=icons("Search.svg")
+                    icon=canvas_icons("Search.svg")
                     )
 
         self.canvas_align_to_grid_action = \
@@ -561,7 +562,7 @@ class CanvasMainWindow(QMainWindow):
                     objectName="canvas-align-to-grid-action",
                     toolTip=self.tr("Align widget to a grid."),
                     triggered=self.align_to_grid,
-                    icon=icons("Grid.svg")
+                    icon=canvas_icons("Grid.svg")
                     )
 
         self.canvas_arrow_action = \
@@ -569,7 +570,7 @@ class CanvasMainWindow(QMainWindow):
                     objectName="canvas-arrow-action",
                     toolTip=self.tr("Add an arrow annotation to the scheme."),
                     triggered=self.new_arrow_annotation,
-                    icon=icons("Arrow.svg")
+                    icon=canvas_icons("Arrow.svg")
                     )
 
         self.canvas_text_action = \
@@ -577,7 +578,7 @@ class CanvasMainWindow(QMainWindow):
                     objectName="canvas-text-action",
                     toolTip=self.tr("Add a text annotation to the scheme."),
                     triggered=self.new_text_annotation,
-                    icon=icons("Text Size.svg")
+                    icon=canvas_icons("Text Size.svg")
                     )
 
         self.freeze_action = \
@@ -586,8 +587,7 @@ class CanvasMainWindow(QMainWindow):
                     checkable=True,
                     toolTip=self.tr("Freeze signal propagation."),
                     triggered=self.set_signal_freeze,
-#                    icon=style_icons(self, QStyle.SP_MediaPlay),
-                    icon=icons("Pause.svg")
+                    icon=canvas_icons("Pause.svg")
                     )
 
         # Gets assigned in setup_ui (the action is defined in CanvasToolDock)
@@ -804,27 +804,34 @@ class CanvasMainWindow(QMainWindow):
     # Action handlers
     #################
     def new_scheme(self):
-        """New scheme
+        """New scheme. Return QDialog.Rejected if the user canceled
+        the operation and QDialog.Accepted otherwise.
+
         """
         document = self.current_document()
         if document.is_modified():
             # Ask for save changes
             if self.ask_save_changes() == QDialog.Rejected:
-                return
+                return QDialog.Rejected
 
         new_scheme = widgetsscheme.WidgetsScheme()
         scheme_doc_widget = self.current_document()
         scheme_doc_widget.set_scheme(new_scheme)
+
         if config.rc.get("mainwindow.show-properties-on-new-scheme", True):
             self.show_properties_action.trigger()
 
+        return QDialog.Accepted
+
     def open_scheme(self):
-        """Open a new scheme.
+        """Open a new scheme. Return QDialog.Rejected if the user canceled
+        the operation and QDialog.Accepted otherwise.
+
         """
         document = self.current_document()
         if document.is_modified():
             if self.ask_save_changes() == QDialog.Rejected:
-                return
+                return QDialog.Rejected
 
         if self.last_scheme_dir is None:
             # Get user 'Documents' folder
@@ -843,6 +850,9 @@ class CanvasMainWindow(QMainWindow):
 
         if filename:
             self.load_scheme(filename)
+            return QDialog.Accepted
+        else:
+            return QDialog.Rejected
 
     def load_scheme(self, filename):
         """Load a scheme from a file (`filename`) into the current
@@ -873,17 +883,21 @@ class CanvasMainWindow(QMainWindow):
         self.add_recent_scheme(new_scheme)
 
     def reload_last(self):
-        """Reload last opened scheme.
+        """Reload last opened scheme. Return QDialog.Rejected if the
+        user canceled the operation and QDialog.Accepted otherwise.
+
         """
         document = self.current_document()
         if document.is_modified():
             if self.ask_save_changes() == QDialog.Rejected:
-                return
+                return QDialog.Rejected
 
         # TODO: Search for a temp backup scheme with per process
         # locking.
         if self.recent_schemes:
             self.load_scheme(self.recent_schemes[0][1])
+
+        return QDialog.Accepted
 
     def ask_save_changes(self):
         """Ask the user to save the changes to the current scheme.
@@ -996,7 +1010,9 @@ class CanvasMainWindow(QMainWindow):
         QDesktopServices.openUrl(url)
 
     def recent_scheme(self, *args):
-        """Browse recent schemes.
+        """Browse recent schemes. Return QDialog.Rejected if the user
+        canceled the operation and QDialog.Accepted otherwise.
+
         """
         items = [previewmodel.PreviewItem(name=title, path=path)
                  for title, path in self.recent_schemes]
@@ -1014,27 +1030,67 @@ class CanvasMainWindow(QMainWindow):
             doc = self.current_document()
             if doc.is_modified():
                 if self.ask_save_changes() == QDialog.Rejected:
-                    return
+                    return QDialog.Rejected
 
             index = dialog.currentIndex()
             selected = model.item(index)
 
             self.load_scheme(unicode(selected.path()))
+        return status
 
     def welcome_dialog(self):
-        """Return the initialized welcome dialog for Orange Canvas.
+        """Show a modal welcome dialog for Orange Canvas.
         """
+
         dialog = welcomedialog.WelcomeDialog(self)
         dialog.setWindowTitle(self.tr("Welcome to Orange Data Mining"))
         top_row = [self.get_started_action, self.tutorials_action,
                    self.documentation_action]
-        bottom_row = [self.new_action, self.open_action, self.recent_action]
+
+        def open_scheme():
+            if self.open_scheme() == QDialog.Accepted:
+                dialog.accept()
+
+        def open_recent():
+            if self.recent_scheme() == QDialog.Accepted:
+                dialog.accept()
+
+        open_action = \
+            QAction(self.tr("Open"), dialog,
+                    objectName="welcome-action-open",
+                    toolTip=self.tr("Open a scheme."),
+                    triggered=open_scheme,
+                    shortcut=QKeySequence.Open,
+                    icon=canvas_icons("Open.svg")
+                    )
+
+        recent_action = \
+            QAction(self.tr("Recent"), dialog,
+                    objectName="welcome-recent-action",
+                    toolTip=self.tr("Browse and open a recent scheme."),
+                    triggered=open_recent,
+                    shortcut=QKeySequence(Qt.ControlModifier | \
+                                          (Qt.ShiftModifier | Qt.Key_R)),
+                    icon=canvas_icons("Recent.svg")
+                    )
+
+        self.new_action.triggered.connect(dialog.accept)
+        bottom_row = [self.new_action, open_action, recent_action]
 
         dialog.addRow(top_row, background="light-grass")
         dialog.addRow(bottom_row, background="light-orange")
-        recent_button = dialog.buttonAt(1, 2)
-        recent_button.setText(self.tr("Recent"))
-        return dialog
+
+        settings = QSettings()
+
+        dialog.setShowAtStartup(
+            settings.value("welcomedialog/show-at-startup", True).toBool()
+        )
+
+        status = dialog.exec_()
+
+        settings.setValue("welcomedialog/show-at-startup",
+                          dialog.showAtStartup())
+        return status
 
     def show_scheme_properties(self):
         """Show current scheme properties.

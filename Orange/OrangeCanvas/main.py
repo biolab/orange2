@@ -12,14 +12,14 @@ import cPickle
 import pkg_resources
 
 from PyQt4.QtGui import QFont, QColor
-from PyQt4.QtCore import QRect, qInstallMsgHandler
+from PyQt4.QtCore import QRect, QSettings
 
 from Orange import OrangeCanvas
 from Orange.OrangeCanvas.application.application import CanvasApplication
 from Orange.OrangeCanvas.application.canvasmain import CanvasMainWindow
 
 from Orange.OrangeCanvas.gui.splashscreen import SplashScreen, QPixmap
-from Orange.OrangeCanvas.config import rc, open_config, cache_dir
+from Orange.OrangeCanvas.config import open_config, cache_dir
 from Orange.OrangeCanvas import config
 
 from Orange.OrangeCanvas.registry import qt
@@ -90,6 +90,7 @@ def main(argv=None):
         qt_argv += options.qt.split()
 
     config.init()
+    settings = QSettings()
 
     log.debug("Starting CanvasApplicaiton with argv = %r.", qt_argv)
     app = CanvasApplication(qt_argv)
@@ -135,8 +136,8 @@ def main(argv=None):
         widget_registry.register_widget
     )
 
-    want_splash = rc.get("startup.show-splash-screen", True) and \
-                    not options.no_splash
+    want_splash = \
+        settings.value("startup/show-splash-screen", True).toPyObject()
 
     if want_splash:
         pm = QPixmap(pkg_resources.resource_filename(
@@ -171,14 +172,14 @@ def main(argv=None):
     canvas_window.set_widget_registry(widget_registry)
     canvas_window.show()
 
-    want_welcome = rc.get("startup.show-welcome-dialog", True) and \
-                    not options.no_welcome
+    want_welcome = \
+        settings.value("welcomedialog/show-at-startup", True).toBool() \
+        and not options.no_welcome
 
     canvas_window.raise_()
+
     if want_welcome and not args:
-#        welcome_dialog = WelcomeDialog(canvas_window)
-        welcome_dialog = canvas_window.welcome_dialog()
-        status = welcome_dialog.exec_()
+        canvas_window.welcome_dialog()
 
     elif args:
         log.info("Loading a scheme from the command line argument %r",
