@@ -177,6 +177,7 @@ class CanvasMainWindow(QMainWindow):
         self.__scheme_margins_enabled = True
 
         self.widget_registry = None
+        self.last_scheme_dir = None
 
         self.recent_schemes = config.recent_schemes()
 
@@ -339,6 +340,14 @@ class CanvasMainWindow(QMainWindow):
         self.toogle_margins_action.setChecked(
             settings.value("scheme_margins_enabled", True).toBool()
         )
+
+        self.last_scheme_dir = \
+            settings.value("last_scheme_dir", None).toPyObject()
+
+        if self.last_scheme_dir is not None and \
+                not os.path.exists(self.last_scheme_dir):
+            # if directory no longer exists reset the saved location.
+            self.last_scheme_dir = None
 
     def setup_actions(self):
         """Initialize main window actions.
@@ -817,8 +826,12 @@ class CanvasMainWindow(QMainWindow):
             if self.ask_save_changes() == QDialog.Rejected:
                 return
 
-        start_dir = QDesktopServices.storageLocation(
-                        QDesktopServices.DocumentsLocation)
+        if self.last_scheme_dir is None:
+            # Get user 'Documents' folder
+            start_dir = QDesktopServices.storageLocation(
+                            QDesktopServices.DocumentsLocation)
+        else:
+            start_dir = self.last_scheme_dir
 
         # TODO: Use a dialog instance and use 'addSidebarUrls' to
         # set one or more extra sidebar locations where Schemes are stored.
@@ -838,8 +851,9 @@ class CanvasMainWindow(QMainWindow):
         """
         filename = unicode(filename)
         dirname = os.path.dirname(filename)
-        self.last_open_scheme_dir = dirname
-#        new_scheme = scheme.Scheme()
+
+        self.last_scheme_dir = dirname
+
         new_scheme = widgetsscheme.WidgetsScheme()
         try:
             new_scheme.load_from(open(filename, "rb"))
@@ -917,7 +931,16 @@ class CanvasMainWindow(QMainWindow):
         and QFileDialog.Rejected if not.
 
         """
-        start_dir = os.path.expanduser("~/")
+        curr_scheme = self.current_document().scheme
+
+        if curr_scheme.path:
+            start_dir = curr_scheme.path
+        elif self.last_scheme_dir is not None:
+            start_dir = self.last_scheme_dir
+        else:
+            start_dir = QDesktopServices.storageLocation(
+                            QDesktopServices.DocumentsLocation)
+
         filename = QFileDialog.getSaveFileName(
             self, self.tr("Save Orange Scheme File"),
             start_dir, self.tr("Orange Scheme (*.ows)")
@@ -926,8 +949,8 @@ class CanvasMainWindow(QMainWindow):
         if filename:
             filename = unicode(filename)
             dirname, basename = os.path.split(filename)
-            self.last_save_scheme_dir = dirname
-            curr_scheme = self.current_document().scheme
+            self.last_scheme_dir = dirname
+
             try:
                 curr_scheme.save_to(open(filename, "wb"))
             except Exception:
@@ -1224,6 +1247,7 @@ class CanvasMainWindow(QMainWindow):
         settings.setValue("scheme_margins_enabled",
                           self.scheme_margins_enabled)
 
+        settings.setValue("last_scheme_dir", self.last_scheme_dir)
         settings.endGroup()
 
         event.accept()
