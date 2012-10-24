@@ -13,7 +13,7 @@ import pkg_resources
 from PyQt4.QtGui import (
     QMainWindow, QWidget, QAction, QActionGroup, QMenu, QMenuBar, QDialog,
     QFileDialog, QMessageBox, QVBoxLayout, QSizePolicy, QColor, QKeySequence,
-    QIcon, QToolBar, QDockWidget, QDesktopServices
+    QIcon, QToolBar, QDockWidget, QDesktopServices, QUndoGroup
 )
 
 from PyQt4.QtCore import (
@@ -29,18 +29,14 @@ from ..gui.dock import CollapsibleDockWidget
 from .canvastooldock import CanvasToolDock, QuickCategoryToolbar
 from .aboutdialog import AboutDialog
 from .schemeinfo import SchemeInfoDialog
-from .schemedocument import SchemeDocumentWidget
+from ..document.schemeedit import SchemeEditWidget
 
 from ..scheme import widgetsscheme
 
 from . import welcomedialog
 from ..preview import previewdialog, previewmodel
 
-from ..resources import icon_loader
-
 from .. import config
-
-from Orange import OrangeCanvas
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +61,7 @@ def canvas_icons(name):
     """Return the named canvas icon.
     """
     return QIcon(pkg_resources.resource_filename(
-                  OrangeCanvas.__name__,
+                  config.__name__,
                   os.path.join("icons", name))
                  )
 
@@ -224,8 +220,12 @@ class CanvasMainWindow(QMainWindow):
         w.setLayout(QVBoxLayout())
         w.layout().setContentsMargins(20, 0, 10, 0)
 
-        self.scheme_widget = SchemeDocumentWidget(w)
-        self.scheme_widget.set_scheme(widgetsscheme.WidgetsScheme())
+        self.scheme_widget = SchemeEditWidget()
+        self.scheme_widget.setScheme(widgetsscheme.WidgetsScheme())
+
+        self.undo_group.addStack(self.scheme_widget.undoStack())
+        self.undo_group.setActiveStack(self.scheme_widget.undoStack())
+
         w.layout().addWidget(self.scheme_widget)
 
         self.setCentralWidget(w)
@@ -236,8 +236,8 @@ class CanvasMainWindow(QMainWindow):
         frame.setWidget(self.scheme_widget)
 
         # Main window title and title icon.
-        self.setWindowTitle(self.scheme_widget.scheme.title)
-        self.scheme_widget.title_changed.connect(self.setWindowTitle)
+        self.setWindowTitle(self.scheme_widget.scheme().title)
+        self.scheme_widget.titleChanged.connect(self.setWindowTitle)
 
         self.setWindowIcon(canvas_icons("Get Started.svg"))
 
@@ -483,9 +483,11 @@ class CanvasMainWindow(QMainWindow):
                     shortcut=QKeySequence.Preferences
                     )
 
-#        self.undo_group = QUndoGroup(self)
-#        self.undo_action = self.undo_group.createUndoAction(self)
-#        self.redo_action = self.undo_group.createRedoAction(self)
+        self.undo_group = QUndoGroup(self)
+        self.undo_action = self.undo_group.createUndoAction(self)
+        self.undo_action.setShortcut(QKeySequence.Undo)
+        self.redo_action = self.undo_group.createRedoAction(self)
+        self.redo_action.setShortcut(QKeySequence.Redo)
 
         self.select_all_action = \
             QAction(self.tr("Select All"), self,
@@ -639,12 +641,12 @@ class CanvasMainWindow(QMainWindow):
         menu_bar.addMenu(file_menu)
 
         # Edit menu
-#        self.edit_menu = QMenu("&Edit", menu_bar)
-#        self.edit_menu.addAction(self.undo_action)
-#        self.edit_menu.addAction(self.redo_action)
-#        self.edit_menu.addSeparator()
-#        self.edit_menu.addAction(self.select_all_action)
-#        menu_bar.addMenu(self.edit_menu)
+        self.edit_menu = QMenu("&Edit", menu_bar)
+        self.edit_menu.addAction(self.undo_action)
+        self.edit_menu.addAction(self.redo_action)
+        self.edit_menu.addSeparator()
+        self.edit_menu.addAction(self.select_all_action)
+        menu_bar.addMenu(self.edit_menu)
 
         # View menu
         self.view_menu = QMenu(self.tr("&View"), self)
@@ -713,7 +715,7 @@ class CanvasMainWindow(QMainWindow):
         self.widgets_tool_box.setModel(widget_registry.model())
         self.quick_category.setModel(widget_registry.model())
 
-        self.scheme_widget.set_registry(widget_registry)
+        self.scheme_widget.setRegistry(widget_registry)
 
     def set_quick_help_text(self, text):
         self.canvas_tool_dock.help.setText(text)
@@ -728,7 +730,7 @@ class CanvasMainWindow(QMainWindow):
         if widget_desc:
             scheme_widget = self.current_document()
             if scheme_widget:
-                scheme_widget.create_new_node(widget_desc)
+                scheme_widget.createNewNode(widget_desc)
 
     def on_tool_box_widget_hovered(self, action):
         """Mouse is over a widget in the widget toolbox
@@ -809,14 +811,14 @@ class CanvasMainWindow(QMainWindow):
 
         """
         document = self.current_document()
-        if document.is_modified():
+        if document.isModified():
             # Ask for save changes
             if self.ask_save_changes() == QDialog.Rejected:
                 return QDialog.Rejected
 
         new_scheme = widgetsscheme.WidgetsScheme()
         scheme_doc_widget = self.current_document()
-        scheme_doc_widget.set_scheme(new_scheme)
+        scheme_doc_widget.setScheme(new_scheme)
 
         if config.rc.get("mainwindow.show-properties-on-new-scheme", True):
             self.show_properties_action.trigger()
@@ -829,7 +831,7 @@ class CanvasMainWindow(QMainWindow):
 
         """
         document = self.current_document()
-        if document.is_modified():
+        if document.isModified():
             if self.ask_save_changes() == QDialog.Rejected:
                 return QDialog.Rejected
 
@@ -878,7 +880,7 @@ class CanvasMainWindow(QMainWindow):
             return
 
         scheme_doc_widget = self.current_document()
-        scheme_doc_widget.set_scheme(new_scheme)
+        scheme_doc_widget.setScheme(new_scheme)
 
         self.add_recent_scheme(new_scheme)
 
@@ -888,7 +890,7 @@ class CanvasMainWindow(QMainWindow):
 
         """
         document = self.current_document()
-        if document.is_modified():
+        if document.isModified():
             if self.ask_save_changes() == QDialog.Rejected:
                 return QDialog.Rejected
 
@@ -910,7 +912,7 @@ class CanvasMainWindow(QMainWindow):
 
         selected = message_question(
             self.tr("Do you want to save the changes you made to scheme %r?") \
-                    % document.scheme.title,
+                    % document.scheme().title,
             self.tr("Save Changes?"),
             self.tr("If you do not save your changes will be lost"),
             buttons=QMessageBox.Save | QMessageBox.Cancel | \
@@ -932,9 +934,12 @@ class CanvasMainWindow(QMainWindow):
         QDialog.Rejected if the user canceled the file selection.
 
         """
-        curr_scheme = self.current_document().scheme
+        document = self.current_document()
+        curr_scheme = document.scheme()
+
         if curr_scheme.path:
             curr_scheme.save_to(open(curr_scheme.path, "wb"))
+            document.setModified(False)
             return QDialog.Accepted
         else:
             return self.save_scheme_as()
@@ -945,7 +950,7 @@ class CanvasMainWindow(QMainWindow):
         and QFileDialog.Rejected if not.
 
         """
-        curr_scheme = self.current_document().scheme
+        curr_scheme = self.current_document().scheme()
 
         if curr_scheme.path:
             start_dir = curr_scheme.path
@@ -1028,7 +1033,7 @@ class CanvasMainWindow(QMainWindow):
 
         if status == QDialog.Accepted:
             doc = self.current_document()
-            if doc.is_modified():
+            if doc.isModified():
                 if self.ask_save_changes() == QDialog.Rejected:
                     return QDialog.Rejected
 
@@ -1100,42 +1105,42 @@ class CanvasMainWindow(QMainWindow):
         dialog.setFixedSize(725, 450)
 
         current_doc = self.current_document()
-        scheme = current_doc.scheme
+        scheme = current_doc.scheme()
         dialog.setScheme(scheme)
         dialog.exec_()
 
     def set_canvas_view_zoom(self, zoom):
         doc = self.current_document()
         if zoom:
-            doc.view.scale(1.5, 1.5)
+            doc.view().scale(1.5, 1.5)
         else:
-            doc.view.resetTransform()
+            doc.view().resetTransform()
 
     def align_to_grid(self):
         "Align widgets on the canvas to an grid."
-        self.current_document().align_to_grid()
+        self.current_document().alignToGrid()
 
     def new_arrow_annotation(self):
         """Create and add a new arrow annotation to the current scheme.
         """
-        self.current_document().new_arrow_annotation()
+        self.current_document().newArrowAnnotation()
 
     def new_text_annotation(self):
         """Create a new text annotation in the scheme.
         """
-        self.current_document().new_text_annotation()
+        self.current_document().newTextAnnotation()
 
     def set_signal_freeze(self, freeze):
-        doc = self.current_document()
+        scheme = self.current_document().scheme()
         if freeze:
-            doc.scheme.signal_manager.freeze().push()
+            scheme.signal_manager.freeze().push()
         else:
-            doc.scheme.signal_manager.freeze().pop()
+            scheme.signal_manager.freeze().pop()
 
     def remove_selected(self):
         """Remove current scheme selection.
         """
-        self.current_document().remove_selected()
+        self.current_document().removeSelected()
 
     def quit(self):
         """Quit the application.
@@ -1153,26 +1158,26 @@ class CanvasMainWindow(QMainWindow):
         pass
 
     def select_all(self):
-        self.current_document().select_all()
+        self.current_document().selectAll()
 
     def open_widget(self):
         """Open/raise selected widget's GUI.
         """
-        self.current_document().open_selected()
+        self.current_document().openSelected()
 
     def rename_widget(self):
         """Rename the current focused widget.
         """
         doc = self.current_document()
-        nodes = doc.selected_nodes()
+        nodes = doc.selectedNodes()
         if len(nodes) == 1:
-            doc.edit_node_title(nodes[0])
+            doc.editNodeTitle(nodes[0])
 
     def widget_help(self):
         """Open widget help page.
         """
         doc = self.current_document()
-        nodes = doc.selected_nodes()
+        nodes = doc.selectedNodes()
         help_url = None
         if len(nodes) == 1:
             node = nodes[0]
@@ -1262,7 +1267,7 @@ class CanvasMainWindow(QMainWindow):
         """A recent scheme action was triggered by the user
         """
         document = self.current_document()
-        if document.is_modified():
+        if document.isModified():
             if self.ask_save_changes() == QDialog.Rejected:
                 return
 
@@ -1280,14 +1285,14 @@ class CanvasMainWindow(QMainWindow):
         """Close the main window.
         """
         document = self.current_document()
-        if document.is_modified():
+        if document.isModified():
             if self.ask_save_changes() == QDialog.Rejected:
                 # Reject the event
                 event.ignore()
                 return
 
         # Set an empty scheme to clear the document
-        document.set_scheme(widgetsscheme.WidgetsScheme())
+        document.setScheme(widgetsscheme.WidgetsScheme())
         document.deleteLater()
 
         config.save_config()
