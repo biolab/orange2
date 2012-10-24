@@ -20,8 +20,6 @@ from .. import scheme
 
 from . import items
 from . import quickmenu
-from . import interactions
-
 
 log = logging.getLogger(__name__)
 
@@ -274,6 +272,7 @@ class CanvasScene(QGraphicsScene):
 
         self.__item_for_node[node] = item
 
+        node.position_changed.connect(self.__on_node_pos_changed)
         node.title_changed.connect(item.setTitle)
         node.progress_changed.connect(item.setProgress)
         node.processing_state_changed.connect(item.setProcessingState)
@@ -321,6 +320,12 @@ class CanvasScene(QGraphicsScene):
 
         """
         item = self.__item_for_node.pop(node)
+
+        node.position_changed.disconnect(self.__on_node_pos_changed)
+        node.title_changed.disconnect(item.setTitle)
+        node.progress_changed.disconnect(item.setProgress)
+        node.processing_state_changed.disconnect(item.setProcessingState)
+
         self.remove_node_item(item)
 
     def node_items(self):
@@ -359,7 +364,9 @@ class CanvasScene(QGraphicsScene):
                                   sink, scheme_link.sink_channel)
 
         item.setEnabled(scheme_link.enabled)
+
         scheme_link.enabled_changed.connect(item.setEnabled)
+
         self.add_link_item(item)
         self.__item_for_link[scheme_link] = item
         return item
@@ -393,6 +400,7 @@ class CanvasScene(QGraphicsScene):
 
         """
         item = self.__item_for_link.pop(scheme_link)
+        scheme_link.enabled_changed.disconnect(item.setEnabled)
         self.remove_link_item(item)
 
     def link_items(self):
@@ -427,10 +435,16 @@ class CanvasScene(QGraphicsScene):
             item.setPos(x, y)
             item.resize(w, h)
             item.setTextInteractionFlags(Qt.TextEditorInteraction)
+            scheme_annot.text_changed.connect(item.setPlainText)
+
         elif isinstance(scheme_annot, scheme.SchemeArrowAnnotation):
             item = items.ArrowAnnotation()
             start, end = scheme_annot.start_pos, scheme_annot.end_pos
             item.setLine(QLineF(QPointF(*start), QPointF(*end)))
+
+        scheme_annot.geometry_changed.connect(
+            self.__on_scheme_annot_geometry_change
+        )
 
         self.add_annotation_item(item)
         self.__item_for_annotation[scheme_annot] = item
@@ -447,6 +461,16 @@ class CanvasScene(QGraphicsScene):
 
     def remove_annotation(self, scheme_annotation):
         item = self.__item_for_annotation.pop(scheme_annotation)
+
+        scheme_annotation.geometry_changed.disconnect(
+            self.__on_scheme_annot_geometry_change
+        )
+
+        if isinstance(scheme_annotation, scheme.SchemeTextAnnotation):
+            scheme_annotation.text_changed.disconnect(
+                item.setPlainText
+            )
+
         self.remove_annotation_item(item)
 
     def annotation_items(self):
@@ -543,6 +567,23 @@ class CanvasScene(QGraphicsScene):
     def _on_position_change(self, item):
         self.node_item_position_changed.emit(item, item.pos())
 
+    def __on_node_pos_changed(self, pos):
+        node = self.sender()
+        item = self.__item_for_node[node]
+        item.setPos(*pos)
+
+    def __on_scheme_annot_geometry_change(self):
+        annot = self.sender()
+        item = self.__item_for_annotation[annot]
+        if isinstance(annot, scheme.SchemeTextAnnotation):
+            item.setGeometry(*annot.rect)
+        elif isinstance(annot, scheme.SchemeArrowAnnotation):
+            p1 = item.mapFromScene(QPointF(*annot.start_pos))
+            p2 = item.mapFromScene(QPointF(*annot.end_pos))
+            item.setLine(QLineF(p1, p2))
+        else:
+            pass
+
     def item_at(self, pos, type_or_tuple=None):
         rect = QRectF(pos - QPointF(1.5, 1.5), QSizeF(3, 3))
         items = self.items(rect)
@@ -586,39 +627,14 @@ class CanvasScene(QGraphicsScene):
 
     def mousePressEvent(self, event):
         if self.user_interaction_handler and \
-                self.user_interaction_handler.mouse_press_event(event):
+                self.user_interaction_handler.mousePressEvent(event):
             return
 
-        pos = event.scenePos()
-        anchor_item = self.item_at(pos, items.NodeAnchorItem)
-
-        if anchor_item and event.button() == Qt.LeftButton:
-            # Start a new link starting at item
-            if isinstance(anchor_item, items.SourceAnchorItem):
-                direction = interactions.NewLinkAction.FROM_SOURCE
-            else:
-                direction = interactions.NewLinkAction.FROM_SINK
-            from_item = anchor_item.parentWidgetItem
-            self.set_user_interaction_handler(
-                interactions.NewLinkAction(self, from_item, direction)
-            )
-            event.accept()
-            return
-
-        any_item = self.item_at(pos)
-        if not any_item and event.button() == Qt.LeftButton:
-            # Start rect selection
-            self.set_user_interaction_handler(
-                interactions.RectangleSelectionAction(self)
-            )
-            self.user_interaction_handler.mouse_press_event(event)
-            return
-
-        # Right (context) click on the widget item. If the widget is not
+        # Right (context) click on the node item. If the widget is not
         # in the current selection then select the widget (only the widget).
         # Else simply return and let customContextMenuReqested signal
         # handle it
-        shape_item = self.item_at(pos, items.NodeItem)
+        shape_item = self.item_at(event.pos(), items.NodeItem)
         if shape_item and event.button() == Qt.RightButton and \
                 shape_item.flags() & QGraphicsItem.ItemIsSelectable:
             if not shape_item.isSelected():
@@ -629,32 +645,35 @@ class CanvasScene(QGraphicsScene):
 
     def mouseMoveEvent(self, event):
         if self.user_interaction_handler and \
-                self.user_interaction_handler.mouse_move_event(event):
+                self.user_interaction_handler.mouseMoveEvent(event):
             return
 
         return QGraphicsScene.mouseMoveEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         if self.user_interaction_handler and \
-                self.user_interaction_handler.mouse_release_event(event):
+                self.user_interaction_handler.mouseReleaseEvent(event):
             return
         return QGraphicsScene.mouseReleaseEvent(self, event)
 
     def mouseDoubleClickEvent(self, event):
         if self.user_interaction_handler and \
-                self.user_interaction_handler.mouse_double_click_event(event):
-            return
-
-        item = self.item_at(event.scenePos())
-        if not item:
-            # Double click on an empty spot
-            # Create a new node quick
-            action = interactions.NewNodeAction(self)
-            action.create_new(event)
-            event.accept()
+                self.user_interaction_handler.mouseDoubleClickEvent(event):
             return
 
         return QGraphicsScene.mouseDoubleClickEvent(self, event)
+
+    def keyPressEvent(self, event):
+        if self.user_interaction_handler and \
+                self.user_interaction_handler.keyPressEvent(event):
+            return
+        return QGraphicsScene.keyPressEvent(self, event)
+
+    def keyReleaseEvent(self, event):
+        if self.user_interaction_handler and \
+                self.user_interaction_handler.keyReleaseEvent(event):
+            return
+        return QGraphicsScene.keyReleaseEvent(self, event)
 
     def set_user_interaction_handler(self, handler):
         if self.user_interaction_handler and \

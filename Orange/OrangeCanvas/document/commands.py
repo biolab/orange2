@@ -139,6 +139,21 @@ class ArrowChangeCommand(QUndoCommand):
         self.item.set_line(*self.old_line)
 
 
+class AnnotationGeometryChange(QUndoCommand):
+    def __init__(self, scheme, annotation, old, new, parent=None):
+        QUndoCommand.__init__(self, "Change Annotation Geometry", parent)
+        self.scheme = scheme
+        self.annotation = annotation
+        self.old = old
+        self.new = new
+
+    def redo(self):
+        self.annotation.geometry = self.new
+
+    def undo(self):
+        self.annotation.geometry = self.old
+
+
 class RenameNodeCommand(QUndoCommand):
     def __init__(self, scheme, node, old_name, new_name, parent=None):
         QUndoCommand.__init__(self, "Rename", parent)
@@ -152,3 +167,18 @@ class RenameNodeCommand(QUndoCommand):
 
     def undo(self):
         self.node.set_title(self.old_name)
+
+
+class TextChangeCommand(QUndoCommand):
+    def __init__(self, scheme, annotation, old, new, parent=None):
+        QUndoCommand.__init__(self, "Change text", parent)
+        self.scheme = scheme
+        self.annotation = annotation
+        self.old = old
+        self.new = new
+
+    def redo(self):
+        self.annotation.text = self.new
+
+    def undo(self):
+        self.annotation.text = self.old

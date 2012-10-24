@@ -40,6 +40,14 @@ class SchemeArrowAnnotation(BaseSchemeAnnotation):
 
     end_pos = Property(tuple, fget=end_pos)
 
+    def set_geometry(self, (start_pos, end_pos)):
+        self.set_line(start_pos, end_pos)
+
+    def geometry(self):
+        return (self.start_pos, self.end_pos)
+
+    geometry = Property(tuple, fget=geometry, fset=set_geometry)
+
 
 class SchemeTextAnnotation(BaseSchemeAnnotation):
     """Text annotation in the scheme.
@@ -62,6 +70,14 @@ class SchemeTextAnnotation(BaseSchemeAnnotation):
         return self.__rect
 
     rect = Property(tuple, fget=rect, fset=set_rect)
+
+    def set_geometry(self, rect):
+        self.set_rect(rect)
+
+    def geometry(self):
+        return self.rect
+
+    geometry = Property(tuple, fget=geometry, fset=set_geometry)
 
     def set_text(self, text):
         if self.__text != text:

@@ -486,6 +486,8 @@ class TextAnnotation(Annotation):
     """Text annotation for the canvas scheme.
 
     """
+    editingFinished = Signal()
+    textEdited = Signal()
 
     def __init__(self, parent=None, **kwargs):
         Annotation.__init__(self, parent, **kwargs)
@@ -617,6 +619,9 @@ class TextAnnotation(Annotation):
 
         # Install event filter to find out when the text item loses focus.
         self.__textItem.installSceneEventFilter(self)
+        self.__textItem.document().contentsChanged.connect(
+            self.textEdited
+        )
 
     def endEdit(self):
         """End the annotation edit.
@@ -626,6 +631,10 @@ class TextAnnotation(Annotation):
 
         self.__textItem.setTextInteractionFlags(Qt.NoTextInteraction)
         self.__textItem.removeSceneEventFilter(self)
+        self.__textItem.document().contentsChanged.disconnect(
+            self.textEdited
+        )
+        self.editingFinished.emit()
 
     def __onDocumentSizeChanged(self, size):
         # The size of the text document has changed. Expand the text

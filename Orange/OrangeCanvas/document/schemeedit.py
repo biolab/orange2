@@ -2,25 +2,55 @@
 Scheme Edit widget.
 
 """
+import logging
+from operator import attrgetter
+
 from PyQt4.QtGui import (
-    QWidget, QVBoxLayout, QUndoStack, QGraphicsItem, QPainter
+    QWidget, QVBoxLayout, QInputDialog, QUndoStack, QGraphicsItem, QPainter,
+    QGraphicsObject
 )
 
-from PyQt4.QtCore import Qt, QObject, QEvent
+from PyQt4.QtCore import Qt, QObject, QEvent, QSignalMapper, QRectF
 from PyQt4.QtCore import pyqtProperty as Property, pyqtSignal as Signal
 
 from ..scheme import scheme
 from ..canvas.scene import CanvasScene
 from ..canvas.view import CanvasView
 from ..canvas import items
-from ..canvas import interactions
+from . import interactions
 from . import commands
 
 
-class SchemeDocument(QObject):
-    def __init__(self, *args, **kwargs):
-        QObject.__init__(self, *args, **kwargs)
-        self.__editable = True
+log = logging.getLogger(__name__)
+
+
+# TODO: Should this be moved to CanvasScene?
+class GraphicsSceneFocusEventListener(QGraphicsObject):
+
+    itemFocusedIn = Signal(QGraphicsItem)
+    itemFocusedOut = Signal(QGraphicsItem)
+
+    def __init__(self, parent=None):
+        QGraphicsObject.__init__(self, parent)
+        self.setFlag(QGraphicsItem.ItemHasNoContents)
+
+    def sceneEventFilter(self, obj, event):
+        if event.type() == QEvent.FocusIn and \
+                obj.flags() & QGraphicsItem.ItemIsFocusable:
+            obj.focusInEvent(event)
+            if obj.hasFocus():
+                self.itemFocusedIn.emit(obj)
+            return True
+        elif event.type() == QEvent.FocusOut:
+            obj.focusOutEvent(event)
+            if not obj.hasFocus():
+                self.itemFocusedOut.emit(obj)
+            return True
+
+        return QGraphicsObject.sceneEventFilter(self, obj, event)
+
+    def boundingRect(self):
+        return QRectF()
 
 
 class SchemeEditWidget(QWidget):
@@ -40,6 +70,16 @@ class SchemeEditWidget(QWidget):
         self.__scheme = scheme.Scheme()
         self.__undoStack = QUndoStack(self)
         self.__undoStack.cleanChanged[bool].connect(self.__onCleanChanged)
+        self.__possibleMouseItemsMove = False
+        self.__itemsMoving = {}
+
+        self.__editFinishedMapper = QSignalMapper(self)
+        self.__editFinishedMapper.mapped[QObject].connect(
+            self.__onEditingFinished
+        )
+
+        self.__annotationGeomChanged = QSignalMapper(self)
+
         self.__setupUi()
 
     def __setupUi(self):
@@ -52,6 +92,15 @@ class SchemeEditWidget(QWidget):
         view.setRenderHint(QPainter.Antialiasing)
         self.__view = view
         self.__scene = scene
+
+        self.__focusListener = GraphicsSceneFocusEventListener()
+        self.__focusListener.itemFocusedIn.connect(self.__onItemFocusedIn)
+        self.__focusListener.itemFocusedOut.connect(self.__onItemFocusedOut)
+        self.__scene.addItem(self.__focusListener)
+
+        self.__scene.selectionChanged.connect(
+            self.__onSelectionChanged
+        )
 
         layout.addWidget(view)
         self.setLayout(layout)
@@ -76,7 +125,22 @@ class SchemeEditWidget(QWidget):
     def setScheme(self, scheme):
         if self.__scheme is not scheme:
             self.__scheme = scheme
+
+            self.__annotationGeomChanged.deleteLater()
+            self.__annotationGeomChanged = QSignalMapper(self)
+
             self.__undoStack.clear()
+
+            self.__focusListener.itemFocusedIn.disconnect(
+                self.__onItemFocusedIn
+            )
+            self.__focusListener.itemFocusedOut.disconnect(
+                self.__onItemFocusedOut
+            )
+
+            self.__scene.selectionChanged.disconnect(
+                self.__onSelectionChanged
+            )
 
             self.__scene.clear()
             self.__scene.removeEventFilter(self)
@@ -90,6 +154,31 @@ class SchemeEditWidget(QWidget):
 
             self.__scene.set_registry(self.__registry)
             self.__scene.set_scheme(scheme)
+
+            self.__scene.selectionChanged.connect(
+                self.__onSelectionChanged
+            )
+
+            self.__scene.node_item_activated.connect(
+                self.__onNodeActivate
+            )
+
+            self.__scene.annotation_added.connect(
+                self.__onAnnotationAdded
+            )
+
+            self.__scene.annotation_removed.connect(
+                self.__onAnnotationRemoved
+            )
+
+            self.__focusListener = GraphicsSceneFocusEventListener()
+            self.__focusListener.itemFocusedIn.connect(
+                self.__onItemFocusedIn
+            )
+            self.__focusListener.itemFocusedOut.connect(
+                self.__onItemFocusedOut
+            )
+            self.__scene.addItem(self.__focusListener)
 
     def scheme(self):
         return self.__scheme
@@ -113,9 +202,18 @@ class SchemeEditWidget(QWidget):
         self.__undoStack.push(command)
 
     def createNewNode(self, description):
-        """Create a new SchemeNode adn at it to the document.
+        """Create a new SchemeNode add at it to the document at left of the
+        last added node.
+
         """
         node = scheme.SchemeNode(description)
+
+        if self.scheme().nodes:
+            x, y = self.scheme().nodes[-1].position
+            node.position = (x + 150, y)
+        else:
+            node.position = (150, 150)
+
         self.addNode(node)
 
     def removeNode(self, node):
@@ -144,6 +242,9 @@ class SchemeEditWidget(QWidget):
 
     def removeSelected(self):
         selected = self.scene().selectedItems()
+        if not selected:
+            return
+
         self.__undoStack.beginMacro(self.tr("Remove"))
         for item in selected:
             print item
@@ -165,15 +266,40 @@ class SchemeEditWidget(QWidget):
                 item.setSelected(True)
 
     def newArrowAnnotation(self):
-        handler = interactions.NewArrowAnnotation(self.__scene)
+        handler = interactions.NewArrowAnnotation(self)
         self.__scene.set_user_interaction_handler(handler)
 
     def newTextAnnotation(self):
-        handler = interactions.NewTextAnnotation(self.__scene)
+        handler = interactions.NewTextAnnotation(self)
         self.__scene.set_user_interaction_handler(handler)
 
     def alignToGrid(self):
-        pass
+        """Align nodes to a grid.
+        """
+        tile_size = 150
+        tiles = {}
+
+        nodes = sorted(self.scheme().nodes, key=attrgetter("position"))
+
+        if nodes:
+            self.__undoStack.beginMacro(self.tr("Align To Grid"))
+
+            for node in nodes:
+                x, y = node.position
+                x = int(round(float(x) / tile_size) * tile_size)
+                y = int(round(float(y) / tile_size) * tile_size)
+                while (x, y) in tiles:
+                    x += tile_size
+
+                self.__undoStack.push(
+                    commands.MoveNodeCommand(self.scheme(), node,
+                                             node.position, (x, y))
+                )
+
+                tiles[x, y] = node
+                self.__scene.item_for_node(node).setPos(x, y)
+
+            self.__undoStack.endMacro()
 
     def selectedNodes(self):
         return map(self.scene().node_for_item,
@@ -183,7 +309,18 @@ class SchemeEditWidget(QWidget):
         pass
 
     def editNodeTitle(self, node):
-        pass
+        name, ok = QInputDialog.getText(
+                    self, self.tr("Rename"),
+                    unicode(self.tr("Enter a new name for the %r widget")) \
+                    % node.title,
+                    text=node.title
+                    )
+
+        if ok:
+            self.__undoStack.push(
+                commands.RenameNodeCommand(self.__scheme, node, node.title,
+                                           unicode(name))
+            )
 
     def __onCleanChanged(self, clean):
         if self.__modified != (not clean):
@@ -215,16 +352,18 @@ class SchemeEditWidget(QWidget):
 
             elif etype == QEvent.GraphicsSceneMousePress:
                 return self.sceneMousePressEvent(event)
-#            elif etype == QEvent.GraphicsSceneMouseMove:
-#                return self.sceneMouseMoveEvent(event)
-#            elif etype == QEvent.GraphicsSceneMouseRelease:
-#                return self.sceneMouseReleaseEvent(event)
-#            elif etype == QEvent.GraphicsSceneMouseDoubleClick:
-#                return self.sceneMouseDoubleClickEvent(event)
-#            elif etype == QEvent.KeyRelease:
-#                return self.sceneKeyPressEvent(event)
-#            elif etype == QEvent.KeyRelease:
-#                return self.sceneKeyReleaseEvent(event)
+            elif etype == QEvent.GraphicsSceneMouseMove:
+                return self.sceneMouseMoveEvent(event)
+            elif etype == QEvent.GraphicsSceneMouseRelease:
+                return self.sceneMouseReleaseEvent(event)
+            elif etype == QEvent.GraphicsSceneMouseDoubleClick:
+                return self.sceneMouseDoubleClickEvent(event)
+            elif etype == QEvent.KeyRelease:
+                return self.sceneKeyPressEvent(event)
+            elif etype == QEvent.KeyRelease:
+                return self.sceneKeyReleaseEvent(event)
+            elif etype == QEvent.GraphicsSceneContextMenu:
+                return self.sceneContextMenuEvent(event)
 
         return QWidget.eventFilter(self, obj, event)
 
@@ -238,7 +377,7 @@ class SchemeEditWidget(QWidget):
         anchor_item = scene.item_at(pos, items.NodeAnchorItem)
         if anchor_item and event.button() == Qt.LeftButton:
             # Start a new link starting at item
-            handler = interactions.NewLinkAction(scene)
+            handler = interactions.NewLinkAction(self)
             scene.set_user_interaction_handler(handler)
 
             return handler.mousePressEvent(event)
@@ -249,41 +388,166 @@ class SchemeEditWidget(QWidget):
             # TODO: Start a text rect edit.
             pass
 
+        any_item = scene.item_at(pos)
+        if not any_item and event.button() == Qt.LeftButton:
+            # Start rect selection
+            handler = interactions.RectangleSelectionAction(self)
+            scene.set_user_interaction_handler(handler)
+            return handler.mousePressEvent(event)
+
+        if any_item and event.button() == Qt.LeftButton:
+            self.__possibleMouseItemsMove = True
+            self.__itemsMoving.clear()
+            self.__scene.node_item_position_changed.connect(
+                self.__onNodePositionChanged
+            )
+            self.__annotationGeomChanged.mapped[QObject].connect(
+                self.__onAnnotationGeometryChanged
+            )
+
         return False
 
-#        any_item = self.item_at(pos)
-#        if not any_item and event.button() == Qt.LeftButton:
-#            # Start rect selection
-#            self.set_user_interaction_handler(
-#                interactions.RectangleSelectionAction(self)
-#            )
-#            self.user_interaction_handler.mouse_press_event(event)
-#            return
+    def sceneMouseMoveEvent(self, event):
+        scene = self.__scene
+        if scene.user_interaction_handler:
+            return False
 
-        # Right (context) click on the widget item. If the widget is not
-        # in the current selection then select the widget (only the widget).
-        # Else simply return and let customContextMenuReqested signal
-        # handle it
-#        shape_item = self.item_at(pos, items.NodeItem)
-#        if shape_item and event.button() == Qt.RightButton and \
-#                shape_item.flags() & QGraphicsItem.ItemIsSelectable:
-#            if not shape_item.isSelected():
-#                self.clearSelection()
-#                shape_item.setSelected(True)
-#
-#        return QGraphicsScene.mousePressEvent(self, event)
+        return False
+
+    def sceneMouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton and self.__possibleMouseItemsMove:
+            self.__possibleMouseItemsMove = False
+            self.__scene.node_item_position_changed.disconnect(
+                self.__onNodePositionChanged
+            )
+            self.__annotationGeomChanged.mapped[QObject].disconnect(
+                self.__onAnnotationGeometryChanged
+            )
+
+            if self.__itemsMoving:
+                self.__scene.mouseReleaseEvent(event)
+                stack = self.undoStack()
+                stack.beginMacro(self.tr("Move"))
+                for scheme_item, (old, new) in self.__itemsMoving.items():
+                    if isinstance(scheme_item, scheme.SchemeNode):
+                        command = commands.MoveNodeCommand(
+                            self.scheme(), scheme_item, old, new
+                        )
+                    elif isinstance(scheme_item, scheme.BaseSchemeAnnotation):
+                        command = commands.AnnotationGeometryChange(
+                            self.scheme(), scheme_item, old, new
+                        )
+                    else:
+                        continue
+
+                    stack.push(command)
+                stack.endMacro()
+
+                self.__itemsMoving.clear()
+                return True
+        return False
 
     def sceneMouseDoubleClickEvent(self, event):
-        if self.__scene.user_interaction_handler:
-            return False
         scene = self.__scene
+        if scene.user_interaction_handler:
+            return False
 
         item = scene.item_at(event.scenePos())
         if not item:
             # Double click on an empty spot
             # Create a new node quick
-            action = interactions.NewNodeAction(scene)
+            action = interactions.NewNodeAction(self)
             action.create_new(event)
             event.accept()
             return True
+
         return False
+
+    def sceneKeyPressEvent(self, event):
+        return False
+
+    def sceneKeyReleaseEvent(self, event):
+        return False
+
+    def sceneContextMenuEvent(self, event):
+        return False
+
+    def __onSelectionChanged(self):
+        pass
+
+    def __onNodeActivate(self, item):
+        node = self.__scene.node_for_item(item)
+        widget = self.scheme().widget_for_node[node]
+        widget.show()
+        widget.raise_()
+
+    def __onNodePositionChanged(self, item, pos):
+        node = self.__scene.node_for_item(item)
+        new = (pos.x(), pos.y())
+        if node not in self.__itemsMoving:
+            self.__itemsMoving[node] = (node.position, new)
+        else:
+            old, _ = self.__itemsMoving[node]
+            self.__itemsMoving[node] = (old, new)
+
+    def __onAnnotationGeometryChanged(self, item):
+        annot = self.scene().annotation_for_item(item)
+        if annot not in self.__itemsMoving:
+            self.__itemsMoving[annot] = (annot.geometry,
+                                         geometry_from_annotation_item(item))
+        else:
+            old, _ = self.__itemsMoving[annot]
+            self.__itemsMoving[annot] = (old,
+                                         geometry_from_annotation_item(item))
+
+    def __onAnnotationAdded(self, item):
+        item.setFlag(QGraphicsItem.ItemIsSelectable)
+        if isinstance(item, items.ArrowAnnotation):
+            pass
+        elif isinstance(item, items.TextAnnotation):
+            self.__editFinishedMapper.setMapping(item, item)
+            item.editingFinished.connect(
+                self.__editFinishedMapper.map
+            )
+        self.__annotationGeomChanged.setMapping(item, item)
+        item.geometryChanged.connect(
+            self.__annotationGeomChanged.map
+        )
+
+    def __onAnnotationRemoved(self, item):
+        if isinstance(item, items.ArrowAnnotation):
+            pass
+        elif isinstance(item, items.TextAnnotation):
+            item.editingFinished.disconnect(
+                self.__editFinishedMapper.map
+            )
+        self.__annotationGeomChanged.removeMappings(item)
+        item.geometryChanged.disconnect(
+            self.__annotationGeomChanged.map
+        )
+
+    def __onItemFocusedIn(self, item):
+        pass
+
+    def __onItemFocusedOut(self, item):
+        pass
+
+    def __onEditingFinished(self, item):
+        annot = self.__scene.annotation_for_item(item)
+        text = unicode(item.toPlainText())
+        if annot.text != text:
+            self.__undoStack.push(
+                commands.TextChangeCommand(self.scheme(), annot,
+                                           annot.text, text)
+            )
+
+
+def geometry_from_annotation_item(item):
+    if isinstance(item, items.ArrowAnnotation):
+        line = item.line()
+        p1 = item.mapToScene(line.p1())
+        p2 = item.mapToScene(line.p2())
+        return ((p1.x(), p1.y()), (p2.x(), p2.y()))
+    elif isinstance(item, items.TextAnnotation):
+        geom = item.geometry()
+        return (geom.x(), geom.y(), geom.width(), geom.height())
