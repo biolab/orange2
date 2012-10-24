@@ -6,8 +6,8 @@ import logging
 from operator import attrgetter
 
 from PyQt4.QtGui import (
-    QWidget, QVBoxLayout, QInputDialog, QUndoStack, QGraphicsItem, QPainter,
-    QGraphicsObject
+    QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QUndoStack,
+    QGraphicsItem, QGraphicsObject, QPainter
 )
 
 from PyQt4.QtCore import Qt, QObject, QEvent, QSignalMapper, QRectF
@@ -72,6 +72,7 @@ class SchemeEditWidget(QWidget):
         self.__undoStack.cleanChanged[bool].connect(self.__onCleanChanged)
         self.__possibleMouseItemsMove = False
         self.__itemsMoving = {}
+        self.__contextMenuTarget = None
 
         self.__editFinishedMapper = QSignalMapper(self)
         self.__editFinishedMapper.mapped[QObject].connect(
@@ -82,6 +83,32 @@ class SchemeEditWidget(QWidget):
 
         self.__setupUi()
 
+        self.__linkEnableAction = \
+            QAction(self.tr("Enabled"), self,
+                    objectName="link-enable-action",
+                    triggered=self.__toogleLinkEnabled,
+                    checkable=True,
+                    )
+
+        self.__linkRemoveAction = \
+            QAction(self.tr("Remove"), self,
+                    objectName="link-remove-action",
+                    triggered=self.__linkRemove,
+                    toolTip=self.tr("Remove link."),
+                    )
+
+        self.__linkResetAction = \
+            QAction(self.tr("Reset Signals"), self,
+                    objectName="link-reset-action",
+                    triggered=self.__linkReset,
+                    )
+
+        self.__linkMenu = QMenu(self)
+        self.__linkMenu.addAction(self.__linkEnableAction)
+        self.__linkMenu.addSeparator()
+        self.__linkMenu.addAction(self.__linkRemoveAction)
+        self.__linkMenu.addAction(self.__linkResetAction)
+
     def __setupUi(self):
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
@@ -90,6 +117,11 @@ class SchemeEditWidget(QWidget):
         scene = CanvasScene()
         view = CanvasView(scene)
         view.setRenderHint(QPainter.Antialiasing)
+        view.setContextMenuPolicy(Qt.CustomContextMenu)
+        view.customContextMenuRequested.connect(
+            self.__onCustomContextMenuRequested
+        )
+
         self.__view = view
         self.__scene = scene
 
@@ -306,7 +338,9 @@ class SchemeEditWidget(QWidget):
                    self.scene().selected_node_items())
 
     def openSelected(self):
-        pass
+        selected = self.scene().selected_node_items()
+        for item in selected:
+            self.__onNodeActivate(item)
 
     def editNodeTitle(self, node):
         name, ok = QInputDialog.getText(
@@ -461,6 +495,15 @@ class SchemeEditWidget(QWidget):
             event.accept()
             return True
 
+        item = scene.item_at(event.scenePos(), items.LinkItem)
+        if item is not None:
+            link = self.scene().link_for_item(item)
+            action = interactions.EditNodeLinksAction(self, link.source_node,
+                                                      link.sink_node)
+            action.edit_links()
+            event.accept()
+            return True
+
         return False
 
     def sceneKeyPressEvent(self, event):
@@ -540,6 +583,43 @@ class SchemeEditWidget(QWidget):
                 commands.TextChangeCommand(self.scheme(), annot,
                                            annot.text, text)
             )
+
+    def __onCustomContextMenuRequested(self, pos):
+        scenePos = self.view().mapToScene(pos)
+        globalPos = self.view().mapToGlobal(pos)
+
+        item = self.scene().item_at(scenePos, items.NodeItem)
+        if item is not None:
+            self.window().widget_menu.popup(globalPos)
+            return
+
+        item = self.scene().item_at(scenePos, items.LinkItem)
+        if item is not None:
+            link = self.scene().link_for_item(item)
+            self.__linkEnableAction.setChecked(link.enabled)
+            self.__contextMenuTarget = link
+            self.__linkMenu.popup(globalPos)
+            return
+
+    def __toogleLinkEnabled(self, enabled):
+        if self.__contextMenuTarget:
+            link = self.__contextMenuTarget
+            command = commands.SetAttrCommand(
+                link, "enabled", enabled, name=self.tr("Set enabled"),
+            )
+            self.__undoStack.push(command)
+
+    def __linkRemove(self):
+        if self.__contextMenuTarget:
+            self.removeLink(self.__contextMenuTarget)
+
+    def __linkReset(self):
+        if self.__contextMenuTarget:
+            link = self.__contextMenuTarget
+            action = interactions.EditNodeLinksAction(
+                self, link.source_node, link.sink_node
+            )
+            action.edit_links()
 
 
 def geometry_from_annotation_item(item):

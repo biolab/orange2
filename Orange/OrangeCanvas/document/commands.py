@@ -182,3 +182,20 @@ class TextChangeCommand(QUndoCommand):
 
     def undo(self):
         self.annotation.text = self.old
+
+
+class SetAttrCommand(QUndoCommand):
+    def __init__(self, obj, attrname, newvalue, name=None, parent=None):
+        if name is None:
+            name = "Set %r" % attrname
+        QUndoCommand.__init__(self, name, parent)
+        self.obj = obj
+        self.attrname = attrname
+        self.newvalue = newvalue
+        self.oldvalue = getattr(obj, attrname)
+
+    def redo(self):
+        setattr(self.obj, self.attrname, self.newvalue)
+
+    def undo(self):
+        setattr(self.obj, self.attrname, self.oldvalue)
