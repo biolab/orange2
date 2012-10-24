@@ -37,18 +37,20 @@ def typed_signal_mapper(pyType):
 
         def __init__(self, parent=None):
             QSignalMapper.__init__(self, parent)
-            self._mapping = {}
+            self.__mapping = {}
 
         def setPyMapping(self, sender, mapped):
-            self._mapping[sender] = mapped
+            self.__mapping[sender] = mapped
+            sender.destroyed.connect(self.removeMappings)
 
         def removePyMappings(self, sender):
-            del self._mapping[sender]
+            del self.__mapping[sender]
+            sender.destroyed.disconnect(self.removeMappings)
 
         def pyMap(self, sender=None):
             if sender is None:
                 sender = self.sender()
-            mapped = self._mapping[sender]
+            mapped = self.__mapping[sender]
             self.pyMapped.emit(mapped)
 
     return TypedSignalMapper
@@ -96,6 +98,7 @@ class CanvasScene(QGraphicsScene):
 
     def __init__(self, *args, **kwargs):
         QGraphicsScene.__init__(self, *args, **kwargs)
+
         self.scheme = None
         self.registry = None
 
@@ -438,12 +441,12 @@ class CanvasScene(QGraphicsScene):
         """Remove an `Annotation` item from the scene.
 
         """
-        self.__annotation_item.remove(annotation)
+        self.__annotation_items.remove(annotation)
         self.removeItem(annotation)
         self.annotation_removed.emit(annotation)
 
     def remove_annotation(self, scheme_annotation):
-        item = self.__item_for_annotation[scheme_annotation]
+        item = self.__item_for_annotation.pop(scheme_annotation)
         self.remove_annotation_item(item)
 
     def annotation_items(self):
@@ -522,6 +525,11 @@ class CanvasScene(QGraphicsScene):
         """Return the selected :class:`NodeItem`'s.
         """
         return [item for item in self.__node_items if item.isSelected()]
+
+    def selected_annotation_items(self):
+        """Return the selected :class:`Annotation`'s
+        """
+        return [item for item in self.__annotation_items if item.isSelected()]
 
     def on_widget_state_change(self, widget, state):
         pass

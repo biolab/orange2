@@ -214,8 +214,16 @@ class SchemeDocumentWidget(QWidget):
     def remove_selected(self):
         selected = self.scene.selected_node_items()
         nodes = map(self.scene.node_for_item, selected)
+
         for node in nodes:
             self.scheme.remove_node(node)
+
+        # Also remove any selected annotations.
+        annotations = self.scene.selected_annotation_items()
+        annotations = map(self.scene.annotation_for_item, annotations)
+
+        for annot in annotations:
+            self.scheme.remove_annotation(annot)
 
     def select_all(self):
         for item in self.scene.node_items:
