@@ -249,9 +249,8 @@ class NodeAnchorItem(QGraphicsPathItem):
     """The left/right widget input/output anchors.
     """
 
-    def __init__(self, parentWidgetItem, *args):
-        QGraphicsPathItem.__init__(self, parentWidgetItem, *args)
-        self.parentWidgetItem = parentWidgetItem
+    def __init__(self, parent, *args):
+        QGraphicsPathItem.__init__(self, parent, *args)
         self.setAcceptHoverEvents(True)
         self.setPen(QPen(Qt.NoPen))
         self.normalBrush = QBrush(QColor("#CDD5D9"))
@@ -270,6 +269,11 @@ class NodeAnchorItem(QGraphicsPathItem):
         # Does this item have any anchored links.
         self.anchored = False
 
+        if isinstance(parent, NodeItem):
+            self.__parentNodeItem = parent
+        else:
+            self.__parentNodeItem = None
+
         self.__anchorPath = QPainterPath()
         self.__points = []
         self.__pointPositions = []
@@ -278,6 +282,13 @@ class NodeAnchorItem(QGraphicsPathItem):
         self.__dottedStroke = None
 
         self.__layoutRequested = False
+
+    def parentNodeItem(self):
+        """Return a parent `NodeItem` or `None` if this anchor's
+        parent is not a `NodeItem` instance.
+
+        """
+        return self.__parentNodeItem
 
     def setAnchorPath(self, path):
         """Set the anchor's curve path as a QPainterPath.

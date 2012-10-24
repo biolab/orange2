@@ -122,12 +122,28 @@ class NewLinkAction(UserInteraction):
         else:
             self.tmp_link_item.setSourceItem(None, anchor)
 
+    def target_node_item_at(self, pos):
+        """Return a suitable NodeItem on which a link can be dropped.
+        """
+        # Test for a suitable NodeAnchorItem or NodeItem at pos.
+        if self.direction == self.FROM_SOURCE:
+            anchor_type = items.SinkAnchorItem
+        else:
+            anchor_type = items.SourceAnchorItem
+
+        item = self.scene.item_at(pos, (anchor_type, items.NodeItem))
+
+        if isinstance(item, anchor_type):
+            item = item.parentNodeItem()
+
+        return item
+
     def mousePressEvent(self, event):
         anchor_item = self.scene.item_at(event.scenePos(),
                                          items.NodeAnchorItem)
         if anchor_item and event.button() == Qt.LeftButton:
             # Start a new link starting at item
-            self.from_item = anchor_item.parentWidgetItem
+            self.from_item = anchor_item.parentNodeItem()
             if isinstance(anchor_item, items.SourceAnchorItem):
                 self.direction = NewLinkAction.FROM_SOURCE
                 self.source_item = self.from_item
@@ -161,7 +177,7 @@ class NewLinkAction(UserInteraction):
             self.scene.addItem(self.tmp_link_item)
 
         # `NodeItem` at the cursor position
-        item = self.scene.item_at(event.scenePos(), items.NodeItem)
+        item = self.target_node_item_at(event.scenePos())
 
         if self.current_target_item is not None and \
                 (item is None or item is not self.current_target_item):
@@ -198,7 +214,7 @@ class NewLinkAction(UserInteraction):
 
     def mouseReleaseEvent(self, event):
         if self.tmp_link_item:
-            item = self.scene.item_at(event.scenePos(), items.NodeItem)
+            item = self.target_node_item_at(event.scenePos())
             node = None
             stack = self.document.undoStack()
             stack.beginMacro("Add link")
