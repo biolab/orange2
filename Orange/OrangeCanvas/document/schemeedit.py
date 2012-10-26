@@ -116,6 +116,7 @@ class SchemeEditWidget(QWidget):
 
         scene = CanvasScene()
         view = CanvasView(scene)
+        view.setFrameStyle(CanvasView.NoFrame)
         view.setRenderHint(QPainter.Antialiasing)
         view.setContextMenuPolicy(Qt.CustomContextMenu)
         view.customContextMenuRequested.connect(

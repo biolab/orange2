@@ -481,7 +481,8 @@ class RectangleSelectionAction(UserInteraction):
     def end(self):
         self.initial_selection = None
         self.rect_item.hide()
-        self.scene.removeItem(self.rect_item)
+        if self.rect_item.scene() is not None:
+            self.scene.removeItem(self.rect_item)
         UserInteraction.end(self)
 
 

@@ -634,7 +634,7 @@ class CanvasScene(QGraphicsScene):
         # in the current selection then select the widget (only the widget).
         # Else simply return and let customContextMenuReqested signal
         # handle it
-        shape_item = self.item_at(event.pos(), items.NodeItem)
+        shape_item = self.item_at(event.scenePos(), items.NodeItem)
         if shape_item and event.button() == Qt.RightButton and \
                 shape_item.flags() & QGraphicsItem.ItemIsSelectable:
             if not shape_item.isSelected():
