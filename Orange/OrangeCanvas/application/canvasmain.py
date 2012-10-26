@@ -180,6 +180,7 @@ class CanvasMainWindow(QMainWindow):
         QMainWindow.__init__(self, *args)
 
         self.__scheme_margins_enabled = True
+        self.__document_title = "untitled"
 
         self.widget_registry = None
         self.last_scheme_dir = None
@@ -237,7 +238,8 @@ class CanvasMainWindow(QMainWindow):
 
         # Main window title and title icon.
         self.setWindowTitle(self.scheme_widget.scheme().title)
-        self.scheme_widget.titleChanged.connect(self.setWindowTitle)
+        self.scheme_widget.titleChanged.connect(self.set_document_title)
+        self.scheme_widget.modificationChanged.connect(self.setWindowModified)
 
         self.setWindowIcon(canvas_icons("Get Started.svg"))
 
@@ -712,6 +714,14 @@ class CanvasMainWindow(QMainWindow):
 
         self.setMenuBar(menu_bar)
 
+    def set_document_title(self, title):
+        if self.__document_title != title:
+            self.__document_title = title
+            self.setWindowTitle(title + "[*]")
+
+    def document_title(self):
+        return self.__document_title
+
     def set_widget_registry(self, widget_registry):
         """Set widget registry.
         """
@@ -958,7 +968,8 @@ class CanvasMainWindow(QMainWindow):
         and QFileDialog.Rejected if not.
 
         """
-        curr_scheme = self.current_document().scheme()
+        document = self.current_document()
+        curr_scheme = document.scheme()
 
         if curr_scheme.path:
             start_dir = curr_scheme.path
@@ -1000,6 +1011,7 @@ class CanvasMainWindow(QMainWindow):
                 curr_scheme.title = os.path.splitext(basename)[0]
 
             self.add_recent_scheme(curr_scheme)
+            document.setModified(False)
             return QFileDialog.Accepted
         else:
             return QFileDialog.Rejected
@@ -1166,16 +1178,6 @@ class CanvasMainWindow(QMainWindow):
         """Quit the application.
         """
         self.close()
-
-    def undo(self):
-        """Undo last action.
-        """
-        pass
-
-    def redo(self):
-        """Redo last action.
-        """
-        pass
 
     def select_all(self):
         self.current_document().selectAll()

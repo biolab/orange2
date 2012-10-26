@@ -67,7 +67,7 @@ class SchemeEditWidget(QWidget):
 
         self.__modified = False
         self.__registry = None
-        self.__scheme = scheme.Scheme()
+        self.__scheme = None
         self.__undoStack = QUndoStack(self)
         self.__undoStack.cleanChanged[bool].connect(self.__onCleanChanged)
         self.__possibleMouseItemsMove = False
@@ -141,9 +141,8 @@ class SchemeEditWidget(QWidget):
         return not self.__undoStack.isClean()
 
     def setModified(self, modified):
-        if modified:
-            # TODO:
-            pass
+        if modified and not self.isModified():
+            raise NotImplementedError
         else:
             self.__undoStack.setClean()
 
@@ -156,7 +155,14 @@ class SchemeEditWidget(QWidget):
 
     def setScheme(self, scheme):
         if self.__scheme is not scheme:
+            if self.__scheme:
+                self.__scheme.title_changed.disconnect(self.titleChanged)
+
             self.__scheme = scheme
+
+            if self.__scheme:
+                self.__scheme.title_changed.connect(self.titleChanged)
+                self.titleChanged.emit(scheme.title)
 
             self.__annotationGeomChanged.deleteLater()
             self.__annotationGeomChanged = QSignalMapper(self)
@@ -181,8 +187,6 @@ class SchemeEditWidget(QWidget):
             self.__scene = CanvasScene()
             self.__view.setScene(self.__scene)
             self.__scene.installEventFilter(self)
-
-            self.__scheme = scheme
 
             self.__scene.set_registry(self.__registry)
             self.__scene.set_scheme(scheme)
@@ -357,8 +361,8 @@ class SchemeEditWidget(QWidget):
             )
 
     def __onCleanChanged(self, clean):
-        if self.__modified != (not clean):
-            self.__modified = not clean
+        if self.isWindowModified() != (not clean):
+            self.setWindowModified(not clean)
             self.modificationChanged.emit(not clean)
 
     def eventFilter(self, obj, event):
