@@ -270,7 +270,7 @@ class WidgetDescription(object):
              inputs=inputs,
              outputs=outputs,
              icon=meta.icon,
-             priority=meta.priority
+             priority=int(meta.priority)
             )
         return desc
 

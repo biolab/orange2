@@ -3,6 +3,7 @@ Test WidgetRegistry.
 """
 
 import logging
+from operator import attrgetter
 
 import unittest
 
@@ -75,6 +76,12 @@ class TestRegistry(unittest.TestCase):
         self.assertIs(reg.widget(bayes_desc.qualified_name), bayes_desc)
         self.assertSequenceEqual(reg.widgets("Classify"), [bayes_desc])
 
+        info_desc = description.WidgetDescription.from_file(
+            __import__("Orange.OrangeWidgets.Data.OWDataInfo",
+                       fromlist=[""]).__file__
+        )
+        reg.register_widget(info_desc)
+
         # Test copy constructor
         reg1 = WidgetRegistry(reg)
         self.assertTrue(reg1.has_category(data_desc.name))
@@ -83,4 +90,17 @@ class TestRegistry(unittest.TestCase):
 
         # Test 'widgets()'
         self.assertSetEqual(set(reg1.widgets()),
-                            set([file_desc, discretize_desc, bayes_desc]))
+                            set([file_desc, info_desc, discretize_desc,
+                                 bayes_desc]))
+
+        # Test ordering by priority
+        self.assertSequenceEqual(
+             reg.widgets("Data"),
+             sorted([file_desc, discretize_desc, info_desc],
+                    key=attrgetter("priority"))
+        )
+
+        self.assertTrue(all(isinstance(desc.priority, int)
+                            for desc in [file_desc, info_desc, discretize_desc,
+                                         bayes_desc])
+                        )
