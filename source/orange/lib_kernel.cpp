@@ -1880,7 +1880,31 @@ TFiletypeDefinition::~TFiletypeDefinition()
 }
 
 
-vector<TFiletypeDefinition> filetypeDefinitions;
+class GlobalFiletypeDefinitionVector: public vector<TFiletypeDefinition>
+{
+public:
+  ~GlobalFiletypeDefinitionVector()
+  {
+    /*
+     * The 'filetypeDefinitions' below will be (and should be)
+     * the only instance and it will outlive the Python interpreter.
+     * This destructor will be called in clib's exit() and at that time the
+     * 'saver' and 'loader' pointers in TFiletypeDefinition are no
+     * longer valid so we set them to NULL so Py_XDECREF macro in
+     * TFiletypeDefinition destructor does nothing.
+     */
+    for (GlobalFiletypeDefinitionVector::iterator iter = begin();
+         iter != end();
+         iter++)
+    {
+      iter->loader = NULL;
+      iter->saver = NULL;
+    }
+  }
+};
+
+GlobalFiletypeDefinitionVector filetypeDefinitions;
+
 
 /* lower case to avoid any ambiguity problems (don't know how various compilers can react when
    registerFiletype is cast by the code produced by pyxtract */
