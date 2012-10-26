@@ -402,6 +402,13 @@ class CanvasMainWindow(QMainWindow):
                     shortcut=QKeySequence.Quit,
                     )
 
+        self.welcome_action = \
+            QAction(self.tr("Welcome"), self,
+                    objectName="welcome-action",
+                    toolTip=self.tr("Show welcome screen."),
+                    triggered=self.welcome_dialog,
+                    )
+
         self.get_started_action = \
             QAction(self.tr("Get Started"), self,
                     objectName="get-started-action",
@@ -698,6 +705,7 @@ class CanvasMainWindow(QMainWindow):
         # Help menu.
         self.help_menu = QMenu(self.tr("&Help"), self)
         self.help_menu.addAction(self.about_action)
+        self.help_menu.addAction(self.welcome_action)
         self.help_menu.addAction(self.tutorials_action)
         self.help_menu.addAction(self.documentation_action)
         menu_bar.addMenu(self.help_menu)
@@ -1052,6 +1060,10 @@ class CanvasMainWindow(QMainWindow):
         top_row = [self.get_started_action, self.tutorials_action,
                    self.documentation_action]
 
+        def new_scheme():
+            if self.new_scheme() == QDialog.Accepted:
+                dialog.accept()
+
         def open_scheme():
             if self.open_scheme() == QDialog.Accepted:
                 dialog.accept()
@@ -1059,6 +1071,14 @@ class CanvasMainWindow(QMainWindow):
         def open_recent():
             if self.recent_scheme() == QDialog.Accepted:
                 dialog.accept()
+
+        new_action = \
+            QAction(self.tr("New"), dialog,
+                    toolTip=self.tr("Open a new scheme."),
+                    triggered=new_scheme,
+                    shortcut=QKeySequence.New,
+                    icon=canvas_icons("New.svg")
+                    )
 
         open_action = \
             QAction(self.tr("Open"), dialog,
@@ -1080,7 +1100,7 @@ class CanvasMainWindow(QMainWindow):
                     )
 
         self.new_action.triggered.connect(dialog.accept)
-        bottom_row = [self.new_action, open_action, recent_action]
+        bottom_row = [new_action, open_action, recent_action]
 
         dialog.addRow(top_row, background="light-grass")
         dialog.addRow(bottom_row, background="light-orange")
