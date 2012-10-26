@@ -1303,6 +1303,11 @@ class CanvasMainWindow(QMainWindow):
         """
         self.__update_scheme_margins()
 
+    def createPopupMenu(self):
+        # Override the default context menu popup (we don't want the user to
+        # be able to hide the tool dock widget).
+        return None
+
     def closeEvent(self, event):
         """Close the main window.
         """
