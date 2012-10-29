@@ -1,7 +1,6 @@
 from PyQt4.QtCore import Qt, QRectF, QLineF
 
-from ..annotationitem import TextAnnotation, ArrowAnnotation, ArrowItem, \
-                             ControlPointRect
+from ..annotationitem import TextAnnotation, ArrowAnnotation, ArrowItem
 
 from . import TestItems
 
@@ -47,10 +46,4 @@ class TestAnnotationItem(TestItems):
         self.scene.addItem(item)
         item.setLineWidth(5)
 
-        self.app.exec_()
-
-    def testcontrol(self):
-        cp = ControlPointRect()
-        cp.setRect(QRectF(30, 30, 50, 50))
-        self.scene.addItem(cp)
         self.app.exec_()
