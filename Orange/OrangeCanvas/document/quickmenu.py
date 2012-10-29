@@ -18,7 +18,7 @@ from PyQt4.QtCore import pyqtSignal as Signal
 from PyQt4.QtCore import pyqtProperty as Property
 
 from PyQt4.QtCore import (
-    Qt, QObject, QPoint, QSize, QRect, QEventLoop, QEvent
+    Qt, QObject, QPoint, QSize, QRect, QEventLoop, QEvent, QModelIndex
 )
 
 
@@ -362,6 +362,29 @@ class PagedMenu(QWidget):
         return self.__tab.button(index)
 
 
+class SortFilterProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        QSortFilterProxyModel.__init__(self, parent)
+        self.__filterFunc = None
+
+    def filterAcceptsRow(self, row, parent=QModelIndex()):
+        accepted = QSortFilterProxyModel.filterAcceptsRow(self, row, parent)
+        if accepted and self.__filterFunc is not None:
+            model = self.sourceModel()
+            index = model.index(row, self.filterKeyColumn(), parent)
+            return self.__filterFunc(index)
+        else:
+            return accepted
+
+    def filterFunc(self):
+        return self.__filterFunc
+
+    def setFilterFunc(self, func):
+        if self.__filterFunc is not func:
+            self.__filterFunc = func
+            self.invalidateFilter()
+
+
 class SuggestMenuPage(ToolTree):
     def __init__(self, *args, **kwargs):
         ToolTree.__init__(self, *args, **kwargs)
@@ -374,7 +397,7 @@ class SuggestMenuPage(ToolTree):
         flat = FlattenedTreeItemModel(self)
         flat.setSourceModel(model)
         flat.setFlatteningMode(flat.InternalNodesDisabled)
-        proxy = QSortFilterProxyModel(self)
+        proxy = SortFilterProxyModel(self)
         proxy.setFilterCaseSensitivity(False)
         proxy.setSourceModel(flat)
         ToolTree.setModel(self, proxy)
@@ -394,6 +417,10 @@ class SuggestMenuPage(ToolTree):
         filter_proxy = self.view().model()
         filter_proxy.setFilterWildCard(pattern)
         self.ensureCurrent()
+
+    def setFilterFunc(self, func):
+        filter_proxy = self.view().model()
+        filter_proxy.setFilterFunc(func)
 
 
 class QuickMenu(FramelessWindow):
@@ -450,7 +477,7 @@ class QuickMenu(FramelessWindow):
         self.__suggestPage.setActionRole(QtWidgetRegistry.WIDGET_ACTION_ROLE)
         self.__suggestPage.setIcon(icon_loader().get("icons/Search.svg"))
 
-        self.addPage(self.tr("Quick Access"), self.__suggestPage)
+        self.addPage(self.tr("Quick Search"), self.__suggestPage)
 
         self.__search.textEdited.connect(
             self.__suggestPage.setFilterFixedString
@@ -527,6 +554,9 @@ class QuickMenu(FramelessWindow):
 
         self.__model = model
         self.__suggestPage.setModel(model)
+
+    def setFilterFunc(self, func):
+        self.__suggestPage.setFilterFunc(func)
 
     def popup(self, pos=None):
         """Popup the menu at `pos` (in screen coordinates)..

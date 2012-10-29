@@ -62,6 +62,14 @@ class NoPossibleLinksError(ValueError):
     pass
 
 
+def reversed_arguments(func):
+    """Return a function with reversed argument order.
+    """
+    def wrapped(*args):
+        return func(*reversed(args))
+    return wrapped
+
+
 class NewLinkAction(UserInteraction):
     """User drags a new link from an existing node anchor item to create
     a connection between two existing nodes or to a new node if the release
@@ -230,10 +238,13 @@ class NewLinkAction(UserInteraction):
                 # Show a quick menu popup for a new widget creation.
                 try:
                     node = self.create_new(event)
-                    self.document.addNode(node)
                 except Exception:
-                    log.error("Failed to create a new node, ending.")
+                    log.error("Failed to create a new node, ending.",
+                              exc_info=True)
                     node = None
+
+                if node is not None:
+                    self.document.addNode(node)
 
             if node is not None:
                 self.connect_existing(node)
@@ -249,9 +260,32 @@ class NewLinkAction(UserInteraction):
         """Create and return a new node with a QuickWidgetMenu.
         """
         pos = event.screenPos()
-        quick_menu = self.document.quickMenu()
+        menu = self.document.quickMenu()
+        node = self.scene.node_for_item(self.from_item)
+        from_desc = node.description
 
-        action = quick_menu.exec_(pos)
+        def is_compatible(source, sink):
+            return any(scheme.compatible_channels(output, input) \
+                       for output in source.outputs \
+                       for input in sink.inputs)
+
+        if self.direction == self.FROM_SINK:
+            # Reverse the argument order.
+            is_compatible = reversed_arguments(is_compatible)
+
+        def filter(index):
+            desc = index.data(QtWidgetRegistry.WIDGET_DESC_ROLE)
+            if desc.isValid():
+                desc = desc.toPyObject()
+                return is_compatible(from_desc, desc)
+            else:
+                return False
+
+        menu.setFilterFunc(filter)
+        try:
+            action = menu.exec_(pos)
+        finally:
+            menu.setFilterFunc(None)
 
         if action:
             item = action.property("item").toPyObject()
@@ -400,9 +434,10 @@ class NewNodeAction(UserInteraction):
         """Create a new widget with a QuickWidgetMenu
         """
         pos = event.screenPos()
-        quick_menu = self.document.quickMenu()
+        menu = self.document.quickMenu()
+        menu.setFilterFunc(None)
 
-        action = quick_menu.exec_(pos)
+        action = menu.exec_(pos)
         if action:
             item = action.property("item").toPyObject()
             desc = item.data(QtWidgetRegistry.WIDGET_DESC_ROLE).toPyObject()
