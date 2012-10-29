@@ -108,9 +108,13 @@ class ControlPointRect(QGraphicsObject):
     rectChanged = Signal(QRectF)
     rectEdited = Signal(QRectF)
 
+    editingStarted = Signal()
+    editingFinished = Signal()
+
     def __init__(self, parent=None, rect=None, constraints=0, **kwargs):
         QGraphicsObject.__init__(self, parent, **kwargs)
         self.setFlag(QGraphicsItem.ItemHasNoContents)
+        self.setFlag(QGraphicsItem.ItemIsFocusable)
 
         self.__rect = rect if rect is not None else QRectF()
         self.__margins = QMargins()
@@ -131,6 +135,10 @@ class ControlPointRect(QGraphicsObject):
         if self.scene():
             self.__installFilter()
 
+        for p in points:
+            p.setFlag(QGraphicsItem.ItemIsFocusable)
+            p.setFocusProxy(self)
+
         self.controlPoint(ControlPoint.Top).setConstraint(Qt.Vertical)
         self.controlPoint(ControlPoint.Bottom).setConstraint(Qt.Vertical)
         self.controlPoint(ControlPoint.Left).setConstraint(Qt.Horizontal)
@@ -148,7 +156,7 @@ class ControlPointRect(QGraphicsObject):
 
     def setRect(self, rect):
         if self.__rect != rect:
-            self.__rect = rect
+            self.__rect = QRectF(rect)
             self.__pointsLayout()
             self.prepareGeometryChange()
             self.rectChanged.emit(rect)
@@ -182,6 +190,16 @@ class ControlPointRect(QGraphicsObject):
 
     def setConstraints(self, constraints):
         pass
+
+    def focusInEvent(self, event):
+        QGraphicsObject.focusInEvent(self, event)
+        if event.isAccepted():
+            self.editingStarted.emit()
+
+    def focusOutEvent(self, event):
+        QGraphicsObject.focusOutEvent(self, event)
+        if event.isAccepted():
+            self.editingFinished.emit()
 
     def itemChange(self, change, value):
         if change == QGraphicsItem.ItemSceneHasChanged and self.scene():
@@ -291,9 +309,13 @@ class ControlPointLine(QGraphicsObject):
     lineChanged = Signal(QLineF)
     lineEdited = Signal(QLineF)
 
+    editingStarted = Signal()
+    editingFinished = Signal()
+
     def __init__(self, parent=None, **kwargs):
         QGraphicsObject.__init__(self, parent, **kwargs)
         self.setFlag(QGraphicsItem.ItemHasNoContents)
+        self.setFlag(QGraphicsItem.ItemIsFocusable)
 
         self.__line = QLineF()
         self.__points = \
@@ -305,6 +327,9 @@ class ControlPointLine(QGraphicsObject):
 
         if self.scene():
             self.__installFilter()
+        for p in self.__points:
+            p.setFlag(QGraphicsItem.ItemIsFocusable)
+            p.setFocusProxy(self)
 
     def setLine(self, line):
         if not isinstance(line, QLineF):
@@ -317,6 +342,16 @@ class ControlPointLine(QGraphicsObject):
 
     def line(self):
         return self.__line
+
+    def focusInEvent(self, event):
+        QGraphicsObject.focusInEvent(self, event)
+        if event.isAccepted():
+            self.editingStarted.emit()
+
+    def focusOutEvent(self, event):
+        QGraphicsObject.focusOutEvent(self, event)
+        if event.isAccepted():
+            self.editingFinished.emit()
 
     def __installFilter(self):
         for p in self.__points:

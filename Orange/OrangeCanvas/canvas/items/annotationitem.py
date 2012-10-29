@@ -4,7 +4,7 @@ import logging
 from PyQt4.QtGui import (
     QGraphicsItem, QGraphicsPathItem, QGraphicsWidget,
     QGraphicsTextItem, QPainterPath, QPainterPathStroker,
-    QPolygonF
+    QPen, QPolygonF
 )
 
 from PyQt4.QtCore import (
@@ -16,7 +16,6 @@ from PyQt4.QtCore import pyqtSignal as Signal
 log = logging.getLogger(__name__)
 
 from .graphicspathobject import GraphicsPathObject
-from .controlpoints import ControlPointLine, ControlPointRect
 
 
 class Annotation(QGraphicsWidget):
@@ -27,11 +26,14 @@ class Annotation(QGraphicsWidget):
 
 
 class TextAnnotation(Annotation):
-    """Text annotation for the canvas scheme.
+    """Text annotation item for the canvas scheme.
 
     """
     editingFinished = Signal()
+    """Emitted when the editing is finished (i.e. the item loses focus)."""
+
     textEdited = Signal()
+    """Emitted when the edited text changes."""
 
     def __init__(self, parent=None, **kwargs):
         Annotation.__init__(self, parent, **kwargs)
@@ -43,10 +45,7 @@ class TextAnnotation(Annotation):
 
         rect = self.geometry().translated(-self.pos())
         self.__framePathItem = QGraphicsPathItem(self)
-        self.__controlPoints = ControlPointRect(self)
-        self.__controlPoints.setRect(rect)
-        self.__controlPoints.rectEdited.connect(self.__onControlRectEdited)
-        self.geometryChanged.connect(self.__updateControlPoints)
+        self.__framePathItem.setPen(QPen(Qt.NoPen))
 
         self.__textItem = QGraphicsTextItem(self)
         self.__textItem.setPos(2, 2)
@@ -57,9 +56,9 @@ class TextAnnotation(Annotation):
         layout = self.__textItem.document().documentLayout()
         layout.documentSizeChanged.connect(self.__onDocumentSizeChanged)
 
-        self.__updateFrame()
+        self.setFocusProxy(self.__textItem)
 
-        self.__controlPoints.hide()
+        self.__updateFrame()
 
     def adjustSize(self):
         """Resize to a reasonable size.
@@ -70,6 +69,18 @@ class TextAnnotation(Annotation):
         left, top, right, bottom = self.textMargins()
         geom = QRectF(self.pos(), size + QSizeF(left + right, top + bottom))
         self.setGeometry(geom)
+
+    def setFramePen(self, pen):
+        """Set the frame pen. By default Qt.NoPen is used (i.e. the frame
+        is not shown).
+
+        """
+        self.__framePathItem.setPen(pen)
+
+    def framePen(self):
+        """Return the frame pen.
+        """
+        return self.__framePathItem.pen()
 
     def setPlainText(self, text):
         """Set the annotation plain text.
@@ -140,20 +151,6 @@ class TextAnnotation(Annotation):
                 self.__textInteractionFlags & Qt.TextEditable:
             self.startEdit()
 
-    def focusInEvent(self, event):
-        # Reparent the control points item to the scene
-        self.__controlPoints.setParentItem(None)
-        self.__controlPoints.show()
-        self.__controlPoints.setZValue(self.zValue() + 3)
-        self.__updateControlPoints()
-        Annotation.focusInEvent(self, event)
-
-    def focusOutEvent(self, event):
-        self.__controlPoints.hide()
-        # Reparent back to self
-        self.__controlPoints.setParentItem(self)
-        Annotation.focusOutEvent(self, event)
-
     def startEdit(self):
         """Start the annotation text edit process.
         """
@@ -193,21 +190,6 @@ class TextAnnotation(Annotation):
             log.error("error in __onDocumentSizeChanged",
                       exc_info=True)
 
-    def __onControlRectEdited(self, newrect):
-        # The control rect has been edited by the user
-        # new rect is ins scene coordinates
-        try:
-            newpos = newrect.topLeft()
-            parent = self.parentItem()
-            if parent:
-                newpos = parent.mapFromScene(newpos)
-
-            geom = QRectF(newpos, newrect.size())
-            self.setGeometry(geom)
-        except Exception:
-            log.error("An error occurred in '__onControlRectEdited'",
-                      exc_info=True)
-
     def __updateFrame(self):
         rect = self.geometry()
         rect.moveTo(0, 0)
@@ -215,30 +197,11 @@ class TextAnnotation(Annotation):
         path.addRect(rect)
         self.__framePathItem.setPath(path)
 
-    def __updateControlPoints(self, *args):
-        """Update the control points geometry.
-        """
-        if not self.__controlPoints.isVisible():
-            return
-
-        try:
-            geom = self.geometry()
-            parent = self.parentItem()
-            # The control rect is in scene coordinates
-            if parent is not None:
-                geom = QRectF(parent.mapToScene(geom.topLeft()),
-                              geom.size())
-            self.__controlPoints.setRect(geom)
-        except Exception:
-            log.error("An error occurred in '__updateControlPoints'",
-                      exc_info=True)
-
     def resizeEvent(self, event):
         width = event.newSize().width()
         left, _, right, _ = self.textMargins()
         self.__textItem.setTextWidth(max(width - left - right, 0))
         self.__updateFrame()
-        self.__updateControlPoints()
         QGraphicsWidget.resizeEvent(self, event)
 
     def sceneEventFilter(self, obj, event):
@@ -265,11 +228,11 @@ class ArrowItem(GraphicsPathObject):
 
     def setLine(self, line):
         if self.__line != line:
-            self.__line = line
+            self.__line = QLineF(line)
             self.__updateArrowPath()
 
     def line(self):
-        return self.__line
+        return QLineF(self.__line)
 
     def setLineWidth(self, lineWidth):
         if self.__lineWidth != lineWidth:
@@ -328,25 +291,19 @@ class ArrowAnnotation(Annotation):
         self.__arrowItem = ArrowItem(self)
         self.__arrowItem.setLine(line)
         self.__arrowItem.setBrush(Qt.red)
-        self.__arrowItem.setPen(Qt.NoPen)
-        self.__controlPointLine = ControlPointLine(self)
-        self.__controlPointLine.setLine(line)
-        self.__controlPointLine.hide()
-        self.__controlPointLine.lineEdited.connect(self.__onLineEdited)
+        self.__arrowItem.setPen(QPen(Qt.NoPen))
 
     def setLine(self, line):
-        """Set the arrow base line (a QLineF in object coordinates).
+        """Set the arrow base line (a `QLineF` in object coordinates).
         """
         if self.__line != line:
             self.__line = line
-#            self.__arrowItem.setLine(line)
-            # Check if the line does not fit inside the geometry.
 
             geom = self.geometry().translated(-self.pos())
 
             if geom.isNull() and not line.isNull():
                 geom = QRectF(0, 0, 1, 1)
-            line_rect = QRectF(line.p1(), line.p2())
+            line_rect = QRectF(line.p1(), line.p2()).normalized()
 
             if not (geom.contains(line_rect)):
                 geom = geom.united(line_rect)
@@ -361,7 +318,7 @@ class ArrowAnnotation(Annotation):
 
     def adjustGeometry(self):
         """Adjust the widget geometry to exactly fit the arrow inside
-        preserving the arrow path scene geometry.
+        while preserving the arrow path scene geometry.
 
         """
         geom = self.geometry().translated(-self.pos())
@@ -379,45 +336,13 @@ class ArrowAnnotation(Annotation):
         self.setLine(line)
 
     def line(self):
-        return self.__line
+        return QLineF(self.__line)
 
     def setLineWidth(self, lineWidth):
         self.__arrowItem.setLineWidth(lineWidth)
 
     def lineWidth(self):
         return self.__arrowItem.lineWidth()
-
-    def focusInEvent(self, event):
-        self.__controlPointLine.setParentItem(None)
-        self.__controlPointLine.show()
-        self.__controlPointLine.setZValue(self.zValue() + 3)
-        self.__updateControlLine()
-        self.geometryChanged.connect(self.__onGeometryChange)
-        return Annotation.focusInEvent(self, event)
-
-    def focusOutEvent(self, event):
-        self.__controlPointLine.hide()
-        self.__controlPointLine.setParentItem(self)
-        self.geometryChanged.disconnect(self.__onGeometryChange)
-        return Annotation.focusOutEvent(self, event)
-
-    def __updateControlLine(self):
-        if not self.__controlPointLine.isVisible():
-            return
-
-        line = self.__line
-        line = QLineF(self.mapToScene(line.p1()),
-                      self.mapToScene(line.p2()))
-        self.__controlPointLine.setLine(line)
-
-    def __onLineEdited(self, line):
-        line = QLineF(self.mapFromScene(line.p1()),
-                      self.mapFromScene(line.p2()))
-        self.setLine(line)
-
-    def __onGeometryChange(self):
-        if self.__controlPointLine.isVisible():
-            self.__updateControlLine()
 
     def shape(self):
         arrow_shape = self.__arrowItem.shape()
