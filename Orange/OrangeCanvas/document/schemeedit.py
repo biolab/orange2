@@ -19,6 +19,7 @@ from ..canvas.view import CanvasView
 from ..canvas import items
 from . import interactions
 from . import commands
+from . import quickmenu
 
 
 log = logging.getLogger(__name__)
@@ -73,6 +74,7 @@ class SchemeEditWidget(QWidget):
         self.__possibleMouseItemsMove = False
         self.__itemsMoving = {}
         self.__contextMenuTarget = None
+        self.__quickMenu = None
 
         self.__editFinishedMapper = QSignalMapper(self)
         self.__editFinishedMapper.mapped[QObject].connect(
@@ -231,6 +233,17 @@ class SchemeEditWidget(QWidget):
         self.__registry = registry
         if self.__scene:
             self.__scene.set_registry(registry)
+            self.__quickMenu = None
+
+    def quickMenu(self):
+        """Return a quick menu instance for quick new node creation.
+        """
+        if self.__quickMenu is None:
+            menu = quickmenu.QuickMenu(self)
+            if self.__registry is not None:
+                menu.setModel(self.__registry.model())
+            self.__quickMenu = menu
+        return self.__quickMenu
 
     def addNode(self, node):
         """Add a new node to the scheme.

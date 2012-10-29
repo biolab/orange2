@@ -19,7 +19,6 @@ import sip
 from .. import scheme
 
 from . import items
-from . import quickmenu
 
 log = logging.getLogger(__name__)
 
@@ -118,7 +117,6 @@ class CanvasScene(QGraphicsScene):
         self.editable = True
 
         self.user_interaction_handler = None
-        self._quick_menu = None
 
         self.activated_mapper = NodeItemSignalMapper(self)
         self.activated_mapper.pyMapped.connect(
@@ -145,7 +143,6 @@ class CanvasScene(QGraphicsScene):
         self.__item_for_link = {}
 
         self.user_interaction_handler = None
-        self._quick_menu = None
 
         self.clear()
         log.info("'%s' cleared." % self)
@@ -211,15 +208,6 @@ class CanvasScene(QGraphicsScene):
         """
         log.info("Setting registry '%s on '%s'." % (registry, self))
         self.registry = registry
-        self._quick_menu = None
-
-    def quick_menu(self):
-        if self._quick_menu is None:
-            menu = quickmenu.QuickMenu()
-            if self.registry:
-                menu.setModel(self.registry.model())
-            self._quick_menu = menu
-        return self._quick_menu
 
     def add_node_item(self, item):
         """Add a :class:`NodeItem` instance to the scene.

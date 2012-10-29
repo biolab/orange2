@@ -249,7 +249,7 @@ class NewLinkAction(UserInteraction):
         """Create and return a new node with a QuickWidgetMenu.
         """
         pos = event.screenPos()
-        quick_menu = self.scene.quick_menu()
+        quick_menu = self.document.quickMenu()
 
         action = quick_menu.exec_(pos)
 
@@ -400,7 +400,7 @@ class NewNodeAction(UserInteraction):
         """Create a new widget with a QuickWidgetMenu
         """
         pos = event.screenPos()
-        quick_menu = self.scene.quick_menu()
+        quick_menu = self.document.quickMenu()
 
         action = quick_menu.exec_(pos)
         if action:
