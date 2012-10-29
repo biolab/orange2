@@ -421,11 +421,23 @@ class SchemeEditWidget(QWidget):
 
             return handler.mousePressEvent(event)
 
-        annotation_item = scene.item_at(pos, items.TextAnnotation)
+        annotation_item = scene.item_at(pos, (items.TextAnnotation,
+                                              items.ArrowAnnotation))
+
         if annotation_item and event.button() == Qt.LeftButton and \
                 not event.modifiers() & Qt.ControlModifier:
-            # TODO: Start a text rect edit.
-            pass
+            if isinstance(annotation_item, items.TextAnnotation):
+                handler = interactions.ResizeTextAnnotation(self)
+            elif isinstance(annotation_item, items.ArrowAnnotation):
+                handler = interactions.ResizeArrowAnnotation(self)
+            else:
+                log.error("Unknown annotation item (%r).", annotation_item)
+                return False
+
+            scene.clearSelection()
+
+            scene.set_user_interaction_handler(handler)
+            return handler.mousePressEvent(event)
 
         any_item = scene.item_at(pos)
         if not any_item and event.button() == Qt.LeftButton:

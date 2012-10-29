@@ -13,6 +13,8 @@ from PyQt4.QtCore import Qt, QSizeF, QRectF, QLineF
 from ..registry.qt import QtWidgetRegistry
 from .. import scheme
 from ..canvas import items
+from ..canvas.items import controlpoints
+from . import commands
 
 log = logging.getLogger(__name__)
 
@@ -574,22 +576,27 @@ class NewArrowAnnotation(UserInteraction):
                 self.annotation = annot
 
             if self.arrow_item is not None:
-                self.arrow_item.setLine(QLineF(self.down_pos,
-                                               event.scenePos()))
+                p1, p2 = map(self.arrow_item.mapFromScene,
+                             (self.down_pos, event.scenePos()))
+                self.arrow_item.setLine(QLineF(p1, p2))
+                self.arrow_item.adjustGeometry()
+
             event.accept()
             return True
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             if self.arrow_item is not None:
-                line = QLineF(self.down_pos, event.scenePos())
+                p1, p2 = self.down_pos, event.scenePos()
 
                 # Commit the annotation to the scheme
-                self.annotation.set_line(point_to_tuple(line.p1()),
-                                         point_to_tuple(line.p2()))
+                self.annotation.set_line(point_to_tuple(p1),
+                                         point_to_tuple(p2))
+
                 self.document.addAnnotation(self.annotation)
 
-                self.arrow_item.setLine(line)
+                p1, p2 = map(self.arrow_item.mapFromScene, (p1, p2))
+                self.arrow_item.setLine(QLineF(p1, p2))
                 self.arrow_item.adjustGeometry()
 
             self.end()
@@ -613,6 +620,7 @@ class NewTextAnnotation(UserInteraction):
         self.down_pos = None
         self.annotation_item = None
         self.annotation = None
+        self.control = None
 
     def start(self):
         self.document.view().setCursor(Qt.CrossCursor)
@@ -633,13 +641,20 @@ class NewTextAnnotation(UserInteraction):
 
                 item = self.scene.add_annotation(annot)
                 item.setTextInteractionFlags(Qt.TextEditorInteraction)
+                item.setFramePen(QPen(Qt.DashLine))
 
                 self.annotation_item = item
                 self.annotation = annot
+                self.control = controlpoints.ControlPointRect()
+                self.control.rectChanged.connect(
+                    self.annotation_item.setGeometry
+                )
+                self.scene.addItem(self.control)
 
             if self.annotation_item is not None:
                 rect = QRectF(self.down_pos, event.scenePos()).normalized()
-                self.annotation_item.setGeometry(rect)
+                self.control.setRect(rect)
+
             return True
 
     def mouseReleaseEvent(self, event):
@@ -653,15 +668,169 @@ class NewTextAnnotation(UserInteraction):
 
                 self.annotation_item.setGeometry(rect)
 
+                self.control.rectChanged.disconnect(
+                    self.annotation_item.setGeometry
+                )
+                self.control.hide()
+
                 # Move the focus to the editor.
+                self.annotation_item.setFramePen(QPen(Qt.NoPen))
                 self.annotation_item.setFocus(Qt.OtherFocusReason)
                 self.annotation_item.startEdit()
 
             self.end()
 
     def end(self):
+        if self.control is not None:
+            self.scene.removeItem(self.control)
+        self.control = None
         self.down_pos = None
         self.annotation_item = None
         self.annotation = None
         self.document.view().setCursor(Qt.ArrowCursor)
+        UserInteraction.end(self)
+
+
+class ResizeTextAnnotation(UserInteraction):
+    def __init__(self, document, ):
+        UserInteraction.__init__(self, document)
+        self.item = None
+        self.annotation = None
+        self.control = None
+        self.savedFramePen = None
+
+    def mousePressEvent(self, event):
+        pos = event.scenePos()
+        if self.item is None:
+            item = self.scene.item_at(pos, items.TextAnnotation)
+            if item is not None and not item.hasFocus():
+                self.editItem(item)
+                return True
+
+        return UserInteraction.mousePressEvent(self, event)
+
+    def editItem(self, item):
+        annotation = self.scene.annotation_for_item(item)
+        rect = item.geometry()  # TODO: map to scene if item has a parent.
+        control = controlpoints.ControlPointRect(rect=rect)
+        self.scene.addItem(control)
+
+        self.savedFramePen = item.framePen()
+        self.initialRect = rect
+
+        control.setFocus()
+        control.editingFinished.connect(self.__on_editingFinished)
+        control.rectEdited.connect(item.setGeometry)
+
+        item.setFramePen(QPen(Qt.DashLine))
+
+        self.item = item
+
+        self.annotation = annotation
+        self.control = control
+
+    def __on_editingFinished(self):
+        rect = self.item.geometry()
+        command = commands.SetAttrCommand(
+            self.annotation, "rect",
+            (rect.x(), rect.y(), rect.width(), rect.height()),
+            name="Edit text geometry"
+        )
+        self.document.undoStack().push(command)
+        self.end()
+
+    def __on_rectEdited(self, rect):
+        self.item.setGeometry(rect)
+
+    def cancel(self):
+        if self.item is not None:
+            self.item.setGeometry(self.initialRect)
+
+        UserInteraction.cancel(self)
+
+    def end(self):
+        if self.control is not None:
+            self.control.clearFocus()
+            self.scene.removeItem(self.control)
+
+        if self.item is not None:
+            self.item.setFramePen(self.savedFramePen)
+
+        self.item = None
+        self.annotation = None
+        self.control = None
+
+        UserInteraction.end(self)
+
+
+class ResizeArrowAnnotation(UserInteraction):
+    def __init__(self, document):
+        UserInteraction.__init__(self, document)
+        self.item = None
+        self.annotation = None
+        self.control = None
+
+    def mousePressEvent(self, event):
+        pos = event.scenePos()
+        if self.item is None:
+            item = self.scene.item_at(pos, items.ArrowAnnotation)
+            if item is not None:
+                self.editItem(item)
+                return True
+
+        return UserInteraction.mousePressEvent(self, event)
+
+    def editItem(self, item):
+        annotation = self.scene.annotation_for_item(item)
+        control = controlpoints.ControlPointLine()
+        self.scene.addItem(control)
+
+        line = item.line()
+        self.initialLine = line
+
+        p1, p2 = map(item.mapToScene, (line.p1(), line.p2()))
+
+        control.setLine(QLineF(p1, p2))
+        control.setFocus()
+        control.editingFinished.connect(self.__on_editingFinished)
+        control.lineEdited.connect(self.__on_lineEdited)
+
+        self.item = item
+        self.annotation = annotation
+        self.control = control
+
+    def __on_editingFinished(self):
+        line = self.control.line()
+        p1, p2 = line.p1(), line.p2()
+
+        command = commands.SetAttrCommand(
+            self.annotation,
+            "geometry",
+            ((p1.x(), p1.y()), (p2.x(), p2.y())),
+            name="Edit arrow geometry",
+        )
+        self.document.undoStack().push(command)
+        self.control.hide()
+
+        self.end()
+
+    def __on_lineEdited(self, line):
+        p1, p2 = map(self.item.mapFromScene, (line.p1(), line.p2()))
+        self.item.setLine(QLineF(p1, p2))
+        self.item.adjustGeometry()
+
+    def cancel(self):
+        if self.item is not None:
+            self.item.setLine(self.initialLine)
+
+        UserInteraction.cancel(self)
+
+    def end(self):
+        if self.control is not None:
+            self.scene.removeItem(self.control)
+
+        self.control = None
+        self.item = None
+        self.annotation = None
+
         UserInteraction.end(self)
