@@ -838,7 +838,10 @@ class CanvasMainWindow(QMainWindow):
         scheme_doc_widget = self.current_document()
         scheme_doc_widget.setScheme(new_scheme)
 
-        if config.rc.get("mainwindow.show-properties-on-new-scheme", True):
+        settings = QSettings()
+        show = settings.value("schemeinfo/show-at-new-scheme", True).toBool()
+
+        if show:
             self.show_properties_action.trigger()
 
         return QDialog.Accepted
@@ -1132,14 +1135,24 @@ class CanvasMainWindow(QMainWindow):
     def show_scheme_properties(self):
         """Show current scheme properties.
         """
+        settings = QSettings()
+        value_key = "schemeinfo/show-at-new-scheme"
+
         dialog = SchemeInfoDialog(self)
         dialog.setWindowTitle(self.tr("Scheme Info"))
         dialog.setFixedSize(725, 450)
 
+        dialog.setDontShowAtNewScheme(
+            not settings.value(value_key, True).toBool()
+        )
+
         current_doc = self.current_document()
         scheme = current_doc.scheme()
         dialog.setScheme(scheme)
-        dialog.exec_()
+
+        if dialog.exec_() == QDialog.Accepted:
+            # Store the check state.
+            settings.setValue(value_key, not dialog.dontShowAtNewScheme())
 
     def set_canvas_view_zoom(self, zoom):
         doc = self.current_document()

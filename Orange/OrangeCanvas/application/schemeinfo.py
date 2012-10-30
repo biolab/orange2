@@ -4,7 +4,7 @@ Scheme Info editor widget.
 """
 
 from PyQt4.QtGui import (
-    QWidget, QDialog, QLabel, QLineEdit, QTextEdit, QCheckBox, QFormLayout,
+    QWidget, QDialog, QLabel, QTextEdit, QCheckBox, QFormLayout,
     QVBoxLayout, QHBoxLayout, QDialogButtonBox, QSizePolicy
 )
 
@@ -12,7 +12,6 @@ from PyQt4.QtCore import Qt
 
 from ..gui.lineedit import LineEdit
 from ..gui.utils import StyledWidget_paintEvent, StyledWidget
-from .. import config
 
 
 class SchemeInfoEdit(QWidget):
@@ -97,16 +96,14 @@ class SchemeInfoDialog(QDialog):
         widget = StyledWidget(self, objectName="auto-show-container")
         check_layout = QHBoxLayout()
         check_layout.setContentsMargins(20, 10, 20, 10)
-        self.auto_show_check = \
+        self.__dontShowAtNewSchemeCheck = \
             QCheckBox(self.tr("Don't show again when I make a New Scheme."),
                       self,
                       objectName="auto-show-check",
-                      checked=not config.rc.get(
-                            "mainwindow.show-properties-on-new-scheme", True
-                            )
+                      checked=False,
                       )
 
-        check_layout.addWidget(self.auto_show_check)
+        check_layout.addWidget(self.__dontShowAtNewSchemeCheck)
         check_layout.addWidget(
                QLabel(self.tr("You can edit and add Scheme Info later at the "
                               "bottom of the menu"),
@@ -126,13 +123,18 @@ class SchemeInfoDialog(QDialog):
 
         self.setLayout(layout)
 
+    def setDontShowAtNewScheme(self, checked):
+        """Set the 'Dont show at new scheme' check state.
+        """
+        self.__dontShowAtNewSchemeCheck.setChecked(checked)
+
+    def dontShowAtNewScheme(self):
+        """Return the check state of the 'Dont show at new scheme' check box.
+        """
+        return self.__dontShowAtNewSchemeCheck.isChecked()
+
     def setScheme(self, scheme):
         """Set the scheme to display/edit.
         """
         self.scheme = scheme
         self.editor.setScheme(scheme)
-
-    def accept(self):
-        checked = self.auto_show_check.isChecked()
-        config.rc["mainwindow.show-properties-on-new-scheme"] = not checked
-        return QDialog.accept(self)
