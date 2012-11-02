@@ -8,6 +8,7 @@ import sys
 import logging
 import optparse
 import cPickle
+from contextlib import nested
 
 import pkg_resources
 
@@ -21,6 +22,7 @@ from Orange.OrangeCanvas.application.canvasmain import CanvasMainWindow
 from Orange.OrangeCanvas.gui.splashscreen import SplashScreen, QPixmap
 from Orange.OrangeCanvas.config import open_config, cache_dir
 from Orange.OrangeCanvas import config
+from Orange.OrangeCanvas.utils.redirect import redirect_stdout, redirect_stderr
 
 from Orange.OrangeCanvas.registry import qt
 from Orange.OrangeCanvas.registry import WidgetRegistry, set_global_registry
@@ -58,6 +60,9 @@ def main(argv=None):
     parser.add_option("-l", "--log-level",
                       help="Logging level (0, 1, 2, 3)",
                       type="int", default=1)
+    parser.add_option("--no-redirect",
+                      action="store_true",
+                      help="Do not redirect stdout/err to canvas output view.")
     parser.add_option("--style",
                       help="QStyle to use",
                       type="str", default=None)
@@ -137,7 +142,8 @@ def main(argv=None):
     )
 
     want_splash = \
-        settings.value("startup/show-splash-screen", True).toPyObject()
+        settings.value("startup/show-splash-screen", True).toPyObject() and \
+        not options.no_splash
 
     if want_splash:
         pm = QPixmap(pkg_resources.resource_filename(
@@ -186,11 +192,21 @@ def main(argv=None):
                  args[0])
         canvas_window.load_scheme(args[0])
 
-    log.info("Entering main event loop.")
-    try:
-        status = app.exec_()
-    except BaseException:
-        log.error("Error in main event loop.", exc_info=True)
+    disable_redirect = \
+        settings.value("mainwindow/no-stdout-redirect", False).toBool() or \
+        options.no_redirect
+
+    if not disable_redirect:
+        output = canvas_window.output_view()
+    else:
+        output = None
+
+    with nested(redirect_stdout(output), redirect_stderr(output)):
+        log.info("Entering main event loop.")
+        try:
+            status = app.exec_()
+        except BaseException:
+            log.error("Error in main event loop.", exc_info=True)
 
     canvas_window.deleteLater()
     app.processEvents()

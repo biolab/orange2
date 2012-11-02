@@ -13,11 +13,11 @@ import pkg_resources
 from PyQt4.QtGui import (
     QMainWindow, QWidget, QAction, QActionGroup, QMenu, QMenuBar, QDialog,
     QFileDialog, QMessageBox, QVBoxLayout, QSizePolicy, QColor, QKeySequence,
-    QIcon, QToolBar, QDockWidget, QDesktopServices, QUndoGroup
+    QIcon, QToolBar, QDockWidget, QDesktopServices, QUndoGroup, QApplication
 )
 
 from PyQt4.QtCore import (
-    Qt, QEvent, QSize, QUrl, QSettings
+    Qt, QEvent, QSize, QUrl, QSettings, QTimer
 )
 
 from PyQt4.QtCore import pyqtProperty as Property
@@ -29,6 +29,7 @@ from ..gui.dock import CollapsibleDockWidget
 from .canvastooldock import CanvasToolDock, QuickCategoryToolbar
 from .aboutdialog import AboutDialog
 from .schemeinfo import SchemeInfoDialog
+from .outputview import OutputText
 from ..document.schemeedit import SchemeEditWidget
 
 from ..scheme import widgetsscheme
@@ -174,7 +175,7 @@ class FakeToolBar(QToolBar):
 
 
 class CanvasMainWindow(QMainWindow):
-    SETTINGS_VERSION = 1
+    SETTINGS_VERSION = 2
 
     def __init__(self, *args):
         QMainWindow.__init__(self, *args)
@@ -215,6 +216,9 @@ class CanvasMainWindow(QMainWindow):
         self.addToolBar(Qt.TopToolBarArea, self.__dummy_top_toolbar)
         self.addToolBar(Qt.BottomToolBarArea, self.__dummy_bottom_toolbar)
 
+        self.setCorner(Qt.BottomLeftCorner, Qt.LeftDockWidgetArea)
+        self.setCorner(Qt.BottomRightCorner, Qt.RightDockWidgetArea)
+
         # Create an empty initial scheme inside a container with fixed
         # margins.
         w = QWidget()
@@ -247,6 +251,8 @@ class CanvasMainWindow(QMainWindow):
         self.dock_widget = CollapsibleDockWidget(objectName="main-area-dock")
         self.dock_widget.setFeatures(QDockWidget.DockWidgetMovable | \
                                      QDockWidget.DockWidgetClosable)
+        self.dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea | \
+                                         Qt.RightDockWidgetArea)
 
         # Main canvas tool dock (with widget toolbox, common actions.
         # This is the widget that is shown when the dock is expanded.
@@ -333,6 +339,18 @@ class CanvasMainWindow(QMainWindow):
         self.dock_widget.dockLocationChanged.connect(
             self._on_dock_location_changed
         )
+
+        self.output_dock = QDockWidget(self.tr("Output"),
+                                       objectName="output-dock")
+        self.output_dock.setAllowedAreas(Qt.BottomDockWidgetArea)
+
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.output_dock)
+        self.output_dock.setFloating(True)
+
+        self.output_dock.hide()
+
+        output_view = OutputText()
+        self.output_dock.setWidget(output_view)
 
         self.setMinimumSize(600, 500)
 
@@ -490,6 +508,12 @@ class CanvasMainWindow(QMainWindow):
                     triggered=self.open_canvas_settings,
                     menuRole=QAction.PreferencesRole,
                     shortcut=QKeySequence.Preferences
+                    )
+
+        self.show_output_action = \
+            QAction(self.tr("Show Output View"), self,
+                    toolTip=self.tr("Show application output."),
+                    triggered=self.show_output_view,
                     )
 
         self.undo_group = QUndoGroup(self)
@@ -676,7 +700,7 @@ class CanvasMainWindow(QMainWindow):
 
         # Options menu
         self.options_menu = QMenu(self.tr("&Options"), self)
-        self.options_menu.addAction(self.tr("Show Output"))
+        self.options_menu.addAction(self.show_output_action)
 #        self.options_menu.addAction("Add-ons")
 #        self.options_menu.addAction("Developers")
 #        self.options_menu.addAction("Run Discovery")
@@ -1233,6 +1257,16 @@ class CanvasMainWindow(QMainWindow):
         """
         pass
 
+    def show_output_view(self):
+        """Show a window with application output.
+        """
+        self.output_dock.show()
+
+    def output_view(self):
+        """Return the output text widget.
+        """
+        return self.output_dock.widget()
+
     def open_about(self):
         """Open the about dialog.
         """
@@ -1352,6 +1386,10 @@ class CanvasMainWindow(QMainWindow):
         settings.endGroup()
 
         event.accept()
+
+        # Close any windows left.
+        application = QApplication.instance()
+        QTimer.singleShot(0, application.closeAllWindows)
 
     def showEvent(self, event):
         settings = QSettings()
