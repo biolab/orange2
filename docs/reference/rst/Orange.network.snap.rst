@@ -1,1 +1,0 @@
-.. automodule:: Orange.network.snap
