@@ -13,7 +13,7 @@ class TestNameMapping(unittest.TestCase):
           
         """
         #modules in exempt contain source files intended for addons
-        exempt = ["Orange.multitarget.tree",  ]
+        exempt = ["Orange.multitarget.tree", ]
 
         for cls in orange.__dict__.values():
             if type(cls) == type:
