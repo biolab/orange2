@@ -17,12 +17,16 @@ def init():
     """Initialize the QCoreApplication.organizationDomain, applicationName,
     applicationVersion and the default settings format. Will only run once.
 
+    .. note:: This should not be run before QApplication has been initialized.
+              Otherwise it can brake Qt's plugin search paths.
+
     """
     # Set application name, version and org. domain
     QCoreApplication.setOrganizationDomain("biolab.si")
     QCoreApplication.setApplicationName("Orange Canvas")
     QCoreApplication.setApplicationVersion("2.6")
     QSettings.setDefaultFormat(QSettings.IniFormat)
+
     # Make it a null op.
     global init
     init = lambda: None

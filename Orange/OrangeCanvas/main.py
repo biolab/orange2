@@ -75,8 +75,6 @@ def main(argv=None):
 
     (options, args) = parser.parse_args(argv)
 
-    open_config()
-
     levels = [logging.CRITICAL,
               logging.WARN,
               logging.INFO,
@@ -94,11 +92,12 @@ def main(argv=None):
     if options.qt is not None:
         qt_argv += options.qt.split()
 
-    config.init()
-    settings = QSettings()
-
     log.debug("Starting CanvasApplicaiton with argv = %r.", qt_argv)
     app = CanvasApplication(qt_argv)
+
+    # Note: config.init must be called after the QApplication constructor
+    config.init()
+    settings = QSettings()
 
     stylesheet = options.stylesheet
     stylesheet_string = None
