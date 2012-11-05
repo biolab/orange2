@@ -32,6 +32,7 @@ from .canvastooldock import CanvasToolDock, QuickCategoryToolbar
 from .aboutdialog import AboutDialog
 from .schemeinfo import SchemeInfoDialog
 from .outputview import OutputText
+from .settings import UserSettingsDialog
 from ..document.schemeedit import SchemeEditWidget
 
 from ..scheme import widgetsscheme
@@ -121,7 +122,7 @@ class CanvasMainWindow(QMainWindow):
         """
         QSettings.setDefaultFormat(QSettings.IniFormat)
         settings = QSettings()
-        settings.beginGroup("canvasmainwindow")
+        settings.beginGroup("mainwindow")
 
         log.info("Setting up Canvas main window.")
 
@@ -169,6 +170,7 @@ class CanvasMainWindow(QMainWindow):
         self.dock_widget = CollapsibleDockWidget(objectName="main-area-dock")
         self.dock_widget.setFeatures(QDockWidget.DockWidgetMovable | \
                                      QDockWidget.DockWidgetClosable)
+
         self.dock_widget.setAllowedAreas(Qt.LeftDockWidgetArea | \
                                          Qt.RightDockWidgetArea)
 
@@ -558,7 +560,7 @@ class CanvasMainWindow(QMainWindow):
         """
         QSettings.setDefaultFormat(QSettings.IniFormat)
         settings = QSettings()
-        settings.beginGroup("canvasmainwindow")
+        settings.beginGroup("mainwindow")
 
         state = settings.value("state")
         if state.isValid():
@@ -569,12 +571,21 @@ class CanvasMainWindow(QMainWindow):
             settings.value("canvasdock/expanded", True).toBool()
         )
 
+        floatable = settings.value("toolbox-dock-floatable", False).toBool()
+        if floatable:
+            self.dock_widget.setFeatures(self.dock_widget.features() | \
+                                         QDockWidget.DockWidgetFloatable)
+
+        self.widgets_tool_box.setExclusive(
+            settings.value("toolbox-dock-exclusive", False).toBool()
+        )
+
         self.toogle_margins_action.setChecked(
-            settings.value("scheme_margins_enabled", True).toBool()
+            settings.value("scheme-margins-enabled", True).toBool()
         )
 
         self.last_scheme_dir = \
-            settings.value("last_scheme_dir", None).toPyObject()
+            settings.value("last-scheme-dir", None).toPyObject()
 
         if self.last_scheme_dir is not None and \
                 not os.path.exists(self.last_scheme_dir):
@@ -1092,12 +1103,12 @@ class CanvasMainWindow(QMainWindow):
         settings = QSettings()
 
         dialog.setShowAtStartup(
-            settings.value("welcomedialog/show-at-startup", True).toBool()
+            settings.value("startup/show-welcome-screen", True).toBool()
         )
 
         status = dialog.exec_()
 
-        settings.setValue("welcomedialog/show-at-startup",
+        settings.setValue("startup/show-welcome-screen",
                           dialog.showAtStartup())
 
         dialog.deleteLater()
@@ -1226,7 +1237,12 @@ class CanvasMainWindow(QMainWindow):
     def open_canvas_settings(self):
         """Open canvas settings/preferences dialog
         """
-        pass
+        dlg = UserSettingsDialog(self)
+        dlg.show()
+        status = dlg.exec_()
+
+        if status == QDialog.Accepted:
+            self.__update_from_settings()
 
     def show_output_view(self):
         """Show a window with application output.
@@ -1349,15 +1365,15 @@ class CanvasMainWindow(QMainWindow):
         geometry = self.saveGeometry()
         state = self.saveState(version=self.SETTINGS_VERSION)
         settings = QSettings()
-        settings.beginGroup("canvasmainwindow")
+        settings.beginGroup("mainwindow")
         settings.setValue("geometry", geometry)
         settings.setValue("state", state)
         settings.setValue("canvasdock/expanded",
                           self.dock_widget.expanded())
-        settings.setValue("scheme_margins_enabled",
+        settings.setValue("scheme-margins-enabled",
                           self.scheme_margins_enabled)
 
-        settings.setValue("last_scheme_dir", self.last_scheme_dir)
+        settings.setValue("last-scheme-dir", self.last_scheme_dir)
         settings.setValue("widgettoolbox/state",
                           self.widgets_tool_box.saveState())
 

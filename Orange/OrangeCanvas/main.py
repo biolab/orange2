@@ -60,7 +60,7 @@ def main(argv=None):
                       action="store_true",
                       help="Don't show splash screen.")
     parser.add_option("-l", "--log-level",
-                      help="Logging level (0, 1, 2, 3)",
+                      help="Logging level (0, 1, 2, 3, 4)",
                       type="int", default=1)
     parser.add_option("--no-redirect",
                       action="store_true",
@@ -78,6 +78,7 @@ def main(argv=None):
     (options, args) = parser.parse_args(argv)
 
     levels = [logging.CRITICAL,
+              logging.ERROR,
               logging.WARN,
               logging.INFO,
               logging.DEBUG]
@@ -164,7 +165,7 @@ def main(argv=None):
     )
 
     want_splash = \
-        settings.value("startup/show-splash-screen", True).toPyObject() and \
+        settings.value("startup/show-splash-screen", True).toBool() and \
         not options.no_splash
 
     if want_splash:
@@ -201,7 +202,7 @@ def main(argv=None):
     canvas_window.show()
 
     want_welcome = \
-        settings.value("welcomedialog/show-at-startup", True).toBool() \
+        settings.value("startup/show-welcome-screen", True).toBool() \
         and not options.no_welcome
 
     canvas_window.raise_()

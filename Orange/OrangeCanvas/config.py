@@ -5,12 +5,14 @@ Orange Canvas Configuration
 
 import os
 import logging
-import cPickle
+import cPickle as pickle
 
 log = logging.getLogger(__name__)
 
 from PyQt4.QtGui import QDesktopServices
 from PyQt4.QtCore import QCoreApplication, QSettings
+
+from .utils.settings import Settings, config_slot
 
 
 def init():
@@ -33,29 +35,99 @@ def init():
 
 rc = {}
 
-default_config = \
-{
-    "startup.show-splash-screen": True,
-    "startup.show-welcome-dialog": True,
-    "startup.style": None,
-    "startup.stylesheet": "orange",
-    "mainwindow.shop-properties-on-new-scheme": True,
-    "mainwindow.use-native-theme": False,
-    "mainwindow.qt-style": "default",
-    "mainwindow.show-document-margins": False,
-    "mainwindow.document-margins": 20,
-    "mainwindow.document-shadow": True,
-    "mainwindow.toolbox-dock-type": "toolbox",
-    "mainwindow.toolbox-toolbar-position": "bottom",
-    "mainwindow.toolbox-dock-floatable": False,
-    "mainwindow.show-status-bar": False,
-    "mainwindow.single-document-mode": True,
-    "logging.level": "error",
-}
+
+spec = \
+    [("startup/show-splash-screen", bool, True,
+      "Show splash screen at startup"),
+
+     ("startup/show-welcome-screen", bool, True,
+      "Show Welcome screen at startup"),
+
+     ("stylesheet", unicode, "orange",
+      "QSS stylesheet to use"),
+
+     ("schemeinfo/show-at-new-scheme", bool, True,
+      "Show Scheme Properties when creating a new Scheme"),
+
+     ("mainwindow/scheme-margins-enabled", bool, True,
+      "Show margins around the scheme view"),
+
+     ("mainwindow/show-scheme-shadow", bool, True,
+      "Show shadow around the scheme view"),
+
+     ("mainwindow/toolbox-dock-exclusive", bool, False,
+      "Should the toolbox show only one expanded category at the time"),
+
+     ("mainwindow/toolbox-dock-floatable", bool, False,
+      "Is the canvas toolbox floatable (detachable from the main window)"),
+
+     ("mainwindow/toolbox-dock-movable", bool, True,
+      "Is the canvas toolbox movable (between left and right edge)"),
+
+     ("mainwindow/number-of-recent-schemes", int, 7,
+      "Number of recent schemes to keep in history"),
+
+     ("schemeedit/show-channel-names", bool, True,
+      "Show channel names"),
+
+     ("schemeedit/show-link-state", bool, True,
+      "Show link state hints."),
+
+     ("schemeedit/freeze-on-load", bool, False,
+      "Freeze signal propagation when loading a scheme."),
+
+     ("quickmenu/trigger-on-double-click", bool, True,
+      "Show quick menu on double click."),
+
+     ("quickmenu/trigger-on-left-click", bool, False,
+      "Show quick menu on left click."),
+
+     ("quickmenu/trigger-on-space-key", bool, True,
+      "Show quick menu on space key press."),
+
+     ("quickmenu/trigger-on-any-key", bool, False,
+      "Show quick menu on double click."),
+
+     ("logging/level", int, 1, "Logging level"),
+
+     ("logging/show-on-error", bool, True, "Show log window on error"),
+
+     ("logging/dockable", bool, True, "Allow log window to be docked"),
+
+     ("output/redirect-stderr", bool, True,
+      "Redirect and display standard error output"),
+
+     ("output/redirect-stdout", bool, True,
+      "Redirect and display standard output"),
+
+     ("output/stay-on-top", bool, True, ""),
+
+     ("output/show-on-error", bool, True, "Show output window on error"),
+
+     ("output/dockable", bool, True, "Allow output window to be docked"),
+
+     ("help/stay-on-top", bool, True, ""),
+
+     ("help/dockable", bool, True, "Allow help window to be docked"),
+
+     ("help/open-in-external-browser", bool, False,
+      "Open help in an external browser")
+     ]
+
+spec = [config_slot(*t) for t in spec]
+
+
+def settings():
+    init()
+    store = QSettings()
+    settings = Settings(defaults=spec, store=store)
+    return settings
 
 
 def data_dir():
-    """Return the application data directory.
+    """Return the application data directory. If the directory path
+    does not yet exists then create it.
+
     """
     init()
     datadir = QDesktopServices.storageLocation(QDesktopServices.DataLocation)
@@ -66,7 +138,9 @@ def data_dir():
 
 
 def cache_dir():
-    """Return the application cache directory.
+    """Return the application cache directory. If the directory path
+    does not yet exists then create it.
+
     """
     init()
     datadir = QDesktopServices.storageLocation(QDesktopServices.DataLocation)
@@ -82,13 +156,13 @@ def open_config():
     filename = os.path.join(app_dir, "canvas-rc.pck")
     if os.path.exists(filename):
         with open(os.path.join(app_dir, "canvas-rc.pck"), "rb") as f:
-            rc.update(cPickle.load(f))
+            rc.update(pickle.load(f))
 
 
 def save_config():
     app_dir = data_dir()
     with open(os.path.join(app_dir, "canvas-rc.pck"), "wb") as f:
-        cPickle.dump(rc, f)
+        pickle.dump(rc, f)
 
 
 def recent_schemes():
@@ -99,7 +173,7 @@ def recent_schemes():
     recent = []
     if os.path.isdir(app_dir) and os.path.isfile(recent_filename):
         with open(recent_filename, "rb") as f:
-            recent = cPickle.load(f)
+            recent = pickle.load(f)
 
     # Filter out files not found on the file system
     recent = [(title, path) for title, path in recent \
@@ -115,4 +189,4 @@ def save_recent_scheme_list(scheme_list):
 
     if os.path.isdir(app_dir):
         with open(recent_filename, "wb") as f:
-            cPickle.dump(scheme_list, f)
+            pickle.dump(scheme_list, f)
