@@ -2,6 +2,9 @@
 Helper utilities
 
 """
+import os
+import sys
+
 from contextlib import contextmanager
 
 from PyQt4.QtGui import (
@@ -55,12 +58,54 @@ def is_transparency_supported():
     """Is window transparency supported by the current windowing system.
 
     """
-    try:
-        from PyQt4.QtGui import QX11Info
-        return QX11Info.isCompositingManagerRunning()
-    except ImportError:
+    if sys.platform == "win32":
+        return is_dwm_compositing_enabled()
+    elif sys.platform == "cygwin":
+        return False
+    elif sys.platform == "darwin":
+        try:
+            # Test if Qt was build against X11.
+            from PyQt4.QtGui import QX11Info
+            return QX11Info.isCompositingManagerRunning()
+        except ImportError:
+            # Assuming Quartz compositor is running.
+            return True
+    elif sys.platform.startswith("linux"):
+        # TODO: wayland??
+        return is_x11_compositing_enabled()
+    elif sys.platform.startswith("freebsd"):
+        return is_x11_compositing_enabled()
+    elif os.name == "":
         # Any other system (Win, OSX) is assumed to support it
         return True
+
+
+def is_x11_compositing_enabled():
+    """Is X11 compositing manager running.
+    """
+    try:
+        from PyQt4.QtGui import QX11Info
+    except ImportError:
+        return False
+
+    return QX11Info.isCompositingManagerRunning()
+
+
+def is_dwm_compositing_enabled():
+    """Is Desktop Window Manager compositing (Aero) enabled.
+    """
+    import ctypes
+
+    enabled = ctypes.c_bool()
+    try:
+        DwmIsCompositionEnabled = ctypes.windll.dwmapi.DwmIsCompositionEnabled
+    except AttributeError:
+        # dwmapi or DwmIsCompositionEnabled is not present
+        return False
+
+    rval = DwmIsCompositionEnabled(ctypes.byref(enabled))
+
+    return rval == 0 and enabled.value
 
 
 def gradient_darker(grad, factor):

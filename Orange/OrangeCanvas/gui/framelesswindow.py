@@ -3,7 +3,7 @@ A Frameless window widget
 
 """
 
-from PyQt4.QtGui import QWidget, QPalette, QPainter, QStyleOption
+from PyQt4.QtGui import QWidget, QPalette, QPainter, QStyleOption, QBitmap
 
 from PyQt4.QtCore import Qt, pyqtProperty as Property
 
@@ -17,7 +17,7 @@ class FramelessWindow(QWidget):
     """
     def __init__(self, parent=None, **kwargs):
         QWidget.__init__(self, parent, **kwargs)
-        self.setWindowFlags(Qt.FramelessWindowHint)
+        self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
 
         self.__radius = 6
         self.__isTransparencySupported = is_transparency_supported()
@@ -29,21 +29,48 @@ class FramelessWindow(QWidget):
         """
         if self.__radius != radius:
             self.__radius = radius
+            if not self.__isTransparencySupported:
+                self.__updateMask()
             self.update()
 
     def radius(self):
+        """Return the border radius.
+        """
         return self.__radius
 
-    radius_ = Property(int, fget=radius, fset=setRadius)
+    radius_ = Property(int, fget=radius, fset=setRadius,
+                       designable=True)
+
+    def resizeEvent(self, event):
+        QWidget.resizeEvent(self, event)
+        if not self.__isTransparencySupported:
+            self.__updateMask()
+
+    def __updateMask(self):
+        opt = QStyleOption()
+        opt.init(self)
+        rect = opt.rect
+
+        size = rect.size()
+        mask = QBitmap(size)
+
+        p = QPainter(mask)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.setBrush(Qt.black)
+        p.setPen(Qt.NoPen)
+        p.drawRoundedRect(rect, self.__radius, self.__radius)
+        p.end()
+
+        self.setMask(mask)
 
     def paintEvent(self, event):
         if self.__isTransparencySupported:
-            p = QPainter(self)
-            p.setRenderHint(QPainter.Antialiasing, True)
-
             opt = QStyleOption()
             opt.init(self)
             rect = opt.rect
+
+            p = QPainter(self)
+            p.setRenderHint(QPainter.Antialiasing, True)
             p.setBrush(opt.palette.brush(QPalette.Window))
             p.setPen(Qt.NoPen)
             p.drawRoundedRect(rect, self.__radius, self.__radius)
