@@ -364,7 +364,6 @@ class CategoryDescription(object):
         Qualified name
     project_name : str
         A project name providing the category.
-
     priority : int
         Priority (order in the GUI).
     icon : str
@@ -436,9 +435,12 @@ class CategoryDescription(object):
         url = getattr(package, "URL", None)
         keywords = getattr(package, "KEYWORDS", None)
         widgets = getattr(package, "WIDGETS", None)
-        priority = getattr(package, "PRIORITY", sys.maxint)
+        priority = getattr(package, "PRIORITY", sys.maxint - 1)
         icon = getattr(package, "ICON", None)
         background = getattr(package, "BACKGROUND", None)
+
+        if priority == sys.maxint - 1 and name.lower() == "prototypes":
+            priority = sys.maxint
 
         return CategoryDescription(
             name=name,
