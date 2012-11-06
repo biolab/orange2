@@ -7,6 +7,7 @@ from PyQt4.QtCore import Qt, QPointF, QLineF, QRectF, QMargins, QVariant, \
 from PyQt4.QtCore import pyqtSignal as Signal, pyqtProperty as Property
 
 from .graphicspathobject import GraphicsPathObject
+from .utils import toGraphicsObjectIfPossible
 
 log = logging.getLogger(__name__)
 
@@ -209,6 +210,7 @@ class ControlPointRect(QGraphicsObject):
 
     def sceneEventFilter(self, obj, event):
         try:
+            obj = toGraphicsObjectIfPossible(obj)
             if isinstance(obj, ControlPoint):
                 etype = event.type()
                 if etype == QEvent.GraphicsSceneMousePress and \
@@ -365,6 +367,7 @@ class ControlPointLine(QGraphicsObject):
 
     def sceneEventFilter(self, obj, event):
         try:
+            obj = toGraphicsObjectIfPossible(obj)
             if isinstance(obj, ControlPoint):
                 etype = event.type()
                 if etype == QEvent.GraphicsSceneMousePress:

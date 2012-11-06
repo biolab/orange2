@@ -19,6 +19,7 @@ import sip
 from .. import scheme
 
 from . import items
+from .items.utils import toGraphicsObjectIfPossible
 
 log = logging.getLogger(__name__)
 
@@ -572,7 +573,7 @@ class CanvasScene(QGraphicsScene):
         annot = self.sender()
         item = self.__item_for_annotation[annot]
         if isinstance(annot, scheme.SchemeTextAnnotation):
-            item.setGeometry(*annot.rect)
+            item.setGeometry(QRectF(*annot.rect))
         elif isinstance(annot, scheme.SchemeArrowAnnotation):
             p1 = item.mapFromScene(QPointF(*annot.start_pos))
             p2 = item.mapFromScene(QPointF(*annot.end_pos))
@@ -589,26 +590,31 @@ class CanvasScene(QGraphicsScene):
         return items[0] if items else None
 
     if PYQT_VERSION_STR < "4.9":
-        # For QGraphicsObject subclasses items/itemAt returns a QGraphicsItem
-        # wrapper instance and not the actual class instance.
-        def _toGraphicsObjectIfPossible(self, item):
-            """Return the item instance as a QGraphicsObject (or subclass)
-            if possible, otherwise return item unmodified.
-
-            """
-            graphicsObject = item.toGraphicsObject()
-            if graphicsObject is not None:
-                return graphicsObject
-            else:
-                return item
-
+        # For QGraphicsObject subclasses items, itemAt ... return a
+        # QGraphicsItem wrapper instance and not the actual class instance.
         def itemAt(self, *args, **kwargs):
             item = QGraphicsScene.itemAt(self, *args, **kwargs)
-            return self._toGraphicsObjectIfPossible(item)
+            return toGraphicsObjectIfPossible(item)
 
         def items(self, *args, **kwargs):
             items = QGraphicsScene.items(self, *args, **kwargs)
-            return map(self._toGraphicsObjectIfPossible, items)
+            return map(toGraphicsObjectIfPossible, items)
+
+        def selectedItems(self, *args, **kwargs):
+            return map(toGraphicsObjectIfPossible,
+                       QGraphicsScene.selectedItems(self, *args, **kwargs))
+
+        def collidingItems(self, *args, **kwargs):
+            return map(toGraphicsObjectIfPossible,
+                       QGraphicsScene.collidingItems(self, *args, **kwargs))
+
+        def focusItem(self, *args, **kwargs):
+            item = QGraphicsScene.focusItem(self, *args, **kwargs)
+            return toGraphicsObjectIfPossible(item)
+
+        def mouseGrabberItem(self, *args, **kwargs):
+            item = QGraphicsScene.mouseGrabberItem(self, *args, **kwargs)
+            return toGraphicsObjectIfPossible(item)
 
     def mousePressEvent(self, event):
         if self.user_interaction_handler and \

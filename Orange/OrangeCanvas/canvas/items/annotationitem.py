@@ -8,7 +8,7 @@ from PyQt4.QtGui import (
 )
 
 from PyQt4.QtCore import (
-    Qt, QSizeF, QRectF, QLineF, QEvent
+    Qt, QSizeF, QRectF, QLineF, QEvent, qVersion
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
@@ -23,6 +23,13 @@ class Annotation(QGraphicsWidget):
     """
     def __init__(self, parent=None, **kwargs):
         QGraphicsWidget.__init__(self, parent, **kwargs)
+
+    if qVersion() < "4.7":
+        geometryChanged = Signal()
+
+        def setGeometry(self, rect):
+            QGraphicsWidget.setGeometry(self, rect)
+            self.geometryChanged.emit()
 
 
 class TextAnnotation(Annotation):

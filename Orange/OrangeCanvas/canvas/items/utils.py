@@ -1,6 +1,6 @@
 import numpy
 
-from PyQt4.QtGui import QColor, QRadialGradient
+from PyQt4.QtGui import QColor, QRadialGradient, QGraphicsItem
 
 
 def saturated(color, factor=150):
@@ -40,3 +40,16 @@ def radial_gradient(color, color_light=50):
     gradient.setColorAt(1.0, color)
     gradient.setCoordinateMode(QRadialGradient.ObjectBoundingMode)
     return gradient
+
+
+def toGraphicsObjectIfPossible(item):
+    """Return the item as a QGraphicsObject if possible.
+
+    This function is intended as a workaround for a problem with older
+    versions of PyQt (< 4.9), where methods returning 'QGraphicsItem *'
+    lose the type of the QGraphicsObject subclasses and instead return
+    generic QGraphicsItem wrappers.
+
+    """
+    obj = item.toGraphicsObject()
+    return item if obj is None else obj
