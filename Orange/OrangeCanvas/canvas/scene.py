@@ -8,7 +8,7 @@ import logging
 from PyQt4.QtGui import QGraphicsScene, QPainter, QBrush, \
                         QGraphicsItem
 
-from PyQt4.QtCore import Qt, QPointF, QRectF, QSizeF, QLineF, \
+from PyQt4.QtCore import Qt, QObject, QPointF, QRectF, QSizeF, QLineF, \
                          QBuffer, QSignalMapper
 
 from PyQt4.QtCore import pyqtSignal as Signal
@@ -29,6 +29,10 @@ def typed_signal_mapper(pyType):
     int, string, QObject and QWidget (but not for instance QGraphicsItem).
 
     """
+
+    def unwrap(obj):
+        return sip.unwrapinstance(sip.cast(obj, QObject))
+
     class TypedSignalMapper(QSignalMapper):
         pyMapped = Signal(pyType)
 
@@ -37,17 +41,21 @@ def typed_signal_mapper(pyType):
             self.__mapping = {}
 
         def setPyMapping(self, sender, mapped):
-            self.__mapping[sender] = mapped
-            sender.destroyed.connect(self.removeMappings)
+            sender_id = unwrap(sender)
+            self.__mapping[sender_id] = mapped
+            sender.destroyed.connect(self.removePyMappings)
 
         def removePyMappings(self, sender):
-            del self.__mapping[sender]
-            sender.destroyed.disconnect(self.removeMappings)
+            sender_id = unwrap(sender)
+            del self.__mapping[sender_id]
+            sender.destroyed.disconnect(self.removePyMappings)
 
         def pyMap(self, sender=None):
             if sender is None:
                 sender = self.sender()
-            mapped = self.__mapping[sender]
+
+            sender_id = unwrap(sender)
+            mapped = self.__mapping[sender_id]
             self.pyMapped.emit(mapped)
 
     return TypedSignalMapper
@@ -581,37 +589,26 @@ class CanvasScene(QGraphicsScene):
         return items[0] if items else None
 
     if PYQT_VERSION_STR < "4.9":
-        # For QGraphicsObject subclasses items/itemAt return a QGraphicsItem
+        # For QGraphicsObject subclasses items/itemAt returns a QGraphicsItem
         # wrapper instance and not the actual class instance.
+        def _toGraphicsObjectIfPossible(self, item):
+            """Return the item instance as a QGraphicsObject (or subclass)
+            if possible, otherwise return item unmodified.
+
+            """
+            graphicsObject = item.toGraphicsObject()
+            if graphicsObject is not None:
+                return graphicsObject
+            else:
+                return item
+
         def itemAt(self, *args, **kwargs):
             item = QGraphicsScene.itemAt(self, *args, **kwargs)
-            if type(item) is QGraphicsItem:
-                for obj in self.__node_items:
-                    if sip.unwrapinstance(sip.cast(obj, QGraphicsItem)) == \
-                            sip.unwrapinstance(item):
-                        return obj
-            return item
+            return self._toGraphicsObjectIfPossible(item)
 
         def items(self, *args, **kwargs):
             items = QGraphicsScene.items(self, *args, **kwargs)
-            instance_map = \
-                dict((sip.unwrapinstance(sip.cast(obj, QGraphicsItem)), obj)
-                     for obj in self.__node_items)
-            for i, item in enumerate(items):
-                if type(item) is QGraphicsItem and \
-                        sip.unwrapinstance(item) in instance_map:
-                        items[i] = instance_map[sip.unwrapinstance(item)]
-            return items
-
-        def _unwrap_node(self, node):
-            unwrapped = sip.unwrapinstance(node)
-            for item in self.__node_items:
-                unwrapped_item = \
-                    sip.unwrapinstance(sip.cast(item, QGraphicsItem))
-                if unwrapped_item == unwrapped:
-                    return item
-            else:
-                raise ValueError
+            return map(self._toGraphicsObjectIfPossible, items)
 
     def mousePressEvent(self, event):
         if self.user_interaction_handler and \
