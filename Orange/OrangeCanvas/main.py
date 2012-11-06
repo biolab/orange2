@@ -5,6 +5,7 @@ Orange Canvas main entry point
 
 import os
 import sys
+import gc
 import re
 import logging
 import optparse
@@ -228,6 +229,10 @@ def main(argv=None):
     app.processEvents()
     app.flush()
     del canvas_window
+
+    # Collect any cycles before deleting the QApplication instance
+    gc.collect()
+
     del app
     return status
 
