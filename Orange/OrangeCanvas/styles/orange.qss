@@ -1,6 +1,12 @@
 /*  Default Orange stylesheet
  */
 
+/*
+ * Icon search paths relative to this files directory.
+ * (main.py script will add this to QDir.searchPaths)
+ */
+
+@canvas_icons=orange
 
 CanvasMainWindow {
     background-color: #E9EFF2;

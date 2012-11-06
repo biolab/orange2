@@ -5,6 +5,7 @@ Orange Canvas main entry point
 
 import os
 import sys
+import re
 import logging
 import optparse
 import cPickle
@@ -13,14 +14,14 @@ from contextlib import nested
 import pkg_resources
 
 from PyQt4.QtGui import QFont, QColor
-from PyQt4.QtCore import QRect, QSettings
+from PyQt4.QtCore import QRect, QSettings, QDir
 
 from Orange import OrangeCanvas
 from Orange.OrangeCanvas.application.application import CanvasApplication
 from Orange.OrangeCanvas.application.canvasmain import CanvasMainWindow
 
 from Orange.OrangeCanvas.gui.splashscreen import SplashScreen, QPixmap
-from Orange.OrangeCanvas.config import open_config, cache_dir
+from Orange.OrangeCanvas.config import cache_dir
 from Orange.OrangeCanvas import config
 from Orange.OrangeCanvas.utils.redirect import redirect_stdout, redirect_stderr
 
@@ -112,14 +113,30 @@ def main(argv=None):
 
             pkg_name = OrangeCanvas.__name__
             resource = os.path.join("styles", stylesheet)
+
             if pkg_resources.resource_exists(pkg_name, resource):
                 stylesheet_string = pkg_resources.resource_string(
                                         pkg_name, resource)
+                base = pkg_resources.resource_filename(pkg_name, "styles")
+
+                matches = re.findall(
+                    r"^\s@([a-zA-Z0-9_]+?)=([a-zA-Z0-9_/]+?)$",
+                    stylesheet_string,
+                    re.MULTILINE)
+
+                for prefix, search_path in matches:
+                    QDir.addSearchPath(prefix, os.path.join(base, search_path))
+                    log.info("Adding search path %r for prefix, %r",
+                             search_path, prefix)
             else:
                 log.info("%r style sheet not found.", stylesheet)
 
     if stylesheet_string is not None:
         app.setStyleSheet(stylesheet_string)
+
+    # Add the default canvas_icons search path
+    dirpath = os.path.abspath(os.path.dirname(OrangeCanvas.__file__))
+    QDir.addSearchPath("canvas_icons", os.path.join(dirpath, "icons"))
 
     canvas_window = CanvasMainWindow()
     canvas_window.resize(1024, 650)

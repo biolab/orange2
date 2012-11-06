@@ -17,7 +17,7 @@ from PyQt4.QtGui import (
 )
 
 from PyQt4.QtCore import (
-    Qt, QEvent, QSize, QUrl, QSettings, QTimer
+    Qt, QEvent, QSize, QUrl, QSettings, QTimer, QFile
 )
 
 from PyQt4.QtCore import pyqtProperty as Property
@@ -61,11 +61,14 @@ def style_icons(widget, standard_pixmap):
 def canvas_icons(name):
     """Return the named canvas icon.
     """
-    return QIcon(pkg_resources.resource_filename(
-                  config.__name__,
-                  os.path.join("icons", name))
-                 )
-
+    icon_file = QFile("canvas_icons:" + name)
+    if icon_file.exists():
+        return QIcon("canvas_icons:" + name)
+    else:
+        return QIcon(pkg_resources.resource_filename(
+                      config.__name__,
+                      os.path.join("icons", name))
+                     )
 
 def message_critical(text, title=None, informative_text=None, details=None,
                      buttons=None, default_button=None, exc_info=False,
@@ -584,7 +587,7 @@ class CanvasMainWindow(QMainWindow):
         # Canvas Dock actions
         self.canvas_zoom_action = \
             QAction(self.tr("Zoom"), self,
-                    objectName="canvas-zoom-actions",
+                    objectName="canvas-zoom-action",
                     checkable=True,
                     shortcut=QKeySequence.ZoomIn,
                     toolTip=self.tr("Zoom in the scheme."),

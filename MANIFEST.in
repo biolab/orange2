@@ -1,8 +1,8 @@
 recursive-include Orange/testing *
 recursive-include Orange/doc *
 
-recursive-include Orange/OrangeWidgets *.png *.gs *.vs *.obj *.html
-recursive-include Orange/OrangeCanvas *.png *.pyw *.txt
+recursive-include Orange/OrangeWidgets *.png *.svg *.gs *.vs *.obj *.html
+recursive-include Orange/OrangeCanvas *.png *.svg *.qss *.pyw *.txt
 recursive-include Orange/orng *.cfg *.c
 
 recursive-include source *.bat *.c *.cpp *.h *.hpp *.mak COPYRIGHT *.py *.txt *.sip *.defs *.cmake Makefile
