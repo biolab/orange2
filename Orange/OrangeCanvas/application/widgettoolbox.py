@@ -93,16 +93,23 @@ class WidgetToolGrid(ToolGrid):
         """
         return self.__actionRole
 
-    def insertAction(self, index, action):
-        rval = ToolGrid.insertAction(self, index, action)
-        button = self.buttonForAction(action)
-        button.installEventFilter(self.__dragListener)
-        return rval
+    def actionEvent(self, event):
+        if event.type() == QEvent.ActionAdded:
+            # Creates and inserts the button instance.
+            ToolGrid.actionEvent(self, event)
 
-    def removeAction(self, action):
-        button = self.buttonForAction(action)
-        button.removeEventFilter(self.__dragListener)
-        ToolGrid.removeAction(self, action)
+            button = self.buttonForAction(event.action())
+            button.installEventFilter(self.__dragListener)
+            return
+        elif event.type() == QEvent.ActionRemoved:
+            button = self.buttonForAction(event.action())
+            button.removeEventFilter(self.__dragListener)
+
+            # Removes the button
+            ToolGrid.actionEvent(self, event)
+            return
+        else:
+            ToolGrid.actionEvent(self, event)
 
     def __initFromModel(self, model, rootIndex):
         """Initialize the grid from the model with rootIndex as the root.
@@ -147,8 +154,8 @@ class WidgetToolGrid(ToolGrid):
         """
         item = self.__model.itemForIndex(parent)
         if item == self.__rootItem:
-            for i in range(start - 1, end):
-                action = self._gridSlots[i].action
+            for i in reversed(range(start - 1, end)):
+                action = self.actions()[i]
                 self.removeAction(action)
 
     def __startDrag(self, button):
@@ -163,7 +170,7 @@ class WidgetToolGrid(ToolGrid):
             desc.qualified_name
         )
         drag = QDrag(button)
-        drag.setPixmap(icon.pixmap(self.iconSize))
+        drag.setPixmap(icon.pixmap(self.iconSize()))
         drag.setMimeData(drag_data)
         drag.exec_(Qt.CopyAction)
 

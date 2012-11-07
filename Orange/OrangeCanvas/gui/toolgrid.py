@@ -2,6 +2,8 @@
 Tool Grid Widget.
 ================
 
+A Widget containing a grid of clickable actions/buttons.
+
 """
 from collections import namedtuple, deque
 
@@ -96,21 +98,22 @@ class _ToolGridButton(QToolButton):
         self.__text = text
 
     def paintEvent(self, event):
-        try:
-            p = QStylePainter(self)
-            opt = QStyleOptionToolButton()
-            self.initStyleOption(opt)
-            if self.__text:
-                # Replace the text
-                opt.text = self.__text
-            p.drawComplexControl(QStyle.CC_ToolButton, opt)
-        except Exception, ex:
-            print ex
+        p = QStylePainter(self)
+        opt = QStyleOptionToolButton()
+        self.initStyleOption(opt)
+        if self.__text:
+            # Replace the text
+            opt.text = self.__text
+        p.drawComplexControl(QStyle.CC_ToolButton, opt)
         p.end()
 
 
 class ToolGrid(QWidget):
     """A widget containing a grid of actions/buttons.
+
+    Actions can be added using standard QWidget addAction and insertAction
+    methods.
+
     """
     actionTriggered = Signal(QAction)
     actionHovered = Signal(QAction)
@@ -118,25 +121,33 @@ class ToolGrid(QWidget):
     def __init__(self, parent=None, columns=4, buttonSize=None,
                  iconSize=None, toolButtonStyle=Qt.ToolButtonTextUnderIcon):
         QWidget.__init__(self, parent)
-        self.columns = columns
-        self.buttonSize = buttonSize or QSize(50, 50)
-        self.iconSize = iconSize or QSize(26, 26)
-        self.toolButtonStyle = toolButtonStyle
-        self._gridSlots = []
 
-        self._buttonListener = ToolButtonEventListener(self)
-        self._buttonListener.buttonRightClicked.connect(
-                self._onButtonRightClick)
+        if buttonSize is not None:
+            buttonSize = QSize(buttonSize)
 
-        self._buttonListener.buttonEnter.connect(
-                self._onButtonEnter)
+        if iconSize is not None:
+            iconSize = QSize(iconSize)
+
+        self.__columns = columns
+        self.__buttonSize = buttonSize or QSize(50, 50)
+        self.__iconSize = iconSize or QSize(26, 26)
+        self.__toolButtonStyle = toolButtonStyle
+
+        self.__gridSlots = []
+
+        self.__buttonListener = ToolButtonEventListener(self)
+        self.__buttonListener.buttonRightClicked.connect(
+                self.__onButtonRightClick)
+
+        self.__buttonListener.buttonEnter.connect(
+                self.__onButtonEnter)
 
         self.__mapper = QSignalMapper()
         self.__mapper.mapped[QObject].connect(self.__onClicked)
 
-        self.setupUi()
+        self.__setupUi()
 
-    def setupUi(self):
+    def __setupUi(self):
         layout = QGridLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -147,71 +158,67 @@ class ToolGrid(QWidget):
     def setButtonSize(self, size):
         """Set the button size.
         """
-        for slot in self._gridSlots:
-            slot.button.setFixedSize(size)
-        self.buttonSize = size
+        if self.__buttonSize != size:
+            self.__buttonSize = size
+            for slot in self.__gridSlots:
+                slot.button.setFixedSize(size)
+
+    def buttonSize(self):
+        return QSize(self.__buttonSize)
 
     def setIconSize(self, size):
         """Set the button icon size.
         """
-        for slot in self._gridSlots:
-            slot.button.setIconSize(size)
-        self.iconSize = size
+        if self.__iconSize != size:
+            self.__iconSize = size
+            for slot in self.__gridSlots:
+                slot.button.setIconSize(size)
+
+    def iconSize(self):
+        return QSize(self.__iconSize)
 
     def setToolButtonStyle(self, style):
         """Set the tool button style.
         """
-        for slot in self._gridSlots:
-            slot.button.setToolButtonStyle(style)
+        if self.__toolButtonStyle != style:
+            self.__toolButtonStyle = style
+            for slot in self.__gridSlots:
+                slot.button.setToolButtonStyle(style)
 
-        self.toolButtonStyle = style
+    def toolButtonStyle(self):
+        return self.__toolButtonStyle
 
     def setColumnCount(self, columns):
         """Set the number of button/action columns.
         """
-        if self.columns != columns:
-            self.columns = columns
-            self._relayout()
+        if self.__columns != columns:
+            self.__columns = columns
+            self.__relayout()
+
+    def columns(self):
+        return self.__columns
 
     def clear(self):
         """Clear all actions.
         """
-        layout = self.layout()
-        for slot in self._gridSlots:
+        for slot in reversed(list(self.__gridSlots)):
             self.removeAction(slot.action)
-            index = layout.indexOf(slot.button)
-            layout.takeAt(index)
-            slot.button.deleteLater()
+        self.__gridSlots = []
 
-        self._gridSlots = []
+    def insertAction(self, before, action):
+        """Insert a new action at the position currently occupied
+        by `before` (can also be an index).
 
-    # TODO: Move the add/insert/remove code in actionEvent, preserve the
-    # default Qt widget action interface.
-
-    def addAction(self, action):
-        """Append a new action to the ToolGrid.
         """
-        self.insertAction(len(self._gridSlots), action)
+        if isinstance(before, int):
+            actions = list(self.actions())
+            if len(actions) == 0 or before >= len(actions):
+                # Insert as the first action of the last action.
+                return self.addAction(action)
 
-    def insertAction(self, index, action):
-        """Insert a new action at index.
-        """
-        self._shiftGrid(index, 1)
-        button = self.createButtonForAction(action)
-        row = index / self.columns
-        column = index % self.columns
-        self.layout().addWidget(
-            button, row, column,
-            Qt.AlignLeft | Qt.AlignTop
-        )
-        self._gridSlots.insert(
-            index, _ToolGridSlot(button, action, row, column)
-        )
+            before = actions[before]
 
-        self.__mapper.setMapping(button, action)
-        button.clicked.connect(self.__mapper.map)
-        button.installEventFilter(self._buttonListener)
-        button.installEventFilter(self)
+        return QWidget.insertAction(self, before, action)
 
     def setActions(self, actions):
         """Clear the grid and add actions.
@@ -221,50 +228,85 @@ class ToolGrid(QWidget):
         for action in actions:
             self.addAction(action)
 
-    def removeAction(self, action):
-        """Remove action from the widget.
-        """
-        actions = [slot.action for slot in self._gridSlots]
-        index = actions.index(action)
-        slot = self._gridSlots.pop(index)
-
-        slot.button.removeEventFilter(self._buttonListener)
-        self.__mapper.removeMappings(slot.button)
-
-        self.layout().removeWidget(slot.button)
-        self._shiftGrid(index + 1, -1)
-
-        slot.button.deleteLater()
-
     def buttonForAction(self, action):
         """Return the `QToolButton` instance button for `action`.
         """
-        actions = [slot.action for slot in self._gridSlots]
+        actions = [slot.action for slot in self.__gridSlots]
         index = actions.index(action)
-        return self._gridSlots[index].button
+        return self.__gridSlots[index].button
 
     def createButtonForAction(self, action):
         """Create and return a QToolButton for action.
         """
-#        button = QToolButton(self)
         button = _ToolGridButton(self)
         button.setDefaultAction(action)
-#        button.setText(action.text())
-#        button.setIcon(action.icon())
 
-        if self.buttonSize.isValid():
-            button.setFixedSize(self.buttonSize)
-        if self.iconSize.isValid():
-            button.setIconSize(self.iconSize)
+        if self.__buttonSize.isValid():
+            button.setFixedSize(self.__buttonSize)
+        if self.__iconSize.isValid():
+            button.setIconSize(self.__iconSize)
 
-        button.setToolButtonStyle(self.toolButtonStyle)
+        button.setToolButtonStyle(self.__toolButtonStyle)
         button.setProperty("tool-grid-button", QVariant(True))
         return button
 
     def count(self):
-        return len(self._gridSlots)
+        return len(self.__gridSlots)
 
-    def _shiftGrid(self, start, count=1):
+    def actionEvent(self, event):
+        QWidget.actionEvent(self, event)
+
+        if event.type() == QEvent.ActionAdded:
+            # Note: the action is already in the self.actions() list.
+            actions = list(self.actions())
+            index = actions.index(event.action())
+            self.__insertActionButton(index, event.action())
+
+        elif event.type() == QEvent.ActionRemoved:
+            self.__removeActionButton(event.action())
+
+    def __insertActionButton(self, index, action):
+        """Create a button for the action and add it to the layout
+        at index.
+
+        """
+        self.__shiftGrid(index, 1)
+        button = self.createButtonForAction(action)
+
+        row = index / self.__columns
+        column = index % self.__columns
+
+        self.layout().addWidget(
+            button, row, column,
+            Qt.AlignLeft | Qt.AlignTop
+        )
+
+        self.__gridSlots.insert(
+            index, _ToolGridSlot(button, action, row, column)
+        )
+
+        self.__mapper.setMapping(button, action)
+        button.clicked.connect(self.__mapper.map)
+        button.installEventFilter(self.__buttonListener)
+        button.installEventFilter(self)
+
+    def __removeActionButton(self, action):
+        """Remove the button for the action from the layout and delete it.
+        """
+        actions = [slot.action for slot in self.__gridSlots]
+        index = actions.index(action)
+        slot = self.__gridSlots.pop(index)
+
+        slot.button.removeEventFilter(self.__buttonListener)
+        slot.button.removeEventFilter(self)
+        self.__mapper.removeMappings(slot.button)
+
+        self.layout().removeWidget(slot.button)
+        self.__shiftGrid(index + 1, -1)
+
+        slot.button.deleteLater()
+
+    def __shiftGrid(self, start, count=1):
         """Shift all buttons starting at index `start` by `count` cells.
         """
         button_count = self.layout().count()
@@ -275,39 +317,40 @@ class ToolGrid(QWidget):
             start, end = start, button_count
 
         for index in range(start, end, -direction):
-            item = self.layout().itemAtPosition(index / self.columns,
-                                                index % self.columns)
+            item = self.layout().itemAtPosition(index / self.__columns,
+                                                index % self.__columns)
             if item:
                 button = item.widget()
                 new_index = index + count
-                self.layout().addWidget(button, new_index / self.columns,
-                                        new_index % self.columns,
+                self.layout().addWidget(button, new_index / self.__columns,
+                                        new_index % self.__columns,
                                         Qt.AlignLeft | Qt.AlignTop)
 
-    def _relayout(self):
+    def __relayout(self):
         """Relayout the buttons.
         """
         for i in reversed(range(self.layout().count())):
             self.layout().takeAt(i)
 
-        self._gridSlots = [_ToolGridSlot(slot.button, slot.action,
-                                         i / self.columns, i % self.columns)
-                           for i, slot in enumerate(self._gridSlots)]
+        self.__gridSlots = [_ToolGridSlot(slot.button, slot.action,
+                                          i / self.__columns,
+                                          i % self.__columns)
+                            for i, slot in enumerate(self.__gridSlots)]
 
-        for slot in self._gridSlots:
+        for slot in self.__gridSlots:
             self.layout().addWidget(slot.button, slot.row, slot.column,
                                     Qt.AlignLeft | Qt.AlignTop)
 
-    def _indexOf(self, button):
+    def __indexOf(self, button):
         """Return the index of button widget.
         """
-        buttons = [slot.button for slot in self._gridSlots]
+        buttons = [slot.button for slot in self.__gridSlots]
         return buttons.index(button)
 
-    def _onButtonRightClick(self, button):
+    def __onButtonRightClick(self, button):
         print button
 
-    def _onButtonEnter(self, button):
+    def __onButtonEnter(self, button):
         action = button.defaultAction()
         self.actionHovered.emit(action)
 
@@ -331,21 +374,21 @@ class ToolGrid(QWidget):
     def __focusMove(self, focus, key):
         assert(focus is self.focusWidget())
         try:
-            index = self._indexOf(focus)
+            index = self.__indexOf(focus)
         except IndexError:
             return False
 
         if key == Qt.Key_Down:
-            index += self.columns
+            index += self.__columns
         elif key == Qt.Key_Up:
-            index -= self.columns
+            index -= self.__columns
         elif key == Qt.Key_Left:
             index -= 1
         elif key == Qt.Key_Right:
             index += 1
 
         if index >= 0 and index < self.count():
-            button = self._gridSlots[index].button
+            button = self.__gridSlots[index].button
             button.setFocus(Qt.TabFocusReason)
             return True
         else:
