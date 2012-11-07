@@ -202,6 +202,10 @@ def main(argv=None):
     canvas_window.raise_()
 
     if want_welcome and not args:
+        # Process events to make sure the canvas_window layout has
+        # a chance to activate (the welcome dialog is modal and will
+        # block the event queue)
+        app.processEvents()
         canvas_window.welcome_dialog()
 
     elif args:
