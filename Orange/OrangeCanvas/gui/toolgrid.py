@@ -51,8 +51,11 @@ class _ToolGridButton(QToolButton):
         curr_line = ""
         curr_line_word_count = 0
 
-        # TODO: Get margins from the style
-        width = self.width() - 4
+        option = QStyleOptionToolButton()
+        option.initFrom(self)
+
+        margin = self.style().pixelMetric(QStyle.PM_ButtonMargin, option, self)
+        width = self.width() - 2 * margin
 
         while words:
             w = words.popleft()
@@ -208,6 +211,7 @@ class ToolGrid(QWidget):
         self.__mapper.setMapping(button, action)
         button.clicked.connect(self.__mapper.map)
         button.installEventFilter(self._buttonListener)
+        button.installEventFilter(self)
 
     def setActions(self, actions):
         """Clear the grid and add actions.
@@ -300,27 +304,6 @@ class ToolGrid(QWidget):
         buttons = [slot.button for slot in self._gridSlots]
         return buttons.index(button)
 
-    def paintEvent(self, event):
-        return utils.StyledWidget_paintEvent(self, event)
-
-    def focusNextPrevChild(self, next):
-        focus = self.focusWidget()
-        try:
-            index = self._indexOf(focus)
-        except IndexError:
-            return False
-
-        if next:
-            index += 1
-        else:
-            index -= 1
-        if index == -1 or index == self.count():
-            return False
-
-        button = self._gridSlots[index].button
-        button.setFocus(Qt.TabFocusReason if next else Qt.BacktabFocusReason)
-        return True
-
     def _onButtonRightClick(self, button):
         print button
 
@@ -331,25 +314,42 @@ class ToolGrid(QWidget):
     def __onClicked(self, action):
         self.actionTriggered.emit(action)
 
-#    def keyPressEvent(self, event):
-#        key = event.key()
-#        focus = self.focusWidget()
-#        print key, focus
-#        if key == Qt.Key_Down or key == Qt.Key_Up:
-#            try:
-#                index = self._indexOf(focus)
-#            except IndexError:
-#                return
-#            if key == Qt.Key_Down:
-#                index += self.columns
-#            else:
-#                index -= self.columns
-#            if index >= 0 and index < self.count():
-#                button = self._gridSlots[index].button
-#                button.setFocus(Qt.TabFocusReason)
-#            event.accept()
-#        else:
-#            return QWidget.keyPressEvent(self, event)
+    def paintEvent(self, event):
+        return utils.StyledWidget_paintEvent(self, event)
+
+    def eventFilter(self, obj, event):
+        etype = event.type()
+        if etype == QEvent.KeyPress and obj.hasFocus():
+            key = event.key()
+            if key in [Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right]:
+                if self.__focusMove(obj, key):
+                    event.accept()
+                    return True
+
+        return QWidget.eventFilter(self, obj, event)
+
+    def __focusMove(self, focus, key):
+        assert(focus is self.focusWidget())
+        try:
+            index = self._indexOf(focus)
+        except IndexError:
+            return False
+
+        if key == Qt.Key_Down:
+            index += self.columns
+        elif key == Qt.Key_Up:
+            index -= self.columns
+        elif key == Qt.Key_Left:
+            index -= 1
+        elif key == Qt.Key_Right:
+            index += 1
+
+        if index >= 0 and index < self.count():
+            button = self._gridSlots[index].button
+            button.setFocus(Qt.TabFocusReason)
+            return True
+        else:
+            return False
 
 
 class ToolButtonEventListener(QObject):
