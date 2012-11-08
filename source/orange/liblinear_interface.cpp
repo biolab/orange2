@@ -401,18 +401,26 @@ TLinearClassifier::TLinearClassifier(const PVariable &var, PExampleTable _exampl
 }
     else
     {
+        /* If the order of the liblinear internaly stored classes
+         * is different from the order of orange's class values,
+         * we reverse the weight vector.
+         */
+        float factor = (labels[0] == 0)? 1.0f : -1.0f;
+
         for (int j = 0; j < nr_feature; j++)
         {
-            /* If there are more than 2 class values
-             */
             if (nr_orange_weights > 1)
             {
+               /* There are more than 2 orange class values. This means
+                * there were no instances for one or more classed in the training
+                * data set.
+                */
                 weights->at(labels[0])->at(j) = linmodel->w[j];
                 weights->at(labels[1])->at(j) = - linmodel->w[j];
             }
             else
             {
-                weights->at(0)->at(j) = linmodel->w[j];
+                weights->at(0)->at(j) = factor * linmodel->w[j];
             }
         }
     }
