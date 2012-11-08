@@ -90,7 +90,7 @@ def split(data, value):
     return Orange.data.Table(pos), Orange.data.Table(neg)
 
 
-def test_missing_instances(self):
+def missing_instances_test(self):
     """Test the learner on a dataset with no instances for
     some class.
 
@@ -121,7 +121,7 @@ class TestLinearSVMLearnerL2R_L2LOSS_DUAL(testing.LearnerTestCase):
 
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
-    test_missing_instances = test_missing_instances
+    test_missing_instances = missing_instances_test
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
@@ -130,7 +130,7 @@ class TestLinearSVMLearnerL2R_L2LOSS(testing.LearnerTestCase):
 
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
-    test_missing_instances = test_missing_instances
+    test_missing_instances = missing_instances_test
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
@@ -139,7 +139,7 @@ class TestLinearSVMLearnerL2R_L1LOSS_DUAL(testing.LearnerTestCase):
 
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
-    test_missing_instances = test_missing_instances
+    test_missing_instances = missing_instances_test
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
@@ -148,7 +148,7 @@ class TestLinearSVMLearnerL2R_L1LOSS(testing.LearnerTestCase):
 
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
-    test_missing_instances = test_missing_instances
+    test_missing_instances = missing_instances_test
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
@@ -157,7 +157,7 @@ class TestLinearSVMLearnerL1R_L2LOSS(testing.LearnerTestCase):
 
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
-    test_missing_instances = test_missing_instances
+    test_missing_instances = missing_instances_test
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
@@ -166,7 +166,7 @@ class TestLinearSVMLearnerMCSVM_CSS(testing.LearnerTestCase):
 
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
-    test_missing_instances = test_missing_instances
+    test_missing_instances = missing_instances_test
 
 
 if __name__ == "__main__":
