@@ -6,23 +6,15 @@ from __future__ import division
 
 import logging
 
-from collections import namedtuple
+from PyQt4.QtGui import QToolBar
 
-from PyQt4.QtGui import (
-    QWidget, QToolBar, QToolButton, QAction, QBoxLayout, QStyle, QStylePainter,
-    QStyleOptionToolBar, QSizePolicy
-)
-
-from PyQt4.QtCore import Qt, QSize, QPoint, QEvent, QSignalMapper
-
-from PyQt4.QtCore import pyqtSignal as Signal, \
-                         pyqtProperty as Property
+from PyQt4.QtCore import Qt, QSize, QEvent
 
 log = logging.getLogger(__name__)
 
 
 class DynamicResizeToolBar(QToolBar):
-    """A QToolBar subclass that dynamically resizes its toolbuttons
+    """A QToolBar subclass that dynamically resizes its tool buttons
     to fit available space (this is done by setting fixed size on the
     button instances).
 
@@ -32,13 +24,6 @@ class DynamicResizeToolBar(QToolBar):
 
     def __init__(self, parent=None, *args, **kwargs):
         QToolBar.__init__(self, *args, **kwargs)
-
-#        if self.orientation() == Qt.Horizontal:
-#            self.setSizePolicy(QSizePolicy.Fixed,
-#                               QSizePolicy.MinimumExpanding)
-#        else:
-#            self.setSizePolicy(QSizePolicy.MinimumExpanding,
-#                               QSizePolicy.Fixed)
 
     def resizeEvent(self, event):
         QToolBar.resizeEvent(self, event)
@@ -119,185 +104,3 @@ def uniform_layout_helper(items, contents_rect, expanding, spacing):
     for i, item in enumerate(items):
         item_size = base_size + (1 if i < remainder else 0)
         setter(item, item_size)
-
-
-########
-# Unused
-########
-
-_ToolBarSlot = namedtuple(
-    "_ToolBarAction",
-    ["index",
-     "action",
-     "button",
-     ]
-)
-
-
-class ToolBarButton(QToolButton):
-    def __init__(self, *args, **kwargs):
-        QToolButton.__init__(self, *args, **kwargs)
-
-
-class ToolBar(QWidget):
-
-    actionTriggered = Signal()
-    actionHovered = Signal()
-
-    def __init__(self, parent=None, toolButtonStyle=Qt.ToolButtonFollowStyle,
-                 orientation=Qt.Horizontal, iconSize=None, **kwargs):
-        QWidget.__init__(self, parent, **kwargs)
-
-        self.__actions = []
-        self.__toolButtonStyle = toolButtonStyle
-        self.__orientation = orientation
-
-        if iconSize is not None:
-            pm = self.style().pixelMetric(QStyle.PM_ToolBarIconSize)
-            iconSize = QSize(pm, pm)
-
-        self.__iconSize = iconSize
-
-        if orientation == Qt.Horizontal:
-            layout = QBoxLayout(QBoxLayout.LeftToRight)
-        else:
-            layout = QBoxLayout(QBoxLayout.TopToBottom)
-
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        self.setLayout(layout)
-
-        self.__signalMapper = QSignalMapper()
-
-    def setToolButtonStyle(self, style):
-        if self.__toolButtonStyle != style:
-            for slot in self.__actions:
-                slot.button.setToolButtonStyle(style)
-            self.__toolButtonStyle = style
-
-    def toolButtonStyle(self):
-        return self.__toolButtonStyle
-
-    toolButtonStyle_ = Property(int, fget=toolButtonStyle,
-                                fset=setToolButtonStyle)
-
-    def setOrientation(self, orientation):
-        if self.__orientation != orientation:
-            if orientation == Qt.Horizontal:
-                self.layout().setDirection(QBoxLayout.LeftToRight)
-            else:
-                self.layout().setDirection(QBoxLayout.TopToBottom)
-            sp = self.sizePolicy()
-            sp.transpose()
-            self.setSizePolicy(sp)
-            self.__orientation = orientation
-
-    def orientation(self):
-        return self.__orientation
-
-    orientation_ = Property(int, fget=orientation, fset=setOrientation)
-
-    def setIconSize(self, size):
-        if self.__iconSize != size:
-            for slot in self.__actions:
-                slot.button.setIconSize(size)
-            self.__iconSize = size
-
-    def iconSize(self):
-        return self.__iconSize
-
-    iconSize_ = Property(QSize, fget=iconSize, fset=setIconSize)
-
-    def actionEvent(self, event):
-        action = event.action()
-        if event.type() == QEvent.ActionAdded:
-            if event.before() is not None:
-                index = self._indexForAction(event.before()) + 1
-            else:
-                index = self.count()
-
-            already_added = True
-            try:
-                self._indexForAction(action)
-            except IndexError:
-                already_added = False
-
-            if already_added:
-                log.error("Action ('%s') already inserted", action.text())
-                return
-
-            self.__insertAction(index, action)
-
-        elif event.type() == QEvent.ActionRemoved:
-            try:
-                index = self._indexForAction(event.action())
-            except IndexError:
-                log.error("Action ('%s') is not in the toolbar", action.text())
-                return
-
-            self.__removeAction(index)
-
-        elif event.type() == QEvent.ActionChanged:
-            pass
-
-        return QWidget.actionEvent(self, event)
-
-    def count(self):
-        return len(self.__actions)
-
-    def actionAt(self, point):
-        widget = self.childAt(QPoint)
-        if isinstance(widget, QToolButton):
-            return widget.defaultAction()
-
-    def _indexForAction(self, action):
-        for i, slot in enumerate(self.__actions):
-            if slot.action is action:
-                return i
-        raise IndexError("Action not in the toolbar")
-
-    def __insertAction(self, index, action):
-        """Insert action into index.
-        """
-        log.debug("Inserting action '%s' at %i.", action.text(), index)
-        button = ToolBarButton(self)
-        button.setDefaultAction(action)
-        button.setToolButtonStyle(self.toolButtonStyle_)
-        button.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        button.triggered[QAction].connect(self.actionTriggered)
-        self.__signalMapper.setMapping(button, action)
-        slot = _ToolBarSlot(index, action, button)
-        self.__actions.insert(index, slot)
-
-        for i in range(index + 1, len(self.__actions)):
-            self.__actions[i] = self.__actions[i]._replace(index=i)
-
-        self.layout().insertWidget(index, button, stretch=1)
-
-    def __removeAction(self, index):
-        """Remove action at index.
-        """
-        slot = self.__actions.pop(index)
-        log.debug("Removing action '%s'.", slot.action.text())
-        for i in range(index, len(self.__actions)):
-            self.__actions[i] = self.__actions[i]._replace(index=i)
-        self.layout().takeAt(index)
-        slot.button.hide()
-        slot.button.setParent(None)
-        slot.button.deleteLater()
-
-    def paintEvent(self, event):
-        try:
-            painter = QStylePainter(self)
-            opt = QStyleOptionToolBar()
-            opt.initFrom(self)
-
-            opt.features = QStyleOptionToolBar.None
-            opt.positionOfLine = QStyleOptionToolBar.OnlyOne
-            opt.positionWithinLine = QStyleOptionToolBar.OnlyOne
-
-            painter.drawControl(QStyle.CE_ToolBar, opt)
-            print self.style()
-        except Exception:
-            log.critical("Error", exc_info=1)
-        painter.end()

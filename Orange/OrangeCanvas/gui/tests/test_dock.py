@@ -35,7 +35,6 @@ class TestDock(test.QAppTestCase):
         self.app.processEvents()
 
         def toogle():
-#            print dock.width(), dock.minimumWidth(), dock.sizeHint()
             dock.setExpanded(not dock.expanded())
             self.singleShot(2000, toogle)
 
@@ -59,7 +58,6 @@ class TestDock(test.QAppTestCase):
         mw.show()
 
         def toogle():
-#            print dock.width(), dock.minimumWidth(), dock.sizeHint()
             dock.setExpanded(not dock.expanded())
             self.singleShot(2000, toogle)
 

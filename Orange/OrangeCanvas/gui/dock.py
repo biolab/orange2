@@ -67,8 +67,8 @@ class CollapsibleDockWidget(QDockWidget):
         self.__stack.setSizePolicy(QSizePolicy.Fixed,
                                    QSizePolicy.Expanding)
 
-        self.__stack.transitionStarted.connect(self._onTransitionStarted)
-        self.__stack.transitionFinished.connect(self._onTransitionFinished)
+        self.__stack.transitionStarted.connect(self.__onTransitionStarted)
+        self.__stack.transitionFinished.connect(self.__onTransitionFinished)
 
         self.__stack.installEventFilter(self)
 
@@ -169,19 +169,19 @@ class CollapsibleDockWidget(QDockWidget):
 
     def eventFilter(self, obj, event):
         if obj is self.__closeButton:
-            type = event.type()
-            if type == QEvent.MouseButtonPress:
+            etype = event.type()
+            if etype == QEvent.MouseButtonPress:
                 self.setExpanded(not self.__expanded)
                 return True
-            elif type == QEvent.MouseButtonDblClick or \
-                    type == QEvent.MouseButtonRelease:
+            elif etype == QEvent.MouseButtonDblClick or \
+                    etype == QEvent.MouseButtonRelease:
                 return True
             # TODO: which other events can trigger the button (is the button
             # focusable).
 
         if obj is self.__stack:
-            type = event.type()
-            if type == QEvent.Resize:
+            etype = event.type()
+            if etype == QEvent.Resize:
                 # If the stack resizes
                 obj.resizeEvent(event)
                 size = event.size()
@@ -205,10 +205,10 @@ class CollapsibleDockWidget(QDockWidget):
         self.__stack.setLayoutDirection(self.parentWidget().layoutDirection())
         self.__fixIcon()
 
-    def _onTransitionStarted(self):
+    def __onTransitionStarted(self):
         self.__stack.installEventFilter(self)
 
-    def _onTransitionFinished(self):
+    def __onTransitionFinished(self):
         self.__stack.removeEventFilter(self)
         size = self.__stack.sizeHint()
         left, _, right, _ = self.getContentsMargins()
