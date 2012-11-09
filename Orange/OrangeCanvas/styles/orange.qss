@@ -6,7 +6,10 @@
  * (main.py script will add this to QDir.searchPaths)
  */
 
-@canvas_icons=orange
+@canvas_icons: orange;
+
+
+/* Main window background color */
 
 CanvasMainWindow {
     background-color: #E9EFF2;
