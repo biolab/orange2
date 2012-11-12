@@ -232,4 +232,3 @@ class TestScene(QAppTestCase):
         )
 
         return file_desc, discretize_desc, bayes_desc
-

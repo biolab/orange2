@@ -486,8 +486,7 @@ def message_pixmap(standard_pixmap):
 
 
 def linspace(count):
-    return map(float,
-               numpy.linspace(0.0, 1.0, count + 2, endpoint=True)[1:-1])
+    return map(float, numpy.linspace(0.0, 1.0, count + 2, endpoint=True)[1:-1])
 
 
 class NodeItem(QGraphicsObject):
@@ -526,10 +525,6 @@ class NodeItem(QGraphicsObject):
         # in/output anchor items
         self.inputAnchorItem = None
         self.outputAnchorItem = None
-
-        # round anchor indicators on the anchor path
-#        self.inputAnchors = []
-#        self.outputAnchors = []
 
         # title text item
         self.captionTextItem = None

@@ -4,62 +4,24 @@ Canvas Graphics Scene
 """
 
 import logging
+from operator import attrgetter
 
 from PyQt4.QtGui import QGraphicsScene, QPainter, QBrush, \
                         QGraphicsItem
 
-from PyQt4.QtCore import Qt, QObject, QPointF, QRectF, QSizeF, QLineF, \
-                         QBuffer, QSignalMapper
+from PyQt4.QtCore import Qt, QPointF, QRectF, QSizeF, QLineF, QBuffer
 
 from PyQt4.QtCore import pyqtSignal as Signal
 from PyQt4.QtCore import PYQT_VERSION_STR
 
-import sip
 
 from .. import scheme
 
 from . import items
-from .items.utils import toGraphicsObjectIfPossible
+from .layout import AnchorLayout
+from .items.utils import toGraphicsObjectIfPossible, typed_signal_mapper
 
 log = logging.getLogger(__name__)
-
-
-def typed_signal_mapper(pyType):
-    """Create a TypedSignalMapper class supporting signal
-    mapping for `pyType` (the default QSigalMapper only supports
-    int, string, QObject and QWidget (but not for instance QGraphicsItem).
-
-    """
-
-    def unwrap(obj):
-        return sip.unwrapinstance(sip.cast(obj, QObject))
-
-    class TypedSignalMapper(QSignalMapper):
-        pyMapped = Signal(pyType)
-
-        def __init__(self, parent=None):
-            QSignalMapper.__init__(self, parent)
-            self.__mapping = {}
-
-        def setPyMapping(self, sender, mapped):
-            sender_id = unwrap(sender)
-            self.__mapping[sender_id] = mapped
-            sender.destroyed.connect(self.removePyMappings)
-
-        def removePyMappings(self, sender):
-            sender_id = unwrap(sender)
-            del self.__mapping[sender_id]
-            sender.destroyed.disconnect(self.removePyMappings)
-
-        def pyMap(self, sender=None):
-            if sender is None:
-                sender = self.sender()
-
-            sender_id = unwrap(sender)
-            mapped = self.__mapping[sender_id]
-            self.pyMapped.emit(mapped)
-
-    return TypedSignalMapper
 
 
 NodeItemSignalMapper = typed_signal_mapper(items.NodeItem)
@@ -125,6 +87,10 @@ class CanvasScene(QGraphicsScene):
         # Is the scene editable
         self.editable = True
 
+        # Anchor Layout
+        self.__anchor_layout = AnchorLayout()
+        self.addItem(self.__anchor_layout)
+
         self.user_interaction_handler = None
 
         self.activated_mapper = NodeItemSignalMapper(self)
@@ -150,6 +116,10 @@ class CanvasScene(QGraphicsScene):
         self.__item_for_node = {}
         self.__link_items = []
         self.__item_for_link = {}
+        self.__annotation_items = []
+        self.__item_for_annotation = {}
+
+        self.__anchor_layout.deleteLater()
 
         self.user_interaction_handler = None
 
@@ -217,6 +187,17 @@ class CanvasScene(QGraphicsScene):
         """
         log.info("Setting registry '%s on '%s'." % (registry, self))
         self.registry = registry
+
+    def set_anchor_layout(self, layout):
+        if self.__anchor_layout != layout:
+            if self.__anchor_layout:
+                self.__anchor_layout.deleteLater()
+                self.__anchor_layout = None
+
+            self.__anchor_layout = layout
+
+    def anchor_layout(self):
+        return self.__anchor_layout
 
     def add_node_item(self, item):
         """Add a :class:`NodeItem` instance to the scene.
@@ -342,6 +323,8 @@ class CanvasScene(QGraphicsScene):
 
         log.info("Added link %r -> %r to '%s'" % \
                  (item.sourceItem.title, item.sinkItem.title, self))
+
+        self.__anchor_layout.invalidateLink(item)
 
         return item
 
@@ -552,6 +535,34 @@ class CanvasScene(QGraphicsScene):
         """
         return [item for item in self.__annotation_items if item.isSelected()]
 
+    def node_links(self, node_item):
+        """Return all links from the `node_item` (:class:`NodeItem`).
+        """
+        return self.node_output_links(node_item) + \
+               self.node_input_links(node_item)
+
+    def node_output_links(self, node_item):
+        """Return a list of all output links from `node_item`.
+        """
+        return [link for link in self.__link_items
+                if link.sourceItem == node_item]
+
+    def node_input_links(self, node_item):
+        """Return a list of all input links for `node_item`.
+        """
+        return [link for link in self.__link_items
+                if link.sinkItem == node_item]
+
+    def neighbor_nodes(self, node_item):
+        """Return a list of `node_item`'s (class:`NodeItem`) neighbor nodes.
+        """
+        neighbors = map(attrgetter("sourceItem"),
+                        self.node_input_links(node_item))
+
+        neighbors.extend(map(attrgetter("sinkItem"),
+                             self.node_output_links(node_item)))
+        return neighbors
+
     def on_widget_state_change(self, widget, state):
         pass
 
@@ -562,6 +573,9 @@ class CanvasScene(QGraphicsScene):
         pass
 
     def _on_position_change(self, item):
+        # Invalidate the anchor point layout and schedule a layout.
+        self.__anchor_layout.invalidateNode(item)
+
         self.node_item_position_changed.emit(item, item.pos())
 
     def __on_node_pos_changed(self, pos):

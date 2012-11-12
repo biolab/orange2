@@ -1,6 +1,10 @@
 import numpy
 
-from PyQt4.QtGui import QColor, QRadialGradient, QGraphicsItem
+import sip
+
+from PyQt4.QtGui import QColor, QRadialGradient
+from PyQt4.QtCore import QObject, QSignalMapper
+from PyQt4.QtCore import pyqtSignal as Signal
 
 
 def saturated(color, factor=150):
@@ -53,3 +57,41 @@ def toGraphicsObjectIfPossible(item):
     """
     obj = item.toGraphicsObject()
     return item if obj is None else obj
+
+
+def typed_signal_mapper(pyType):
+    """Create a TypedSignalMapper class supporting signal
+    mapping for `pyType` (the default QSigalMapper only supports
+    int, string, QObject and QWidget (but not for instance QGraphicsItem).
+
+    """
+
+    def unwrap(obj):
+        return sip.unwrapinstance(sip.cast(obj, QObject))
+
+    class TypedSignalMapper(QSignalMapper):
+        pyMapped = Signal(pyType)
+
+        def __init__(self, parent=None):
+            QSignalMapper.__init__(self, parent)
+            self.__mapping = {}
+
+        def setPyMapping(self, sender, mapped):
+            sender_id = unwrap(sender)
+            self.__mapping[sender_id] = mapped
+            sender.destroyed.connect(self.removePyMappings)
+
+        def removePyMappings(self, sender):
+            sender_id = unwrap(sender)
+            del self.__mapping[sender_id]
+            sender.destroyed.disconnect(self.removePyMappings)
+
+        def pyMap(self, sender=None):
+            if sender is None:
+                sender = self.sender()
+
+            sender_id = unwrap(sender)
+            mapped = self.__mapping[sender_id]
+            self.pyMapped.emit(mapped)
+
+    return TypedSignalMapper
