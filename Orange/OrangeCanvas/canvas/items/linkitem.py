@@ -20,6 +20,7 @@ class LinkCurveItem(QGraphicsPathItem):
     def __init__(self, parent):
         QGraphicsPathItem.__init__(self, parent)
         assert(isinstance(parent, LinkItem))
+
         self.__canvasLink = parent
         self.setAcceptHoverEvents(True)
         self.setAcceptedMouseButtons(Qt.RightButton)
@@ -46,6 +47,13 @@ class LinkCurveItem(QGraphicsPathItem):
 
     def setHoverState(self, state):
         self.__hover = state
+        self.__update()
+
+    def setCurvePenSet(self, pen, hoverPen):
+        if pen is not None:
+            self.normalPen = pen
+        if hoverPen is not None:
+            self.hoverPen = hoverPen
         self.__update()
 
     def itemChange(self, change, value):
@@ -129,6 +137,9 @@ class LinkItem(QGraphicsObject):
 
         self.__sourceName = ""
         self.__sinkName = ""
+
+        self.__dynamic = False
+        self.__dynamicEnabled = False
 
         self.hover = False
 
@@ -327,3 +338,35 @@ class LinkItem(QGraphicsObject):
 
     def setEnabled(self, enabled):
         QGraphicsObject.setEnabled(self, enabled)
+
+    def setDynamicEnabled(self, enabled):
+        if self.__dynamicEnabled != enabled:
+            self.__dynamicEnabled = enabled
+            if self.__dynamic:
+                self.__updatePen()
+
+    def isDynamicEnabled(self):
+        return self.__dynamicEnabled
+
+    def setDynamic(self, dynamic):
+        if self.__dynamic != dynamic:
+            self.__dynamic = dynamic
+            self.__updatePen()
+
+    def isDynamic(self):
+        return self.__dynamic
+
+    def __updatePen(self):
+        if self.__dynamic:
+            if self.__dynamicEnabled:
+                color = QColor(0, 150, 0, 150)
+            else:
+                color = QColor(150, 0, 0, 150)
+
+            normal = QPen(QBrush(color), 2.0)
+            hover = QPen(QBrush(color.darker(120)), 2.1)
+        else:
+            normal = QPen(QBrush(QColor("#9CACB4")), 2.0)
+            hover = QPen(QBrush(QColor("#7D7D7D")), 2.1)
+
+        self.curveItem.setCurvePenSet(normal, hover)

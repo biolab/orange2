@@ -117,7 +117,8 @@ class SchemeLink(QObject):
         """Is this link dynamic.
         """
         return self.source_channel.dynamic and \
-            issubclass(self.sink_type(), self.source_type())
+            issubclass(self.sink_type(), self.source_type()) and \
+            not (self.sink_type() is self.source_type())
 
     def enabled(self):
         """Is this link enabled.

@@ -1,7 +1,7 @@
 import logging
 from functools import partial
 
-from PyQt4.QtCore import QTimer
+from PyQt4.QtCore import QTimer, SIGNAL
 
 from .. import orngSignalManager
 from .scheme import Scheme
@@ -111,7 +111,30 @@ class WidgetsScheme(Scheme):
         widget.progressBarValueChanged.connect(node.set_progress)
         widget.processingStateChanged.connect(node.set_processing_state)
 
+        # TODO: Change how the signal is emitted in signal manager (should
+        # notify the SchemeLink directly).
+        widget.connect(
+           widget,
+           SIGNAL("dynamicLinkEnabledChanged(PyQt_PyObject, bool)"),
+           self.__on_dynamic_link_enabled_changed
+        )
+
         return widget
+
+    def __on_dynamic_link_enabled_changed(self, link, enabled):
+        rev = dict(map(reversed, self.widget_for_node.items()))
+
+        source_node = rev[link.widgetFrom]
+        sink_node = rev[link.widgetTo]
+        source_channel = source_node.output_channel(link.signalNameFrom)
+        sink_channel = sink_node.input_channel(link.signalNameTo)
+
+        links = self.find_links(source_node, source_channel,
+                                sink_node, sink_channel)
+
+        if links:
+            link = links[0]
+            link.set_dynamic_enabled(enabled)
 
     def close_all_open_widgets(self):
         for widget in self.widget_for_node.values():

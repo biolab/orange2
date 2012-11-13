@@ -1,3 +1,5 @@
+import time
+
 from ..linkitem import LinkItem
 
 from .. import NodeItem, AnchorPoint
@@ -87,5 +89,38 @@ class TestLinkItem(TestItems):
         self.assertTrue(len(discretize_item.outputAnchors()) == 0)
         self.assertTrue(len(discretize_item.inputAnchors()) == 1)
         self.assertTrue(len(file_item.outputAnchors()) == 1)
+
+        self.app.exec_()
+
+    def test_dynamic_link(self):
+        link = LinkItem()
+        anchor1 = AnchorPoint()
+        anchor2 = AnchorPoint()
+
+        self.scene.addItem(link)
+        self.scene.addItem(anchor1)
+        self.scene.addItem(anchor2)
+
+        link.setSourceItem(None, anchor1)
+        link.setSinkItem(None, anchor2)
+
+        anchor2.setPos(100, 100)
+
+        link.setSourceName("1")
+        link.setSinkName("2")
+
+        link.setDynamic(True)
+        self.assertTrue(link.isDynamic())
+
+        link.setDynamicEnabled(True)
+        self.assertTrue(link.isDynamicEnabled())
+
+        def advance():
+            clock = time.clock()
+            link.setDynamic(clock > 3)
+            link.setDynamicEnabled(int(clock) % 2 == 0)
+            self.singleShot(0, advance)
+
+        advance()
 
         self.app.exec_()
