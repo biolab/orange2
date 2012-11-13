@@ -847,54 +847,40 @@ class OrangeCanvasDlg(QMainWindow):
         lastRefresh = self.settings["lastAddonsRefresh"]
         if t - lastRefresh > 7*24*3600:
             if QMessageBox.question(self, "Refresh",
-                                    "List of add-ons in repositories has %s. Do you want to %s the lists now?" %
+                                    "List of add-ons in repository has %s. Do you want to %s the list now?" %
                                     (("not yet been loaded" if lastRefresh==0 else "not been refreshed for more than a week"),
                                      ("download" if lastRefresh==0 else "reload")),
                                      QMessageBox.Yes | QMessageBox.Default,
                                      QMessageBox.No | QMessageBox.Escape) == QMessageBox.Yes:
                 
-                anyFailed = False
-                anyDone = False
-                for r in Orange.utils.addons.available_repositories:
-                    #TODO: # Should show some progress (and enable cancellation)
-                    try:
-                        if r.refreshdata(force=True):
-                            anyDone = True
-                        else:
-                            anyFailed = True
-                    except Exception, e:
-                        anyFailed = True
-                        print "Unable to refresh repository %s! Error: %s" % (r.name, e)
-                
-                if anyDone:
-                    self.settings["lastAddonsRefresh"] = t
-                if anyFailed:
-                    QMessageBox.warning(self,'Download Failed', "Download of add-on list has failed for at least one repostitory.")
-        
+                #TODO: # Should show some progress (and enable cancellation)
+                try:
+                    Orange.utils.addons.refresh_available_addons()
+                    self.settings["lastAddonsRefresh"] = time.time()
+                except Exception, e:
+                    import traceback
+                    traceback.print_exc()
+                    QMessageBox.warning(self,'Download Failed', "Download of add-on list has failed.")
+
         dlg = orngDlgs.AddOnManagerDialog(self, self)
         if dlg.exec_() == QDialog.Accepted:
-            for (id, addOn) in dlg.addOnsToRemove.items():
+            add, remove, upgrade = dlg.to_install(), dlg.to_remove(), dlg.to_upgrade
+            for name in upgrade:
                 try:
-                    addOn.uninstall(refresh=False)
-                    if id in dlg.addOnsToAdd.items():
-                        Orange.utils.addons.install_addon_from_repo(dlg.addOnsToAdd[id], global_install=False, refresh=False)
-                        del dlg.addOnsToAdd[id]
+                    Orange.utils.addons.upgrade(name)
                 except Exception, e:
-                    print "Problem %s add-on %s: %s" % ("upgrading" if id in dlg.addOnsToAdd else "removing", addOn.name, e)
-            for (id, addOn) in dlg.addOnsToAdd.items():
-                if id.startswith("registered:"):
-                    try:
-                        Orange.utils.addons.register_addon(addOn.name, addOn.directory, refresh=False, systemwide=False)
-                    except Exception, e:
-                        print "Problem registering add-on %s: %s" % (addOn.name, e)
-                else:
-                    try:
-                        Orange.utils.addons.install_addon_from_repo(dlg.addOnsToAdd[id], global_install=False, refresh=False)
-                    except Exception, e:
-                        print "Problem installing add-on %s: %s" % (addOn.name, e)
-            if len(dlg.addOnsToAdd)+len(dlg.addOnsToRemove)>0:
-                Orange.utils.addons.refresh_addons(reload_path=True)
-                
+                    print "Problem upgrading add-on %s: %s" % (name, e)
+            for name in remove:
+                try:
+                    Orange.utils.addons.uninstall(name)
+                except Exception, e:
+                    print "Problem uninstalling add-on %s: %s" % (name, e)
+            for name in add:
+                try:
+                    Orange.utils.addons.install(name)
+                except Exception, e:
+                    print "Problem installing add-on %s: %s" % (name, e)
+
     def menuItemShowStatusBar(self):
         state = self.showStatusBarAction.isChecked()
         self.statusBar().setVisible(state)
