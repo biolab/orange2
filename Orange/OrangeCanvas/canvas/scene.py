@@ -6,6 +6,8 @@ Canvas Graphics Scene
 import logging
 from operator import attrgetter
 
+from xml.sax.saxutils import escape
+
 from PyQt4.QtGui import QGraphicsScene, QPainter, QBrush, \
                         QGraphicsItem
 
@@ -90,6 +92,8 @@ class CanvasScene(QGraphicsScene):
         # Anchor Layout
         self.__anchor_layout = AnchorLayout()
         self.addItem(self.__anchor_layout)
+
+        self.__channel_names_visible = True
 
         self.user_interaction_handler = None
 
@@ -198,6 +202,14 @@ class CanvasScene(QGraphicsScene):
 
     def anchor_layout(self):
         return self.__anchor_layout
+
+    def set_channel_names_visible(self, visible):
+        self.__channel_names_visible = visible
+        for link in self.__link_items:
+            link.setChannelNamesVisible(visible)
+
+    def channel_names_visible(self):
+        return self.__channel_names_visible
 
     def add_node_item(self, item):
         """Add a :class:`NodeItem` instance to the scene.
@@ -358,6 +370,16 @@ class CanvasScene(QGraphicsScene):
         item = items.LinkItem()
         item.setSourceItem(source_item)
         item.setSinkItem(sink_item)
+        fmt = "<b>{0}</b>&nbsp;-->&nbsp;<b>{1}</b>"
+        item.setToolTip(
+            fmt.format(escape(source_channel.name),
+                       escape(sink_channel.name))
+        )
+
+        item.setSourceName(source_channel.name)
+        item.setSinkName(sink_channel.name)
+        item.setChannelNamesVisible(self.__channel_names_visible)
+
         return item
 
     def remove_link_item(self, item):

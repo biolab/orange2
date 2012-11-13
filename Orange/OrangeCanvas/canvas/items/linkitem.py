@@ -5,7 +5,8 @@ Link Item
 
 from PyQt4.QtGui import (
     QGraphicsItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsObject,
-    QGraphicsDropShadowEffect, QPen, QBrush, QColor, QPainterPath
+    QGraphicsTextItem, QGraphicsDropShadowEffect, QPen, QBrush, QColor,
+    QPainterPath, QFont, QTransform
 )
 
 from PyQt4.QtCore import Qt, QPointF
@@ -123,6 +124,12 @@ class LinkItem(QGraphicsObject):
         self.sourceIndicator.hide()
         self.sinkIndicator.hide()
 
+        self.linkTextItem = QGraphicsTextItem(self)
+        self.linkTextItem.setFont(QFont("Helvetica", 11))
+
+        self.__sourceName = ""
+        self.__sinkName = ""
+
         self.hover = False
 
     def setSourceItem(self, item, anchor=None):
@@ -222,6 +229,25 @@ class LinkItem(QGraphicsObject):
 
         self.__updateCurve()
 
+    def setChannelNamesVisible(self, visible):
+        self.linkTextItem.setVisible(visible)
+
+    def setSourceName(self, name):
+        if self.__sourceName != name:
+            self.__sourceName = name
+            self.__updateText()
+
+    def sourceName(self):
+        return self.__sourceName
+
+    def setSinkName(self, name):
+        if self.__sinkName != name:
+            self.__sinkName = name
+            self.__updateText()
+
+    def sinkName(self):
+        return self.__sinkName
+
     def _sinkPosChanged(self, *arg):
         self.__updateCurve()
 
@@ -245,9 +271,33 @@ class LinkItem(QGraphicsObject):
             self.curveItem.setPath(path)
             self.sourceIndicator.setPos(source_pos)
             self.sinkIndicator.setPos(sink_pos)
+            self.__updateText()
         else:
             self.setHoverState(False)
             self.curveItem.setPath(QPainterPath())
+
+    def __updateText(self):
+        if self.__sourceName or self.__sinkName:
+            text = "{0} --> {1}".format(self.__sourceName, self.__sinkName)
+        else:
+            text = ""
+        self.linkTextItem.setPlainText(text)
+
+        path = self.curveItem.path()
+        if not path.isEmpty():
+            center = path.pointAtPercent(0.5)
+            angle = path.angleAtPercent(0.5)
+
+            brect = self.linkTextItem.boundingRect()
+
+            transform = QTransform()
+            transform.translate(center.x(), center.y())
+            transform.rotate(-angle)
+
+            # Center and move above the curve path.
+            transform.translate(-brect.width() / 2, -brect.height())
+
+            self.linkTextItem.setTransform(transform)
 
     def removeLink(self):
         self.setSinkItem(None)
