@@ -846,15 +846,14 @@ class OrangeCanvasDlg(QMainWindow):
         t = time.time()
         lastRefresh = self.settings["lastAddonsRefresh"]
         dlg = orngDlgs.AddOnManagerDialog(self, self)
-        if t - lastRefresh > 7*24*3600:
+        if t - lastRefresh > 7*24*3600 or Orange.utils.addons.addons_corrupted:
             dlg.show()
-            if QMessageBox.question(self, "Refresh",
-                                    "List of add-ons in repository has %s. Do you want to %s the list now?" %
-                                    (("not yet been loaded" if lastRefresh==0 else "not been refreshed for more than a week"),
-                                     ("download" if lastRefresh==0 else "reload")),
+            if Orange.utils.addons.addons_corrupted or \
+               QMessageBox.question(self, "Refresh",
+                                    "List of add-ons in repository has not been refreshed for more than a week. Do you want to download the list now?",
                                      QMessageBox.Yes | QMessageBox.Default,
                                      QMessageBox.No | QMessageBox.Escape) == QMessageBox.Yes:
-                
+
                 try:
                     dlg.reloadRepo()
                     self.settings["lastAddonsRefresh"] = time.time()

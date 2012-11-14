@@ -47,10 +47,14 @@ INDEX_RE = "[^a-z0-9-']"  # RE for splitting entries in the search index
 
 AOLIST_FILE = os.path.join(Orange.utils.environ.orange_settings_dir, "addons.shelve")
 try:
-    addons = shelve.open(AOLIST_FILE)
+    addons = shelve.open(AOLIST_FILE, 'c')
     list(addons.items())  # Try to read the whole list.
 except:
+    if os.path.isfile(AOLIST_FILE):
+        os.remove(AOLIST_FILE)
     addons = shelve.open(AOLIST_FILE, 'n')
+
+addons_corrupted = len(addons)==0
 
 addon_refresh_callback = []
 
@@ -131,6 +135,8 @@ def refresh_available_addons(force=False, progress_callback=None):
                 warnings.warn('Could not load data for the following add-on: %s'%name)
         if progress_callback:
             progress_callback(len(pkg_dict)+1, i+2)
+    addons_corrupted = False
+    addons.sync()
 
     rebuild_index()
 
@@ -160,6 +166,7 @@ def load_installed_addons():
         found.add(name)
     for name in set(addons).difference(found):
         addons[name] = addons[name]._replace(installed_version = None)
+    addons.sync()
     rebuild_index()
 
 def run_setup(setup_script, args):
