@@ -2,13 +2,13 @@
 import logging
 
 from PyQt4.QtGui import (
-    QGraphicsItem, QGraphicsPathItem, QGraphicsWidget,
-    QGraphicsTextItem, QPainterPath, QPainterPathStroker,
-    QPen, QPolygonF
+    QGraphicsItem, QGraphicsPathItem, QGraphicsWidget, QGraphicsTextItem,
+    QGraphicsDropShadowEffect, QPainterPath, QPainterPathStroker,
+    QPolygonF, QColor, QPen, QBrush
 )
 
 from PyQt4.QtCore import (
-    Qt, QSizeF, QRectF, QLineF, QEvent, qVersion
+    Qt, QPointF, QSizeF, QRectF, QLineF, QEvent, qVersion
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
@@ -45,6 +45,7 @@ class TextAnnotation(Annotation):
     def __init__(self, parent=None, **kwargs):
         Annotation.__init__(self, parent, **kwargs)
         self.setFlag(QGraphicsItem.ItemIsMovable)
+        self.setFlag(QGraphicsItem.ItemIsSelectable)
 
         self.setFocusPolicy(Qt.ClickFocus)
 
@@ -88,6 +89,16 @@ class TextAnnotation(Annotation):
         """Return the frame pen.
         """
         return self.__framePathItem.pen()
+
+    def setFrameBrush(self, brush):
+        """Set the frame brush.
+        """
+        self.__framePathItem.setBrush(brush)
+
+    def frameBrush(self):
+        """Return the frame brush.
+        """
+        return self.__framePathItem.brush()
 
     def setPlainText(self, text):
         """Set the annotation plain text.
@@ -219,6 +230,15 @@ class TextAnnotation(Annotation):
 
         return Annotation.sceneEventFilter(self, obj, event)
 
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemSelectedHasChanged:
+            if self.isSelected():
+                self.setFramePen(QPen(Qt.DashDotLine))
+            else:
+                self.setFramePen(QPen(Qt.NoPen))
+
+        return Annotation.itemChange(self, change, value)
+
 
 class ArrowItem(GraphicsPathObject):
     def __init__(self, parent=None, line=None, lineWidth=4, **kwargs):
@@ -289,16 +309,26 @@ class ArrowAnnotation(Annotation):
     def __init__(self, parent=None, line=None, **kwargs):
         Annotation.__init__(self, parent, **kwargs)
         self.setFlag(QGraphicsItem.ItemIsMovable)
+        self.setFlag(QGraphicsItem.ItemIsSelectable)
+
         self.setFocusPolicy(Qt.ClickFocus)
 
         if line is None:
             line = QLineF(0, 0, 20, 0)
 
         self.__line = line
+        self.__color = QColor(Qt.red)
         self.__arrowItem = ArrowItem(self)
         self.__arrowItem.setLine(line)
-        self.__arrowItem.setBrush(Qt.red)
+        self.__arrowItem.setBrush(self.__color)
         self.__arrowItem.setPen(QPen(Qt.NoPen))
+
+        self.__shadow = QGraphicsDropShadowEffect(
+            blurRadius=5, offset=QPointF(0.05, 0.05)
+        )
+
+        self.__arrowItem.setGraphicsEffect(self.__shadow)
+        self.__shadow.setEnabled(True)
 
     def setLine(self, line):
         """Set the arrow base line (a `QLineF` in object coordinates).
@@ -323,6 +353,14 @@ class ArrowAnnotation(Annotation):
             geom.translate(self.pos())
             self.setGeometry(geom)
 
+    def setColor(self, color):
+        if self.__color != color:
+            self.__color = QColor(color)
+            self.__updateBrush()
+
+    def color(self):
+        return QColor(self.__color)
+
     def adjustGeometry(self):
         """Adjust the widget geometry to exactly fit the arrow inside
         while preserving the arrow path scene geometry.
@@ -346,15 +384,31 @@ class ArrowAnnotation(Annotation):
         return QLineF(self.__line)
 
     def setLineWidth(self, lineWidth):
+        """Set the arrow line width.
+        """
         self.__arrowItem.setLineWidth(lineWidth)
 
     def lineWidth(self):
+        """Return the arrow line width.
+        """
         return self.__arrowItem.lineWidth()
 
     def shape(self):
         arrow_shape = self.__arrowItem.shape()
         return self.mapFromItem(self.__arrowItem, arrow_shape)
 
-#    def paint(self, painter, option, widget=None):
-#        painter.drawRect(self.geometry().translated(-self.pos()))
-#        return Annotation.paint(self, painter, option, widget)
+    def itemChange(self, change, value):
+        if change == QGraphicsItem.ItemSelectedHasChanged:
+            self.__updateBrush()
+
+        return Annotation.itemChange(self, change, value)
+
+    def __updateBrush(self):
+        """Update the arrow brush.
+        """
+        if self.isSelected():
+            color = self.__color.darker(150)
+        else:
+            color = self.__color
+
+        self.__arrowItem.setBrush(color)

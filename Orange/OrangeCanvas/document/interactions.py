@@ -757,7 +757,7 @@ class ResizeTextAnnotation(UserInteraction):
         control.editingFinished.connect(self.__on_editingFinished)
         control.rectEdited.connect(item.setGeometry)
 
-        item.setFramePen(QPen(Qt.DashLine))
+        item.setFramePen(QPen(Qt.DashDotLine))
 
         self.item = item
 
@@ -809,7 +809,7 @@ class ResizeArrowAnnotation(UserInteraction):
         pos = event.scenePos()
         if self.item is None:
             item = self.scene.item_at(pos, items.ArrowAnnotation)
-            if item is not None:
+            if item is not None and not item.hasFocus():
                 self.editItem(item)
                 return True
 

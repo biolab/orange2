@@ -1,3 +1,7 @@
+import math
+import time
+
+from PyQt4.QtGui import QColor
 from PyQt4.QtCore import Qt, QRectF, QLineF
 
 from ..annotationitem import TextAnnotation, ArrowAnnotation, ArrowItem
@@ -41,9 +45,17 @@ class TestAnnotationItem(TestItems):
 
         item = ArrowAnnotation()
         item.setPos(10, 10)
-        item.setLine(QLineF(10, 10, 200, 400))
+        item.setLine(QLineF(10, 10, 200, 200))
 
         self.scene.addItem(item)
         item.setLineWidth(5)
+
+        def advance():
+            clock = time.clock() * 10
+            item.setLineWidth(5 + math.sin(clock) * 5)
+            item.setColor(QColor(Qt.red).lighter(100 + 30 * math.cos(clock)))
+            self.singleShot(0, advance)
+
+        advance()
 
         self.app.exec_()
