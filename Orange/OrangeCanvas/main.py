@@ -120,18 +120,19 @@ def main(argv=None):
                                         pkg_name, resource)
                 base = pkg_resources.resource_filename(pkg_name, "styles")
 
-                pattern = r"^\s@([a-zA-Z0-9_]+?)\s*:\s*([a-zA-Z0-9_/]+?);\s*$"
+                pattern = re.compile(
+                    r"^\s@([a-zA-Z0-9_]+?)\s*:\s*([a-zA-Z0-9_/]+?);\s*$",
+                    flags=re.MULTILINE
+                )
 
-                matches = \
-                    re.findall(pattern, stylesheet_string, re.MULTILINE)
+                matches = pattern.findall(stylesheet_string)
 
                 for prefix, search_path in matches:
                     QDir.addSearchPath(prefix, os.path.join(base, search_path))
                     log.info("Adding search path %r for prefix, %r",
                              search_path, prefix)
 
-                stylesheet_string = \
-                    re.sub(pattern, "", stylesheet_string, flags=re.MULTILINE)
+                stylesheet_string = pattern.sub("", stylesheet_string)
 
             else:
                 log.info("%r style sheet not found.", stylesheet)
