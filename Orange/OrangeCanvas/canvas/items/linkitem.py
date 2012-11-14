@@ -9,7 +9,7 @@ from PyQt4.QtGui import (
     QPainterPath, QFont, QTransform
 )
 
-from PyQt4.QtCore import Qt, QPointF
+from PyQt4.QtCore import Qt, QPointF, QEvent
 
 from .nodeitem import SHADOW_COLOR
 
@@ -126,7 +126,9 @@ class LinkItem(QGraphicsObject):
         self.sourceAnchor = None
         self.sinkItem = None
         self.sinkAnchor = None
+
         self.curveItem = LinkCurveItem(self)
+
         self.sourceIndicator = LinkAnchorIndicator(self)
         self.sinkIndicator = LinkAnchorIndicator(self)
         self.sourceIndicator.hide()
@@ -288,6 +290,8 @@ class LinkItem(QGraphicsObject):
             self.curveItem.setPath(QPainterPath())
 
     def __updateText(self):
+        self.prepareGeometryChange()
+
         if self.__sourceName or self.__sinkName:
             text = "{0} --> {1}".format(self.__sourceName, self.__sinkName)
         else:
@@ -317,18 +321,34 @@ class LinkItem(QGraphicsObject):
 
     def setHoverState(self, state):
         if self.hover != state:
+            self.prepareGeometryChange()
             self.hover = state
             self.sinkIndicator.setHoverState(state)
             self.sourceIndicator.setHoverState(state)
             self.curveItem.setHoverState(state)
 
     def hoverEnterEvent(self, event):
-        self.setHoverState(True)
+        # Hover enter event happens when the mouse enters any child object
+        # but we only want to show the 'hovered' shadow when the mouse
+        # is over the 'curveItem', so we install self as an event filter
+        # on the item and listen to the hover events.
+        self.curveItem.installSceneEventFilter(self)
         return QGraphicsObject.hoverEnterEvent(self, event)
 
     def hoverLeaveEvent(self, event):
-        self.setHoverState(False)
+        # Remove the event filter to prevent unnecessary work in
+        # scene event filter when not needed
+        self.curveItem.removeSceneEventFilter(self)
         return QGraphicsObject.hoverLeaveEvent(self, event)
+
+    def sceneEventFilter(self, obj, event):
+        if obj is self.curveItem:
+            if event.type() == QEvent.GraphicsSceneHoverEnter:
+                self.setHoverState(True)
+            elif event.type() == QEvent.GraphicsSceneHoverLeave:
+                self.setHoverState(False)
+
+        return QGraphicsObject.sceneEventFilter(self, obj, event)
 
     def boundingRect(self):
         return self.childrenBoundingRect()
@@ -357,6 +377,7 @@ class LinkItem(QGraphicsObject):
         return self.__dynamic
 
     def __updatePen(self):
+        self.prepareGeometryChange()
         if self.__dynamic:
             if self.__dynamicEnabled:
                 color = QColor(0, 150, 0, 150)
