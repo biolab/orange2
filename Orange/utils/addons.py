@@ -141,8 +141,6 @@ def refresh_available_addons(force=False, progress_callback=None):
     rebuild_index()
 
 def load_installed_addons():
-    #TODO Unload existing or what?
-
     found = set()
     for entry_point in pkg_resources.iter_entry_points(ADDONS_ENTRY_POINT):
         name, version = entry_point.dist.project_name, entry_point.dist.version
@@ -153,16 +151,16 @@ def load_installed_addons():
             addons[name] = OrangeAddOn(name = name,
                 available_version = None,
                 installed_version = version,
-                summary = None,
-                description = None,
-                author = None,
-                docs_url = None,
-                keywords = None,
-                homepage = None,
-                package_url = None,
-                release_url = None,
+                summary = "",
+                description = "",
+                author = "",
+                docs_url = "",
+                keywords = "",
+                homepage = "",
+                package_url = "",
+                release_url = "",
                 release_size = None,
-                python_version = None)  # We should find all those values out from the setup.py or somewhere ...
+                python_version = None)
         found.add(name)
     for name in set(addons).difference(found):
         addons[name] = addons[name]._replace(installed_version = None)
