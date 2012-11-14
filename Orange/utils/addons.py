@@ -240,7 +240,7 @@ def install(name, progress_callback=None):
         func()
 
 def uninstall(name, progress_callback=None): #TODO
-    raise Exception('Unable to uninstall %s: uninstallation of add-ons is not yet implemented.')
+    raise Exception('Unable to uninstall %s: uninstallation of add-ons is not yet implemented.' % name)
     # Implement this either by using pip.commands.uninstall, and complain if pip is not installed on the system,
     # or by "stealing" pip's uninstallation code.
 
