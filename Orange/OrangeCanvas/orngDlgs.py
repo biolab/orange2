@@ -866,6 +866,11 @@ class AddOnManagerDialog(QDialog):
             except Exception, e:
                 QMessageBox.critical(self, "Error", "Problem installing add-on %s: %s" % (name, e))
 
+        if len(upgrade) > 0:
+            QMessageBox.warning(self, "Restart Orange", "After upgrading add-ons, it is very important to restart Orange to make sure the changes have been applied.")
+        elif len(remove) > 0:  # Don't bother with this if there has already been one (more important) warning.
+            QMessageBox.warning(self, "Restart Orange", "After removal of add-ons, it is suggested that you restart Orange for the changes to become effective.")
+
         QDialog.accept(self)
 
     def busy(self, b=True):
