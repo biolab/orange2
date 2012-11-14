@@ -33,7 +33,7 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['orange', 'orangeom', 'scipy', 'scipy.stats', 'scipy.sparse', 'scipy.optimize', 'scipy.linalg']
+MOCK_MODULES = ['orange', 'orangeom', 'core.ExampleTable', 'scipy', 'scipy.stats', 'scipy.sparse', 'scipy.optimize', 'scipy.linalg']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
