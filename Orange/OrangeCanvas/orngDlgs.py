@@ -741,7 +741,7 @@ class AddOnManagerDialog(QDialog):
         
         # Repository & Add-on tree
         
-        repos = OWGUI.widgetBox(mainBox, "Add-ons", orientation = "horizontal", sizePolicy=QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred))
+        repos = OWGUI.widgetBox(mainBox, "Add-ons", orientation = "horizontal", sizePolicy=QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored))
         repos.layout().setSizeConstraint(QLayout.SetMinimumSize)
         self.lst = lst = QListWidget(repos)
         lst.setMinimumWidth(200)
@@ -754,7 +754,7 @@ class AddOnManagerDialog(QDialog):
 
         # Bottom info pane
         
-        self.infoPane = infoPane = OWGUI.widgetBox(mainBox, orientation="vertical", sizePolicy=QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred))
+        self.infoPane = infoPane = OWGUI.widgetBox(mainBox, orientation="vertical", sizePolicy=QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored))
         infoPane.layout().setSizeConstraint(QLayout.SetMinimumSize)
 
         pVerInstalled = OWGUI.widgetBox(infoPane, orientation="horizontal")
@@ -795,15 +795,6 @@ class AddOnManagerDialog(QDialog):
         lblDescription.setPalette(pal)
         lblDescription.setLineWrapMode(QTextEdit.WidgetWidth)
         lblDescription.setWordWrapMode(QTextOption.WordWrap)
-        QObject.connect(lblDescription.document().documentLayout(),
-                        SIGNAL("documentSizeChanged(const QSizeF &)"),
-                        lambda docSize: self.updateDescMinSize(docSize))
-
-        # Bottom info pane for registered add-ons
-        self.regiInfoPane = regiInfoPane = OWGUI.widgetBox(mainBox, orientation="vertical", sizePolicy=QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))
-        regiInfoPane.layout().setSizeConstraint(QLayout.SetMinimumSize)
-        self.lblRegisteredAddOnInfo = OWGUI.label(regiInfoPane, self, "-")
-        self.lblRegisteredAddOnInfo.setSizePolicy(QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))
 
         # Right panel
         
@@ -817,8 +808,8 @@ class AddOnManagerDialog(QDialog):
             if btn.__class__ is QPushButton:
                 btn.setMinimumHeight(btn.height())
         
-        # Close button
-        hbox = OWGUI.widgetBox(mainBox, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum))
+        # Buttons
+        hbox = OWGUI.widgetBox(mainBox, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
         hbox.layout().addStretch(1)
         self.okButton = OWGUI.button(hbox, self, "OK", callback = self.accept)
         self.cancelButton = OWGUI.button(hbox, self, "Cancel", callback = self.reject)
@@ -940,10 +931,8 @@ class AddOnManagerDialog(QDialog):
                 self.lblStatus.setText("")
 
             self.infoPane.setVisible(True)
-            self.regiInfoPane.setVisible(False)
         else:
             self.infoPane.setVisible(False)
-            self.regiInfoPane.setVisible(False)
         self.enableDisableButtons()
 
     def enableDisableButtons(self):
