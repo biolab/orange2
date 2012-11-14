@@ -7,6 +7,12 @@ from PyQt4.QtGui import *
 from orngCanvasItems import MyCanvasText
 import OWGUI, sys, os
 
+has_pip = True
+try:
+    import pip.req
+except ImportError:
+    has_pip = False
+
 # this class is needed by signalDialog to show widgets and lines
 class SignalCanvasView(QGraphicsView):
     def __init__(self, dlg, canvasDlg, *args):
@@ -940,6 +946,10 @@ class AddOnManagerDialog(QDialog):
         self.refreshInfoPane()
 
     def cbToggled(self, item):
+        ao = self.getAddOnFromItem(item)
+        if ao and not has_pip and ao.installed_version and item.checkState()==Qt.Unchecked:
+            QMessageBox.warning(self, "Unable to uninstall", "Pip is not installed on your system. Without it, automated removal of add-ons is not possible.\n\nInstall pip (try 'easy_install --user pip') and restart Orange to make this action possible.")
+            item.setCheckState(Qt.Checked)
         self.refreshInfoPane(item)
 
     def lineEditSearch(self, *args, **props):

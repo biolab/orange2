@@ -246,10 +246,13 @@ def install(name, progress_callback=None):
     for func in addon_refresh_callback:
         func()
 
-def uninstall(name, progress_callback=None): #TODO
-    raise Exception('Unable to uninstall %s: uninstallation of add-ons is not yet implemented.' % name)
-    # Implement this either by using pip.commands.uninstall, and complain if pip is not installed on the system,
-    # or by "stealing" pip's uninstallation code.
+def uninstall(name, progress_callback=None):
+    try:
+        import pip.req
+        ao = pip.req.InstallRequirement(name, None)
+        ao.uninstall(True)
+    except ImportError:
+        raise Exception("Pip is required for add-on uninstallation. Install pip and try again.")
 
 def upgrade(name, progress_callback=None):
     install(name, progress_callback)
