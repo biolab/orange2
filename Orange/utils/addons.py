@@ -195,11 +195,14 @@ def run_setup(setup_script, args):
         tempfile.tempdir = save_tmp
 
 
-def install(name):
+def install(name, progress_callback=None):
+    if progress_callback:
+        progress_callback(1, 0)
     import site
     try:
         import urllib
-        egg = urllib.urlretrieve(addons[name].release_url)[0]
+        rh = (lambda done, bs, fs: progress_callback(fs/bs, done)) if progress_callback else None
+        egg = urllib.urlretrieve(addons[name].release_url, reporthook=rh)[0]
     except Exception, e:
         raise Exception("Unable to download add-on from repository: %s" % e)
 
@@ -236,13 +239,13 @@ def install(name):
     for func in addon_refresh_callback:
         func()
 
-def uninstall(name): #TODO
+def uninstall(name, progress_callback=None): #TODO
     raise Exception('Unable to uninstall %s: uninstallation of add-ons is not yet implemented.')
     # Implement this either by using pip.commands.uninstall, and complain if pip is not installed on the system,
     # or by "stealing" pip's uninstallation code.
 
-def upgrade(name):
-    install(name)
+def upgrade(name, progress_callback=None):
+    install(name, progress_callback)
 
 load_installed_addons()
 

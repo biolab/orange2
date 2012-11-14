@@ -810,10 +810,11 @@ class AddOnManagerDialog(QDialog):
         
         # Buttons
         self.hbox = hbox = OWGUI.widgetBox(mainBox, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+        busyBox = OWGUI.widgetBox(hbox, sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))  # A humble stretch.
+        self.busyLbl = OWGUI.label(busyBox, self, "")
         self.progress = QProgressBar(hbox, sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
         hbox.layout().addWidget(self.progress)
         self.progress.setVisible(False)
-        OWGUI.widgetBox(hbox, sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))  # A humble stretch.
         self.okButton = OWGUI.button(hbox, self, "OK", callback = self.accept)
         self.cancelButton = OWGUI.button(hbox, self, "Cancel", callback = self.reject)
         self.okButton.setDefault(True)
@@ -833,28 +834,59 @@ class AddOnManagerDialog(QDialog):
             summary = AddOnManagerSummary(add, remove, upgrade, self)
             if summary.exec_() == QDialog.Rejected:
                 return
+
+        self.busy(True)
+        self.repaint()
+        add, remove, upgrade = self.to_install(), self.to_remove(), self.to_upgrade
+        for name in upgrade:
+            try:
+                self.busy("Upgrading %s ..." % name)
+                self.repaint()
+                Orange.utils.addons.upgrade(name, self.pcb)
+            except Exception, e:
+                print "Problem upgrading add-on %s: %s" % (name, e)
+        for name in remove:
+            try:
+                self.busy("Uninstalling %s ..." % name)
+                self.repaint()
+                Orange.utils.addons.uninstall(name, self.pcb)
+            except Exception, e:
+                print "Problem uninstalling add-on %s: %s" % (name, e)
+        for name in add:
+            try:
+                self.busy("Installing %s ..." % name)
+                self.repaint()
+                Orange.utils.addons.install(name, self.pcb)
+            except Exception, e:
+                print "Problem installing add-on %s: %s" % (name, e)
+
         QDialog.accept(self)
 
     def busy(self, b=True):
-        self.progress.setVisible(b)
+        self.progress.setMaximum(1)
+        self.progress.setValue(0)
+        self.progress.setVisible(bool(b))
+        self.busyLbl.setText(b if isinstance(b, str) else "")
         self.eSearch.setEnabled(not b)
         self.lst.setEnabled(not b)
-        self.hbox.setEnabled(not b)
+        self.okButton.setEnabled(not b)
+        self.cancelButton.setEnabled(not b)
         self.rightPanel.setEnabled(not b)
         self.infoPane.setEnabled(not b)
-        
+
+    def pcb(self, max, val):
+        self.progress.setMaximum(max)
+        self.progress.setValue(val)
+        self.progress.repaint()
+
     def reloadRepo(self):
         # Reload add-on list.
         import Orange.utils.addons
         try:
-            self.busy(True)
+            self.busy("Reloading add-on repository ...")
             self.repaint()
-            def pcb(max, val):
-                self.progress.setMaximum(max)
-                self.progress.setValue(val)
-                self.progress.repaint()
-            Orange.utils.addons.refresh_available_addons(progress_callback = pcb)
-        except Exception, e:  # Maybe gather all exceptions (for all repositories) and show them in the end?
+            Orange.utils.addons.refresh_available_addons(progress_callback = self.pcb)
+        except Exception, e:
             QMessageBox.critical(self, "Error", "Could not reload repository: %s." % e)
         finally:
             self.busy(False)

@@ -863,23 +863,7 @@ class OrangeCanvasDlg(QMainWindow):
                     traceback.print_exc()
                     QMessageBox.warning(self,'Download Failed', "Download of add-on list has failed.")
 
-        if dlg.exec_() == QDialog.Accepted:
-            add, remove, upgrade = dlg.to_install(), dlg.to_remove(), dlg.to_upgrade
-            for name in upgrade:
-                try:
-                    Orange.utils.addons.upgrade(name)
-                except Exception, e:
-                    print "Problem upgrading add-on %s: %s" % (name, e)
-            for name in remove:
-                try:
-                    Orange.utils.addons.uninstall(name)
-                except Exception, e:
-                    print "Problem uninstalling add-on %s: %s" % (name, e)
-            for name in add:
-                try:
-                    Orange.utils.addons.install(name)
-                except Exception, e:
-                    print "Problem installing add-on %s: %s" % (name, e)
+        dlg.exec_()
 
     def menuItemShowStatusBar(self):
         state = self.showStatusBarAction.isChecked()
