@@ -6,14 +6,15 @@ __version__ = "unknown"
 
 ADDONS_ENTRY_POINT = 'orange.addons'
 
-from . import orange
+import os, sys
 
-# Definitely ugly, but I see no other workaround.
-# When, e.g. data.io executes "from orange import ExampleTable"
-# orange gets imported again since it is not in sys.modules
-# before this entire file is executed
-import sys
-sys.modules["orange"] = orange
+if not os.environ.get('READTHEDOCS', None):
+    from . import orange
+    # Definitely ugly, but I see no other workaround.
+    # When, e.g. data.io executes "from orange import ExampleTable"
+    # orange gets imported again since it is not in sys.modules
+    # before this entire file is executed
+    sys.modules["orange"] = orange
 
 # Little trick so that legacy imports work automatically
 import Orange.orng
