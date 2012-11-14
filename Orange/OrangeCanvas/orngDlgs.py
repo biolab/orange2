@@ -798,7 +798,7 @@ class AddOnManagerDialog(QDialog):
 
         # Right panel
         
-        rightPanel = OWGUI.widgetBox(repos, orientation = "vertical", sizePolicy=QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding))
+        self.rightPanel = rightPanel = OWGUI.widgetBox(repos, orientation = "vertical", sizePolicy=QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Expanding))
         rightPanel.layout().setSizeConstraint(QLayout.SetMinimumSize)
         self.reloadRepoButton = OWGUI.button(rightPanel, self, "Refresh list", callback = self.reloadRepo)
         rightPanel.layout().addSpacing(15)
@@ -809,8 +809,11 @@ class AddOnManagerDialog(QDialog):
                 btn.setMinimumHeight(btn.height())
         
         # Buttons
-        hbox = OWGUI.widgetBox(mainBox, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
-        hbox.layout().addStretch(1)
+        self.hbox = hbox = OWGUI.widgetBox(mainBox, orientation = "horizontal", sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+        self.progress = QProgressBar(hbox, sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+        hbox.layout().addWidget(self.progress)
+        self.progress.setVisible(False)
+        OWGUI.widgetBox(hbox, sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum))  # A humble stretch.
         self.okButton = OWGUI.button(hbox, self, "OK", callback = self.accept)
         self.cancelButton = OWGUI.button(hbox, self, "Cancel", callback = self.reject)
         self.okButton.setDefault(True)
@@ -831,15 +834,30 @@ class AddOnManagerDialog(QDialog):
             if summary.exec_() == QDialog.Rejected:
                 return
         QDialog.accept(self)
+
+    def busy(self, b=True):
+        self.progress.setVisible(b)
+        self.eSearch.setEnabled(not b)
+        self.lst.setEnabled(not b)
+        self.hbox.setEnabled(not b)
+        self.rightPanel.setEnabled(not b)
+        self.infoPane.setEnabled(not b)
         
     def reloadRepo(self):
         # Reload add-on list.
-        # TODO: This can take some time - show some progress to user!
         import Orange.utils.addons
         try:
-            Orange.utils.addons.refresh_available_addons()
+            self.busy(True)
+            self.repaint()
+            def pcb(max, val):
+                self.progress.setMaximum(max)
+                self.progress.setValue(val)
+                self.progress.repaint()
+            Orange.utils.addons.refresh_available_addons(progress_callback = pcb)
         except Exception, e:  # Maybe gather all exceptions (for all repositories) and show them in the end?
-            QMessageBox.critical(self, "Error", "Could not reload repository '%s': %s." % (repo.name, e))
+            QMessageBox.critical(self, "Error", "Could not reload repository: %s." % e)
+        finally:
+            self.busy(False)
         # Finally, refresh the tree on GUI.
         self.refreshView()
             

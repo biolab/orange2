@@ -80,8 +80,10 @@ def search_index(query):
         result.update(index[word])
     return result
 
-def refresh_available_addons(force=False):
+def refresh_available_addons(force=False, progress_callback=None):
     pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
+    if progress_callback:
+        progress_callback(1, 0)
 
     pkg_dict = {}
     for data in pypi.search({'keywords': 'orange'}):
@@ -97,7 +99,9 @@ def refresh_available_addons(force=False):
         readthedocs = None
 
     docs = {}
-    for name, (_, version) in pkg_dict.items():
+    if progress_callback:
+        progress_callback(len(pkg_dict)+1, 1)
+    for i, (name, (_, version)) in enumerate(pkg_dict.items()):
         if force or name not in addons or addons[name].available_version != version:
             try:
                 data = pypi.release_data(name, version)
@@ -125,6 +129,8 @@ def refresh_available_addons(force=False):
                 import traceback
                 traceback.print_exc()
                 warnings.warn('Could not load data for the following add-on: %s'%name)
+        if progress_callback:
+            progress_callback(len(pkg_dict)+1, i+2)
 
     rebuild_index()
 

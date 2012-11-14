@@ -845,7 +845,9 @@ class OrangeCanvasDlg(QMainWindow):
         import time
         t = time.time()
         lastRefresh = self.settings["lastAddonsRefresh"]
+        dlg = orngDlgs.AddOnManagerDialog(self, self)
         if t - lastRefresh > 7*24*3600:
+            dlg.show()
             if QMessageBox.question(self, "Refresh",
                                     "List of add-ons in repository has %s. Do you want to %s the list now?" %
                                     (("not yet been loaded" if lastRefresh==0 else "not been refreshed for more than a week"),
@@ -853,16 +855,14 @@ class OrangeCanvasDlg(QMainWindow):
                                      QMessageBox.Yes | QMessageBox.Default,
                                      QMessageBox.No | QMessageBox.Escape) == QMessageBox.Yes:
                 
-                #TODO: # Should show some progress (and enable cancellation)
                 try:
-                    Orange.utils.addons.refresh_available_addons()
+                    dlg.reloadRepo()
                     self.settings["lastAddonsRefresh"] = time.time()
                 except Exception, e:
                     import traceback
                     traceback.print_exc()
                     QMessageBox.warning(self,'Download Failed', "Download of add-on list has failed.")
 
-        dlg = orngDlgs.AddOnManagerDialog(self, self)
         if dlg.exec_() == QDialog.Accepted:
             add, remove, upgrade = dlg.to_install(), dlg.to_remove(), dlg.to_upgrade
             for name in upgrade:
