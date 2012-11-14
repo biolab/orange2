@@ -1,5 +1,7 @@
 .. py:currentmodule:: Orange.data
 
+.. _Orange-data-formats:
+
 =======================
 Loading and saving data
 =======================
