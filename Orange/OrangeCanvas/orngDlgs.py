@@ -844,21 +844,21 @@ class AddOnManagerDialog(QDialog):
                 self.repaint()
                 Orange.utils.addons.upgrade(name, self.pcb)
             except Exception, e:
-                print "Problem upgrading add-on %s: %s" % (name, e)
+                QMessageBox.critical(self, "Error", "Problem upgrading add-on %s: %s" % (name, e))
         for name in remove:
             try:
                 self.busy("Uninstalling %s ..." % name)
                 self.repaint()
                 Orange.utils.addons.uninstall(name, self.pcb)
             except Exception, e:
-                print "Problem uninstalling add-on %s: %s" % (name, e)
+                QMessageBox.critical(self, "Error", "Problem uninstalling add-on %s: %s" % (name, e))
         for name in add:
             try:
                 self.busy("Installing %s ..." % name)
                 self.repaint()
                 Orange.utils.addons.install(name, self.pcb)
             except Exception, e:
-                print "Problem installing add-on %s: %s" % (name, e)
+                QMessageBox.critical(self, "Error", "Problem installing add-on %s: %s" % (name, e))
 
         QDialog.accept(self)
 
