@@ -8,13 +8,13 @@ from xml.sax.saxutils import escape
 import numpy
 
 from PyQt4.QtGui import (
-    QGraphicsItem, QGraphicsPathItem, QGraphicsPixmapItem, QGraphicsObject,
-    QGraphicsTextItem, QGraphicsDropShadowEffect,
+    QGraphicsItem, QGraphicsPathItem, QGraphicsObject,
+    QGraphicsTextItem, QGraphicsDropShadowEffect, QGraphicsView,
     QPen, QBrush, QColor, QPalette, QFont, QIcon, QStyle,
     QPainter, QPainterPath, QPainterPathStroker, QApplication
 )
 
-from PyQt4.QtCore import Qt, QPointF, QRectF, QTimer
+from PyQt4.QtCore import Qt, QPointF, QRectF, QSize, QTimer
 from PyQt4.QtCore import pyqtSignal as Signal
 from PyQt4.QtCore import pyqtProperty as Property
 
@@ -474,15 +474,116 @@ class SinkAnchorItem(NodeAnchorItem):
     pass
 
 
-class MessageIcon(QGraphicsPixmapItem):
-    def __init__(self, *args, **kwargs):
-        QGraphicsPixmapItem.__init__(self, *args, **kwargs)
+def standard_icon(standard_pixmap):
+    """Return return the application style's standard icon for a
+    `QStyle.StandardPixmap`.
 
-
-def message_pixmap(standard_pixmap):
+    """
     style = QApplication.instance().style()
-    icon = style.standardIcon(standard_pixmap)
-    return icon.pixmap(16, 16)
+    return style.standardIcon(standard_pixmap)
+
+
+class GraphicsIconItem(QGraphicsItem):
+    """A graphics item displaying an `QIcon`.
+    """
+    def __init__(self, parent=None, icon=None, iconSize=None, **kwargs):
+        QGraphicsItem.__init__(self, parent, **kwargs)
+        self.setFlag(QGraphicsItem.ItemUsesExtendedStyleOption, True)
+
+        if icon is None:
+            icon = QIcon()
+
+        if iconSize is None:
+            style = QApplication.instance().style()
+            size = style.pixelMetric(style.PM_LargeIconSize)
+            iconSize = QSize(size, size)
+
+        self.__transformationMode = Qt.SmoothTransformation
+
+        self.__iconSize = QSize(iconSize)
+        self.__icon = QIcon(icon)
+
+    def setIcon(self, icon):
+        """Set the icon (:class:`QIcon`).
+        """
+        if self.__icon != icon:
+            self.__icon = QIcon(icon)
+            self.update()
+
+    def icon(self):
+        """Return the icon (:class:`QIcon`).
+        """
+        return QIcon(self.__icon)
+
+    def setIconSize(self, size):
+        """Set the icon (and this item's) size (:class:`QSize`).
+        """
+        if self.__iconSize != size:
+            self.prepareGeometryChange()
+            self.__iconSize = QSize(size)
+            self.update()
+
+    def iconSize(self):
+        """Return the icon size (:class:`QSize`).
+        """
+        return QSize(self.__iconSize)
+
+    def setTransformationMode(self, mode):
+        """Set pixmap transformation mode. (`Qt.SmoothTransformation` or
+        `Qt.FastTransformation`).
+
+        """
+        if self.__transformationMode != mode:
+            self.__transformationMode = mode
+            self.update()
+
+    def transformationMode(self):
+        """Return the pixmap transformation mode.
+        """
+        return self.__transformationMode
+
+    def boundingRect(self):
+        return QRectF(0, 0, self.__iconSize.width(), self.__iconSize.height())
+
+    def paint(self, painter, option, widget=None):
+        if not self.__icon.isNull():
+            if option.state & QStyle.State_Selected:
+                mode = QIcon.Selected
+            elif option.state & QStyle.State_Enabled:
+                mode = QIcon.Normal
+            elif option.state & QStyle.State_Active:
+                mode = QIcon.Active
+            else:
+                mode = QIcon.Disabled
+
+            transform = self.sceneTransform()
+
+            if widget is not None:
+                # 'widget' is the QGraphicsView.viewport()
+                view = widget.parent()
+                if isinstance(view, QGraphicsView):
+                    # Combine the scene transform with the view transform.
+                    view_transform = view.transform()
+                    transform = view_transform * view_transform
+
+            lod = option.levelOfDetailFromTransform(transform)
+
+            w, h = self.__iconSize.width(), self.__iconSize.height()
+            target = QRectF(0, 0, w, h)
+            source = QRectF(0, 0, w * lod, w * lod).toRect()
+
+            # The actual size of the requested pixmap can be smaller.
+            size = self.__icon.actualSize(source.size(), mode=mode)
+            source.setSize(size)
+
+            pixmap = self.__icon.pixmap(source.size(), mode=mode)
+
+            painter.setRenderHint(
+                QPainter.SmoothPixmapTransform,
+                self.__transformationMode == Qt.SmoothTransformation
+            )
+
+            painter.drawPixmap(target, pixmap, QRectF(source))
 
 
 def linspace(count):
@@ -602,17 +703,15 @@ class NodeItem(QGraphicsObject):
         font = QFont("Helvetica", 12)
         self.captionTextItem.setFont(font)
 
-        self.errorItem = MessageIcon(self)
-        self.errorItem.setPixmap(message_pixmap(QStyle.SP_MessageBoxCritical))
-        self.errorItem.hide()
+        def iconItem(standard_pixmap):
+            item = GraphicsIconItem(self, icon=standard_icon(standard_pixmap),
+                                    iconSize=QSize(16, 16))
+            item.hide()
+            return item
 
-        self.warningItem = MessageIcon(self)
-        self.warningItem.setPixmap(message_pixmap(QStyle.SP_MessageBoxWarning))
-        self.warningItem.hide()
-
-        self.infoItem = MessageIcon(self)
-        self.infoItem.setPixmap(message_pixmap(QStyle.SP_MessageBoxInformation))
-        self.infoItem.hide()
+        self.errorItem = iconItem(QStyle.SP_MessageBoxCritical)
+        self.warningItem = iconItem(QStyle.SP_MessageBoxWarning)
+        self.infoItem = iconItem(QStyle.SP_MessageBoxInformation)
 
     def setWidgetDescription(self, desc):
         """Set widget description.
@@ -647,11 +746,10 @@ class NodeItem(QGraphicsObject):
     def setIcon(self, icon):
         """Set the widget's icon
         """
-        # TODO: if the icon is SVG, how can we get it?
         if isinstance(icon, QIcon):
-            pixmap = icon.pixmap(36, 36)
-            self.pixmap_item = QGraphicsPixmapItem(pixmap, self.shapeItem)
-            self.pixmap_item.setPos(-18, -18)
+            self.icon_item = GraphicsIconItem(self.shapeItem, icon=icon,
+                                              iconSize=QSize(36, 36))
+            self.icon_item.setPos(-18, -18)
         else:
             raise TypeError
 
