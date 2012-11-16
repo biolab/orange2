@@ -1019,7 +1019,7 @@ class AddOnManagerDialog(QDialog):
         for (i, (name, ao)) in enumerate(addons):
             item = QListWidgetItem()
             self.lst.addItem(item)
-            item.setText(name)
+            item.setText(ao.name)
             item.setCheckState(Qt.Checked if ao.installed_version and not name in to_remove or name in to_install else Qt.Unchecked)
             item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
             item.addon = ao
@@ -1054,7 +1054,7 @@ class AddOnManagerDialog(QDialog):
         # Add repositories and add-ons
         addons = {}
         for name in Orange.utils.addons.search_index(self.searchStr):
-            addons[name] = Orange.utils.addons.addons[name]
+            addons[name.lower()] = Orange.utils.addons.addons[name.lower()]
         self.addAddOnsToTree(addons, selected = selected_addon, to_install=to_install, to_remove=to_remove)
         self.refreshInfoPane()
 
