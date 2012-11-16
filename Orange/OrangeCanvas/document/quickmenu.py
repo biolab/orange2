@@ -8,10 +8,11 @@ import logging
 from collections import namedtuple
 
 from PyQt4.QtGui import (
-    QWidget, QFrame, QToolButton, QAbstractButton, QAction, QIcon,
+    QWidget, QFrame, QToolButton, QAbstractButton, QAction, QIcon, QTreeView,
     QButtonGroup, QStackedWidget, QHBoxLayout, QVBoxLayout, QSizePolicy,
     QStandardItemModel, QSortFilterProxyModel, QStyleOptionToolButton,
-    QStylePainter, QStyle, QApplication
+    QStylePainter, QStyle, QApplication, QStyledItemDelegate,
+    QStyleOptionViewItemV4
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
@@ -42,7 +43,6 @@ class SearchWidget(LineEdit):
     def __setupUi(self):
         icon = icon_loader().get("icons/Search.svg")
         action = QAction(icon, "Search", self)
-
         self.setAction(action, LineEdit.LeftPosition)
 
 
@@ -480,7 +480,7 @@ class QuickMenu(FramelessWindow):
         self.addPage(self.tr("Quick Search"), self.__suggestPage)
 
         self.__search.textEdited.connect(
-            self.__suggestPage.setFilterFixedString
+            self.__on_textEdited
         )
 
         self.__navigator = ItemViewKeyNavigator(self)
@@ -502,10 +502,18 @@ class QuickMenu(FramelessWindow):
         # Route the page's signals
         page.triggered.connect(self.__onTriggered)
         page.hovered.connect(self.hovered)
+
+        # Install event filter to process key presses.
+        page.view().installEventFilter(self)
+
         return index
 
     def createPage(self, index):
         page = ToolTree(self)
+        view = page.view()
+        delegate = WidgetItemDelegate(view)
+        view.setItemDelegate(delegate)
+
         page.setModel(index.model())
         page.setRootIndex(index)
 
@@ -513,6 +521,9 @@ class QuickMenu(FramelessWindow):
 
         if sys.platform == "darwin":
             view.verticalScrollBar().setAttribute(Qt.WA_MacMiniSize, True)
+            # Don't show the focus frame because it expands into the tab
+            # bar at the top.
+            view.setAttribute(Qt.WA_MacShowFocusRect, False)
 
         name = unicode(index.data(Qt.DisplayRole))
         page.setTitle(name)
@@ -522,7 +533,6 @@ class QuickMenu(FramelessWindow):
             page.setIcon(icon)
 
         page.setToolTip(index.data(Qt.ToolTipRole).toPyObject())
-
         return page
 
     def setModel(self, model):
@@ -636,8 +646,12 @@ class QuickMenu(FramelessWindow):
         self.hide()
         self.triggered.emit(action)
 
+    def __on_textEdited(self, text):
+        self.__suggestPage.setFilterFixedString(text)
+        self.__pages.setCurrentPage(self.__suggestPage)
+
     def triggerSearch(self):
-        self.__pages.setCurrentWidget(self.__suggestPage)
+        self.__pages.setCurrentPage(self.__suggestPage)
         self.__search.setFocus(Qt.ShortcutFocusReason)
 
         # Make sure that the first enabled item is set current.
@@ -645,12 +659,39 @@ class QuickMenu(FramelessWindow):
 
     def keyPressEvent(self, event):
         if event.text():
-            # Ignore modifiers etc.
+            # Ignore modifiers, ...
             self.__search.setFocus(Qt.ShortcutFocusReason)
             self.setCurrentIndex(0)
             self.__search.keyPressEvent(event)
 
         FramelessWindow.keyPressEvent(self, event)
+        event.accept()
+
+    def eventFilter(self, obj, event):
+        if isinstance(obj, QTreeView):
+            etype = event.type()
+            if etype == QEvent.KeyPress:
+                # ignore modifiers non printable characters, Enter, ...
+                if event.text() and event.key() not in \
+                        [Qt.Key_Enter, Qt.Key_Return]:
+                    self.__search.setFocus(Qt.ShortcutFocusReason)
+                    self.setCurrentIndex(0)
+                    self.__search.keyPressEvent(event)
+                    return True
+
+        return FramelessWindow.eventFilter(self, obj, event)
+
+
+class WidgetItemDelegate(QStyledItemDelegate):
+    def __init__(self, parent=None):
+        QStyledItemDelegate.__init__(self, parent)
+
+    def sizeHint(self, option, index):
+        option = QStyleOptionViewItemV4(option)
+        self.initStyleOption(option, index)
+        size = QStyledItemDelegate.sizeHint(self, option, index)
+        size.setHeight(max(size.height(), 25))
+        return size
 
 
 class ItemViewKeyNavigator(QObject):
