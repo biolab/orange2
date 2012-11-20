@@ -105,9 +105,6 @@ def scan_update(item):
         item.setSelectable(False)
         return
 
-    if not title:
-        title = os.path.splitext(os.path.basename(path))[0]
-
     if not svg:
         try:
             svg = scheme_svg_thumbnail(path)

@@ -36,6 +36,8 @@ class SchemeInfoEdit(QWidget):
         layout.addRow(self.tr("Name"), self.name_edit)
         layout.addRow(self.tr("Description"), self.desc_edit)
 
+        self.__schemeIsUntitled = True
+
         self.setLayout(layout)
 
     def setScheme(self, scheme):
@@ -43,7 +45,12 @@ class SchemeInfoEdit(QWidget):
 
         """
         self.scheme = scheme
-        self.name_edit.setText(scheme.title or "")
+        if not scheme.title:
+            self.name_edit.setText(self.tr("untitled"))
+            self.__schemeIsUntitled = True
+        else:
+            self.name_edit.setText(scheme.title)
+            self.__schemeIsUntitled = False
         self.desc_edit.setPlainText(scheme.description or "")
 
     def commit(self):
@@ -51,7 +58,13 @@ class SchemeInfoEdit(QWidget):
         back to the scheme.
 
         """
-        name = unicode(self.name_edit.text()).strip()
+        if self.__schemeIsUntitled and \
+            self.name_edit.text() == self.tr("untitled"):
+            # 'untitled' text was not changed
+            name = ""
+        else:
+            name = unicode(self.name_edit.text()).strip()
+
         description = unicode(self.desc_edit.toPlainText()).strip()
         self.scheme.title = name
         self.scheme.description = description

@@ -61,8 +61,8 @@ class Scheme(QObject):
         self.__path = ""
         "Filename path associated with this schema (empty string by default)"
 
-        self.__title = title or "untitled"
-        "Scheme title ('untitled' by default)."
+        self.__title = title or ""
+        "Scheme title (empty string by default)."
 
         self.__description = description or ""
         "Scheme description (empty string by default)."

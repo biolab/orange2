@@ -244,7 +244,7 @@ class CanvasMainWindow(QMainWindow):
         frame.setWidget(self.scheme_widget)
 
         # Main window title and title icon.
-        self.setWindowTitle(self.scheme_widget.scheme().title)
+        self.set_document_title(self.scheme_widget.scheme().title)
         self.scheme_widget.titleChanged.connect(self.set_document_title)
         self.scheme_widget.modificationChanged.connect(self.setWindowModified)
 
@@ -742,11 +742,22 @@ class CanvasMainWindow(QMainWindow):
         self.setMenuBar(menu_bar)
 
     def set_document_title(self, title):
+        """Set the document title (and the main window title). If `title`
+        is an empty string a default 'untitled' placeholder will be used.
+
+        """
         if self.__document_title != title:
             self.__document_title = title
+
+            if not title:
+                # TODO: should the default name be platform specific
+                title = self.tr("untitled")
+
             self.setWindowTitle(title + "[*]")
 
     def document_title(self):
+        """Return the document title.
+        """
         return self.__document_title
 
     def set_widget_registry(self, widget_registry):

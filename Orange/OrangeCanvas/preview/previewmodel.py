@@ -84,8 +84,11 @@ class PreviewItem(QStandardItem):
                  icon=None, path=None):
         QStandardItem.__init__(self)
 
+        self.__name = ""
+
         if name is None:
             name = "Untitled"
+
         self.setName(name)
 
         if description is None:
@@ -105,12 +108,20 @@ class PreviewItem(QStandardItem):
     def name(self):
         """Return the name (title) of the item (same as `text()`.
         """
-        return self.text()
+        return self.__name
 
     def setName(self, value):
-        """Set the name.
+        """Set the item name. `value` if not empty will be used as
+        the items DisplayRole otherwise an 'untitled' placeholder will
+        be used.
+
         """
-        self.setText(value)
+        self.__name = value
+
+        if not value:
+            self.setText("untitled")
+        else:
+            self.setText(value)
 
     def description(self):
         """Return the detailed description for the item.
