@@ -862,14 +862,20 @@ class CanvasMainWindow(QMainWindow):
                 return QDialog.Rejected
 
         new_scheme = widgetsscheme.WidgetsScheme()
-        scheme_doc_widget = self.current_document()
-        scheme_doc_widget.setScheme(new_scheme)
 
         settings = QSettings()
         show = settings.value("schemeinfo/show-at-new-scheme", True).toBool()
 
         if show:
-            self.show_properties_action.trigger()
+            status = self.show_scheme_properties_for(
+                new_scheme, self.tr("New Scheme")
+            )
+
+            if status == QDialog.Rejected:
+                return QDialog.Rejected
+
+        scheme_doc_widget = self.current_document()
+        scheme_doc_widget.setScheme(new_scheme)
 
         return QDialog.Accepted
 
@@ -1162,24 +1168,38 @@ class CanvasMainWindow(QMainWindow):
     def show_scheme_properties(self):
         """Show current scheme properties.
         """
+        current_doc = self.current_document()
+        scheme = current_doc.scheme()
+        return self.show_scheme_properties_for(scheme)
+
+    def show_scheme_properties_for(self, scheme, window_title=None):
+        """Show scheme properties for `scheme` with `window_title (if None
+        a default 'Scheme Info' title will be used.
+
+        """
         settings = QSettings()
         value_key = "schemeinfo/show-at-new-scheme"
 
         dialog = SchemeInfoDialog(self)
-        dialog.setWindowTitle(self.tr("Scheme Info"))
+
+        if window_title is None:
+            window_title = self.tr("Scheme Info")
+
+        dialog.setWindowTitle(window_title)
         dialog.setFixedSize(725, 450)
 
         dialog.setDontShowAtNewScheme(
             not settings.value(value_key, True).toBool()
         )
 
-        current_doc = self.current_document()
-        scheme = current_doc.scheme()
         dialog.setScheme(scheme)
 
-        if dialog.exec_() == QDialog.Accepted:
+        status = dialog.exec_()
+        if status == QDialog.Accepted:
             # Store the check state.
             settings.setValue(value_key, not dialog.dontShowAtNewScheme())
+
+        return status
 
     def set_canvas_view_zoom(self, zoom):
         doc = self.current_document()
