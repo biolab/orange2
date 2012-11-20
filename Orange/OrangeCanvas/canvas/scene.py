@@ -762,4 +762,5 @@ def grab_svg(scene):
     scene.render(painter, target_rect, source_rect)
     painter.end()
 
-    return unicode(svg_buffer.buffer())
+    buffer_str = str(svg_buffer.buffer())
+    return unicode(buffer_str.decode("utf-8"))

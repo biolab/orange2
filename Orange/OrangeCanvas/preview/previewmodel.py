@@ -165,7 +165,7 @@ class PreviewItem(QStandardItem):
         with tempfile.NamedTemporaryFile(
                 prefix="thumbnail", suffix=".svg", delete=False
                 ) as f:
-            f.write(thumbnail)
+            f.write(thumbnail.encode("utf-8"))
             f.flush()
             icon = QIcon(f.name)
             self.setIcon(icon)

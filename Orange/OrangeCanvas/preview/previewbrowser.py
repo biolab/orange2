@@ -235,4 +235,4 @@ class PreviewBrowser(QWidget):
             svg = NO_PREVIEW_SVG
 
         if svg:
-            self.__image.load(QByteArray(svg))
+            self.__image.load(QByteArray(svg.encode("utf-8")))

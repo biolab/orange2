@@ -293,9 +293,18 @@ class LinkItem(QGraphicsObject):
         self.prepareGeometryChange()
 
         if self.__sourceName or self.__sinkName:
-            text = "{0} --> {1}".format(self.__sourceName, self.__sinkName)
+            if self.__sourceName != self.__sinkName:
+                text = u"{0} \u2192 {1}".format(self.__sourceName,
+                                                self.__sinkName)
+            else:
+                # If the names are the same show only one.
+                # Is this right? If the sink has two input channels of the
+                # same type having the name on the link help elucidate
+                # the scheme.
+                text = self.__sourceName
         else:
             text = ""
+
         self.linkTextItem.setPlainText(text)
 
         path = self.curveItem.path()
