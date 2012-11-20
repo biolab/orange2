@@ -32,6 +32,7 @@ class SchemeInfoEdit(QWidget):
         self.name_edit.setSizePolicy(QSizePolicy.Expanding,
                                      QSizePolicy.Fixed)
         self.desc_edit = QTextEdit(self)
+        self.desc_edit.setTabChangesFocus(True)
 
         layout.addRow(self.tr("Name"), self.name_edit)
         layout.addRow(self.tr("Description"), self.desc_edit)
@@ -47,6 +48,7 @@ class SchemeInfoEdit(QWidget):
         self.scheme = scheme
         if not scheme.title:
             self.name_edit.setText(self.tr("untitled"))
+            self.name_edit.selectAll()
             self.__schemeIsUntitled = True
         else:
             self.name_edit.setText(scheme.title)
