@@ -36,6 +36,7 @@ class GraphicsSceneFocusEventListener(QGraphicsObject):
         self.setFlag(QGraphicsItem.ItemHasNoContents)
 
     def sceneEventFilter(self, obj, event):
+        print obj, event, event.type()
         if event.type() == QEvent.FocusIn and \
                 obj.flags() & QGraphicsItem.ItemIsFocusable:
             obj.focusInEvent(event)
@@ -196,7 +197,16 @@ class SchemeEditWidget(QWidget):
             self.__scene.installEventFilter(self)
 
             self.__scene.set_registry(self.__registry)
-            self.__scene.set_scheme(scheme)
+
+            # Focus listener
+            self.__focusListener = GraphicsSceneFocusEventListener()
+            self.__focusListener.itemFocusedIn.connect(
+                self.__onItemFocusedIn
+            )
+            self.__focusListener.itemFocusedOut.connect(
+                self.__onItemFocusedOut
+            )
+            self.__scene.addItem(self.__focusListener)
 
             self.__scene.selectionChanged.connect(
                 self.__onSelectionChanged
@@ -214,14 +224,7 @@ class SchemeEditWidget(QWidget):
                 self.__onAnnotationRemoved
             )
 
-            self.__focusListener = GraphicsSceneFocusEventListener()
-            self.__focusListener.itemFocusedIn.connect(
-                self.__onItemFocusedIn
-            )
-            self.__focusListener.itemFocusedOut.connect(
-                self.__onItemFocusedOut
-            )
-            self.__scene.addItem(self.__focusListener)
+            self.__scene.set_scheme(scheme)
 
     def scheme(self):
         return self.__scheme
@@ -438,24 +441,6 @@ class SchemeEditWidget(QWidget):
 
             return handler.mousePressEvent(event)
 
-        annotation_item = scene.item_at(pos, (items.TextAnnotation,
-                                              items.ArrowAnnotation))
-
-        if annotation_item and event.button() == Qt.LeftButton and \
-                not event.modifiers() & Qt.ControlModifier:
-            if isinstance(annotation_item, items.TextAnnotation):
-                handler = interactions.ResizeTextAnnotation(self)
-            elif isinstance(annotation_item, items.ArrowAnnotation):
-                handler = interactions.ResizeArrowAnnotation(self)
-            else:
-                log.error("Unknown annotation item (%r).", annotation_item)
-                return False
-
-            scene.clearSelection()
-
-            scene.set_user_interaction_handler(handler)
-            return handler.mousePressEvent(event)
-
         any_item = scene.item_at(pos)
         if not any_item and event.button() == Qt.LeftButton:
             # Start rect selection
@@ -602,38 +587,59 @@ class SchemeEditWidget(QWidget):
                                          geometry_from_annotation_item(item))
 
     def __onAnnotationAdded(self, item):
+        log.debug("Annotation added (%r)", item)
         item.setFlag(QGraphicsItem.ItemIsSelectable)
+        item.setFlag(QGraphicsItem.ItemIsMovable)
+        item.setFlag(QGraphicsItem.ItemIsFocusable)
+
+        item.installSceneEventFilter(self.__focusListener)
+
         if isinstance(item, items.ArrowAnnotation):
             pass
         elif isinstance(item, items.TextAnnotation):
+            # Make the annotation editable.
+            item.setTextInteractionFlags(Qt.TextEditorInteraction)
+
             self.__editFinishedMapper.setMapping(item, item)
             item.editingFinished.connect(
                 self.__editFinishedMapper.map
             )
+
         self.__annotationGeomChanged.setMapping(item, item)
         item.geometryChanged.connect(
             self.__annotationGeomChanged.map
         )
 
     def __onAnnotationRemoved(self, item):
+        log.debug("Annotation removed (%r)", item)
         if isinstance(item, items.ArrowAnnotation):
             pass
         elif isinstance(item, items.TextAnnotation):
             item.editingFinished.disconnect(
                 self.__editFinishedMapper.map
             )
+
+        item.removeSceneEventFilter(self.__focusListener)
+
         self.__annotationGeomChanged.removeMappings(item)
         item.geometryChanged.disconnect(
             self.__annotationGeomChanged.map
         )
 
     def __onItemFocusedIn(self, item):
-        pass
+        """Annotation item has gained focus.
+        """
+        if not self.__scene.user_interaction_handler:
+            self.__startControlPointEdit(item)
 
     def __onItemFocusedOut(self, item):
-        pass
+        """Annotation item lost focus.
+        """
+        self.__endControlPointEdit()
 
     def __onEditingFinished(self, item):
+        """Text annotation editing has finished.
+        """
         annot = self.__scene.annotation_for_item(item)
         text = unicode(item.toPlainText())
         if annot.text != text:
@@ -660,6 +666,8 @@ class SchemeEditWidget(QWidget):
             return
 
     def __toogleLinkEnabled(self, enabled):
+        """Link enabled state was toogled in the context menu.
+        """
         if self.__contextMenuTarget:
             link = self.__contextMenuTarget
             command = commands.SetAttrCommand(
@@ -668,16 +676,47 @@ class SchemeEditWidget(QWidget):
             self.__undoStack.push(command)
 
     def __linkRemove(self):
+        """Remove link was requested from the context menu.
+        """
         if self.__contextMenuTarget:
             self.removeLink(self.__contextMenuTarget)
 
     def __linkReset(self):
+        """Link reset from the context menu was requested.
+        """
         if self.__contextMenuTarget:
             link = self.__contextMenuTarget
             action = interactions.EditNodeLinksAction(
                 self, link.source_node, link.sink_node
             )
             action.edit_links()
+
+    def __startControlPointEdit(self, item):
+        """Start a control point edit interaction for item.
+        """
+        if isinstance(item, items.ArrowAnnotation):
+            handler = interactions.ResizeArrowAnnotation(self)
+        elif isinstance(item, items.TextAnnotation):
+            handler = interactions.ResizeTextAnnotation(self)
+        else:
+            log.warning("Unknown annotation item type %r" % item)
+            return
+
+        handler.editItem(item)
+        self.__scene.set_user_interaction_handler(handler)
+
+        log.info("Control point editing started (%r)." % item)
+
+    def __endControlPointEdit(self):
+        """End the current control point edit interaction.
+        """
+        handler = self.__scene.user_interaction_handler
+        if isinstance(handler, (interactions.ResizeArrowAnnotation,
+                                interactions.ResizeTextAnnotation)):
+            handler.commit()
+            handler.end()
+
+            log.info("Control point editing finished.")
 
 
 def geometry_from_annotation_item(item):

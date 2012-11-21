@@ -59,12 +59,11 @@ class TextAnnotation(Annotation):
         self.__textItem.setPos(2, 2)
         self.__textItem.setTextWidth(rect.width() - 4)
         self.__textItem.setTabChangesFocus(True)
+        self.__textItem.setTextInteractionFlags(Qt.NoTextInteraction)
         self.__textInteractionFlags = Qt.NoTextInteraction
 
         layout = self.__textItem.document().documentLayout()
         layout.documentSizeChanged.connect(self.__onDocumentSizeChanged)
-
-        self.setFocusProxy(self.__textItem)
 
         self.__updateFrame()
 
@@ -153,8 +152,6 @@ class TextAnnotation(Annotation):
 
     def setTextInteractionFlags(self, flags):
         self.__textInteractionFlags = flags
-        if self.__textItem.hasFocus():
-            self.__textItem.setTextInteractionFlags(flags)
 
     def textInteractionFlags(self):
         return self.__textInteractionFlags
@@ -172,8 +169,7 @@ class TextAnnotation(Annotation):
     def startEdit(self):
         """Start the annotation text edit process.
         """
-        self.__textItem.setTextInteractionFlags(
-                            self.__textInteractionFlags)
+        self.__textItem.setTextInteractionFlags(self.__textInteractionFlags)
         self.__textItem.setFocus(Qt.MouseFocusReason)
 
         # Install event filter to find out when the text item loses focus.
@@ -185,9 +181,6 @@ class TextAnnotation(Annotation):
     def endEdit(self):
         """End the annotation edit.
         """
-        if self.__textItem.hasFocus():
-            self.__textItem.clearFocus()
-
         self.__textItem.setTextInteractionFlags(Qt.NoTextInteraction)
         self.__textItem.removeSceneEventFilter(self)
         self.__textItem.document().contentsChanged.disconnect(

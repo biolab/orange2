@@ -718,6 +718,7 @@ class NewTextAnnotation(UserInteraction):
     def end(self):
         if self.control is not None:
             self.scene.removeItem(self.control)
+
         self.control = None
         self.down_pos = None
         self.annotation_item = None
@@ -733,6 +734,7 @@ class ResizeTextAnnotation(UserInteraction):
         self.annotation = None
         self.control = None
         self.savedFramePen = None
+        self.savedRect = None
 
     def mousePressEvent(self, event):
         pos = event.scenePos()
@@ -740,7 +742,7 @@ class ResizeTextAnnotation(UserInteraction):
             item = self.scene.item_at(pos, items.TextAnnotation)
             if item is not None and not item.hasFocus():
                 self.editItem(item)
-                return True
+                return False
 
         return UserInteraction.mousePressEvent(self, event)
 
@@ -751,41 +753,52 @@ class ResizeTextAnnotation(UserInteraction):
         self.scene.addItem(control)
 
         self.savedFramePen = item.framePen()
-        self.initialRect = rect
+        self.savedRect = rect
 
-        control.setFocus()
-        control.editingFinished.connect(self.__on_editingFinished)
         control.rectEdited.connect(item.setGeometry)
+        control.setFocusProxy(item)
 
         item.setFramePen(QPen(Qt.DashDotLine))
+        item.geometryChanged.connect(self.__on_textGeometryChanged)
 
         self.item = item
 
         self.annotation = annotation
         self.control = control
 
-    def __on_editingFinished(self):
+    def commit(self):
+        """Commit the current item geometry state to the document.
+        """
         rect = self.item.geometry()
-        command = commands.SetAttrCommand(
-            self.annotation, "rect",
-            (rect.x(), rect.y(), rect.width(), rect.height()),
-            name="Edit text geometry"
-        )
-        self.document.undoStack().push(command)
+        if self.savedRect != rect:
+            command = commands.SetAttrCommand(
+                self.annotation, "rect",
+                (rect.x(), rect.y(), rect.width(), rect.height()),
+                name="Edit text geometry"
+            )
+            self.document.undoStack().push(command)
+            self.savedRect = rect
+
+    def __on_editingFinished(self):
+        self.commit()
         self.end()
 
     def __on_rectEdited(self, rect):
         self.item.setGeometry(rect)
 
+    def __on_textGeometryChanged(self):
+        if not self.control.isControlActive():
+            rect = self.item.geometry()
+            self.control.setRect(rect)
+
     def cancel(self):
-        if self.item is not None:
-            self.item.setGeometry(self.initialRect)
+        if self.item is not None and self.savedRect is not None:
+            self.item.setGeometry(self.savedRect)
 
         UserInteraction.cancel(self)
 
     def end(self):
         if self.control is not None:
-            self.control.clearFocus()
             self.scene.removeItem(self.control)
 
         if self.item is not None:
@@ -804,6 +817,7 @@ class ResizeArrowAnnotation(UserInteraction):
         self.item = None
         self.annotation = None
         self.control = None
+        self.savedLine = None
 
     def mousePressEvent(self, event):
         pos = event.scenePos()
@@ -811,7 +825,7 @@ class ResizeArrowAnnotation(UserInteraction):
             item = self.scene.item_at(pos, items.ArrowAnnotation)
             if item is not None and not item.hasFocus():
                 self.editItem(item)
-                return True
+                return False
 
         return UserInteraction.mousePressEvent(self, event)
 
@@ -821,32 +835,41 @@ class ResizeArrowAnnotation(UserInteraction):
         self.scene.addItem(control)
 
         line = item.line()
-        self.initialLine = line
+        self.savedLine = line
 
         p1, p2 = map(item.mapToScene, (line.p1(), line.p2()))
 
         control.setLine(QLineF(p1, p2))
-        control.setFocus()
-        control.editingFinished.connect(self.__on_editingFinished)
+        control.setFocusProxy(item)
         control.lineEdited.connect(self.__on_lineEdited)
+
+        item.geometryChanged.connect(self.__on_lineGeometryChanged)
 
         self.item = item
         self.annotation = annotation
         self.control = control
 
-    def __on_editingFinished(self):
+    def commit(self):
+        """Commit the current geometry of the item to the document.
+
+        .. note:: Does nothing if the actual geometry is not changed.
+
+        """
         line = self.control.line()
         p1, p2 = line.p1(), line.p2()
 
-        command = commands.SetAttrCommand(
-            self.annotation,
-            "geometry",
-            ((p1.x(), p1.y()), (p2.x(), p2.y())),
-            name="Edit arrow geometry",
-        )
-        self.document.undoStack().push(command)
-        self.control.hide()
+        if self.item.line() != self.savedLine:
+            command = commands.SetAttrCommand(
+                self.annotation,
+                "geometry",
+                ((p1.x(), p1.y()), (p2.x(), p2.y())),
+                name="Edit arrow geometry",
+            )
+            self.document.undoStack().push(command)
+            self.savedLine = self.item.line()
 
+    def __on_editingFinished(self):
+        self.commit()
         self.end()
 
     def __on_lineEdited(self, line):
@@ -854,15 +877,26 @@ class ResizeArrowAnnotation(UserInteraction):
         self.item.setLine(QLineF(p1, p2))
         self.item.adjustGeometry()
 
+    def __on_lineGeometryChanged(self):
+        # Possible geometry change from out of our control, for instance
+        # item move as a part of a selection group.
+        if not self.control.isControlActive():
+            line = self.item.line()
+            p1, p2 = map(self.item.mapToScene, (line.p1(), line.p2()))
+            self.control.setLine(QLineF(p1, p2))
+
     def cancel(self):
-        if self.item is not None:
-            self.item.setLine(self.initialLine)
+        if self.item is not None and self.savedLine is not None:
+            self.item.setLine(self.savedLine)
 
         UserInteraction.cancel(self)
 
     def end(self):
         if self.control is not None:
             self.scene.removeItem(self.control)
+
+        if self.item is not None:
+            self.item.geometryChanged.disconnect(self.__on_lineGeometryChanged)
 
         self.control = None
         self.item = None
