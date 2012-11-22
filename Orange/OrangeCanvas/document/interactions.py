@@ -802,9 +802,11 @@ class NewTextAnnotation(UserInteraction):
         """
         font = self.annotation_item.font()
         metrics = QFontMetrics(font)
-        height = metrics.lineSpacing()
-        rect = QRectF(QPointF(point.x(), point.y() - height),
-                      QSizeF(150, height))
+        spacing = metrics.lineSpacing()
+        margin = self.annotation_item.document().documentMargin()
+
+        rect = QRectF(QPointF(point.x(), point.y() - spacing - margin),
+                      QSizeF(150, spacing + 2 * margin))
         return rect
 
     def end(self):
