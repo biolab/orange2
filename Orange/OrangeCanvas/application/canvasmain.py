@@ -993,11 +993,16 @@ class CanvasMainWindow(QMainWindow):
 
         if curr_scheme.path:
             start_dir = curr_scheme.path
-        elif self.last_scheme_dir is not None:
-            start_dir = self.last_scheme_dir
         else:
-            start_dir = QDesktopServices.storageLocation(
-                            QDesktopServices.DocumentsLocation)
+            if self.last_scheme_dir is not None:
+                start_dir = self.last_scheme_dir
+            else:
+                start_dir = QDesktopServices.storageLocation(
+                    QDesktopServices.DocumentsLocation
+                )
+
+            title = curr_scheme.title or "untitled"
+            start_dir = os.path.join(unicode(start_dir), title + ".ows")
 
         filename = QFileDialog.getSaveFileName(
             self, self.tr("Save Orange Scheme File"),
