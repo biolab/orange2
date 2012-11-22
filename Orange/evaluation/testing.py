@@ -580,8 +580,8 @@ class Evaluation(object):
                 return examples.selectref(proportion_indices(examples, p0=p), 0)
 
             test_results = self.test_with_indices(learners, examples, indices,
-                                                  preprocessors=list(preprocessors) + [("L", select_proportion_preprocessor)],
-                                                  callback=callback)
+                preprocessors=[("L", select_proportion_preprocessor)] +
+                list(preprocessors), callback=callback)
             all_results.append(test_results)
         return all_results
 
