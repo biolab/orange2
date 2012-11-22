@@ -70,6 +70,7 @@ def canvas_icons(name):
                       os.path.join("icons", name))
                      )
 
+
 def message_critical(text, title=None, informative_text=None, details=None,
                      buttons=None, default_button=None, exc_info=False,
                      parent=None):
@@ -308,12 +309,19 @@ class CanvasMainWindow(QMainWindow):
             self.on_quick_category_action
         )
 
-        dock_actions = [self.show_properties_action,
-                        self.canvas_zoom_action,
-                        self.canvas_align_to_grid_action,
-                        self.canvas_arrow_action,
-                        self.canvas_text_action,
-                        self.freeze_action,
+        tool_actions = self.current_document().toolbarActions()
+
+        (self.canvas_zoom_action, self.canvas_align_to_grid_action,
+         self.canvas_text_action, self.canvas_arrow_action,) = tool_actions
+
+        self.canvas_zoom_action.setIcon(canvas_icons("Search.svg"))
+        self.canvas_align_to_grid_action.setIcon(canvas_icons("Grid.svg"))
+        self.canvas_text_action.setIcon(canvas_icons("Text Size.svg"))
+        self.canvas_arrow_action.setIcon(canvas_icons("Arrow.svg"))
+
+        dock_actions = [self.show_properties_action] + \
+                       tool_actions + \
+                       [self.freeze_action,
                         self.dock_help_action]
 
         # Tool bar in the collapsed dock state (has the same actions as
@@ -583,41 +591,6 @@ class CanvasMainWindow(QMainWindow):
                         objectName="application-zoom",
                         triggered=self.toggleMaximized,
                         )
-
-        # Canvas Dock actions
-        self.canvas_zoom_action = \
-            QAction(self.tr("Zoom"), self,
-                    objectName="canvas-zoom-action",
-                    checkable=True,
-                    shortcut=QKeySequence.ZoomIn,
-                    toolTip=self.tr("Zoom in the scheme."),
-                    triggered=self.set_canvas_view_zoom,
-                    icon=canvas_icons("Search.svg")
-                    )
-
-        self.canvas_align_to_grid_action = \
-            QAction(self.tr("Clean Up"), self,
-                    objectName="canvas-align-to-grid-action",
-                    toolTip=self.tr("Align widget to a grid."),
-                    triggered=self.align_to_grid,
-                    icon=canvas_icons("Grid.svg")
-                    )
-
-        self.canvas_arrow_action = \
-            QAction(self.tr("Arrow"), self,
-                    objectName="canvas-arrow-action",
-                    toolTip=self.tr("Add an arrow annotation to the scheme."),
-                    triggered=self.new_arrow_annotation,
-                    icon=canvas_icons("Arrow.svg")
-                    )
-
-        self.canvas_text_action = \
-            QAction(self.tr("Text"), self,
-                    objectName="canvas-text-action",
-                    toolTip=self.tr("Add a text annotation to the scheme."),
-                    triggered=self.new_text_annotation,
-                    icon=canvas_icons("Text Size.svg")
-                    )
 
         self.freeze_action = \
             QAction(self.tr("Freeze"), self,
@@ -1211,27 +1184,6 @@ class CanvasMainWindow(QMainWindow):
             settings.setValue(value_key, not dialog.dontShowAtNewScheme())
 
         return status
-
-    def set_canvas_view_zoom(self, zoom):
-        doc = self.current_document()
-        if zoom:
-            doc.view().scale(1.5, 1.5)
-        else:
-            doc.view().resetTransform()
-
-    def align_to_grid(self):
-        "Align widgets on the canvas to an grid."
-        self.current_document().alignToGrid()
-
-    def new_arrow_annotation(self):
-        """Create and add a new arrow annotation to the current scheme.
-        """
-        self.current_document().newArrowAnnotation()
-
-    def new_text_annotation(self):
-        """Create a new text annotation in the scheme.
-        """
-        self.current_document().newTextAnnotation()
 
     def set_signal_freeze(self, freeze):
         scheme = self.current_document().scheme()

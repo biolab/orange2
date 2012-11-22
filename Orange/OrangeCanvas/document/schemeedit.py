@@ -6,8 +6,8 @@ import logging
 from operator import attrgetter
 
 from PyQt4.QtGui import (
-    QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QUndoStack,
-    QGraphicsItem, QGraphicsObject, QPainter
+    QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QKeySequence,
+    QUndoStack, QGraphicsItem, QGraphicsObject, QPainter
 )
 
 from PyQt4.QtCore import Qt, QObject, QEvent, QSignalMapper, QRectF
@@ -84,12 +84,53 @@ class SchemeEditWidget(QWidget):
 
         self.__annotationGeomChanged = QSignalMapper(self)
 
+        self.__setupActions()
         self.__setupUi()
+
+        self.__linkMenu = QMenu(self)
+        self.__linkMenu.addAction(self.__linkEnableAction)
+        self.__linkMenu.addSeparator()
+        self.__linkMenu.addAction(self.__linkRemoveAction)
+        self.__linkMenu.addAction(self.__linkResetAction)
+
+    def __setupActions(self):
+
+        self.__zoomAction = \
+            QAction(self.tr("Zoom"), self,
+                    objectName="zoom",
+                    checkable=True,
+                    shortcut=QKeySequence.ZoomIn,
+                    toolTip=self.tr("Zoom in the scheme."),
+                    toggled=self.toogleZoom,
+                    )
+
+        self.__cleanUpAction = \
+            QAction(self.tr("Clean Up"), self,
+                    objectName="cleanup",
+                    toolTip=self.tr("Align widget to a grid."),
+                    triggered=self.alignToGrid,
+                    )
+
+        self.__newTextAnnotationAction = \
+            QAction(self.tr("Text"), self,
+                    objectName="new-text-annotation",
+                    toolTip=self.tr("Add a text annotation to the scheme."),
+                    checkable=True,
+                    toggled=self.__toggleNewTextAnnotation,
+                    )
+
+        self.__newArrowAnnotationAction = \
+            QAction(self.tr("Arrow"), self,
+                    objectName="new-arrow-annotation",
+                    toolTip=self.tr("Add a arrow annotation to the scheme."),
+                    checkable=True,
+                    toggled=self.__toggleNewArrowAnnotation,
+                    )
 
         self.__linkEnableAction = \
             QAction(self.tr("Enabled"), self,
                     objectName="link-enable-action",
-                    triggered=self.__toogleLinkEnabled,
+                    triggered=self.__toggleLinkEnabled,
                     checkable=True,
                     )
 
@@ -106,11 +147,11 @@ class SchemeEditWidget(QWidget):
                     triggered=self.__linkReset,
                     )
 
-        self.__linkMenu = QMenu(self)
-        self.__linkMenu.addAction(self.__linkEnableAction)
-        self.__linkMenu.addSeparator()
-        self.__linkMenu.addAction(self.__linkRemoveAction)
-        self.__linkMenu.addAction(self.__linkResetAction)
+        self.addActions([self.__newTextAnnotationAction,
+                         self.__newArrowAnnotationAction,
+                         self.__linkEnableAction,
+                         self.__linkRemoveAction,
+                         self.__linkResetAction])
 
     def __setupUi(self):
         layout = QVBoxLayout()
@@ -140,6 +181,14 @@ class SchemeEditWidget(QWidget):
 
         layout.addWidget(view)
         self.setLayout(layout)
+
+    def toolbarActions(self):
+        """Return a list of actions that can be inserted into a toolbar.
+        """
+        return [self.__zoomAction,
+                self.__cleanUpAction,
+                self.__newTextAnnotationAction,
+                self.__newArrowAnnotationAction]
 
     def isModified(self):
         return not self.__undoStack.isClean()
@@ -321,6 +370,13 @@ class SchemeEditWidget(QWidget):
         for item in self.__scene.items():
             if item.flags() & QGraphicsItem.ItemIsSelectable:
                 item.setSelected(True)
+
+    def toogleZoom(self, zoom):
+        view = self.view()
+        if zoom:
+            view.scale(1.5, 1.5)
+        else:
+            view.resetTransform()
 
     def newArrowAnnotation(self):
         handler = interactions.NewArrowAnnotation(self)
@@ -648,6 +704,36 @@ class SchemeEditWidget(QWidget):
                                            annot.text, text)
             )
 
+    def __toggleNewArrowAnnotation(self, checked):
+        if self.__newTextAnnotationAction.isChecked():
+            self.__newTextAnnotationAction.setChecked(not checked)
+        if not checked:
+            handler = self.__scene.user_interaction_handler
+            if isinstance(handler, interactions.NewArrowAnnotation):
+                # Cancel the interaction and restore the state
+                handler.cancel()
+                log.info("Canceled new arrow annotation")
+
+        else:
+            handler = interactions.NewArrowAnnotation(self)
+            # TODO: when does the interaction complete.
+            self.__scene.set_user_interaction_handler(handler)
+
+    def __toggleNewTextAnnotation(self, checked):
+        if self.__newArrowAnnotationAction.isChecked():
+            self.__newArrowAnnotationAction.setChecked(not checked)
+
+        if not checked:
+            handler = self.__scene.user_interaction_handler
+            if isinstance(handler, interactions.NewTextAnnotation):
+                # cancel the interaction and restore the state
+                handler.cancel()
+                log.info("Canceled new text annotation")
+
+        else:
+            handler = interactions.NewTextAnnotation(self)
+            self.__scene.set_user_interaction_handler(handler)
+
     def __onCustomContextMenuRequested(self, pos):
         scenePos = self.view().mapToScene(pos)
         globalPos = self.view().mapToGlobal(pos)
@@ -665,8 +751,8 @@ class SchemeEditWidget(QWidget):
             self.__linkMenu.popup(globalPos)
             return
 
-    def __toogleLinkEnabled(self, enabled):
-        """Link enabled state was toogled in the context menu.
+    def __toggleLinkEnabled(self, enabled):
+        """Link enabled state was toggled in the context menu.
         """
         if self.__contextMenuTarget:
             link = self.__contextMenuTarget
