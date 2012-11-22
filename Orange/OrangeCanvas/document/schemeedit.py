@@ -707,31 +707,41 @@ class SchemeEditWidget(QWidget):
     def __toggleNewArrowAnnotation(self, checked):
         if self.__newTextAnnotationAction.isChecked():
             self.__newTextAnnotationAction.setChecked(not checked)
+
+        action = self.__newArrowAnnotationAction
+
         if not checked:
             handler = self.__scene.user_interaction_handler
             if isinstance(handler, interactions.NewArrowAnnotation):
                 # Cancel the interaction and restore the state
-                handler.cancel()
+                handler.ended.disconnect(action.toggle)
+                handler.cancel(interactions.UserInteraction.UserCancelReason)
                 log.info("Canceled new arrow annotation")
 
         else:
             handler = interactions.NewArrowAnnotation(self)
-            # TODO: when does the interaction complete.
+            handler.ended.connect(action.toggle)
+
             self.__scene.set_user_interaction_handler(handler)
 
     def __toggleNewTextAnnotation(self, checked):
         if self.__newArrowAnnotationAction.isChecked():
             self.__newArrowAnnotationAction.setChecked(not checked)
 
+        action = self.__newTextAnnotationAction
+
         if not checked:
             handler = self.__scene.user_interaction_handler
             if isinstance(handler, interactions.NewTextAnnotation):
                 # cancel the interaction and restore the state
-                handler.cancel()
+                handler.ended.disconnect(action.toggle)
+                handler.cancel(interactions.UserInteraction.UserCancelReason)
                 log.info("Canceled new text annotation")
 
         else:
             handler = interactions.NewTextAnnotation(self)
+            handler.ended.connect(action.toggle)
+
             self.__scene.set_user_interaction_handler(handler)
 
     def __onCustomContextMenuRequested(self, pos):
@@ -798,7 +808,8 @@ class SchemeEditWidget(QWidget):
         """
         handler = self.__scene.user_interaction_handler
         if isinstance(handler, (interactions.ResizeArrowAnnotation,
-                                interactions.ResizeTextAnnotation)):
+                                interactions.ResizeTextAnnotation)) and \
+                not handler.isFinished() and not handler.isCanceled():
             handler.commit()
             handler.end()
 

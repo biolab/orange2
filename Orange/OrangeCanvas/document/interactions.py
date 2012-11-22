@@ -8,7 +8,8 @@ from PyQt4.QtGui import (
     QApplication, QGraphicsRectItem, QPen, QBrush, QColor, QFontMetrics
 )
 
-from PyQt4.QtCore import Qt, QSizeF, QPointF, QRectF, QLineF
+from PyQt4.QtCore import Qt, QObject, QSizeF, QPointF, QRectF, QLineF
+from PyQt4.QtCore import pyqtSignal as Signal
 
 from ..registry.qt import QtWidgetRegistry
 from .. import scheme
@@ -19,25 +20,94 @@ from . import commands
 log = logging.getLogger(__name__)
 
 
-class UserInteraction(object):
-    def __init__(self, document):
+class UserInteraction(QObject):
+    # cancel reason flags
+    NoReason = 0  # No specified reason
+    UserCancelReason = 1  # User canceled the operation (e.g. pressing ESC)
+    InteractionOverrideReason = 3  # Another interaction was set
+    ErrorReason = 4  # An internal error occurred
+    OtherReason = 5
+
+    # Emitted when the interaction is set on the scene.
+    started = Signal()
+
+    # Emitted when the interaction finishes successfully.
+    finished = Signal()
+
+    # Emitted when the interaction ends (canceled or finished)
+    ended = Signal()
+
+    # Emitted when the interaction is canceled.
+    canceled = Signal([], [int])
+
+    def __init__(self, document, parent=None, deleteOnEnd=True):
+        QObject.__init__(self, parent)
         self.document = document
         self.scene = document.scene()
         self.scheme = document.scheme()
-        self.finished = False
-        self.canceled = False
+        self.deleteOnEnd = deleteOnEnd
+
+        self.cancelOnEsc = False
+
+        self.__finished = False
+        self.__canceled = False
+        self.__cancelReason = self.NoReason
 
     def start(self):
-        pass
+        """Start the interaction. This is called by the scene when
+        the interaction is installed.
+
+        Must be called from subclass implementations.
+
+        """
+        self.started.emit()
 
     def end(self):
-        self.finished = True
+        """Finish the interaction. Restore any leftover state in
+        this method.
+
+        .. note:: This gets called from the default `cancel` implementation.
+
+        """
+        self.__finished = True
+
         if self.scene.user_interaction_handler is self:
             self.scene.set_user_interaction_handler(None)
 
-    def cancel(self):
-        self.canceled = True
+        if self.__canceled:
+            self.canceled.emit()
+            self.canceled[int].emit(self.__cancelReason)
+        else:
+            self.finished.emit()
+
+        self.ended.emit()
+
+        if self.deleteOnEnd:
+            self.deleteLater()
+
+    def cancel(self, reason=OtherReason):
+        """Cancel the interaction for `reason`.
+        """
+
+        self.__canceled = True
+        self.__cancelReason = reason
+
         self.end()
+
+    def isFinished(self):
+        """Has the interaction finished.
+        """
+        return self.__finished
+
+    def isCanceled(self):
+        """Was the interaction canceled.
+        """
+        return self.__canceled
+
+    def cancelReason(self):
+        """Return the reason the interaction was canceled.
+        """
+        return self.__cancelReason
 
     def mousePressEvent(self, event):
         return False
@@ -52,6 +122,8 @@ class UserInteraction(object):
         return False
 
     def keyPressEvent(self, event):
+        if self.cancelOnEsc and event.key() == Qt.Key_Escape:
+            self.cancel(self.UserCancelReason)
         return False
 
     def keyReleaseEvent(self, event):
@@ -81,8 +153,8 @@ class NewLinkAction(UserInteraction):
     FROM_SOURCE = 1
     FROM_SINK = 2
 
-    def __init__(self, document):
-        UserInteraction.__init__(self, document)
+    def __init__(self, document, *args, **kwargs):
+        UserInteraction.__init__(self, document, *args, **kwargs)
         self.source_item = None
         self.sink_item = None
         self.from_item = None
@@ -164,8 +236,8 @@ class NewLinkAction(UserInteraction):
             event.accept()
             return True
         else:
-            # Whoerver put us in charge did not know what he was doing.
-            self.cancel()
+            # Whoever put us in charge did not know what he was doing.
+            self.cancel(self.ErrorReason)
             return False
 
     def mouseMoveEvent(self, event):
@@ -384,16 +456,16 @@ class NewLinkAction(UserInteraction):
                       exc_info=True)
             self.cancel()
 
-        self.end()
+        if not self.isFinished():
+            self.end()
 
     def end(self):
         self.cleanup()
         UserInteraction.end(self)
 
-    def cancel(self):
-        if not self.finished:
-            log.info("Canceling new link action, reverting scene state.")
-            self.cleanup()
+    def cancel(self, reason=UserInteraction.OtherReason):
+        self.cleanup()
+        UserInteraction.cancel(self, reason)
 
     def cleanup(self):
         """Cleanup all temp items in the scene that are left.
@@ -422,9 +494,6 @@ class NewNodeAction(UserInteraction):
 
     """
 
-    def __init__(self, document):
-        UserInteraction.__init__(self, document)
-
     def mousePressEvent(self, event):
         if event.button() == Qt.RightButton:
             self.create_new(event)
@@ -450,8 +519,8 @@ class NewNodeAction(UserInteraction):
 class RectangleSelectionAction(UserInteraction):
     """Select items in the scene using a Rectangle selection
     """
-    def __init__(self, document):
-        UserInteraction.__init__(self, document)
+    def __init__(self, document, *args, **kwargs):
+        UserInteraction.__init__(self, document, *args, **kwargs)
         self.initial_selection = None
 
     def mousePressEvent(self, event):
@@ -480,7 +549,7 @@ class RectangleSelectionAction(UserInteraction):
             event.accept()
             return True
         else:
-            self.cancel()
+            self.cancel(self.ErrorReason)
             return False
 
     def mouseMoveEvent(self, event):
@@ -524,8 +593,8 @@ class RectangleSelectionAction(UserInteraction):
 
 
 class EditNodeLinksAction(UserInteraction):
-    def __init__(self, document, source_node, sink_node):
-        UserInteraction.__init__(self, document)
+    def __init__(self, document, source_node, sink_node, *args, **kwargs):
+        UserInteraction.__init__(self, document, *args, **kwargs)
         self.source_node = source_node
         self.sink_node = sink_node
 
@@ -580,8 +649,8 @@ def point_to_tuple(point):
 class NewArrowAnnotation(UserInteraction):
     """Create a new arrow annotation.
     """
-    def __init__(self, document):
-        UserInteraction.__init__(self, document)
+    def __init__(self, document, *args, **kwargs):
+        UserInteraction.__init__(self, document, *args, **kwargs)
         self.down_pos = None
         self.arrow_item = None
         self.annotation = None
@@ -650,8 +719,8 @@ def rect_to_tuple(rect):
 
 
 class NewTextAnnotation(UserInteraction):
-    def __init__(self, document):
-        UserInteraction.__init__(self, document)
+    def __init__(self, document, *args, **kwargs):
+        UserInteraction.__init__(self, document, *args, **kwargs)
         self.down_pos = None
         self.annotation_item = None
         self.annotation = None
@@ -751,8 +820,8 @@ class NewTextAnnotation(UserInteraction):
 
 
 class ResizeTextAnnotation(UserInteraction):
-    def __init__(self, document, ):
-        UserInteraction.__init__(self, document)
+    def __init__(self, document, *args, **kwargs):
+        UserInteraction.__init__(self, document, *args, **kwargs)
         self.item = None
         self.annotation = None
         self.control = None
@@ -814,11 +883,12 @@ class ResizeTextAnnotation(UserInteraction):
             rect = self.item.geometry()
             self.control.setRect(rect)
 
-    def cancel(self):
+    def cancel(self, reason=UserInteraction.OtherReason):
+        log.debug("ResizeArrowAnnotation.cancel(%s)", reason)
         if self.item is not None and self.savedRect is not None:
             self.item.setGeometry(self.savedRect)
 
-        UserInteraction.cancel(self)
+        UserInteraction.cancel(self, reason)
 
     def end(self):
         if self.control is not None:
@@ -835,8 +905,8 @@ class ResizeTextAnnotation(UserInteraction):
 
 
 class ResizeArrowAnnotation(UserInteraction):
-    def __init__(self, document):
-        UserInteraction.__init__(self, document)
+    def __init__(self, document, *args, **kwargs):
+        UserInteraction.__init__(self, document, *args, **kwargs)
         self.item = None
         self.annotation = None
         self.control = None
@@ -908,11 +978,12 @@ class ResizeArrowAnnotation(UserInteraction):
             p1, p2 = map(self.item.mapToScene, (line.p1(), line.p2()))
             self.control.setLine(QLineF(p1, p2))
 
-    def cancel(self):
+    def cancel(self, reason=UserInteraction.OtherReason):
+        log.debug("ResizeArrowAnnotation.cancel(%s)", reason)
         if self.item is not None and self.savedLine is not None:
             self.item.setLine(self.savedLine)
 
-        UserInteraction.cancel(self)
+        UserInteraction.cancel(self, reason)
 
     def end(self):
         if self.control is not None:

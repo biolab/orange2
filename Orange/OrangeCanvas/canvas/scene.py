@@ -708,7 +708,7 @@ class CanvasScene(QGraphicsScene):
 
     def set_user_interaction_handler(self, handler):
         if self.user_interaction_handler and \
-                not self.user_interaction_handler.finished:
+                not self.user_interaction_handler.isFinished():
             self.user_interaction_handler.cancel()
 
         log.info("Setting interaction '%s' to '%s'" % (handler, self))
