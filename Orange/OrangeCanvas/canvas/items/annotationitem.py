@@ -60,6 +60,7 @@ class TextAnnotation(Annotation):
         self.__textItem.setTextWidth(rect.width() - 4)
         self.__textItem.setTabChangesFocus(True)
         self.__textItem.setTextInteractionFlags(Qt.NoTextInteraction)
+        self.__textItem.setFont(self.font())
         self.__textInteractionFlags = Qt.NoTextInteraction
 
         layout = self.__textItem.document().documentLayout()
@@ -231,6 +232,12 @@ class TextAnnotation(Annotation):
                 self.setFramePen(QPen(Qt.NoPen))
 
         return Annotation.itemChange(self, change, value)
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.FontChange:
+            self.__textItem.setFont(self.font())
+
+        Annotation.changeEvent(self, event)
 
 
 class ArrowItem(GraphicsPathObject):

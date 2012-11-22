@@ -5,10 +5,10 @@ User interaction handlers for CanvasScene.
 import logging
 
 from PyQt4.QtGui import (
-    QApplication, QGraphicsRectItem, QPen, QBrush, QColor
+    QApplication, QGraphicsRectItem, QPen, QBrush, QColor, QFontMetrics
 )
 
-from PyQt4.QtCore import Qt, QSizeF, QRectF, QLineF
+from PyQt4.QtCore import Qt, QSizeF, QPointF, QRectF, QLineF
 
 from ..registry.qt import QtWidgetRegistry
 from .. import scheme
@@ -661,6 +661,23 @@ class NewTextAnnotation(UserInteraction):
         self.document.view().setCursor(Qt.CrossCursor)
         UserInteraction.start(self)
 
+    def createNewAnnotation(self, rect):
+        """Create a new TextAnnotation at with `rect` as the geometry.
+        """
+        annot = scheme.SchemeTextAnnotation(rect_to_tuple(rect))
+
+        item = self.scene.add_annotation(annot)
+        item.setTextInteractionFlags(Qt.TextEditorInteraction)
+        item.setFramePen(QPen(Qt.DashLine))
+
+        self.annotation_item = item
+        self.annotation = annot
+        self.control = controlpoints.ControlPointRect()
+        self.control.rectChanged.connect(
+            self.annotation_item.setGeometry
+        )
+        self.scene.addItem(self.control)
+
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.down_pos = event.scenePos()
@@ -672,19 +689,7 @@ class NewTextAnnotation(UserInteraction):
                     (self.down_pos - event.scenePos()).manhattanLength() > \
                     QApplication.instance().startDragDistance():
                 rect = QRectF(self.down_pos, event.scenePos()).normalized()
-                annot = scheme.SchemeTextAnnotation(rect_to_tuple(rect))
-
-                item = self.scene.add_annotation(annot)
-                item.setTextInteractionFlags(Qt.TextEditorInteraction)
-                item.setFramePen(QPen(Qt.DashLine))
-
-                self.annotation_item = item
-                self.annotation = annot
-                self.control = controlpoints.ControlPointRect()
-                self.control.rectChanged.connect(
-                    self.annotation_item.setGeometry
-                )
-                self.scene.addItem(self.control)
+                self.createNewAnnotation(rect)
 
             if self.annotation_item is not None:
                 rect = QRectF(self.down_pos, event.scenePos()).normalized()
@@ -694,26 +699,44 @@ class NewTextAnnotation(UserInteraction):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
-            if self.annotation_item is not None:
+            if self.annotation_item is None:
+                self.createNewAnnotation(QRectF(event.scenePos(),
+                                                event.scenePos()))
+                rect = self.defaultTextGeometry(event.scenePos())
+
+            else:
                 rect = QRectF(self.down_pos, event.scenePos()).normalized()
 
-                # Commit the annotation to the scheme.
-                self.annotation.rect = rect_to_tuple(rect)
-                self.document.addAnnotation(self.annotation)
+            # Commit the annotation to the scheme.
+            self.annotation.rect = rect_to_tuple(rect)
 
-                self.annotation_item.setGeometry(rect)
+            self.document.addAnnotation(self.annotation)
 
-                self.control.rectChanged.disconnect(
-                    self.annotation_item.setGeometry
-                )
-                self.control.hide()
+            self.annotation_item.setGeometry(rect)
 
-                # Move the focus to the editor.
-                self.annotation_item.setFramePen(QPen(Qt.NoPen))
-                self.annotation_item.setFocus(Qt.OtherFocusReason)
-                self.annotation_item.startEdit()
+            self.control.rectChanged.disconnect(
+                self.annotation_item.setGeometry
+            )
+            self.control.hide()
+
+            # Move the focus to the editor.
+            self.annotation_item.setFramePen(QPen(Qt.NoPen))
+            self.annotation_item.setFocus(Qt.OtherFocusReason)
+            self.annotation_item.startEdit()
 
             self.end()
+
+    def defaultTextGeometry(self, point):
+        """Return the default text geometry. Used in case the user
+        single clicked in the scene.
+
+        """
+        font = self.annotation_item.font()
+        metrics = QFontMetrics(font)
+        height = metrics.lineSpacing()
+        rect = QRectF(QPointF(point.x(), point.y() - height),
+                      QSizeF(150, height))
+        return rect
 
     def end(self):
         if self.control is not None:
