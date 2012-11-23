@@ -381,41 +381,41 @@ class NewLinkAction(UserInteraction):
         try:
             possible = self.scheme.propose_links(source_node, sink_node)
 
+            log.debug("proposed (weighted) links: %r",
+                      [(s1.name, s2.name, w) for s1, s2, w in possible])
+
             if not possible:
                 raise NoPossibleLinksError
 
-            links_to_add = []
-            links_to_remove = []
+            source, sink, w = possible[0]
+            links_to_add = [(source, sink)]
 
-            # Check for possible ties in the proposed link weights
+            show_link_dialog = False
+
+            # Ambiguous new link request.
             if len(possible) >= 2:
-                source, sink, w1 = possible[0]
+                # Check for possible ties in the proposed link weights
                 _, _, w2 = possible[1]
-                if w1 == w2:
-                    # If there are ties in the weights a detailed link
-                    # dialog is presented to the user.
+                if w == w2:
+                    show_link_dialog = True
+
+                # Check for destructive action (i.e. would the new link
+                # replace a previous link)
+                if sink.single and self.scheme.find_links(sink_node=sink_node,
+                                                          sink_channel=sink):
+                    show_link_dialog = True
+
+                if show_link_dialog:
                     links_action = EditNodeLinksAction(
                                     self.document, source_node, sink_node)
                     try:
-                        links = links_action.edit_links()
+                        links_action.edit_links()
                     except Exception:
                         log.error("'EditNodeLinksAction' failed",
                                   exc_info=True)
                         raise
-                else:
-                    links_to_add = [(source, sink)]
-            else:
-                source, sink, _ = possible[0]
-                links_to_add = [(source, sink)]
-
-            for source, sink in links_to_remove:
-                existing_link = self.scheme.find_links(
-                                    source_node=source_node,
-                                    source_channel=source,
-                                    sink_node=sink_node,
-                                    sink_channel=sink)
-
-                self.document.removeLink(existing_link)
+                    # EditNodeLinksAction already commits the links on accepted
+                    links_to_add = []
 
             for source, sink in links_to_add:
                 if sink.single:

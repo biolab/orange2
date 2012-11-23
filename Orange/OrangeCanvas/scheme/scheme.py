@@ -358,7 +358,7 @@ class Scheme(QObject):
 
         # Get existing links to sink channels that are Single.
         links = self.find_links(None, None, sink_node)
-        already_connected_sinks = [link for link in links \
+        already_connected_sinks = [link.sink_channel for link in links \
                                    if link.sink_channel.single]
 
         def weight(out_c, in_c):
@@ -366,7 +366,7 @@ class Scheme(QObject):
                 # Zero weight for explicit links
                 weight = 0
             else:
-                check = [not out_c.dynamic,  # Dynamic signals are lasts
+                check = [not out_c.dynamic,  # Dynamic signals are last
                          in_c not in already_connected_sinks,
                          bool(in_c.default),
                          bool(out_c.default)
