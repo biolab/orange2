@@ -18,10 +18,14 @@ class SchemeArrowAnnotation(BaseSchemeAnnotation):
     """An arrow annotation in the scheme.
     """
 
-    def __init__(self, start_pos, end_pos, anchor=None, parent=None):
+    color_changed = Signal(unicode)
+
+    def __init__(self, start_pos, end_pos, color="red", anchor=None,
+                 parent=None):
         BaseSchemeAnnotation.__init__(self, parent)
         self.__start_pos = start_pos
         self.__end_pos = end_pos
+        self.__color = color
         self.__anchor = anchor
 
     def set_line(self, start_pos, end_pos):
@@ -48,16 +52,28 @@ class SchemeArrowAnnotation(BaseSchemeAnnotation):
 
     geometry = Property(tuple, fget=geometry, fset=set_geometry)
 
+    def set_color(self, color):
+        if self.__color != color:
+            self.__color = color
+            self.color_changed.emit(color)
+
+    def color(self):
+        return self.__color
+
+    color = Property(unicode, fget=color, fset=set_color)
+
 
 class SchemeTextAnnotation(BaseSchemeAnnotation):
     """Text annotation in the scheme.
     """
     text_changed = Signal(unicode)
+    font_changed = Signal(unicode)
 
-    def __init__(self, rect, text="", anchor=None, parent=None):
+    def __init__(self, rect, text="", font="", anchor=None, parent=None):
         BaseSchemeAnnotation.__init__(self, parent)
         self.__rect = rect
         self.__text = text
+        self.__font = font
         self.__anchor = anchor
 
     def set_rect(self, (x, y, w, h)):
@@ -88,3 +104,13 @@ class SchemeTextAnnotation(BaseSchemeAnnotation):
         return self.__text
 
     text = Property(tuple, fget=text, fset=set_text)
+
+    def set_font(self, font):
+        if self.__font != font:
+            self.__font = font
+            self.font_changed.emit(font)
+
+    def font(self):
+        return self.__font
+
+    font = Property(unicode, fget=font, fset=set_font)

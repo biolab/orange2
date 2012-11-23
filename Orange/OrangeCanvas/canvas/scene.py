@@ -8,7 +8,7 @@ from operator import attrgetter
 
 from xml.sax.saxutils import escape
 
-from PyQt4.QtGui import QGraphicsScene, QPainter, QBrush, \
+from PyQt4.QtGui import QGraphicsScene, QPainter, QBrush, QColor, QFont, \
                         QGraphicsItem
 
 from PyQt4.QtCore import Qt, QPointF, QRectF, QSizeF, QLineF, QBuffer
@@ -441,12 +441,16 @@ class CanvasScene(QGraphicsScene):
             item.setPos(x, y)
             item.resize(w, h)
             item.setTextInteractionFlags(Qt.TextEditorInteraction)
+            font = QFont()
+            font.fromString(scheme_annot.font)
+            item.setFont(font)
             scheme_annot.text_changed.connect(item.setPlainText)
 
         elif isinstance(scheme_annot, scheme.SchemeArrowAnnotation):
             item = items.ArrowAnnotation()
             start, end = scheme_annot.start_pos, scheme_annot.end_pos
             item.setLine(QLineF(QPointF(*start), QPointF(*end)))
+            item.setColor(QColor(scheme_annot.color))
 
         scheme_annot.geometry_changed.connect(
             self.__on_scheme_annot_geometry_change
