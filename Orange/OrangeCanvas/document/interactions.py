@@ -496,13 +496,14 @@ class NewNodeAction(UserInteraction):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.RightButton:
-            self.create_new(event)
+            self.create_new(event.screenPos())
             self.end()
 
-    def create_new(self, event):
-        """Create a new widget with a QuickWidgetMenu
+    def create_new(self, pos):
+        """Create a new widget with a QuickWidgetMenu at `pos`
+        (in screen coordinates).
+
         """
-        pos = event.screenPos()
         menu = self.document.quickMenu()
         menu.setFilterFunc(None)
 
@@ -510,7 +511,9 @@ class NewNodeAction(UserInteraction):
         if action:
             item = action.property("item").toPyObject()
             desc = item.data(QtWidgetRegistry.WIDGET_DESC_ROLE).toPyObject()
-            pos = event.scenePos()
+            # Get the scene position
+            view = self.document.view()
+            pos = view.mapToScene(view.mapFromGlobal(pos))
             node = scheme.SchemeNode(desc, position=(pos.x(), pos.y()))
             self.document.addNode(node)
             return node
@@ -522,6 +525,7 @@ class RectangleSelectionAction(UserInteraction):
     def __init__(self, document, *args, **kwargs):
         UserInteraction.__init__(self, document, *args, **kwargs)
         self.initial_selection = None
+        self.selection_rect = None
 
     def mousePressEvent(self, event):
         pos = event.scenePos()

@@ -7,7 +7,8 @@ from operator import attrgetter
 
 from PyQt4.QtGui import (
     QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QKeySequence,
-    QUndoStack, QGraphicsItem, QGraphicsObject, QPainter
+    QUndoStack, QGraphicsItem, QGraphicsObject, QPainter, QCursor,
+    QGraphicsTextItem
 )
 
 from PyQt4.QtCore import Qt, QObject, QEvent, QSignalMapper, QRectF
@@ -64,18 +65,30 @@ class SchemeEditWidget(QWidget):
 
     titleChanged = Signal(unicode)
 
+    # Quick Menu triggers
+    (NoTriggers,
+     Clicked,
+     DoubleClicked,
+     SpaceKey,
+     AnyKey) = [0, 1, 2, 4, 8]
+
     def __init__(self, parent=None, ):
         QWidget.__init__(self, parent)
 
         self.__modified = False
         self.__registry = None
         self.__scheme = None
-        self.__undoStack = QUndoStack(self)
-        self.__undoStack.cleanChanged[bool].connect(self.__onCleanChanged)
+        self.__quickMenuTriggers = SchemeEditWidget.SpaceKey | \
+                                   SchemeEditWidget.DoubleClicked
+        self.__emptyClickButtons = 0
+        self.__possibleSelectionHandler = None
         self.__possibleMouseItemsMove = False
         self.__itemsMoving = {}
         self.__contextMenuTarget = None
         self.__quickMenu = None
+
+        self.__undoStack = QUndoStack(self)
+        self.__undoStack.cleanChanged[bool].connect(self.__onCleanChanged)
 
         self.__editFinishedMapper = QSignalMapper(self)
         self.__editFinishedMapper.mapped[QObject].connect(
@@ -200,6 +213,15 @@ class SchemeEditWidget(QWidget):
             self.__undoStack.setClean()
 
     modified = Property(bool, fget=isModified, fset=setModified)
+
+    def setQuickMenuTriggers(self, triggers):
+        """Set quick menu triggers.
+        """
+        if self.__quickMenuTriggers != triggers:
+            self.__quickMenuTriggers = triggers
+
+    def quickMenuTriggres(self):
+        return self.__quickMenuTriggers
 
     def undoStack(self):
         """Return the undo stack.
@@ -494,15 +516,18 @@ class SchemeEditWidget(QWidget):
             # Start a new link starting at item
             handler = interactions.NewLinkAction(self)
             scene.set_user_interaction_handler(handler)
-
             return handler.mousePressEvent(event)
 
         any_item = scene.item_at(pos)
         if not any_item and event.button() == Qt.LeftButton:
-            # Start rect selection
+            self.__emptyClickButtons |= Qt.LeftButton
+            # Create a RectangleSelectionAction but do not set in on the scene
+            # just yet (instead wait for the mouse move event).
             handler = interactions.RectangleSelectionAction(self)
-            scene.set_user_interaction_handler(handler)
-            return handler.mousePressEvent(event)
+            rval = handler.mousePressEvent(event)
+            if rval == True:
+                self.__possibleSelectionHandler = handler
+            return False
 
         if any_item and event.button() == Qt.LeftButton:
             self.__possibleMouseItemsMove = True
@@ -520,6 +545,15 @@ class SchemeEditWidget(QWidget):
         scene = self.__scene
         if scene.user_interaction_handler:
             return False
+
+        if self.__emptyClickButtons & Qt.LeftButton and \
+                event.buttons() & Qt.LeftButton and \
+                self.__possibleSelectionHandler:
+            # Set the RectangleSelection (initialized in mousePressEvent)
+            # on the scene
+            handler = self.__possibleSelectionHandler
+            scene.set_user_interaction_handler(handler)
+            return handler.mouseMoveEvent(event)
 
         return False
 
@@ -554,6 +588,18 @@ class SchemeEditWidget(QWidget):
 
                 self.__itemsMoving.clear()
                 return True
+
+        if self.__emptyClickButtons & Qt.LeftButton and \
+                event.button() & Qt.LeftButton:
+            self.__emptyClickButtons &= ~Qt.LeftButton
+
+            if self.__quickMenuTriggers & SchemeEditWidget.Clicked and \
+                    mouse_drag_distance(event, Qt.LeftButton) < 1:
+                action = interactions.NewNodeAction(self)
+                action.create_new(event.screenPos())
+                event.accept()
+                return True
+
         return False
 
     def sceneMouseDoubleClickEvent(self, event):
@@ -562,11 +608,12 @@ class SchemeEditWidget(QWidget):
             return False
 
         item = scene.item_at(event.scenePos())
-        if not item:
+        if not item and self.__quickMenuTriggers & \
+                SchemeEditWidget.DoubleClicked:
             # Double click on an empty spot
             # Create a new node quick
             action = interactions.NewNodeAction(self)
-            action.create_new(event)
+            action.create_new(event.screenPos())
             event.accept()
             return True
 
@@ -582,6 +629,36 @@ class SchemeEditWidget(QWidget):
         return False
 
     def sceneKeyPressEvent(self, event):
+        scene = self.__scene
+        if scene.user_interaction_handler:
+            return False
+
+        # If a QGraphicsItem is in text editing mode, don't interrupt it
+        focusItem = scene.focusItem()
+        if focusItem and isinstance(focusItem, QGraphicsTextItem) and \
+                focusItem.textInteractionFlags() & Qt.TextEditable:
+            return False
+
+        # If the mouse is not over out view
+        if not self.view().underMouse():
+            return False
+
+        if (event.key() == Qt.Key_Space and \
+                self.__quickMenuTriggers & SchemeEditWidget.SpaceKey):
+            action = interactions.NewNodeAction(self)
+            action.create_new(QCursor.pos())
+            event.accept()
+            return True
+
+        if len(event.text()) and \
+                self.__quickMenuTriggers & SchemeEditWidget.AnyKey:
+            action = interactions.NewNodeAction(self)
+            # TODO: set the search text to event.text() and set focus on the
+            # search line
+            action.create_new(QCursor.pos())
+            event.accept()
+            return True
+
         return False
 
     def sceneKeyReleaseEvent(self, event):
@@ -825,3 +902,12 @@ def geometry_from_annotation_item(item):
     elif isinstance(item, items.TextAnnotation):
         geom = item.geometry()
         return (geom.x(), geom.y(), geom.width(), geom.height())
+
+
+def mouse_drag_distance(event, button=Qt.LeftButton):
+    """Return the (manhattan) distance between the (screen position)
+    when the `button` was pressed and the current mouse position.
+
+    """
+    diff = (event.buttonDownScreenPos(button) - event.screenPos())
+    return diff.manhattanLength()
