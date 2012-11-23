@@ -6,9 +6,10 @@ import logging
 from operator import attrgetter
 
 from PyQt4.QtGui import (
-    QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QKeySequence,
-    QUndoStack, QGraphicsItem, QGraphicsObject, QPainter, QCursor,
-    QGraphicsTextItem
+    QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QActionGroup,
+    QKeySequence, QUndoStack, QGraphicsItem, QGraphicsObject,
+    QGraphicsTextItem, QCursor, QFont, QPainter, QPixmap, QColor,
+    QIcon
 )
 
 from PyQt4.QtCore import Qt, QObject, QEvent, QSignalMapper, QRectF
@@ -132,6 +133,26 @@ class SchemeEditWidget(QWidget):
                     toggled=self.__toggleNewTextAnnotation,
                     )
 
+        # Create a font size menu for the new annotation action.
+        self.__fontMenu = QMenu("Font Size", self)
+        self.__fontActionGroup = group = \
+            QActionGroup(self, exclusive=True,
+                         triggered=self.__onFontSizeTriggered)
+
+        def font(size):
+            return QFont("Helvetica", size)
+
+        for size in [12, 14, 16, 18, 20, 22, 24]:
+            action = QAction("%ip" % size, group,
+                             checkable=True,
+                             font=font(size))
+
+            self.__fontMenu.addAction(action)
+
+        group.actions()[2].setChecked(True)
+
+        self.__newTextAnnotationAction.setMenu(self.__fontMenu)
+
         self.__newArrowAnnotationAction = \
             QAction(self.tr("Arrow"), self,
                     objectName="new-arrow-annotation",
@@ -139,6 +160,37 @@ class SchemeEditWidget(QWidget):
                     checkable=True,
                     toggled=self.__toggleNewArrowAnnotation,
                     )
+
+        # Create a color menu for the arrow annotation action
+        self.__arrowColorMenu = QMenu("Arrow Color",)
+        self.__arrowColorActionGroup = group = \
+            QActionGroup(self, exclusive=True,
+                         triggered=self.__onArrowColorTriggered)
+
+        def color_icon(color):
+            icon = QIcon()
+            for size in [16, 24, 32]:
+                pixmap = QPixmap(size, size)
+                pixmap.fill(QColor(0, 0, 0, 0))
+                p = QPainter(pixmap)
+                p.setRenderHint(QPainter.Antialiasing)
+                p.setBrush(color)
+                p.setPen(Qt.NoPen)
+                p.drawEllipse(1, 1, size - 2, size - 2)
+                p.end()
+                icon.addPixmap(pixmap)
+            return icon
+
+        for color in ["#000", "#C1272D", "#662D91", "#1F9CDF", "#39B54A"]:
+            icon = color_icon(QColor(color))
+            action = QAction(group, icon=icon, checkable=True,
+                             iconVisibleInMenu=True)
+            action.setData(color)
+            self.__arrowColorMenu.addAction(action)
+
+        group.actions()[1].setChecked(True)
+
+        self.__newArrowAnnotationAction.setMenu(self.__arrowColorMenu)
 
         self.__linkEnableAction = \
             QAction(self.tr("Enabled"), self,
@@ -399,14 +451,6 @@ class SchemeEditWidget(QWidget):
             view.scale(1.5, 1.5)
         else:
             view.resetTransform()
-
-    def newArrowAnnotation(self):
-        handler = interactions.NewArrowAnnotation(self)
-        self.__scene.set_user_interaction_handler(handler)
-
-    def newTextAnnotation(self):
-        handler = interactions.NewTextAnnotation(self)
-        self.__scene.set_user_interaction_handler(handler)
 
     def alignToGrid(self):
         """Align nodes to a grid.
@@ -797,9 +841,22 @@ class SchemeEditWidget(QWidget):
 
         else:
             handler = interactions.NewArrowAnnotation(self)
+            checked = self.__arrowColorActionGroup.checkedAction()
+            handler.setColor(checked.data().toPyObject())
+
             handler.ended.connect(action.toggle)
 
             self.__scene.set_user_interaction_handler(handler)
+
+    def __onFontSizeTriggered(self, action):
+        if not self.__newTextAnnotationAction.isChecked():
+            # Trigger the action
+            self.__newTextAnnotationAction.trigger()
+        else:
+            # just update the preferred font on the interaction handler
+            handler = self.__scene.user_interaction_handler
+            if isinstance(handler, interactions.NewTextAnnotation):
+                handler.setFont(action.font())
 
     def __toggleNewTextAnnotation(self, checked):
         if self.__newArrowAnnotationAction.isChecked():
@@ -817,9 +874,22 @@ class SchemeEditWidget(QWidget):
 
         else:
             handler = interactions.NewTextAnnotation(self)
+            checked = self.__fontActionGroup.checkedAction()
+            handler.setFont(checked.font())
+
             handler.ended.connect(action.toggle)
 
             self.__scene.set_user_interaction_handler(handler)
+
+    def __onArrowColorTriggered(self, action):
+        if not self.__newArrowAnnotationAction.isChecked():
+            # Trigger the action
+            self.__newArrowAnnotationAction.trigger()
+        else:
+            # just update the preferred color on the interaction handler
+            handler = self.__scene.user_interaction_handler
+            if isinstance(handler, interactions.NewArrowAnnotation):
+                handler.setColor(action.data().toPyObject())
 
     def __onCustomContextMenuRequested(self, pos):
         scenePos = self.view().mapToScene(pos)

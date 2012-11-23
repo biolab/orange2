@@ -658,10 +658,14 @@ class NewArrowAnnotation(UserInteraction):
         self.down_pos = None
         self.arrow_item = None
         self.annotation = None
+        self.color = "red"
 
     def start(self):
         self.document.view().setCursor(Qt.CrossCursor)
         UserInteraction.start(self)
+
+    def setColor(self, color):
+        self.color = color
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
@@ -679,7 +683,9 @@ class NewArrowAnnotation(UserInteraction):
                     point_to_tuple(self.down_pos),
                     point_to_tuple(event.scenePos())
                 )
+                annot.set_color(self.color)
                 item = self.scene.add_annotation(annot)
+
                 self.arrow_item = item
                 self.annotation = annot
 
@@ -729,6 +735,10 @@ class NewTextAnnotation(UserInteraction):
         self.annotation_item = None
         self.annotation = None
         self.control = None
+        self.font = document.font()
+
+    def setFont(self, font):
+        self.font = font
 
     def start(self):
         self.document.view().setCursor(Qt.CrossCursor)
@@ -738,6 +748,7 @@ class NewTextAnnotation(UserInteraction):
         """Create a new TextAnnotation at with `rect` as the geometry.
         """
         annot = scheme.SchemeTextAnnotation(rect_to_tuple(rect))
+        annot.set_font(self.font.toString())
 
         item = self.scene.add_annotation(annot)
         item.setTextInteractionFlags(Qt.TextEditorInteraction)

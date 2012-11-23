@@ -13,7 +13,8 @@ import pkg_resources
 from PyQt4.QtGui import (
     QMainWindow, QWidget, QAction, QActionGroup, QMenu, QMenuBar, QDialog,
     QFileDialog, QMessageBox, QVBoxLayout, QSizePolicy, QColor, QKeySequence,
-    QIcon, QToolBar, QDockWidget, QDesktopServices, QUndoGroup, QApplication
+    QIcon, QToolBar, QToolButton, QDockWidget, QDesktopServices, QUndoGroup,
+    QApplication
 )
 
 from PyQt4.QtCore import (
@@ -333,10 +334,14 @@ class CanvasMainWindow(QMainWindow):
         actions_toolbar.setToolButtonStyle(Qt.ToolButtonIconOnly)
 
         for action in dock_actions:
-            actions_toolbar.addAction(action)
             self.canvas_toolbar.addAction(action)
+            button = self.canvas_toolbar.widgetForAction(action)
+            button.setPopupMode(QToolButton.DelayedPopup)
+
+            actions_toolbar.addAction(action)
             button = actions_toolbar.widgetForAction(action)
             button.setFixedSize(38, 30)
+            button.setPopupMode(QToolButton.DelayedPopup)
 
         dock2.layout().addWidget(self.quick_category)
         dock2.layout().addWidget(actions_toolbar)

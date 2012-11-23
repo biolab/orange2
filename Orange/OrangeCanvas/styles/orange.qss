@@ -150,6 +150,13 @@ CanvasToolDock QToolBar QToolButton {
     );
 }
 
+CanvasToolDock QToolBar QToolButton:menu-indicator {
+     image: url(canvas_icons:/Dropdown.svg);
+     subcontrol-position: top right;
+     height: 8px;
+     width: 8px;
+}
+
 CanvasToolDock QToolBar QToolButton:checked,
 CanvasToolDock QToolBar QToolButton:pressed {
     background-color: #FFA840;
