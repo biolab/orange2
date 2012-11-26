@@ -560,10 +560,12 @@ class RectangleSelectionAction(UserInteraction):
         if not self.rect_item.scene():
             self.scene.addItem(self.rect_item)
         self.update_selection(event)
+        return True
 
     def mouseReleaseEvent(self, event):
         self.update_selection(event)
         self.end()
+        return True
 
     def update_selection(self, event):
         if self.initial_selection is None:

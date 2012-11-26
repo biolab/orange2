@@ -55,6 +55,9 @@ def toGraphicsObjectIfPossible(item):
     generic QGraphicsItem wrappers.
 
     """
+    if item is None:
+        return None
+
     obj = item.toGraphicsObject()
     return item if obj is None else obj
 
