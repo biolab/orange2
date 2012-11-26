@@ -8,10 +8,7 @@ from collections import defaultdict
 
 import cPickle
 
-try:
-    from ast import literal_eval
-except ImportError:
-    literal_eval = eval
+from ast import literal_eval
 
 import logging
 
@@ -25,13 +22,16 @@ log = logging.getLogger(__name__)
 
 
 def parse_scheme(scheme, stream):
-    """Parse saved scheme string
+    """Parse a saved scheme from `stream` and populate a `scheme`
+    instance (:class:`Scheme`).
+
     """
     from xml.etree.ElementTree import parse
     doc = parse(stream)
     scheme_el = doc.getroot()
     version = scheme_el.attrib.get("version", None)
     if version is None:
+        # Fallback: check for "widgets" tag.
         if scheme_el.find("widgets") is not None:
             version = "1.0"
         else:
@@ -114,12 +114,24 @@ def parse_scheme_v_2_0(etree, scheme, widget_registry=None):
         if annot_el.tag == "text":
             rect = annot_el.attrib.get("rect", "(0, 0, 20, 20)")
             rect = literal_eval(rect)
-            annot = SchemeTextAnnotation(rect, annot_el.text or "")
+
+            font_family = annot_el.attrib.get("font-family", "").strip()
+            font_size = annot_el.attrib.get("font-size", "").strip()
+
+            font = {}
+            if font_family:
+                font["family"] = font_family
+            if font_size:
+                font["size"] = literal_eval(font_size)
+
+            annot = SchemeTextAnnotation(rect, annot_el.text or "", font=font)
         elif annot_el.tag == "arrow":
             start = annot_el.attrib.get("start", "(0, 0)")
             end = annot_el.attrib.get("end", "(0, 0)")
             start, end = map(literal_eval, (start, end))
-            annot = SchemeArrowAnnotation(start, end)
+
+            color = annot_el.attrib.get("fill", "red")
+            annot = SchemeArrowAnnotation(start, end, color=color)
         annotations.append(annot)
 
     for node in nodes:
@@ -205,7 +217,7 @@ def inf_range(start=0, step=1):
 
 
 def scheme_to_ows_stream(scheme, stream):
-    """Write scheme to a a stream in Orange Scheme .ows format
+    """Write scheme to a a stream in Orange Scheme .ows (v 2.0) format.
     """
     builder = TreeBuilder(element_factory=Element)
     builder.start("scheme", {"version": "2.0",
@@ -265,12 +277,29 @@ def scheme_to_ows_stream(scheme, stream):
         if isinstance(annotation, SchemeTextAnnotation):
             tag = "text"
             attrs.update({"rect": repr(annotation.rect)})
+
+            # Save the font attributes
+            font = annotation.font
+            attrs.update({"font-family": font.get("family", None),
+                          "font-size": font.get("size", None)})
+            attrs = [(key, value) for key, value in attrs.items() \
+                     if value is not None]
+            attrs = dict((key, unicode(value)) for key, value in attrs)
+
             data = annotation.text
 
         elif isinstance(annotation, SchemeArrowAnnotation):
             tag = "arrow"
             attrs.update({"start": repr(annotation.start_pos),
                           "end": repr(annotation.end_pos)})
+
+            # Save the arrow color
+            try:
+                color = annotation.color
+                attrs.update({"fill": color})
+            except AttributeError:
+                pass
+
             data = None
         else:
             log.warning("Can't save %r", annotation)

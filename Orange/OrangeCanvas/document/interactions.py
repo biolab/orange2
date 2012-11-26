@@ -748,7 +748,9 @@ class NewTextAnnotation(UserInteraction):
         """Create a new TextAnnotation at with `rect` as the geometry.
         """
         annot = scheme.SchemeTextAnnotation(rect_to_tuple(rect))
-        annot.set_font(self.font.toString())
+        font = {"family": unicode(self.font.family()),
+                "size": self.font.pointSize()}
+        annot.set_font(font)
 
         item = self.scene.add_annotation(annot)
         item.setTextInteractionFlags(Qt.TextEditorInteraction)

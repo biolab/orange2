@@ -441,8 +441,8 @@ class CanvasScene(QGraphicsScene):
             item.setPos(x, y)
             item.resize(w, h)
             item.setTextInteractionFlags(Qt.TextEditorInteraction)
-            font = QFont()
-            font.fromString(scheme_annot.font)
+
+            font = font_from_dict(scheme_annot.font, item.font())
             item.setFont(font)
             scheme_annot.text_changed.connect(item.setPlainText)
 
@@ -724,6 +724,21 @@ class CanvasScene(QGraphicsScene):
     def __str__(self):
         return "%s(objectName=%r, ...)" % \
                 (type(self).__name__, str(self.objectName()))
+
+
+def font_from_dict(font_dict, font=None):
+    if font is None:
+        font = QFont()
+    else:
+        font = QFont(font)
+
+    if "family" in font_dict:
+        font.setFamily(font_dict["family"])
+
+    if "size" in font_dict:
+        font.setPointSize(font_dict["size"])
+
+    return font
 
 
 def grab_svg(scene):
