@@ -2,8 +2,12 @@
 Scheme save/load routines.
 """
 import sys
+import StringIO
+import shutil
 
 from xml.etree.ElementTree import TreeBuilder, Element, ElementTree
+from xml.dom import minidom
+
 from collections import defaultdict
 
 import cPickle
@@ -99,13 +103,24 @@ def parse_scheme_v_2_0(etree, scheme, widget_registry=None):
     for property_el in etree.findall("node_properties/properties"):
         node_id = property_el.attrib.get("node_id")
         node = id_to_node[node_id]
-        data = property_el.text
+
+        format = property_el.attrib.get("format", "pickle")
+
+        if "data" in property_el.attrib:
+            data = literal_eval(property_el.attrib.get("data"))
+        else:
+            data = property_el.text
+
         properties = None
         try:
+            if format != "pickle":
+                raise ValueError("Cannot handle %r format" % format)
+
             properties = cPickle.loads(data)
         except Exception:
             log.error("Could not load properties for %r.", node.title,
                       exc_info=True)
+
         if properties is not None:
             node.properties = properties
 
@@ -216,8 +231,8 @@ def inf_range(start=0, step=1):
         start += step
 
 
-def scheme_to_ows_stream(scheme, stream):
-    """Write scheme to a a stream in Orange Scheme .ows (v 2.0) format.
+def scheme_to_etree(scheme):
+    """Return an `xml.etree.ElementTree` representation of the `scheme.
     """
     builder = TreeBuilder(element_factory=Element)
     builder.start("scheme", {"version": "2.0",
@@ -327,7 +342,9 @@ def scheme_to_ows_stream(scheme, stream):
             if data is not None:
                 builder.start("properties",
                               {"node_id": str(node_ids[node]),
-                               "format": "pickle"})
+                               "format": "pickle",
+#                               "data": repr(data),
+                               })
                 builder.data(data)
                 builder.end("properties")
 
@@ -335,9 +352,24 @@ def scheme_to_ows_stream(scheme, stream):
     builder.end("scheme")
     root = builder.close()
     tree = ElementTree(root)
+    return tree
+
+
+def scheme_to_ows_stream(scheme, stream, pretty=False):
+    """Write scheme to a a stream in Orange Scheme .ows (v 2.0) format.
+    """
+    tree = scheme_to_etree(scheme)
+    buffer = StringIO.StringIO()
 
     if sys.version_info < (2, 7):
         # in Python 2.6 the write does not have xml_declaration parameter.
-        tree.write(stream, encoding="utf-8")
+        tree.write(buffer, encoding="utf-8")
     else:
-        tree.write(stream, encoding="utf-8", xml_declaration=True)
+        tree.write(buffer, encoding="utf-8", xml_declaration=True)
+
+    if pretty:
+        dom = minidom.parse(StringIO.StringIO(buffer.getvalue()))
+        pretty_xml = dom.toprettyxml(encoding="utf-8")
+        buffer = StringIO.StringIO(pretty_xml)
+
+    shutil.copyfileobj(buffer, stream)

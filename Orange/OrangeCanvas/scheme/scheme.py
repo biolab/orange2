@@ -400,13 +400,13 @@ class Scheme(QObject):
         self.__annotations.remove(annotation)
         self.annotation_removed.emit(annotation)
 
-    def save_to(self, stream):
+    def save_to(self, stream, pretty=True):
         """Save the scheme as an xml formated file to `stream`
         """
         if isinstance(stream, basestring):
             stream = open(stream, "wb")
 
-        scheme_to_ows_stream(self, stream)
+        scheme_to_ows_stream(self, stream, pretty)
 
     def load_from(self, stream):
         """Load the scheme from xml formated stream.

@@ -152,7 +152,7 @@ class WidgetsScheme(Scheme):
         changed = False
         for node in self.nodes:
             widget = self.widget_for_node[node]
-            settings = widget.getSettings()
+            settings = widget.getSettings(alsoContexts=False)
             if settings != node.properties:
                 node.properties = settings
                 changed = True
