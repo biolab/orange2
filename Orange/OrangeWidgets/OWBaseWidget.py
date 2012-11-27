@@ -146,7 +146,7 @@ class OWBaseWidget(QDialog):
         # do we want to save widget position and restore it on next load
         self.savePosition = savePosition
         if savePosition:
-            self.settingsList = getattr(self, "settingsList", []) + ["widgetWidth", "widgetHeight", "widgetXPosition", "widgetYPosition", "widgetShown", "savedWidgetGeometry"]
+            self.settingsList = getattr(self, "settingsList", []) + ["widgetShown", "savedWidgetGeometry"]
 
         # directories are better defined this way, otherwise .ini files get written in many places
         self.__dict__.update(old_directory_names)
@@ -269,7 +269,7 @@ class OWBaseWidget(QDialog):
     # call processEvents(), but first remember position and size of widget in case one of the events would be move or resize
     # call this function if needed in __init__ of the widget
     def safeProcessEvents(self):
-        keys = ["widgetXPosition", "widgetYPosition", "widgetShown", "widgetWidth", "widgetHeight"]
+        keys = ["widgetShown"]
         vals = [(key, getattr(self, key, None)) for key in keys]
         qApp.processEvents()
         for (key, val) in vals:
@@ -333,8 +333,6 @@ class OWBaseWidget(QDialog):
         # (the widget receives the resizeEvent before showEvent and we must not
         # overwrite the the savedGeometry before then)
         if self.savePosition and self.isVisible():
-            self.widgetWidth = self.width()
-            self.widgetHeight = self.height()
             self.savedWidgetGeometry = str(self.saveGeometry())
 
 
@@ -352,8 +350,6 @@ class OWBaseWidget(QDialog):
     def hideEvent(self, ev):
         if self.savePosition:
             self.widgetShown = 0
-            self.widgetXPosition = self.frameGeometry().x()
-            self.widgetYPosition = self.frameGeometry().y()
             self.savedWidgetGeometry = str(self.saveGeometry())
         QDialog.hideEvent(self, ev)
 
@@ -374,8 +370,6 @@ class OWBaseWidget(QDialog):
         
     def closeEvent(self, ev):
         if self.savePosition:
-            self.widgetXPosition = self.frameGeometry().x()
-            self.widgetYPosition = self.frameGeometry().y()
             self.savedWidgetGeometry = str(self.saveGeometry())
         QDialog.closeEvent(self, ev)
         
