@@ -40,6 +40,8 @@ from ..preview import previewdialog, previewmodel
 
 from .. import config
 
+from . import tutorials
+
 log = logging.getLogger(__name__)
 
 # TODO: Orange Version in the base link
@@ -456,8 +458,8 @@ class CanvasMainWindow(QMainWindow):
         self.tutorials_action = \
             QAction(self.tr("Tutorial"), self,
                     objectName="tutorial-action",
-                    toolTip=self.tr("View tutorial."),
-                    triggered=self.tutorial,
+                    toolTip=self.tr("Browse tutorials."),
+                    triggered=self.tutorial_scheme,
                     icon=canvas_icons("Tutorials.svg")
                     )
 
@@ -901,7 +903,8 @@ class CanvasMainWindow(QMainWindow):
 
     def load_scheme(self, filename):
         """Load a scheme from a file (`filename`) into the current
-        document.
+        document updates the recent scheme list and the loaded scheme path
+        property.
 
         """
         filename = unicode(filename)
@@ -909,10 +912,21 @@ class CanvasMainWindow(QMainWindow):
 
         self.last_scheme_dir = dirname
 
+        new_scheme = self.new_scheme_from(filename)
+
+        scheme_doc_widget = self.current_document()
+        scheme_doc_widget.setScheme(new_scheme)
+
+        self.add_recent_scheme(new_scheme)
+
+    def new_scheme_from(self, filename):
+        """Create and return a new :class:`widgetsscheme.WidgetsScheme`
+        from a saved `filename`.
+
+        """
         new_scheme = widgetsscheme.WidgetsScheme()
         try:
             new_scheme.load_from(open(filename, "rb"))
-            new_scheme.path = filename
         except Exception:
             message_critical(
                  self.tr("Could not load Orange Scheme file"),
@@ -920,12 +934,9 @@ class CanvasMainWindow(QMainWindow):
                  informative_text=self.tr("An unexpected error occurred"),
                  exc_info=True,
                  parent=self)
-            return
+            return None
 
-        scheme_doc_widget = self.current_document()
-        scheme_doc_widget.setScheme(new_scheme)
-
-        self.add_recent_scheme(new_scheme)
+        return new_scheme
 
     def reload_last(self):
         """Reload last opened scheme. Return QDialog.Rejected if the
@@ -1074,7 +1085,13 @@ class CanvasMainWindow(QMainWindow):
         model = previewmodel.PreviewModel(items=items)
 
         dialog = previewdialog.PreviewDialog(self)
-        dialog.setWindowTitle(self.tr("Recent Schemes"))
+        title = self.tr("Recent Schemes")
+        dialog.setWindowTitle(title)
+        template = ('<h3 style="font-size: 26px">\n'
+                    #'<img height="26" src="canvas_icons:Recent.svg">\n'
+                    '{0}\n'
+                    '</h3>')
+        dialog.setHeading(template.format(title))
         dialog.setModel(model)
 
         model.delayedScanUpdate()
@@ -1091,6 +1108,47 @@ class CanvasMainWindow(QMainWindow):
             selected = model.item(index)
 
             self.load_scheme(unicode(selected.path()))
+
+        return status
+
+    def tutorial_scheme(self, *args):
+        """Browse a collection of tutorial schemes. Returns QDialog.Rejected
+        if the user canceled the dialog else loads the selected scheme into
+        the canvas and returns QDialog.Accepted.
+
+        """
+        tutors = tutorials.tutorials()
+        items = [previewmodel.PreviewItem(path=t.abspath()) for t in tutors]
+        model = previewmodel.PreviewModel(items=items)
+        dialog = previewdialog.PreviewDialog(self)
+        title = self.tr("Tutorials")
+        dialog.setWindowTitle(title)
+        template = ('<h3 style="font-size: 26px">\n'
+                    #'<img height="26" src="canvas_icons:Tutorials.svg">\n'
+                    '{0}\n'
+                    '</h3>')
+
+        dialog.setHeading(template.format(title))
+        dialog.setModel(model)
+
+        model.delayedScanUpdate()
+        status = dialog.exec_()
+
+        if status == QDialog.Accepted:
+            doc = self.current_document()
+            if doc.isModified():
+                if self.ask_save_changes() == QDialog.Rejected:
+                    return QDialog.Rejected
+
+            index = dialog.currentIndex()
+            selected = model.item(index)
+
+            new_scheme = self.new_scheme_from(unicode(selected.path()))
+            # Clear the 'path' property (set by scheme.load_from), so
+            # ctrl-s does not override the saved tutorial file in case the
+            # tutorial file is writable.
+            new_scheme.path = ""
+            self.current_document().setScheme(new_scheme)
         return status
 
     def welcome_dialog(self):
@@ -1099,8 +1157,6 @@ class CanvasMainWindow(QMainWindow):
 
         dialog = welcomedialog.WelcomeDialog(self)
         dialog.setWindowTitle(self.tr("Welcome to Orange Data Mining"))
-        top_row = [self.get_started_action, self.tutorials_action,
-                   self.documentation_action]
 
         def new_scheme():
             if self.new_scheme() == QDialog.Accepted:
@@ -1112,6 +1168,10 @@ class CanvasMainWindow(QMainWindow):
 
         def open_recent():
             if self.recent_scheme() == QDialog.Accepted:
+                dialog.accept()
+
+        def tutorial():
+            if self.tutorial_scheme() == QDialog.Accepted:
                 dialog.accept()
 
         new_action = \
@@ -1140,6 +1200,17 @@ class CanvasMainWindow(QMainWindow):
                                           (Qt.ShiftModifier | Qt.Key_R)),
                     icon=canvas_icons("Recent.svg")
                     )
+
+        tutorials_action = \
+            QAction(self.tr("Tutorial"), dialog,
+                    objectName="welcome-tutorial-action",
+                    toolTip=self.tr("Browse tutorial schemes."),
+                    triggered=tutorial,
+                    icon=canvas_icons("Tutorials.svg")
+                    )
+
+        top_row = [self.get_started_action, tutorials_action,
+                   self.documentation_action]
 
         self.new_action.triggered.connect(dialog.accept)
         bottom_row = [new_action, open_action, recent_action]

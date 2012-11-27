@@ -29,7 +29,7 @@ class PreviewDialog(QDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         self.setContentsMargins(0, 0, 0, 0)
 
-        heading = self.tr("Recent Schemes")
+        heading = self.tr("Preview")
         heading = u"<h3>{0}</h3>".format(heading)
         self.__heading = QLabel(heading, self,
                                 objectName="heading")
@@ -41,7 +41,10 @@ class PreviewDialog(QDialog):
         self.__buttons = QDialogButtonBox(QDialogButtonBox.Open | \
                                           QDialogButtonBox.Cancel,
                                           Qt.Horizontal,)
-        self.__buttons.button(QDialogButtonBox.Open).setDefault(True)
+        self.__buttons.button(QDialogButtonBox.Open).setAutoDefault(True)
+
+        # Set the Open dialog as disabled until the current index changes
+        self.__buttons.button(QDialogButtonBox.Open).setEnabled(False)
 
         # The QDialogButtonsWidget messes with the layout if it is
         # contained directly in the QDialog. So we create an extra
@@ -60,7 +63,9 @@ class PreviewDialog(QDialog):
 
         self.__buttons.accepted.connect(self.accept)
         self.__buttons.rejected.connect(self.reject)
-        self.__browser.currentIndexChanged.connect(self.currentIndexChanged)
+        self.__browser.currentIndexChanged.connect(
+            self.__on_currentIndexChanged
+        )
 
         layout.setSizeConstraint(QVBoxLayout.SetFixedSize)
         self.setLayout(layout)
@@ -89,3 +94,18 @@ class PreviewDialog(QDialog):
         """Set the current selected (shown) index.
         """
         self.__browser.setCurrentIndex(index)
+
+    def setHeading(self, heading):
+        """Set `heading` as the heading string ('<h3>Preview</h3>'
+        by default).
+
+        """
+        self.__heading.setText(heading)
+
+    def heading(self):
+        """Return the heading string.
+        """
+    def __on_currentIndexChanged(self, index):
+        button = self.__buttons.button(QDialogButtonBox.Open)
+        button.setEnabled(index >= 0)
+        self.currentIndexChanged.emit(index)
