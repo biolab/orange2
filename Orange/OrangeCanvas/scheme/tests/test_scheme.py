@@ -12,7 +12,6 @@ from .. import Scheme, SchemeNode, SchemeLink, \
 
 class TestScheme(test.QCoreAppTestCase):
     def test_scheme(self):
-        import Orange
         reg = small_testing_registry()
         base = "Orange.OrangeWidgets"
         file_desc = reg.widget(base + ".Data.OWFile.OWFile")
@@ -21,7 +20,7 @@ class TestScheme(test.QCoreAppTestCase):
         # Create the scheme
         scheme = Scheme()
 
-        self.assertEqual(scheme.title, "untitled")
+        self.assertEqual(scheme.title, "")
         self.assertEqual(scheme.description, "")
         self.assertEqual(scheme.path, "")
 
@@ -100,4 +99,3 @@ class TestScheme(test.QCoreAppTestCase):
         scheme.remove_annotation(text_annot)
         self.assertSequenceEqual(annotations_added, [arrow_annot])
         self.assertSequenceEqual(scheme.annotations, annotations_added)
-

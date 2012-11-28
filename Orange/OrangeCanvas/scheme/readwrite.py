@@ -371,5 +371,7 @@ def scheme_to_ows_stream(scheme, stream, pretty=False):
         dom = minidom.parse(StringIO.StringIO(buffer.getvalue()))
         pretty_xml = dom.toprettyxml(encoding="utf-8")
         buffer = StringIO.StringIO(pretty_xml)
+    else:
+        buffer.seek(0)
 
     shutil.copyfileobj(buffer, stream)

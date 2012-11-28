@@ -374,14 +374,24 @@ class CanvasScene(QGraphicsScene):
         item = items.LinkItem()
         item.setSourceItem(source_item)
         item.setSinkItem(sink_item)
-        fmt = "<b>{0}</b>&nbsp;-->&nbsp;<b>{1}</b>"
+
+        def channel_name(channel):
+            if isinstance(channel, basestring):
+                return channel
+            else:
+                return channel.name
+
+        source_name = channel_name(source_channel)
+        sink_name = channel_name(sink_channel)
+
+        fmt = u"<b>{0}</b>&nbsp; \u2192 &nbsp;<b>{1}</b>"
         item.setToolTip(
-            fmt.format(escape(source_channel.name),
-                       escape(sink_channel.name))
+            fmt.format(escape(source_name),
+                       escape(sink_name))
         )
 
-        item.setSourceName(source_channel.name)
-        item.setSinkName(sink_channel.name)
+        item.setSourceName(source_name)
+        item.setSinkName(sink_name)
         item.setChannelNamesVisible(self.__channel_names_visible)
 
         return item
