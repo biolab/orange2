@@ -617,7 +617,7 @@ class QuickMenu(FramelessWindow):
         self.setFocus(Qt.PopupFocusReason)
 
         self.__triggeredAction = None
-        self.__loop = QEventLoop(self)
+        self.__loop = QEventLoop()
         self.__loop.exec_()
         self.__loop.deleteLater()
         self.__loop = None
