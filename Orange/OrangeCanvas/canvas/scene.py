@@ -389,11 +389,20 @@ class CanvasScene(QGraphicsScene):
     def remove_link_item(self, item):
         """Remove a link (:class:`LinkItem`) from the scene.
         """
+        # Invalidate the anchor layout.
+        self.__anchor_layout.invalidateAnchorItem(
+            item.sourceItem.outputAnchorItem
+        )
+        self.__anchor_layout.invalidateAnchorItem(
+            item.sinkItem.inputAnchorItem
+        )
+
         self.__link_items.remove(item)
 
         # Remove the anchor points.
         item.removeLink()
         self.removeItem(item)
+
         self.link_item_removed.emit(item)
 
         log.info("Removed link '%s' from '%s'" % (item, self))

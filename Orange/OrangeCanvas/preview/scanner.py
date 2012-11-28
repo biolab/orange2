@@ -80,6 +80,10 @@ def scheme_svg_thumbnail(scheme_file):
     scheme.load_from(scheme_file)
     tmp_scene = scene.CanvasScene()
     tmp_scene.set_scheme(scheme)
+
+    # Force the anchor point layout.
+    tmp_scene.anchor_layout().activate()
+
     svg = scene.grab_svg(tmp_scene)
     tmp_scene.clear()
     tmp_scene.deleteLater()

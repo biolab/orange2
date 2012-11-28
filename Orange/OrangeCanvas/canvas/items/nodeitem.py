@@ -5,8 +5,6 @@ NodeItem
 
 from xml.sax.saxutils import escape
 
-import numpy
-
 from PyQt4.QtGui import (
     QGraphicsItem, QGraphicsPathItem, QGraphicsObject,
     QGraphicsTextItem, QGraphicsDropShadowEffect, QGraphicsView,
@@ -22,6 +20,7 @@ from .utils import saturated, radial_gradient
 
 from ...registry import NAMED_COLORS
 from ...resources import icon_loader
+from .utils import uniform_linear_layout
 
 
 def create_palette(light_color, color):
@@ -281,8 +280,6 @@ class NodeAnchorItem(QGraphicsPathItem):
         self.__fullStroke = None
         self.__dottedStroke = None
 
-        self.__layoutRequested = False
-
     def parentNodeItem(self):
         """Return a parent `NodeItem` or `None` if this anchor's
         parent is not a `NodeItem` instance.
@@ -402,8 +399,6 @@ class NodeAnchorItem(QGraphicsPathItem):
         del self.__points[index]
         del self.__pointPositions[index]
 
-        self.__scheduleDelayedLayout()
-
     def anchorPoints(self):
         """Return a list of anchor points.
         """
@@ -420,17 +415,17 @@ class NodeAnchorItem(QGraphicsPathItem):
 
         """
         if self.__pointPositions != positions:
-            self.__pointPositions = positions
+            self.__pointPositions = list(positions)
 
             self.__updatePositions()
 
     def anchorPositions(self):
-        """Return the positions of anchor points as a list floats where
+        """Return the positions of anchor points as a list of floats where
         each float is between 0 and 1 and specifies where along the anchor
         path does the point lie (0 is at start 1 is at the end).
 
         """
-        return self.__pointPositions
+        return list(self.__pointPositions)
 
     def shape(self):
         # Use stroke without the doted line (poor mouse cursor collision)
@@ -447,19 +442,12 @@ class NodeAnchorItem(QGraphicsPathItem):
         self.shadow.setEnabled(False)
         return QGraphicsPathItem.hoverLeaveEvent(self, event)
 
-    def __scheduleDelayedLayout(self):
-        if not self.__layoutRequested:
-            self.__layoutRequested = True
-            QTimer.singleShot(0, self.__updatePositions)
-
     def __updatePositions(self):
         """Update anchor points positions.
         """
         for point, t in zip(self.__points, self.__pointPositions):
             pos = self.__anchorPath.pointAtPercent(t)
             point.setPos(pos)
-
-        self.__layoutRequested = False
 
 
 class SourceAnchorItem(NodeAnchorItem):
@@ -584,10 +572,6 @@ class GraphicsIconItem(QGraphicsItem):
             )
 
             painter.drawPixmap(target, pixmap, QRectF(source))
-
-
-def linspace(count):
-    return map(float, numpy.linspace(0.0, 1.0, count + 2, endpoint=True)[1:-1])
 
 
 class NodeItem(QGraphicsObject):
@@ -839,11 +823,11 @@ class NodeItem(QGraphicsObject):
             raise ValueError("Widget has no inputs.")
 
         anchor = AnchorPoint()
-        self.inputAnchorItem.addAnchor(anchor)
+        self.inputAnchorItem.addAnchor(anchor, position=1.0)
 
-        self.inputAnchorItem.setAnchorPositions(
-            linspace(self.inputAnchorItem.count())
-        )
+        positions = self.inputAnchorItem.anchorPositions()
+        positions = uniform_linear_layout(positions)
+        self.inputAnchorItem.setAnchorPositions(positions)
 
         return anchor
 
@@ -852,9 +836,9 @@ class NodeItem(QGraphicsObject):
         """
         self.inputAnchorItem.removeAnchor(anchor)
 
-        self.inputAnchorItem.setAnchorPositions(
-            linspace(self.inputAnchorItem.count())
-        )
+        positions = self.inputAnchorItem.anchorPositions()
+        positions = uniform_linear_layout(positions)
+        self.inputAnchorItem.setAnchorPositions(positions)
 
     def newOutputAnchor(self):
         """Create a new output anchor indicator.
@@ -863,11 +847,11 @@ class NodeItem(QGraphicsObject):
             raise ValueError("Widget has no outputs.")
 
         anchor = AnchorPoint(self)
-        self.outputAnchorItem.addAnchor(anchor)
+        self.outputAnchorItem.addAnchor(anchor, position=1.0)
 
-        self.outputAnchorItem.setAnchorPositions(
-            linspace(self.outputAnchorItem.count())
-        )
+        positions = self.outputAnchorItem.anchorPositions()
+        positions = uniform_linear_layout(positions)
+        self.outputAnchorItem.setAnchorPositions(positions)
 
         return anchor
 
@@ -876,9 +860,9 @@ class NodeItem(QGraphicsObject):
         """
         self.outputAnchorItem.removeAnchor(anchor)
 
-        self.outputAnchorItem.setAnchorPositions(
-            linspace(self.outputAnchorItem.count())
-        )
+        positions = self.outputAnchorItem.anchorPositions()
+        positions = uniform_linear_layout(positions)
+        self.outputAnchorItem.setAnchorPositions(positions)
 
     def inputAnchors(self):
         """Return a list of input anchor points.

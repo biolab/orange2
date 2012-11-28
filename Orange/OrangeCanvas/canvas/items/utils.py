@@ -98,3 +98,36 @@ def typed_signal_mapper(pyType):
             self.pyMapped.emit(mapped)
 
     return TypedSignalMapper
+
+
+def linspace(count):
+    """Return `count` evenly spaced points from 0..1 interval excluding
+    both end points, e.g. `linspace(3) == [0.25, 0.5, 0.75]`.
+
+    """
+    return map(float, numpy.linspace(0.0, 1.0, count + 2, endpoint=True)[1:-1])
+
+
+def uniform_linear_layout(points):
+    """Layout the points (a list of floats in 0..1 range) in a uniform
+    linear space while preserving the existing sorting order.
+
+    """
+    indices = numpy.argsort(points)
+    space = numpy.asarray(linspace(len(points)))
+
+    # invert the indices
+    indices = invert_permutation_indices(indices)
+#    assert((numpy.argsort(points) == numpy.argsort(space[indices])).all())
+    points = space[indices]
+
+    return points.tolist()
+
+
+def invert_permutation_indices(indices):
+    """Invert the permutation giver by indices.
+    """
+    inverted = [0] * len(indices)
+    for i, index in enumerate(indices):
+        inverted[index] = i
+    return inverted

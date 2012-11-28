@@ -6,12 +6,14 @@ from operator import attrgetter, add
 
 import numpy
 
+import sip
+
 from PyQt4.QtGui import QGraphicsObject
 from PyQt4.QtCore import QRectF, QLineF, QTimer
 
 from .items import NodeItem, LinkItem, SourceAnchorItem, SinkAnchorItem
-from .items.nodeitem import linspace
-from .items.utils import typed_signal_mapper
+from .items.utils import typed_signal_mapper, invert_permutation_indices, \
+                         linspace
 
 LinkItemSignalMapper = typed_signal_mapper(LinkItem)
 
@@ -63,6 +65,9 @@ class AnchorLayout(QGraphicsObject):
         anchors = set(self.__invalidatedAnchors)
 
         for anchor_item in anchors:
+            if sip.isdeleted(anchor_item):
+                continue
+
             points = anchor_item.anchorPoints()
             anchor_pos = anchor_item.mapToScene(anchor_item.pos())
             others = [to_other[point] for point in points]
@@ -76,7 +81,7 @@ class AnchorLayout(QGraphicsObject):
 
             indices = list(numpy.argsort(others_angle))
             # Invert the indices.
-            indices = [indices.index(i) for i in range(len(indices))]
+            indices = invert_permutation_indices(indices)
 
             positions = numpy.array(linspace(len(points)))
             positions = list(positions[indices])
