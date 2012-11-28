@@ -2,6 +2,7 @@
 Scheme Edit widget.
 
 """
+import sys
 import logging
 from operator import attrgetter
 
@@ -9,12 +10,13 @@ from PyQt4.QtGui import (
     QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QActionGroup,
     QKeySequence, QUndoStack, QGraphicsItem, QGraphicsObject,
     QGraphicsTextItem, QCursor, QFont, QPainter, QPixmap, QColor,
-    QIcon
+    QIcon, QDesktopServices
 )
 
-from PyQt4.QtCore import Qt, QObject, QEvent, QSignalMapper, QRectF
+from PyQt4.QtCore import Qt, QObject, QEvent, QSignalMapper, QRectF, QUrl
 from PyQt4.QtCore import pyqtProperty as Property, pyqtSignal as Signal
 
+from ..gui.utils import message_information, disabled
 from ..scheme import scheme
 from ..canvas.scene import CanvasScene
 from ..canvas.view import CanvasView
@@ -38,7 +40,6 @@ class GraphicsSceneFocusEventListener(QGraphicsObject):
         self.setFlag(QGraphicsItem.ItemHasNoContents)
 
     def sceneEventFilter(self, obj, event):
-        print obj, event, event.type()
         if event.type() == QEvent.FocusIn and \
                 obj.flags() & QGraphicsItem.ItemIsFocusable:
             obj.focusInEvent(event)
@@ -101,7 +102,21 @@ class SchemeEditWidget(QWidget):
         self.__setupActions()
         self.__setupUi()
 
-        self.__linkMenu = QMenu(self)
+        self.__editMenu = QMenu(self.tr("&Edit"), self)
+        self.__editMenu.addAction(self.__undoAction)
+        self.__editMenu.addAction(self.__redoAction)
+        self.__editMenu.addSeparator()
+        self.__editMenu.addAction(self.__selectAllAction)
+
+        self.__widgetMenu = QMenu(self.tr("&Widget"), self)
+        self.__widgetMenu.addAction(self.__openSelectedAction)
+        self.__widgetMenu.addSeparator()
+        self.__widgetMenu.addAction(self.__removeSelectedAction)
+        self.__widgetMenu.addAction(self.__renameAction)
+        self.__widgetMenu.addSeparator()
+        self.__widgetMenu.addAction(self.__helpAction)
+
+        self.__linkMenu = QMenu(self.tr("Link"), self)
         self.__linkMenu.addAction(self.__linkEnableAction)
         self.__linkMenu.addSeparator()
         self.__linkMenu.addAction(self.__linkRemoveAction)
@@ -111,7 +126,7 @@ class SchemeEditWidget(QWidget):
 
         self.__zoomAction = \
             QAction(self.tr("Zoom"), self,
-                    objectName="zoom",
+                    objectName="zoom-action",
                     checkable=True,
                     shortcut=QKeySequence.ZoomIn,
                     toolTip=self.tr("Zoom in the scheme."),
@@ -120,14 +135,14 @@ class SchemeEditWidget(QWidget):
 
         self.__cleanUpAction = \
             QAction(self.tr("Clean Up"), self,
-                    objectName="cleanup",
+                    objectName="cleanup-action",
                     toolTip=self.tr("Align widget to a grid."),
                     triggered=self.alignToGrid,
                     )
 
         self.__newTextAnnotationAction = \
             QAction(self.tr("Text"), self,
-                    objectName="new-text-annotation",
+                    objectName="new-text-action",
                     toolTip=self.tr("Add a text annotation to the scheme."),
                     checkable=True,
                     toggled=self.__toggleNewTextAnnotation,
@@ -155,7 +170,7 @@ class SchemeEditWidget(QWidget):
 
         self.__newArrowAnnotationAction = \
             QAction(self.tr("Arrow"), self,
-                    objectName="new-arrow-annotation",
+                    objectName="new-arrow-action",
                     toolTip=self.tr("Add a arrow annotation to the scheme."),
                     checkable=True,
                     toggled=self.__toggleNewArrowAnnotation,
@@ -191,6 +206,63 @@ class SchemeEditWidget(QWidget):
         group.actions()[1].setChecked(True)
 
         self.__newArrowAnnotationAction.setMenu(self.__arrowColorMenu)
+
+        self.__undoAction = self.__undoStack.createUndoAction(self)
+        self.__undoAction.setShortcut(QKeySequence.Undo)
+        self.__undoAction.setObjectName("undo-action")
+
+        self.__redoAction = self.__undoStack.createRedoAction(self)
+        self.__redoAction.setShortcut(QKeySequence.Redo)
+        self.__redoAction.setObjectName("redo-action")
+
+        self.__selectAllAction = \
+            QAction(self.tr("Select all"), self,
+                    objectName="select-all-action",
+                    toolTip=self.tr("Select all items."),
+                    triggered=self.selectAll,
+                    shortcut=QKeySequence.SelectAll
+                    )
+
+        self.__openSelectedAction = \
+            QAction(self.tr("Open"), self,
+                    objectName="open-action",
+                    toolTip=self.tr("Open selected widget"),
+                    triggered=self.openSelected,
+                    enabled=False)
+
+        self.__removeSelectedAction = \
+            QAction(self.tr("Remove"), self,
+                    objectName="remove-selected",
+                    toolTip=self.tr("Remove selected items"),
+                    triggered=self.removeSelected,
+                    enabled=False
+                    )
+
+        shortcuts = [Qt.Key_Delete,
+                     Qt.ControlModifier + Qt.Key_Backspace]
+
+        if sys.platform == "darwin":
+            # Command Backspace should be the first
+            # (visible shortcut in the menu)
+            shortcuts.reverse()
+
+        self.__removeSelectedAction.setShortcuts(shortcuts)
+
+        self.__renameAction = \
+            QAction(self.tr("Rename"), self,
+                    objectName="rename-action",
+                    toolTip=self.tr("Rename selected widget"),
+                    triggered=self.__onRenameAction,
+                    shortcut=QKeySequence(Qt.Key_F2),
+                    enabled=False)
+
+        self.__helpAction = \
+            QAction(self.tr("Help"), self,
+                    objectName="help-action",
+                    toolTip=self.tr("Show widget help"),
+                    triggered=self.__onHelpAction,
+                    shortcut=QKeySequence.HelpContents
+                    )
 
         self.__linkEnableAction = \
             QAction(self.tr("Enabled"), self,
@@ -254,6 +326,13 @@ class SchemeEditWidget(QWidget):
                 self.__cleanUpAction,
                 self.__newTextAnnotationAction,
                 self.__newArrowAnnotationAction]
+
+    def menuBarActions(self):
+        """Return a list of actions that can be inserted into a QMenuBar.
+        These actions should have a menu.
+
+        """
+        return [self.__editMenu.menuAction(), self.__widgetMenu.menuAction()]
 
     def isModified(self):
         return not self.__undoStack.isClean()
@@ -427,7 +506,6 @@ class SchemeEditWidget(QWidget):
 
         self.__undoStack.beginMacro(self.tr("Remove"))
         for item in selected:
-            print item
             if isinstance(item, items.NodeItem):
                 node = self.scene().node_for_item(item)
                 self.__undoStack.push(
@@ -558,6 +636,7 @@ class SchemeEditWidget(QWidget):
         anchor_item = scene.item_at(pos, items.NodeAnchorItem)
         if anchor_item and event.button() == Qt.LeftButton:
             # Start a new link starting at item
+            scene.clearSelection()
             handler = interactions.NewLinkAction(self)
             scene.set_user_interaction_handler(handler)
             return handler.mousePressEvent(event)
@@ -687,19 +766,25 @@ class SchemeEditWidget(QWidget):
         if not self.view().underMouse():
             return False
 
+        handler = None
         if (event.key() == Qt.Key_Space and \
                 self.__quickMenuTriggers & SchemeEditWidget.SpaceKey):
-            action = interactions.NewNodeAction(self)
-            action.create_new(QCursor.pos())
-            event.accept()
-            return True
+            handler = interactions.NewNodeAction(self)
 
-        if len(event.text()) and \
+        elif len(event.text()) and \
                 self.__quickMenuTriggers & SchemeEditWidget.AnyKey:
-            action = interactions.NewNodeAction(self)
+            handler = interactions.NewNodeAction(self)
             # TODO: set the search text to event.text() and set focus on the
             # search line
-            action.create_new(QCursor.pos())
+
+        if handler is not None:
+            # Control + Backspace (remove widget action) conflicts with the
+            # 'Clear text action in the search widget, so we disable the
+            # remove widget action so the text editing follows standard
+            # 'look and feel'
+            with disabled(self.__removeSelectedAction):
+                handler.create_new(QCursor.pos())
+
             event.accept()
             return True
 
@@ -712,7 +797,30 @@ class SchemeEditWidget(QWidget):
         return False
 
     def __onSelectionChanged(self):
-        pass
+        selected = self.selectedNodes()
+
+        enabled = bool(selected)
+        self.__openSelectedAction.setEnabled(enabled)
+        self.__removeSelectedAction.setEnabled(enabled)
+
+        if len(selected) == 0:
+            self.__openSelectedAction.setText(self.tr("Open"))
+            self.__removeSelectedAction.setText(self.tr("Remove"))
+
+        elif len(selected) == 1:
+            self.__openSelectedAction.setText(self.tr("Open"))
+            self.__removeSelectedAction.setText(self.tr("Remove"))
+
+            self.__renameAction.setEnabled(True)
+            self.__helpAction.setEnabled(True)
+
+        else:
+            self.__widgetMenu.setEnabled(enabled)
+            self.__openSelectedAction.setText(self.tr("Open All"))
+            self.__removeSelectedAction.setText(self.tr("Remove All"))
+
+            self.__renameAction.setEnabled(False)
+            self.__helpAction.setEnabled(False)
 
     def __onNodeAdded(self, node):
         widget = self.__scheme.widget_for_node[node]
@@ -897,7 +1005,7 @@ class SchemeEditWidget(QWidget):
 
         item = self.scene().item_at(scenePos, items.NodeItem)
         if item is not None:
-            self.window().widget_menu.popup(globalPos)
+            self.__widgetMenu.popup(globalPos)
             return
 
         item = self.scene().item_at(scenePos, items.LinkItem)
@@ -907,6 +1015,28 @@ class SchemeEditWidget(QWidget):
             self.__contextMenuTarget = link
             self.__linkMenu.popup(globalPos)
             return
+
+    def __onRenameAction(self):
+        selected = self.selectedNodes()
+        if len(selected) == 1:
+            self.editNodeTitle(selected[0])
+
+    def __onHelpAction(self):
+        nodes = self.selectedNodes()
+        help_url = None
+        if len(nodes) == 1:
+            node = nodes[0]
+            desc = node.description
+            if desc.help:
+                help_url = desc.help
+
+        if help_url is not None:
+            QDesktopServices.openUrl(QUrl(help_url))
+        else:
+            message_information(
+                self.tr("Sorry there is documentation available for "
+                        "this widget."),
+                parent=self)
 
     def __toggleLinkEnabled(self, enabled):
         """Link enabled state was toggled in the context menu.

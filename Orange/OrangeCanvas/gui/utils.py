@@ -4,12 +4,13 @@ Helper utilities
 """
 import os
 import sys
+import traceback
 
 from contextlib import contextmanager
 
 from PyQt4.QtGui import (
-    QWidget, QGradient, QLinearGradient, QRadialGradient, QBrush, QPainter,
-    QStyleOption, QStyle
+    QWidget, QMessageBox, QGradient, QLinearGradient, QRadialGradient, QBrush,
+    QPainter, QStyleOption, QStyle
 )
 
 import sip
@@ -37,6 +38,21 @@ def signals_disabled(qobject):
         yield
     finally:
         qobject.blockSignals(old_state)
+
+
+@contextmanager
+def disabled(qobject):
+    """Disables a disablable QObject instance.
+    """
+    if not (hasattr(qobject, "setEnabled") and hasattr(qobject, "isEnabled")):
+        raise TypeError("%r does not have 'enabled' property" % qobject)
+
+    old_state = qobject.isEnabled()
+    qobject.setEnabled(False)
+    try:
+        yield
+    finally:
+        qobject.setEnabled(old_state)
 
 
 def StyledWidget_paintEvent(self, event):
@@ -146,3 +162,91 @@ def brush_darker(brush, factor):
         brush = QBrush(brush)
         brush.setColor(brush.color().darker(factor))
         return brush
+
+
+def message_critical(text, title=None, informative_text=None, details=None,
+                     buttons=None, default_button=None, exc_info=False,
+                     parent=None):
+    """Show a critical message.
+    """
+    if not text:
+        text = "An unexpected error occurred."
+
+    if title is None:
+        title = "Error"
+
+    return message(QMessageBox.Critical, text, title, informative_text,
+                   details, buttons, default_button, exc_info, parent)
+
+
+def message_warning(text, title=None, informative_text=None, details=None,
+                    buttons=None, default_button=None, exc_info=False,
+                    parent=None):
+    """Show a warning message.
+    """
+    if not text:
+        import random
+        text_candidates = ["Death could come at any moment.",
+                           "Murphy lurks about. Remember to save frequently."
+                           ]
+        text = random.choice(text_candidates)
+
+    if title is not None:
+        title = "Warning"
+
+    return message(QMessageBox.Warning, text, title, informative_text,
+                   details, buttons, default_button, exc_info, parent)
+
+
+def message_information(text, title=None, informative_text=None, details=None,
+                        buttons=None, default_button=None, exc_info=False,
+                        parent=None):
+    """Show an information message box.
+    """
+    if title is None:
+        title = "Information"
+    if not text:
+        text = "I am not a number."
+
+    return message(QMessageBox.Information, text, title, informative_text,
+                   details, buttons, default_button, exc_info, parent)
+
+
+def message_question(text, title, informative_text=None, details=None,
+                     buttons=None, default_button=None, exc_info=False,
+                     parent=None):
+    """Show an message box asking the user to select some
+    predefined course of action (set by buttons argument).
+
+    """
+    return message(QMessageBox.Question, text, title, informative_text,
+                   details, buttons, default_button, exc_info, parent)
+
+
+def message(icon, text, title=None, informative_text=None, details=None,
+            buttons=None, default_button=None, exc_info=False, parent=None):
+    """Show a message helper function.
+    """
+    if title is None:
+        title = "Message"
+    if not text:
+        text = "I am neither a postman nor a doctor."
+
+    if buttons is None:
+        buttons = QMessageBox.Ok
+
+    if details is None and exc_info:
+        details = traceback.format_exc(limit=20)
+
+    mbox = QMessageBox(icon, title, text, buttons, parent)
+
+    if informative_text:
+        mbox.setInformativeText(informative_text)
+
+    if details:
+        mbox.setDetailedText(details)
+
+    if default_button is not None:
+        mbox.setDefaultButton(default_button)
+
+    return mbox.exec_()

@@ -5,7 +5,6 @@ Orange Canvas Main Window
 import os
 import sys
 import logging
-import traceback
 import operator
 
 import pkg_resources
@@ -13,7 +12,7 @@ import pkg_resources
 from PyQt4.QtGui import (
     QMainWindow, QWidget, QAction, QActionGroup, QMenu, QMenuBar, QDialog,
     QFileDialog, QMessageBox, QVBoxLayout, QSizePolicy, QColor, QKeySequence,
-    QIcon, QToolBar, QToolButton, QDockWidget, QDesktopServices, QUndoGroup,
+    QIcon, QToolBar, QToolButton, QDockWidget, QDesktopServices,
     QApplication
 )
 
@@ -26,6 +25,7 @@ from PyQt4.QtCore import pyqtProperty as Property
 
 from ..gui.dropshadow import DropShadowFrame
 from ..gui.dock import CollapsibleDockWidget
+from ..gui.utils import message_critical, message_question, message_information
 
 from .canvastooldock import CanvasToolDock, QuickCategoryToolbar
 from .aboutdialog import AboutDialog
@@ -74,94 +74,6 @@ def canvas_icons(name):
                      )
 
 
-def message_critical(text, title=None, informative_text=None, details=None,
-                     buttons=None, default_button=None, exc_info=False,
-                     parent=None):
-    """Show a critical message.
-    """
-    if not text:
-        text = "An unexpected error occurred."
-
-    if title is None:
-        title = "Error"
-
-    return message(QMessageBox.Critical, text, title, informative_text,
-                   details, buttons, default_button, exc_info, parent)
-
-
-def message_warning(text, title=None, informative_text=None, details=None,
-                    buttons=None, default_button=None, exc_info=False,
-                    parent=None):
-    """Show a warning message.
-    """
-    if not text:
-        import random
-        text_candidates = ["Death could come at any moment.",
-                           "Murphy lurks about. Remember to save frequently."
-                           ]
-        text = random.choice(text_candidates)
-
-    if title is not None:
-        title = "Warning"
-
-    return message(QMessageBox.Warning, text, title, informative_text,
-                   details, buttons, default_button, exc_info, parent)
-
-
-def message_information(text, title=None, informative_text=None, details=None,
-                        buttons=None, default_button=None, exc_info=False,
-                        parent=None):
-    """Show an information message box.
-    """
-    if title is None:
-        title = "Information"
-    if not text:
-        text = "I am not a number."
-
-    return message(QMessageBox.Information, text, title, informative_text,
-                   details, buttons, default_button, exc_info, parent)
-
-
-def message_question(text, title, informative_text=None, details=None,
-                     buttons=None, default_button=None, exc_info=False,
-                     parent=None):
-    """Show an message box asking the user to select some
-    predefined course of action (set by buttons argument).
-
-    """
-    return message(QMessageBox.Question, text, title, informative_text,
-                   details, buttons, default_button, exc_info, parent)
-
-
-def message(icon, text, title=None, informative_text=None, details=None,
-            buttons=None, default_button=None, exc_info=False, parent=None):
-    """Show a message helper function.
-    """
-    if title is None:
-        title = "Message"
-    if not text:
-        text = "I am neither a postman nor a doctor."
-
-    if buttons is None:
-        buttons = QMessageBox.Ok
-
-    if details is None and exc_info:
-        details = traceback.format_exc(limit=20)
-
-    mbox = QMessageBox(icon, title, text, buttons, parent)
-
-    if informative_text:
-        mbox.setInformativeText(informative_text)
-
-    if details:
-        mbox.setDetailedText(details)
-
-    if default_button is not None:
-        mbox.setDefaultButton(default_button)
-
-    return mbox.exec_()
-
-
 class FakeToolBar(QToolBar):
     """A Toolbar with no contents (used to reserve top and bottom margins
     on the main window).
@@ -195,7 +107,9 @@ class CanvasMainWindow(QMainWindow):
 
         self.recent_schemes = config.recent_schemes()
 
+        self.setup_actions()
         self.setup_ui()
+        self.setup_menu()
 
         self.resize(800, 600)
 
@@ -207,9 +121,6 @@ class CanvasMainWindow(QMainWindow):
         settings.beginGroup("canvasmainwindow")
 
         log.info("Setting up Canvas main window.")
-
-        self.setup_actions()
-        self.setup_menu()
 
         # Two dummy tool bars to reserve space
         self.__dummy_top_toolbar = FakeToolBar(
@@ -234,9 +145,6 @@ class CanvasMainWindow(QMainWindow):
 
         self.scheme_widget = SchemeEditWidget()
         self.scheme_widget.setScheme(widgetsscheme.WidgetsScheme())
-
-        self.undo_group.addStack(self.scheme_widget.undoStack())
-        self.undo_group.setActiveStack(self.scheme_widget.undoStack())
 
         w.layout().addWidget(self.scheme_widget)
 
@@ -534,57 +442,6 @@ class CanvasMainWindow(QMainWindow):
                     triggered=self.show_output_view,
                     )
 
-        self.undo_group = QUndoGroup(self)
-        self.undo_action = self.undo_group.createUndoAction(self)
-        self.undo_action.setShortcut(QKeySequence.Undo)
-        self.redo_action = self.undo_group.createRedoAction(self)
-        self.redo_action.setShortcut(QKeySequence.Redo)
-
-        self.select_all_action = \
-            QAction(self.tr("Select All"), self,
-                    objectName="select-all-action",
-                    triggered=self.select_all,
-                    shortcut=QKeySequence.SelectAll,
-                    )
-
-        self.open_widget_action = \
-            QAction(self.tr("Open"), self,
-                    objectName="open-widget-action",
-                    triggered=self.open_widget,
-                    )
-
-        self.rename_widget_action = \
-            QAction(self.tr("Rename"), self,
-                    objectName="rename-widget-action",
-                    triggered=self.rename_widget,
-                    toolTip="Rename a widget",
-                    shortcut=QKeySequence(Qt.Key_F2)
-                    )
-
-        self.remove_widget_action = \
-            QAction(self.tr("Remove"), self,
-                    objectName="remove-action",
-                    triggered=self.remove_selected,
-                    )
-
-        delete_shortcuts = [Qt.Key_Delete,
-                            Qt.ControlModifier + Qt.Key_Backspace]
-
-        if sys.platform == "darwin":
-            # Command Backspace should be the first
-            # (visible shortcut in the menu)
-            delete_shortcuts.reverse()
-
-        self.remove_widget_action.setShortcuts(delete_shortcuts)
-
-        self.widget_help_action = \
-            QAction(self.tr("Help"), self,
-                    objectName="widget-help-action",
-                    triggered=self.widget_help,
-                    toolTip=self.tr("Show widget help."),
-                    shortcut=QKeySequence.HelpContents,
-                    )
-
         if sys.platform == "darwin":
             # Actions for native Mac OSX look and feel.
             self.minimize_action = \
@@ -656,12 +513,14 @@ class CanvasMainWindow(QMainWindow):
         self.recent_menu.addAction(self.clear_recent_action)
         menu_bar.addMenu(file_menu)
 
+        editor_menus = self.scheme_widget.menuBarActions()
+
+        # WARNING: Hard coded order, should lookup the action text
+        # and determine the proper order
+        self.edit_menu = editor_menus[0].menu()
+        self.widget_menu = editor_menus[1].menu()
+
         # Edit menu
-        self.edit_menu = QMenu("&Edit", menu_bar)
-        self.edit_menu.addAction(self.undo_action)
-        self.edit_menu.addAction(self.redo_action)
-        self.edit_menu.addSeparator()
-        self.edit_menu.addAction(self.select_all_action)
         menu_bar.addMenu(self.edit_menu)
 
         # View menu
@@ -693,13 +552,6 @@ class CanvasMainWindow(QMainWindow):
         self.options_menu.addAction(self.canvas_settings_action)
 
         # Widget menu
-        self.widget_menu = QMenu(self.tr("Widget"), self)
-        self.widget_menu.addAction(self.open_widget_action)
-        self.widget_menu.addSeparator()
-        self.widget_menu.addAction(self.rename_widget_action)
-        self.widget_menu.addAction(self.remove_widget_action)
-        self.widget_menu.addSeparator()
-        self.widget_menu.addAction(self.widget_help_action)
         menu_bar.addMenu(self.widget_menu)
 
         if sys.platform == "darwin":
