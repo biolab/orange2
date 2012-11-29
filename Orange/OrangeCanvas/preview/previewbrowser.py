@@ -4,17 +4,19 @@ Preview Browser Widget.
 """
 
 from PyQt4.QtGui import (
-    QWidget, QLabel, QListView, QAction, QVBoxLayout, QHBoxLayout, QSizePolicy
+    QWidget, QLabel, QListView, QAction, QVBoxLayout, QHBoxLayout, QSizePolicy,
+    QStyleOption, QStylePainter
 )
 
 from PyQt4.QtSvg import QSvgWidget
 
 from PyQt4.QtCore import (
-    Qt, QSize, QByteArray, QModelIndex
+    Qt, QSize, QByteArray, QModelIndex, QEvent
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
 
+from ..scheme.utils import check_type
 from ..gui.dropshadow import DropShadowFrame
 from . import previewmodel
 
@@ -42,6 +44,8 @@ class LinearIconView(QListView):
 
         self.setViewMode(QListView.IconMode)
         self.setWrapping(False)
+        self.setWordWrap(True)
+
         self.setSelectionMode(QListView.SingleSelection)
         self.setEditTriggers(QListView.NoEditTriggers)
         self.setMovement(QListView.Static)
@@ -59,6 +63,86 @@ class LinearIconView(QListView):
             height = self.sizeHintForRow(0) + scrollHint.height()
             _, top, _, bottom = self.getContentsMargins()
             return QSize(200, height + top + bottom + self.verticalOffset())
+
+
+class TextLabel(QWidget):
+    """A plain text label widget with support for elided text.
+    """
+    def __init__(self, *args, **kwargs):
+        QWidget.__init__(self, *args, **kwargs)
+
+        self.setSizePolicy(QSizePolicy.Expanding,
+                           QSizePolicy.Preferred)
+
+        self.__text = ""
+        self.__textElideMode = Qt.ElideMiddle
+        self.__sizeHint = None
+        self.__alignment = Qt.AlignLeft | Qt.AlignVCenter
+
+    def setText(self, text):
+        """Set the `text` string to display.
+        """
+        check_type(text, basestring)
+        if self.__text != text:
+            self.__text = unicode(text)
+            self.__update()
+
+    def text(self):
+        """Return the text
+        """
+        return self.__text
+
+    def setTextElideMode(self, mode):
+        """Set elide mode (`Qt.TextElideMode`)
+        """
+        if self.__textElideMode != mode:
+            self.__textElideMode = mode
+            self.__update()
+
+    def elideMode(self):
+        return self.__elideMode
+
+    def setAlignment(self, align):
+        """Set text alignment (`Qt.Alignment`).
+        """
+        if self.__alignment != align:
+            self.__alignment = align
+            self.__update()
+
+    def sizeHint(self):
+        if self.__sizeHint is None:
+            option = QStyleOption()
+            option.initFrom(self)
+            metrics = option.fontMetrics
+
+            self.__sizeHint = QSize(200, metrics.height())
+
+        return self.__sizeHint
+
+    def paintEvent(self, event):
+        painter = QStylePainter(self)
+        option = QStyleOption()
+        option.initFrom(self)
+
+        rect = option.rect
+        metrics = option.fontMetrics
+        text = metrics.elidedText(self.__text, self.__textElideMode,
+                                  rect.width())
+        painter.drawItemText(rect, self.__alignment,
+                             option.palette, self.isEnabled(), text,
+                             self.foregroundRole())
+        painter.end()
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.FontChange:
+            self.__update()
+
+        return QWidget.changeEvent(self, event)
+
+    def __update(self):
+        self.__sizeHint = None
+        self.updateGeometry()
+        self.update()
 
 
 class PreviewBrowser(QWidget):
@@ -95,9 +179,16 @@ class PreviewBrowser(QWidget):
         self.__imageFrame = DropShadowFrame(self)
         self.__imageFrame.setWidget(self.__image)
 
-        self.__path = QLabel(self, objectName="path-label")
-        self.__path.setWordWrap(False)
-        self.__path.setContentsMargins(12, 0, 12, 0)
+        # Path text below the description and image
+        path_layout = QHBoxLayout()
+        path_layout.setContentsMargins(12, 0, 12, 0)
+        path_label = QLabel("<b>{0!s}</b>".format(self.tr("Path:")), self,
+                            objectName="path-label")
+
+        self.__path = TextLabel(self, objectName="path-text")
+
+        path_layout.addWidget(path_label)
+        path_layout.addWidget(self.__path)
 
         self.__selectAction = \
             QAction(self.tr("Select"), self,
@@ -110,7 +201,7 @@ class PreviewBrowser(QWidget):
                              alignment=Qt.AlignTop | Qt.AlignRight)
 
         vlayout.addLayout(top_layout)
-        vlayout.addWidget(self.__path)
+        vlayout.addLayout(path_layout)
 
         # An list view with small preview icons.
         self.__previewList = LinearIconView(objectName="preview-list-view")
@@ -228,8 +319,7 @@ class PreviewBrowser(QWidget):
 
         self.__label.setText(desc_text)
 
-        path_text = u"<b>Path:</b><div class=item-path>{0}</div>".format(path)
-        self.__path.setText(path_text)
+        self.__path.setText(path)
 
         if not svg:
             svg = NO_PREVIEW_SVG

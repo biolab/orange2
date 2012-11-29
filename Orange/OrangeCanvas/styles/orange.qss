@@ -268,7 +268,7 @@ SchemeInfoDialog SchemeInfoEdit QTextEdit {
 }
 
 
-/* Preview Dialog (Recent Schemes)
+/* Preview Dialog (Recent Schemes and Tutorials)
  */
 
 PreviewDialog {
@@ -282,13 +282,18 @@ PreviewDialog QLabel#heading {
     color: #515151;
 }
 
-PreviewDialog PreviewBrowser QLabel#description-label {
+PreviewDialog PreviewBrowser * {
     font-family: "Helvetica";
-    /* font-weight: bold;
-    font-size: 21px; */
     color: #1A1A1A;
 }
 
+PreviewDialog PreviewBrowser TextLabel#path-text {
+	font-size: 12px;
+}
+
+PreviewDialog PreviewBrowser QLabel#path-label {
+	font-size: 12px;
+}
 
 /* Welcome Screen Dialog
  */
