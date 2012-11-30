@@ -66,6 +66,7 @@ class PreviewDialog(QDialog):
         self.__browser.currentIndexChanged.connect(
             self.__on_currentIndexChanged
         )
+        self.__browser.activated.connect(self.__on_activated)
 
         layout.setSizeConstraint(QVBoxLayout.SetFixedSize)
         self.setLayout(layout)
@@ -109,3 +110,9 @@ class PreviewDialog(QDialog):
         button = self.__buttons.button(QDialogButtonBox.Open)
         button.setEnabled(index >= 0)
         self.currentIndexChanged.emit(index)
+
+    def __on_activated(self, index):
+        if self.currentIndex() != index:
+            self.setCurrentIndex(index)
+
+        self.accept()

@@ -151,6 +151,9 @@ class PreviewBrowser(QWidget):
     # Emitted when the current previewed item changes
     currentIndexChanged = Signal(int)
 
+    # Emitted when an item is double clicked in the preview list.
+    activated = Signal(int)
+
     def __init__(self, *args):
         QWidget.__init__(self, *args)
         self.__model = None
@@ -205,6 +208,7 @@ class PreviewBrowser(QWidget):
 
         # An list view with small preview icons.
         self.__previewList = LinearIconView(objectName="preview-list-view")
+        self.__previewList.doubleClicked.connect(self.__onDoubleClicked)
 
         vlayout.addWidget(self.__previewList)
         self.setLayout(vlayout)
@@ -289,8 +293,13 @@ class PreviewBrowser(QWidget):
                 self.__currentIndex >= bottomRight.row():
             self.__update()
 
+    def __onDoubleClicked(self, index):
+        """Double click on an item in the preview item list.
+        """
+        self.activated.emit(index.row())
+
     def __update(self):
-        """Update the description.
+        """Update the current description.
         """
         if self.__currentIndex != -1:
             index = self.model().index(self.__currentIndex, 0)
