@@ -624,6 +624,34 @@ demangleExamples = deprecated_function_name(demangle_examples)
 printVerbose = deprecated_function_name(print_verbose)
 
 import urllib2
+import posixpath
+import os
+
+from contextlib import contextmanager
+import StringIO
+
+@contextmanager
+def finishing(obj):
+    """ Calls obj.finish() on context exit.
+    """
+    yield obj
+    obj.finish()
+
+def guess_size(fileobj):
+    try:
+        if isinstance(fileobj, file):
+            return os.fstat(fileobj.fileno()).st_size
+        elif isinstance(fileobj, StringIO.StringIO):
+            pos = fileobj.tell()
+            fileobj.seek(0, 2)
+            length = fileobj.tell() - pos
+            fileobj.seek(pos, 0)
+            return length
+        elif isinstance(fileobj, urllib.addinfourl):
+            length = fileobj.headers.get("content-length", None)
+            return length
+    except Exception, ex:
+        pass
 
 def copyfileobj(src, dst, buffer=2**10, content_len=None, progress=None):
     """

@@ -14,7 +14,8 @@ class OWLearningCurveA(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'LearningCurveA')
 
-        self.inputs = [("Data", ExampleTable, self.dataset), ("Learner", orange.Learner, self.learner, 0)]
+        self.inputs = [("Data", ExampleTable, self.dataset),
+                       ("Learner", orange.Learner, self.learner, Multiple)]
         
         self.folds = 5     # cross validation folds
         self.steps = 10    # points in the learning curve

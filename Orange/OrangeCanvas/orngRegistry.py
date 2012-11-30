@@ -27,8 +27,9 @@ class WidgetDescription(object):
             subDir = os.path.relpath(dir, widgetDir) if "relpath" in os.path.__dict__ else dir.replace(widgetDir, "")
             return os.path.join(orngEnviron.orangeDocDir, "widgets", subDir)
         else:  # An add-on widget
-            addOnDocDir = self.addOn.directory_documentation()
-            return os.path.join(addOnDocDir, "widgets")
+            return None  # new style add-ons only have on-line documentation
+            #addOnDocDir = self.addOn.directory_documentation()
+            #return os.path.join(addOnDocDir, "widgets")
 
 
 class WidgetCategory(dict):
@@ -36,7 +37,28 @@ class WidgetCategory(dict):
         if widgets:
             self.update(widgets)
         self.name = name
-   
+
+def load_new_addons(directories = []):
+    # New-type add-ons
+    for entry_point in pkg_resources.iter_entry_points(WIDGETS_ENTRY_POINT):
+        try:
+            module = entry_point.load()
+            if hasattr(module, '__path__'):
+                # It is a package
+                directories.append((entry_point.name, module.__path__[0], entry_point.name, False, module))
+            else:
+                # It is a module
+                # TODO: Implement loading of widget modules
+                # (This should be default way to load widgets, not parsing them as files, or traversing directories, just modules and packages (which load modules))
+                pass
+        except ImportError, err:
+            print "While loading, importing widgets '%s' failed: %s" % (entry_point.name, err)
+        except pkg_resources.DistributionNotFound, err:
+            print "Loading add-on '%s' failed because of a missing dependency: '%s'" % (entry_point.name, err)
+        except Exception, err:
+            print "An exception occurred during the loading of '%s':\n%r" %(entry_point.name, err)
+    return directories
+
 def readCategories(silent=False):
     try:
         from Orange.version import version as orange_version
@@ -76,35 +98,9 @@ def readCategories(silent=False):
             directories.append((None, directory, None, "prototypes" in dirName.lower(), None))
             
     # read list of add-ons
-    for addOn in Orange.utils.addons.installed_addons.values() + Orange.utils.addons.registered_addons:
-        addOnWidgetsDir = os.path.join(addOn.directory, "widgets")
-        if os.path.isdir(addOnWidgetsDir):
-            directories.append((addOn.name, addOnWidgetsDir, addOn, False, None))
-        addOnWidgetsPrototypesDir = os.path.join(addOnWidgetsDir, "prototypes")
-        if os.path.isdir(addOnWidgetsPrototypesDir):
-            directories.append((None, addOnWidgetsPrototypesDir, addOn, True, None))
+    #TODO Load registered add-ons!
 
-    # New-type add-ons
-    for entry_point in pkg_resources.iter_entry_points(WIDGETS_ENTRY_POINT):
-        try:
-            module = entry_point.load()
-            if hasattr(module, '__path__'):
-                # It is a package
-                addOn = addons.OrangeAddOn()
-                addOn.name = entry_point.name
-                addOn.directory = module.__path__[0] # This is invalid and useless as documentation is not there, but to set it to something
-                directories.append((entry_point.name, module.__path__[0], addOn, False, module))
-            else:
-                # It is a module
-                # TODO: Implement loading of widget modules
-                # (This should be default way to load widgets, not parsing them as files, or traversing directories, just modules and packages (which load modules))
-                pass
-        except ImportError, err:
-            print "While loading, importing widgets '%s' failed: %s" % (entry_point.name, err)
-        except pkg_resources.DistributionNotFound, err:
-            print "Loading add-on '%s' failed because of a missing dependency: '%s'" % (entry_point.name, err)
-        except Exception, err:
-            print "An exception occurred during the loading of '%s':\n%r" %(entry_point.name, err)
+    load_new_addons(directories)
 
     categories = {}     
     for defCat, dirName, addOn, isPrototype, module in directories:
@@ -271,7 +267,7 @@ def readWidgets(directory, cachedWidgetDescriptions, prototype=False, silent=Fal
                 for signal in widgetInfo.outputs:
                     formatedOutList += " &nbsp; &nbsp; - " + signal.name + " (" + signal.type + ")<br>"
 
-            addOnName = "" if not widgetInfo.addOn else " (from add-on %s)" % widgetInfo.addOn.name
+            addOnName = "" if not widgetInfo.addOn else " (from add-on %s)" % widgetInfo.addOn
     
             widgetInfo.tooltipText = "<b><b>&nbsp;%s</b></b>%s<hr><b>Description:</b><br>&nbsp;&nbsp;%s<hr>%s<hr>%s" % (meta.name, addOnName, widgetInfo.description, formatedInList[:-4], formatedOutList[:-4]) 
             widgets.append((meta.name, widgetInfo))

@@ -57,9 +57,9 @@ they differ in their domains. Use this option with great care (if at all).
 Examples
 --------
 
-Any of your schemas should probably start with the File_ widget. In the schema below, 
+Any of your schemas should probably start with the :ref:`File` widget. In the schema below,
 the widget is used to read the data that is then sent to both :ref:`Data Table` widget and 
-to widget that displays :ref:`Attribute Statistics`.
+to widget that displays `Attribute Statistics`_.
 
 .. image:: images/File_schema.png
    :alt: Example schema with File widget

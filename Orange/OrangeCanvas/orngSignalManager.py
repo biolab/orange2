@@ -19,13 +19,15 @@ Multiple = 4
 Default = 8
 NonDefault = 16
 
-Explicit = 32 # Explicit - only connected if specifically requested or the only possibility 
+Explicit = 32  # Explicit - only connected if specifically requested or the only possibility
 
-Dynamic = 64 #Dynamic output signal
+Dynamic = 64  # Dynamic output signal
 
 
 class InputSignal(object):
-    def __init__(self, name, signalType, handler, parameters = Single + NonDefault, oldParam = 0):
+    def __init__(self, name, signalType, handler,
+                 parameters=Single + NonDefault,
+                 oldParam=0):
         self.name = name
         self.type = signalType
         self.handler = handler
@@ -36,38 +38,47 @@ class InputSignal(object):
         if parameters in [0, 1]:
             self.single = parameters
             self.default = not oldParam
+            self.explicit = 0
             return
 
         if not (parameters & Single or parameters & Multiple):
             parameters += Single
         if not (parameters & Default or parameters & NonDefault):
             parameters += NonDefault
+
         self.single = parameters & Single
         self.default = parameters & Default
         self.explicit = parameters & Explicit
-        
-        
+
+
 class OutputSignal(object):
-    def __init__(self, name, signalType, parameters = Single + NonDefault):
+    def __init__(self, name, signalType, parameters=Single + NonDefault):
         self.name = name
         self.type = signalType
 
-        if type(parameters) == str: parameters = eval(parameters)
-        if parameters in [0,1]: # old definition of parameters
+        if type(parameters) == str:
+            parameters = eval(parameters)
+
+        if parameters in [0, 1]:  # old definition of parameters
             self.default = not parameters
+            self.single = 1
+            self.explicit = 0
+            self.dynamic = 0
             return
 
-        if not (parameters & Default or parameters & NonDefault): parameters += NonDefault
+        if not (parameters & Default or parameters & NonDefault):
+            parameters += NonDefault
+
         self.single = parameters & Single
         self.default = parameters & Default
         self.explicit = parameters & Explicit
-        
+
         self.dynamic = parameters & Dynamic
         if self.dynamic and self.single:
             print "Output signal can not be Multiple and Dynamic"
             self.dynamic = 0
-            
-            
+
+
 def canConnect(output, input, dynamic=False):
     ret = issubclass(output.type, input.type)
     if output.dynamic and dynamic:

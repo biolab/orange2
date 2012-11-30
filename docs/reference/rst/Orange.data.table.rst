@@ -8,7 +8,7 @@ Class `Orange.data.Table` holds a list of data instances of type
 :obj:`Orange.data.Instance`. All instances belong to the same domain
 (:obj:`Orange.data.Domain`).
 
-Data tables are usually loaded from a file (see :doc:`Orange.data.formats`)::
+Data tables are usually loaded from a file (see :ref:`Orange-data-formats`)::
 
     import Orange
     data = Orange.data.Table("titanic")
@@ -75,7 +75,7 @@ when empty.
 
         Read data from the given file. If the name includes the
         extension it must be one of the known file formats
-        (see :doc:`/Orange.data.formats`). If no extension is given, the
+        (see :ref:`Orange-data-formats`). If no extension is given, the
         directory is searched for any file with recognized extensions. If the
         file is not found, Orange will also search the directories
         specified in the environment variable `ORANGE_DATA_PATH`.

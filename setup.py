@@ -1,4 +1,4 @@
-#!usr/bin/env python
+#!/usr/bin/env python2
 
 try:
     import distribute_setup
@@ -638,7 +638,6 @@ def get_package_data():
         "Orange":
             ["orangerc.cfg", "doc/style.css", "doc/widgets/*/*.*"] +\
              all_with_extension(path="doc/datasets", extensions=("tab", "csv", "basket")) +\
-             all_with_extension(path="doc/networks", extensions=("net", "tab")) +\
              all_with_extension(path="testing/regression/tests_20", extensions=("net", "tab", "basket", "csv")),
         "Orange.OrangeCanvas": ["icons/*.png", "icons/*.svg",
                                 "orngCanvas.pyw", "WidgetTabs.txt"],
@@ -738,9 +737,6 @@ EXTRAS_REQUIRE = {
     'GUI': (
         'PyQt4',
         'PyQwt',
-    ),
-    'NETWORK': (
-        'networkx',
     ),
     'reST': (
         'numpydoc',

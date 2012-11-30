@@ -28,7 +28,7 @@ example (:download:`regression-tree-run.py
 SimpleTreeLearner
 =================
 
-.. include:: /SimpleTreeLearner.txt
+.. include:: SimpleTreeLearner.txt
 
 A basic example of using a SimpleTreeLearner is shown below:
 

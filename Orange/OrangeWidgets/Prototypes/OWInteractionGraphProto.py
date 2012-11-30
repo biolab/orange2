@@ -16,7 +16,6 @@ from re import *
 from math import floor, ceil
 from orngCI import FeatureByCartesianProduct
 import OWGUI
-from orangeom import Network
 
 class IntGraphView(QGraphicsView):
     def __init__(self, parent, name, *args):
@@ -42,7 +41,7 @@ class OWInteractionGraphProto(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Interaction graph")
 
         self.inputs = [("Data", ExampleTable, self.setData)]
-        self.outputs = [("Data", ExampleTable), ("Interacting Features", list), ("Selected Features", list), ("Network", Network)]
+        self.outputs = [("Data", ExampleTable), ("Interacting Features", list), ("Selected Features", list)] #, ("Network", Network)]
 
 
         #set default settings
@@ -327,7 +326,7 @@ class OWInteractionGraphProto(OWWidget):
         self.updateCanvas()
 
         self.send("Data", data)
-        self.send("Network", self.graph)
+        #self.send("Network", self.graph)
 
     #########################################
     # do we want to show interactions between attrIndex1 and attrIndex2

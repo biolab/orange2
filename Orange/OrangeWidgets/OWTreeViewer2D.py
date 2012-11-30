@@ -60,40 +60,95 @@ class GraphicsDroplet(QGraphicsEllipseItem):
         self.parentItem().setOpen(not self.parentItem().isOpen)
         if self.scene():
             self.scene().fixPos()
-        
+
+
+def luminance(color):
+    """Return the `luminance`_ (sRGB color space) of the color.
+
+    .. _luminance: http://en.wikipedia.org/wiki/Luminance_(colorimetry)
+
+    """
+    r, g, b, _ = color.getRgb()
+    Y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    return Y
+
+
 class TextTreeNode(QGraphicsTextItem, graph_node):
-    
-    borderRadius = pyqtProperty("int",
-                lambda self: getattr(self, "_borderRadius", 0),
-                lambda self, val: (setattr(self, "_borderRadius", val), self.update()) and None,
-                doc="Rounded rect's border radius"
-                )
-    backgroundBrush = pyqtProperty("QBrush",
-                lambda self: getattr(self, "_backgroundBrush", getattr(self.scene(), "defaultItemBrush", Qt.NoBrush)),
-                lambda self, brush: (setattr(self, "_backgroundBrush", brush), self.update()) and None,
-                doc="Background brush"
-                )
-    truncateText = pyqtProperty("bool",
-                lambda self: getattr(self, "_truncateText", False),
-                lambda self, val: (setattr(self, "_truncateText", val), self.updateContents()),
-                doc="Truncate text")
-    
+    """A Tree node with text.
+    """
+    def setBorderRadius(self, r):
+        if self._borderRadius != r:
+            self.prepareGeometryChange()
+            self._borderRadius = r
+            self.update()
+
+    def borderRadius(self):
+        return getattr(self, "_borderRadius", 0)
+
+    borderRadius = pyqtProperty("int", fget=borderRadius, fset=setBorderRadius,
+                                doc="Rounded rect's border radius")
+
+    def setBackgroundBrush(self, brush):
+        """Set node's background brush.
+        """
+        if self._backgroundBrush != brush:
+            self._backgroundBrush = QBrush(brush)
+            color = brush.color()
+            if luminance(color) > 30:
+                self.setDefaultTextColor(Qt.black)
+            else:
+                self.setDefaultTextColor(Qt.white)
+            self.update()
+
+    def backgroundBrush(self):
+        """Return the node's background brush.
+        """
+        brush = getattr(self, "_backgroundBrush",
+                        getattr(self.scene(), "defaultItemBrush", Qt.NoBrush))
+        return QBrush(brush)
+
+    backgroundBrush = pyqtProperty("QBrush", fget=backgroundBrush,
+                                   fset=setBackgroundBrush,
+                                   doc="Background brush")
+
+    def setTruncateText(self, truncate):
+        """Set the truncateText to truncate. If true the text will
+        be truncated to fit inside the node's box, otherwise it will
+        overflow.
+
+        """
+        if self._truncateText != truncate:
+            self._truncateText = truncate
+            self.updateContents()
+
+    def truncateText(self):
+        return getattr(self, "_truncateText", False)
+
+    truncateText = pyqtProperty("bool", fget=truncateText,
+                                fset=setTruncateText,
+                                doc="Truncate text")
+
     def __init__(self, tree, parent, *args, **kwargs):
         QGraphicsTextItem.__init__(self, *args)
         graph_node.__init__(self, **kwargs)
+        self._borderRadius = 0
+        self._backgroundBrush = None
+        self._truncateText = False
+
         self.tree = tree
         self.parent = parent
         font = self.font()
         font.setPointSize(10)
         self.setFont(font)
         self.droplet = GraphicsDroplet(-5, 0, 10, 10, self, self.scene())
-        
+
         self.droplet.setPos(self.rect().center().x(), self.rect().height())
-        
-        self.connect(self.document(), SIGNAL("contentsChanged()"), self.updateContents)
+
+        self.connect(self.document(), SIGNAL("contentsChanged()"),
+                     self.updateContents)
         self.isOpen = True
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
-        
+
     def setHtml(self, html):
         if qVersion() < "4.5":
             html = html.replace("<hr>", "<hr width=200>") #bug in Qt4.4 (need width = 200)

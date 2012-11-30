@@ -265,9 +265,15 @@ class OWPythonScript(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Python Script')
         
-        self.inputs = [("in_data", ExampleTable, self.setExampleTable), ("in_distance", orange.SymMatrix, self.setDistanceMatrix), ("in_network", Orange.network.Graph, self.setNetwork), ("in_learner", orange.Learner, self.setLearner), ("in_classifier", orange.Classifier, self.setClassifier)]
-        self.outputs = [("out_data", ExampleTable), ("out_distance", orange.SymMatrix), ("out_network", Orange.network.Graph), ("out_learner", orange.Learner), ("out_classifier", orange.Classifier, Dynamic)]
-        
+        self.inputs = [("in_data", ExampleTable, self.setExampleTable), ("in_distance", orange.SymMatrix, self.setDistanceMatrix), ("in_learner", orange.Learner, self.setLearner), ("in_classifier", orange.Classifier, self.setClassifier)]
+        self.outputs = [("out_data", ExampleTable), ("out_distance", orange.SymMatrix), ("out_learner", orange.Learner), ("out_classifier", orange.Classifier, Dynamic)]
+
+        try:
+            self.inputs.append(("in_network", Orange.network.Graph, self.setNetwork))
+            self.outputs.append(("out_network", Orange.network.Graph))
+        except:
+            pass
+
         self.in_data = None
         self.in_network = None
         self.in_distance = None

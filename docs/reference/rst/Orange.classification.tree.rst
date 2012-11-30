@@ -1368,7 +1368,7 @@ the case when only a single value goes into the branch.
 Simple Tree Inducer
 ===================
 
-.. include:: /SimpleTreeLearner.txt
+.. include:: SimpleTreeLearner.txt
 
 --------        
 Examples

@@ -34,10 +34,9 @@ class OWClassificationTree(OWWidget):
 
         self.inputs = [("Data", ExampleTable, self.setData),
                        ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
-        
+
         self.outputs = [("Learner", Orange.classification.tree.TreeLearner),
-                        ("Classification Tree", Orange.classification.tree.TreeClassifier),
-                        ("Classification Tree Graph", Orange.network.Graph)]
+                        ("Classification Tree", Orange.classification.tree.TreeClassifier), ]
 
         self.name = 'Classification Tree'
         self.estim = 0; self.relK = 5; self.relM = 100; self.limitRef = True
@@ -145,13 +144,7 @@ class OWClassificationTree(OWWidget):
         else:
             self.classifier = None
 
-        tree_graph = None
-        if self.classifier is not None:
-            tree_graph = self.classifier.to_network()
-
         self.send("Classification Tree", self.classifier)
-        self.send("Classification Tree Graph", tree_graph)
-
 
     def measureChanged(self):
         relief = self.estim == 3

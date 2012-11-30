@@ -27,8 +27,6 @@ Orange Scripting Reference
 
    Orange.distance
 
-   Orange.network
-
    Orange.tuning
    
    Orange.projection

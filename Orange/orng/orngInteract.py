@@ -35,7 +35,7 @@
 import orange, statc
 import orngContingency, numpy
 import warnings, math, string, copy
-import orngNetwork
+import Orange
 
 def _nicefloat(f,sig):
     # pretty-float formatter
@@ -312,7 +312,7 @@ class InteractionMatrix:
             
         ### NODE DRAWING ###
         map = {}
-        graph = orngNetwork.Network(len(atts), 0)
+        graph = Orange.core.Network(len(atts), 0)
         table = []
         
         for i in range(len(atts)):

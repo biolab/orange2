@@ -116,37 +116,3 @@ Just one rule with requested support and lift is found in our rule set::
    conf    supp    lift    rule
    0.898   0.429   1.116   fuel-type=gas num-of-doors=four -> aspiration=std engine-location=front
    
-Finally, for our third example, we introduce cloning. Cloning helps if
-you require to work with different rule subsets that stem from common
-rule set created from some data (actually, cloning is quite useless in
-our example, but may be very useful otherwise). So, we use cloning to
-make a copy of the set of rules, then sort by first support and then
-confidence, and then print out few best rules. We have also lower
-required minimal support, just to see how many rules we obtain in this
-way (:download:`assoc3.py <code/assoc3.py>`, :download:`imports-85.tab <code/imports-85.tab>`)::
-
-   minSupport = 0.2
-   rules = orngAssoc.build(data, minSupport)
-   print "%i rules with support higher than or equal to %5.3f found.\n" % (len(rules), minSupport)
-   
-   rules2 = rules.clone()
-   rules2.sortByConfidence()
-   
-   n = 5
-   print "Best %i rules:" % n
-   subset = rules[:n]
-   subset.printMeasures(['support','confidence'])
-
-The output of this script is::
-
-   828 rules with support higher than or equal to 0.200 found.
-   
-   Best 5 rules:
-   supp    conf    rule
-   0.888   0.984   engine-location=front -> fuel-type=gas
-   0.888   0.901   fuel-type=gas -> engine-location=front
-   0.805   0.982   engine-location=front -> aspiration=std
-   0.805   0.817   aspiration=std -> engine-location=front
-   0.785   0.958   fuel-type=gas -> aspiration=std
-
-

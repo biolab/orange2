@@ -1,4 +1,4 @@
-import orngNetwork
+import Orange
 from orangeom import Pathfinder
 from pylab import *
 
@@ -21,10 +21,10 @@ def myPlot(net, titleTxt=''):
         text(x, y + 100, net.items[u][1])
         
 # Read a demo network from a file
-net = orngNetwork.Network.read('demo.net')
+net = Orange.core.Network.read('demo.net')
 
 # Compute a layout for plotting
-netOp = orngNetwork.NetworkOptimization(net)
+netOp = Orange.core.NetworkOptimization(net)
 netOp.fruchtermanReingold(100, 1000)
 
 # Plot the original

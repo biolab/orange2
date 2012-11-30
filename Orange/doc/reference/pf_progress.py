@@ -1,4 +1,4 @@
-import orngNetwork
+import Orange
 from orangeom import Pathfinder
 
 def myCb(complete):
@@ -8,7 +8,7 @@ def myCb(complete):
     print 'The procedure is %d%% complete.' % int(complete * 100)
 
 # Read a demo network from a file
-net = orngNetwork.Network.read('demo.net')
+net = Orange.core.Network.read('demo.net')
 
 # Choose some parameters
 r, q = 1, 6

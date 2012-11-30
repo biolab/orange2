@@ -17,6 +17,7 @@ class PieChart(QGraphicsRectItem):
         self.r = r
         
     def setR(self, r):
+        self.prepareGeometryChange()
         self.r = r
         
     def boundingRect(self):
