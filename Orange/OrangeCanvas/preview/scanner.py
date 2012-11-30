@@ -4,7 +4,6 @@ Scheme file preview parser.
 """
 import sys
 
-import os
 import logging
 
 from xml.sax import make_parser, handler, saxutils, SAXParseException
@@ -75,10 +74,12 @@ def scheme_svg_thumbnail(scheme_file):
     """
     from .. import scheme
     from ..canvas import scene
+    from ..registry import global_registry
 
     scheme = scheme.Scheme()
     scheme.load_from(scheme_file)
     tmp_scene = scene.CanvasScene()
+    tmp_scene.set_registry(global_registry())
     tmp_scene.set_scheme(scheme)
 
     # Force the anchor point layout.
