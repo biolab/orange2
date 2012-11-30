@@ -364,7 +364,7 @@ class CanvasMainWindow(QMainWindow):
                     )
 
         self.tutorials_action = \
-            QAction(self.tr("Tutorial"), self,
+            QAction(self.tr("Tutorials"), self,
                     objectName="tutorial-action",
                     toolTip=self.tr("Browse tutorials."),
                     triggered=self.tutorial_scheme,
@@ -504,7 +504,8 @@ class CanvasMainWindow(QMainWindow):
 
         # Add recent items.
         for title, filename in self.recent_schemes:
-            action = QAction(title, self, toolTip=filename)
+            action = QAction(title or self.tr("untitled"), self,
+                             toolTip=filename)
             action.setData(filename)
             self.recent_menu.addAction(action)
             self.recent_scheme_action_group.addAction(action)
@@ -1196,6 +1197,8 @@ class CanvasMainWindow(QMainWindow):
         """Add `scheme` to the list of recent schemes.
         """
         if not scheme.path:
+            # Scheme does not have an associated persistent path so we
+            # can't do anything.
             return
 
         title = scheme.title
@@ -1213,16 +1216,17 @@ class CanvasMainWindow(QMainWindow):
             path = unicode(action.data().toString())
             actions_by_filename[path] = action
 
-        if (title, filename) in self.recent_schemes:
+        if filename in actions_by_filename:
             # Remove the title/filename (so it can be reinserted)
-            recent_index = self.recent_schemes.index((title, filename))
+            recent_index = index(self.recent_schemes, filename,
+                                 key=operator.itemgetter(1))
             self.recent_schemes.pop(recent_index)
 
-        if filename in actions_by_filename:
             action = actions_by_filename[filename]
             self.recent_menu.removeAction(action)
         else:
-            action = QAction(title, self, toolTip=filename)
+            action = QAction(title or self.tr("untitled"), self,
+                             toolTip=filename)
             action.setData(filename)
 
         self.recent_schemes.insert(0, (title, filename))
