@@ -450,12 +450,18 @@ class SchemeEditWidget(QWidget):
             self.__scene.set_scheme(scheme)
 
     def scheme(self):
+        """Return the :class:`Scheme` edited by the widget.
+        """
         return self.__scheme
 
     def scene(self):
+        """Return the QGraphicsScene instance used to display the scheme.
+        """
         return self.__scene
 
     def view(self):
+        """Return the QGraphicsView instance used to display the scene.
+        """
         return self.__view
 
     def setRegistry(self, registry):
@@ -482,7 +488,7 @@ class SchemeEditWidget(QWidget):
         self.__undoStack.push(command)
 
     def createNewNode(self, description):
-        """Create a new SchemeNode add at it to the document at left of the
+        """Create a new `SchemeNode` and add it to the document at left of the
         last added node.
 
         """
@@ -497,30 +503,44 @@ class SchemeEditWidget(QWidget):
         self.addNode(node)
 
     def removeNode(self, node):
+        """Remove a `node` (:class:`SchemeNode`) from the scheme
+        """
         command = commands.RemoveNodeCommand(self.__scheme, node)
         self.__undoStack.push(command)
 
     def renameNode(self, node, title):
+        """Rename a `node` (:class:`SchemeNode`) to `title`.
+        """
         command = commands.RenameNodeCommand(self.__scheme, node, title)
         self.__undoStack.push(command)
 
     def addLink(self, link):
+        """Add a `link` (:class:`SchemeLink`) to the scheme.
+        """
         command = commands.AddLinkCommand(self.__scheme, link)
         self.__undoStack.push(command)
 
     def removeLink(self, link):
+        """Remove a link (:class:`SchemeLink`) from the scheme.
+        """
         command = commands.RemoveLinkCommand(self.__scheme, link)
         self.__undoStack.push(command)
 
     def addAnnotation(self, annotation):
+        """Add `annotation` (:class:`BaseSchemeAnnotation`) to the scheme
+        """
         command = commands.AddAnnotationCommand(self.__scheme, annotation)
         self.__undoStack.push(command)
 
     def removeAnnotation(self, annotation):
+        """Remove `annotation` (:class:`BaseSchemeAnnotation`) from the scheme.
+        """
         command = commands.RemoveAnnotationCommand(self.__scheme, annotation)
         self.__undoStack.push(command)
 
     def removeSelected(self):
+        """Remove all selected items in the scheme.
+        """
         selected = self.scene().selectedItems()
         if not selected:
             return
@@ -540,6 +560,8 @@ class SchemeEditWidget(QWidget):
         self.__undoStack.endMacro()
 
     def selectAll(self):
+        """Select all selectable items in the scheme.
+        """
         for item in self.__scene.items():
             if item.flags() & QGraphicsItem.ItemIsSelectable:
                 item.setSelected(True)
@@ -580,15 +602,27 @@ class SchemeEditWidget(QWidget):
             self.__undoStack.endMacro()
 
     def selectedNodes(self):
+        """Return all selected `SchemeNode` items.
+        """
         return map(self.scene().node_for_item,
                    self.scene().selected_node_items())
 
+    def selectedAnnotations(self):
+        """Return all selected `SchemeAnnotation` items.
+        """
+        return map(self.scene().annotation_for_item,
+                   self.scene().selected_annotation_items())
+
     def openSelected(self):
+        """Open (show and raise) all widgets for selected nodes.
+        """
         selected = self.scene().selected_node_items()
         for item in selected:
             self.__onNodeActivate(item)
 
     def editNodeTitle(self, node):
+        """Edit the `node`'s title.
+        """
         name, ok = QInputDialog.getText(
                     self, self.tr("Rename"),
                     unicode(self.tr("Enter a new name for the %r widget")) \
@@ -818,30 +852,30 @@ class SchemeEditWidget(QWidget):
         return False
 
     def __onSelectionChanged(self):
-        selected = self.selectedNodes()
+        nodes = self.selectedNodes()
+        annotations = self.selectedAnnotations()
 
-        enabled = bool(selected)
-        self.__openSelectedAction.setEnabled(enabled)
-        self.__removeSelectedAction.setEnabled(enabled)
+        self.__openSelectedAction.setEnabled(bool(nodes))
+        self.__removeSelectedAction.setEnabled(
+            bool(nodes) or bool(annotations)
+        )
 
-        if len(selected) == 0:
-            self.__openSelectedAction.setText(self.tr("Open"))
-            self.__removeSelectedAction.setText(self.tr("Remove"))
+        self.__helpAction.setEnabled(len(nodes) == 1)
+        self.__renameAction.setEnabled(len(nodes) == 1)
 
-        elif len(selected) == 1:
-            self.__openSelectedAction.setText(self.tr("Open"))
-            self.__removeSelectedAction.setText(self.tr("Remove"))
-
-            self.__renameAction.setEnabled(True)
-            self.__helpAction.setEnabled(True)
-
-        else:
-            self.__widgetMenu.setEnabled(enabled)
+        if len(nodes) > 1:
             self.__openSelectedAction.setText(self.tr("Open All"))
-            self.__removeSelectedAction.setText(self.tr("Remove All"))
+        else:
+            self.__openSelectedAction.setText(self.tr("Open"))
 
-            self.__renameAction.setEnabled(False)
-            self.__helpAction.setEnabled(False)
+        if len(nodes) + len(annotations) > 1:
+            self.__removeSelectedAction.setText(self.tr("Remove All"))
+        else:
+            self.__removeSelectedAction.setText(self.tr("Remove"))
+
+        if len(nodes) == 0:
+            self.__openSelectedAction.setText(self.tr("Open"))
+            self.__removeSelectedAction.setText(self.tr("Remove"))
 
     def __onNodeAdded(self, node):
         widget = self.__scheme.widget_for_node[node]
