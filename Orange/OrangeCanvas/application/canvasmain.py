@@ -506,6 +506,7 @@ class CanvasMainWindow(QMainWindow):
         for title, filename in self.recent_schemes:
             action = QAction(title or self.tr("untitled"), self,
                              toolTip=filename)
+
             action.setData(filename)
             self.recent_menu.addAction(action)
             self.recent_scheme_action_group.addAction(action)
@@ -847,6 +848,7 @@ class CanvasMainWindow(QMainWindow):
         if curr_scheme.path:
             curr_scheme.save_to(open(curr_scheme.path, "wb"))
             document.setModified(False)
+            self.add_recent_scheme(curr_scheme)
             return QDialog.Accepted
         else:
             return self.save_scheme_as()
@@ -901,11 +903,9 @@ class CanvasMainWindow(QMainWindow):
                 return QFileDialog.Rejected
 
             curr_scheme.path = filename
-            if not curr_scheme.title:
-                curr_scheme.title = os.path.splitext(basename)[0]
 
-            self.add_recent_scheme(curr_scheme)
             document.setModified(False)
+            self.add_recent_scheme(curr_scheme)
             return QFileDialog.Accepted
         else:
             return QFileDialog.Rejected
@@ -1224,19 +1224,20 @@ class CanvasMainWindow(QMainWindow):
 
             action = actions_by_filename[filename]
             self.recent_menu.removeAction(action)
+            action.setText(title or self.tr("untitled"))
         else:
             action = QAction(title or self.tr("untitled"), self,
                              toolTip=filename)
             action.setData(filename)
 
-        self.recent_schemes.insert(0, (title, filename))
-
+        # Find the separator action in the menu (after 'Browse Recent')
         recent_actions = self.recent_menu.actions()
         begin_index = index(recent_actions, self.recent_menu_begin)
         action_before = recent_actions[begin_index + 1]
 
         self.recent_menu.insertAction(action_before, action)
         self.recent_scheme_action_group.addAction(action)
+        self.recent_schemes.insert(0, (title, filename))
 
         config.save_recent_scheme_list(self.recent_schemes)
 
