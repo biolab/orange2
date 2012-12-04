@@ -952,13 +952,16 @@ class CanvasMainWindow(QMainWindow):
 
         status = dialog.exec_()
 
+        index = dialog.currentIndex()
+
+        dialog.deleteLater()
+
         if status == QDialog.Accepted:
             doc = self.current_document()
             if doc.isModified():
                 if self.ask_save_changes() == QDialog.Rejected:
                     return QDialog.Rejected
 
-            index = dialog.currentIndex()
             selected = model.item(index)
 
             self.load_scheme(unicode(selected.path()))
@@ -987,6 +990,9 @@ class CanvasMainWindow(QMainWindow):
 
         model.delayedScanUpdate()
         status = dialog.exec_()
+        index = dialog.currentIndex()
+
+        dialog.deleteLater()
 
         if status == QDialog.Accepted:
             doc = self.current_document()
@@ -994,7 +1000,6 @@ class CanvasMainWindow(QMainWindow):
                 if self.ask_save_changes() == QDialog.Rejected:
                     return QDialog.Rejected
 
-            index = dialog.currentIndex()
             selected = model.item(index)
 
             new_scheme = self.new_scheme_from(unicode(selected.path()))
@@ -1080,6 +1085,9 @@ class CanvasMainWindow(QMainWindow):
 
         settings.setValue("welcomedialog/show-at-startup",
                           dialog.showAtStartup())
+
+        dialog.deleteLater()
+
         return status
 
     def show_scheme_properties(self):
@@ -1115,6 +1123,8 @@ class CanvasMainWindow(QMainWindow):
         if status == QDialog.Accepted:
             # Store the check state.
             settings.setValue(value_key, not dialog.dontShowAtNewScheme())
+
+        dialog.deleteLater()
 
         return status
 
@@ -1190,6 +1200,7 @@ class CanvasMainWindow(QMainWindow):
         """Open the about dialog.
         """
         dlg = AboutDialog(self)
+        dlg.setAttribute(Qt.WA_DeleteOnClose)
         dlg.exec_()
 
     def add_recent_scheme(self, title, path):
