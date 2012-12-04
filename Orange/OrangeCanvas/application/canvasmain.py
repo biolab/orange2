@@ -770,8 +770,9 @@ class CanvasMainWindow(QMainWindow):
 
         scheme_doc_widget = self.current_document()
         scheme_doc_widget.setScheme(new_scheme)
+        scheme_doc_widget.setPath(filename)
 
-        self.add_recent_scheme(new_scheme)
+        self.add_recent_scheme(new_scheme.title, filename)
 
     def new_scheme_from(self, filename):
         """Create and return a new :class:`widgetsscheme.WidgetsScheme`
@@ -845,10 +846,10 @@ class CanvasMainWindow(QMainWindow):
         document = self.current_document()
         curr_scheme = document.scheme()
 
-        if curr_scheme.path:
-            curr_scheme.save_to(open(curr_scheme.path, "wb"))
+        if document.path():
+            curr_scheme.save_to(open(document.path(), "wb"))
             document.setModified(False)
-            self.add_recent_scheme(curr_scheme)
+            self.add_recent_scheme(curr_scheme.title, document.path())
             return QDialog.Accepted
         else:
             return self.save_scheme_as()
@@ -862,8 +863,8 @@ class CanvasMainWindow(QMainWindow):
         document = self.current_document()
         curr_scheme = document.scheme()
 
-        if curr_scheme.path:
-            start_dir = curr_scheme.path
+        if document.path():
+            start_dir = document.path()
         else:
             if self.last_scheme_dir is not None:
                 start_dir = self.last_scheme_dir
@@ -902,10 +903,10 @@ class CanvasMainWindow(QMainWindow):
                      parent=self)
                 return QFileDialog.Rejected
 
-            curr_scheme.path = filename
+            document.setPath(filename)
 
             document.setModified(False)
-            self.add_recent_scheme(curr_scheme)
+            self.add_recent_scheme(curr_scheme.title, document.path())
             return QFileDialog.Accepted
         else:
             return QFileDialog.Rejected
@@ -997,11 +998,9 @@ class CanvasMainWindow(QMainWindow):
             selected = model.item(index)
 
             new_scheme = self.new_scheme_from(unicode(selected.path()))
-            # Clear the 'path' property (set by scheme.load_from), so
-            # ctrl-s does not override the saved tutorial file in case the
-            # tutorial file is writable.
-            new_scheme.path = ""
-            self.current_document().setScheme(new_scheme)
+            document = self.current_document()
+            document.setScheme(new_scheme)
+
         return status
 
     def welcome_dialog(self):
@@ -1193,16 +1192,12 @@ class CanvasMainWindow(QMainWindow):
         dlg = AboutDialog(self)
         dlg.exec_()
 
-    def add_recent_scheme(self, scheme):
-        """Add `scheme` to the list of recent schemes.
+    def add_recent_scheme(self, title, path):
+        """Add an entry (`title`, `path`) to the list of recent schemes.
         """
-        if not scheme.path:
-            # Scheme does not have an associated persistent path so we
-            # can't do anything.
+        if not path:
+            # No associated persistent path so we can't do anything.
             return
-
-        title = scheme.title
-        path = scheme.path
 
         if title is None:
             title = os.path.basename(path)

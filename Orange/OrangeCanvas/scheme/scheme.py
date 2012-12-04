@@ -53,13 +53,9 @@ class Scheme(QObject):
 
     title_changed = Signal(unicode)
     description_changed = Signal(unicode)
-    path_changed = Signal(unicode)
 
     def __init__(self, parent=None, title=None, description=None):
         QObject.__init__(self, parent)
-
-        self.__path = ""
-        "Filename path associated with this schema (empty string by default)"
 
         self.__title = title or ""
         "Scheme title (empty string by default)."
@@ -102,16 +98,6 @@ class Scheme(QObject):
         return self.__description
 
     description = Property(unicode, fget=description, fset=set_description)
-
-    def set_path(self, path):
-        if self.__path != path:
-            self.__path = path
-            self.path_changed.emit(path)
-
-    def path(self):
-        return self.__path
-
-    path = Property(unicode, fget=path, fset=set_path)
 
     def add_node(self, node):
         """Add a node to the scheme.
@@ -417,7 +403,5 @@ class Scheme(QObject):
 
         if isinstance(stream, basestring):
             stream = open(stream, "rb")
-        elif isinstance(stream, file):
-            self.path = stream.name
 
         parse_scheme(self, stream)

@@ -67,6 +67,8 @@ class SchemeEditWidget(QWidget):
 
     titleChanged = Signal(unicode)
 
+    pathChanged = Signal(unicode)
+
     # Quick Menu triggers
     (NoTriggers,
      Clicked,
@@ -80,6 +82,7 @@ class SchemeEditWidget(QWidget):
         self.__modified = False
         self.__registry = None
         self.__scheme = None
+        self.__path = u""
         self.__quickMenuTriggers = SchemeEditWidget.SpaceKey | \
                                    SchemeEditWidget.DoubleClicked
         self.__emptyClickButtons = 0
@@ -359,6 +362,22 @@ class SchemeEditWidget(QWidget):
         """
         return self.__undoStack
 
+    def setPath(self, path):
+        """Set the path associated with the current scheme.
+
+    .. note:: Calling `setScheme` will invalidate the path (i.e. set it
+              to an empty string)
+
+        """
+        if self.__path != path:
+            self.__path = unicode(path)
+            self.pathChanged.emit(self.__path)
+
+    def path(self):
+        """Return the path associated with the scene
+        """
+        return self.__path
+
     def setScheme(self, scheme):
         if self.__scheme is not scheme:
             if self.__scheme:
@@ -367,6 +386,8 @@ class SchemeEditWidget(QWidget):
                 self.__scheme.node_removed.disconnect(self.__onNodeRemoved)
 
             self.__scheme = scheme
+
+            self.setPath("")
 
             if self.__scheme:
                 self.__scheme.title_changed.connect(self.titleChanged)
