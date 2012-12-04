@@ -1,7 +1,7 @@
 """
 <name>Association Rules</name>
 <description>Induces association rules from data.</description>
-<icon>icons/AssociationRules.png</icon>
+<icon>icons/AssociationRules.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>100</priority>
 """

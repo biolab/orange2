@@ -1,7 +1,7 @@
 """
 <name>Itemsets Explorer</name>
 <description>Itemsets explorer.</description>
-<icon>icons/ItemsetsExplorer.png</icon>
+<icon>icons/ItemsetsExplorer.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>1100</priority>
 """

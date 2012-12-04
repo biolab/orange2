@@ -1,6 +1,6 @@
 """<name>Info</name>
 <description>Shows data information.</description>
-<icon>icons/DataInfo.png</icon>
+<icon>icons/DataInfo.svg</icon>
 <priority>80</priority>
 <contact>Ales Erjavec (ales.erjavec@fri.uni-lj.si)</contact>"""
 

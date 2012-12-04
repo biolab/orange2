@@ -1,7 +1,7 @@
 """
 <name>Itemsets</name>
 <description>Finds frequent itemsets in the data.</description>
-<icon>icons/Itemsets.png</icon>
+<icon>icons/Itemsets.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>1000</priority>
 """

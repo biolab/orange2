@@ -1,6 +1,6 @@
 """<name>Load Classifier</name>
 <description>Load saved orange classifiers from a file</description>
-<icon>icons/LoadObject.png</icon>
+<icon>icons/LoadClassifier.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni.uni-lj.si)</contact>
 <priority>3050</priority>
 """

@@ -2,7 +2,7 @@
 <name>PCA</name>
 <description>Perform Principal Component Analysis</description>
 <contact>ales.erjavec(@ at @)fri.uni-lj.si</contact>
-<icons>icons/PCA.png</icons>
+<icon>icons/PCA.svg</icon>
 <tags>pca,principal,component,projection</tags>
 <priority>3050</priority>
 

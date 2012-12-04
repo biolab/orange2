@@ -1,7 +1,7 @@
 """
 <name>Association Rules Explorer</name>
 <description>Association rules tree viewer.</description>
-<icon>icons/AssociationRulesTreeViewer.png</icon>
+<icon>icons/AssociationRulesExplorer.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>300</priority>
 """

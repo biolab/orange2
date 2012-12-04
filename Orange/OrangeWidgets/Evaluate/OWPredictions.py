@@ -1,7 +1,7 @@
 """
 <name>Predictions</name>
 <description>Displays predictions of models for a particular data set.</description>
-<icon>icons/Predictions.png</icon>
+<icon>icons/Predictions.svg</icon>
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>300</priority>
 """

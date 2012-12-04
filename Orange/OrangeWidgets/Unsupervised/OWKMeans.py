@@ -1,7 +1,7 @@
 """
 <name>k-Means Clustering</name>
 <description>k-means clustering.</description>
-<icon>icons/KMeans.png</icon>
+<icon>icons/kMeansClustering.svg</icon>
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>2300</priority>
 """

@@ -2,7 +2,7 @@
 <name>Distance File</name>
 <description>Loads a distance matrix from a file</description>
 <contact>Janez Demsar</contact>
-<icon>icons/DistanceFile.png</icon>
+<icon>icons/LoadDistances.svg</icon>
 <priority>1100</priority>
 """
 

@@ -2,7 +2,7 @@
 <name>Matrix Transformation</name>
 <description>Tranforms matrix according to selected criteria</description>
 <contact>Miha Stajdohar</contact>
-<icon>icons/DistanceFile.png</icon>
+<icon>icons/MatrixTransformation.svg</icon>
 <priority>1110</priority>
 """
 

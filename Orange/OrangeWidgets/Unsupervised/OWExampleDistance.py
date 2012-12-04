@@ -1,7 +1,7 @@
 """
 <name>Example Distance</name>
 <description>Computes a distance matrix from a set of data examples.</description>
-<icon>icons/ExampleDistance.png</icon>
+<icon>icons/Distance.svg</icon>
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>1300</priority>
 """

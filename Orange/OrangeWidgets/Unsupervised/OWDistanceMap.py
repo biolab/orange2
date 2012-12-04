@@ -1,7 +1,7 @@
 """
 <name>Distance Map</name>
 <description>Displays distance matrix as a heat map.</description>
-<icon>icons/DistanceMap.png</icon>
+<icon>icons/DistanceMatrix.svg</icon>
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>1200</priority>
 """

@@ -2,7 +2,7 @@
 <name>Earth</name>
 <description>Multivariate Adaptive Regression Splines (MARS)</description>
 <category>Regression</category>
-<icon>icons/Earth.png<icon>
+<icon>icons/EarthMars.svg</icon>
 <priority>100</priority>
 <tags>MARS, Multivariate, Adaptive, Regression, Splines</tags>
 """

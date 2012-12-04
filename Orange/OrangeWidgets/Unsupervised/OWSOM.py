@@ -1,7 +1,7 @@
 """
 <name>SOM</name>
 <description>Self organizing maps learner.</description>
-<icon>icons/SOM.png</icon>
+<icon>icons/SOM.svg</icon>
 <contact>Ales Erjavec (ales.erjevec(@at@)fri.uni.lj.si)</contact> 
 <priority>5010</priority>
 """
