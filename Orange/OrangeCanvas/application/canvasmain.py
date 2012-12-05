@@ -607,6 +607,14 @@ class CanvasMainWindow(QMainWindow):
 
         self.scheme_widget.setRegistry(widget_registry)
 
+        # Restore possibly saved widget toolbox tab states
+        settings = QSettings()
+        state = settings.value("canvasmainwindow/widgettoolbox/state",
+                                defaultValue=None)
+        state = state.toPyObject()
+        if state:
+            self.widgets_tool_box.restoreState(state)
+
     def set_quick_help_text(self, text):
         self.canvas_tool_dock.help.setText(text)
 
@@ -1313,6 +1321,9 @@ class CanvasMainWindow(QMainWindow):
                           self.scheme_margins_enabled)
 
         settings.setValue("last_scheme_dir", self.last_scheme_dir)
+        settings.setValue("widgettoolbox/state",
+                          self.widgets_tool_box.saveState())
+
         settings.endGroup()
 
         event.accept()

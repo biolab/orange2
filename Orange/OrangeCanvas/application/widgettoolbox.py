@@ -7,6 +7,7 @@ A tool box with a tool grid for each category.
 
 """
 
+from ast import literal_eval
 import logging
 
 from PyQt4.QtGui import (
@@ -253,6 +254,43 @@ class WidgetToolBox(ToolBox):
 
     buttonSize_ = Property(QSize, fget=buttonSize, fset=setButtonSize,
                            designable=True)
+
+    def saveState(self):
+        """Return the toolbox state.
+
+        .. note:: Individual tabs are stored by their action's text.
+
+        """
+        version = 1
+
+        tabs = []
+        for i in range(self.count()):
+            tab_action = self.tabAction(i)
+            name = unicode(tab_action.text())
+            state = tab_action.isChecked()
+            tabs.append((name, state))
+
+        return str((version, tabs))
+
+    def restoreState(self, state):
+        """Restore the toolbox from `state`.
+        """
+        try:
+            version, tabs = literal_eval(str(state))
+        except (ValueError, SyntaxError, TypeError):
+            return False
+
+        if version != 1:
+            return False
+
+        state = dict(tabs)
+
+        for i in range(self.count()):
+            tab_action = self.tabAction(i)
+            name = unicode(tab_action.text())
+            checked = state.get(name, tab_action.isChecked())
+            if checked != tab_action.isChecked():
+                tab_action.trigger()
 
     def setModel(self, model):
         """Set the widget registry model for this toolbox.
