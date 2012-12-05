@@ -140,6 +140,12 @@ class WidgetsScheme(Scheme):
         for widget in self.widget_for_node.values():
             widget.close()
 
+    def widget_settings(self):
+        """Return a list of dictionaries with widget settings.
+        """
+        return [self.widget_for_node[node].getSettings(alsoContexts=False)
+                for node in self.nodes]
+
     def sync_node_properties(self):
         """Sync the widget settings/properties with the SchemeNode.properties.
         Return True if there were any changes in the properties (i.e. if the

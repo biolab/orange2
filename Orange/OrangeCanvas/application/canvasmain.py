@@ -701,7 +701,7 @@ class CanvasMainWindow(QMainWindow):
 
         """
         document = self.current_document()
-        if document.isModified():
+        if document.isModifiedStrict():
             # Ask for save changes
             if self.ask_save_changes() == QDialog.Rejected:
                 return QDialog.Rejected
@@ -730,7 +730,7 @@ class CanvasMainWindow(QMainWindow):
 
         """
         document = self.current_document()
-        if document.isModified():
+        if document.isModifiedStrict():
             if self.ask_save_changes() == QDialog.Rejected:
                 return QDialog.Rejected
 
@@ -799,7 +799,7 @@ class CanvasMainWindow(QMainWindow):
 
         """
         document = self.current_document()
-        if document.isModified():
+        if document.isModifiedStrict():
             if self.ask_save_changes() == QDialog.Rejected:
                 return QDialog.Rejected
 
@@ -958,7 +958,7 @@ class CanvasMainWindow(QMainWindow):
 
         if status == QDialog.Accepted:
             doc = self.current_document()
-            if doc.isModified():
+            if doc.isModifiedStrict():
                 if self.ask_save_changes() == QDialog.Rejected:
                     return QDialog.Rejected
 
@@ -996,7 +996,7 @@ class CanvasMainWindow(QMainWindow):
 
         if status == QDialog.Accepted:
             doc = self.current_document()
-            if doc.isModified():
+            if doc.isModifiedStrict():
                 if self.ask_save_changes() == QDialog.Rejected:
                     return QDialog.Rejected
 
@@ -1266,7 +1266,7 @@ class CanvasMainWindow(QMainWindow):
         """A recent scheme action was triggered by the user
         """
         document = self.current_document()
-        if document.isModified():
+        if document.isModifiedStrict():
             if self.ask_save_changes() == QDialog.Rejected:
                 return
 
@@ -1289,7 +1289,7 @@ class CanvasMainWindow(QMainWindow):
         """Close the main window.
         """
         document = self.current_document()
-        if document.isModified():
+        if document.isModifiedStrict():
             if self.ask_save_changes() == QDialog.Rejected:
                 # Reject the event
                 event.ignore()

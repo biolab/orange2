@@ -2,8 +2,12 @@
 Scheme Edit widget.
 
 """
+
+import os
 import sys
 import logging
+import StringIO
+
 from operator import attrgetter
 
 from PyQt4.QtGui import (
@@ -94,6 +98,9 @@ class SchemeEditWidget(QWidget):
 
         self.__undoStack = QUndoStack(self)
         self.__undoStack.cleanChanged[bool].connect(self.__onCleanChanged)
+
+        # OWBaseWidget properties when set to clean state
+        self.__cleanSettings = []
 
         self.__editFinishedMapper = QSignalMapper(self)
         self.__editFinishedMapper.mapped[QObject].connect(
@@ -338,15 +345,38 @@ class SchemeEditWidget(QWidget):
         return [self.__editMenu.menuAction(), self.__widgetMenu.menuAction()]
 
     def isModified(self):
-        return not self.__undoStack.isClean()
+        """Is the document modified.
+        """
+        return self.__modified or not self.__undoStack.isClean()
 
     def setModified(self, modified):
-        if modified and not self.isModified():
-            raise NotImplementedError
-        else:
+        if self.__modified != modified:
+            self.__modified = modified
+
+        if not modified:
+            self.__cleanSettings = self.__scheme.widget_settings()
             self.__undoStack.setClean()
+        else:
+            self.__cleanSettings = []
 
     modified = Property(bool, fget=isModified, fset=setModified)
+
+    def isModifiedStrict(self):
+        """Is the document modified. Run a strict check against all node
+        properties as they were at the time when the last call to
+        `setModified(True)` was made.
+
+        """
+        settingsChanged = self.__cleanSettings != \
+                          self.__scheme.widget_settings()
+
+        log.debug("Modified strict check (modified flag: %s, "
+                  "undo stack clean: %s, properties: %s)",
+                  self.__modified,
+                  self.__undoStack.isClean(),
+                  settingsChanged)
+
+        return self.isModified() or settingsChanged
 
     def setQuickMenuTriggers(self, triggers):
         """Set quick menu triggers.
@@ -394,6 +424,9 @@ class SchemeEditWidget(QWidget):
                 self.__scheme.node_added.connect(self.__onNodeAdded)
                 self.__scheme.node_removed.connect(self.__onNodeRemoved)
                 self.titleChanged.emit(scheme.title)
+                self.__cleanSettings = scheme.widget_settings()
+            else:
+                self.__cleanSettings = []
 
             self.__annotationGeomChanged.deleteLater()
             self.__annotationGeomChanged = QSignalMapper(self)
