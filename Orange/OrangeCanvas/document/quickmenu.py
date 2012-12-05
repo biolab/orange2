@@ -7,12 +7,14 @@ import logging
 
 from collections import namedtuple
 
+import numpy
+
 from PyQt4.QtGui import (
     QWidget, QFrame, QToolButton, QAbstractButton, QAction, QIcon, QTreeView,
     QButtonGroup, QStackedWidget, QHBoxLayout, QVBoxLayout, QSizePolicy,
     QStandardItemModel, QSortFilterProxyModel, QStyleOptionToolButton,
     QStylePainter, QStyle, QApplication, QStyledItemDelegate,
-    QStyleOptionViewItemV4
+    QStyleOptionViewItemV4, QSizeGrip
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
@@ -66,9 +68,9 @@ class MenuStackWidget(QStackedWidget):
             widget_hints.append(hint)
         width = max([s.width() for s in widget_hints])
         # Take the median for the height
-        heights = sorted([s.height() for s in widget_hints])
-        height = heights[len(heights) / 2]
-        return QSize(width, height)
+        height = numpy.median([s.height() for s in widget_hints])
+
+        return QSize(width, int(height))
 
     def __sizeHintForTreeView(self, view):
         hint = view.sizeHint()
@@ -487,6 +489,27 @@ class QuickMenu(FramelessWindow):
         self.__navigator.setView(self.__suggestPage.view())
         self.__search.installEventFilter(self.__navigator)
 
+        self.__grip = WindowSizeGrip(self)
+        self.__grip.raise_()
+
+    def setSizeGripEnabled(self, enabled):
+        """Enable the resizing of the menu with a size grip in a bottom
+        right corner (enabled by default).
+
+        """
+        if bool(enabled) != bool(self.__grip):
+            if self.__grip:
+                self.__grip.deleteLater()
+                self.__grip = None
+            else:
+                self.__grip = WindowSizeGrip(self)
+                self.__grip.raise_()
+
+    def sizeGripEnabled(self):
+        """Is the size grip enabled.
+        """
+        return bool(self.__grip)
+
     def addPage(self, name, page):
         """Add the page and return it's index.
         """
@@ -551,12 +574,12 @@ class QuickMenu(FramelessWindow):
                 button = self.__pages.tabButton(i)
                 palette = button.palette()
                 button.setStyleSheet(
-                    "QToolButton {\n"
+                    "TabButton {\n"
                     "    qproperty-flat_: false;"
                     "    background-color: %s;\n"
                     "    border: none;\n"
                     "}\n"
-                    "QToolButton:checked {\n"
+                    "TabButton:checked {\n"
                     "    border: 1px solid %s;\n"
                     "}" % (brush.color().name(),
                            palette.color(palette.Mid).name())
@@ -578,7 +601,12 @@ class QuickMenu(FramelessWindow):
         self.__suggestPage.setFilterFixedString("")
 
         self.ensurePolished()
-        size = self.sizeHint()
+
+        if self.testAttribute(Qt.WA_Resized) and self.sizeGripEnabled():
+            size = self.size()
+        else:
+            size = self.sizeHint()
+
         desktop = QApplication.desktop()
         screen_geom = desktop.availableGeometry(pos)
 
@@ -767,3 +795,69 @@ class ItemViewKeyNavigator(QObject):
                     if index.flags() & Qt.ItemIsEnabled:
                         self.__view.setCurrentIndex(index)
                         break
+
+
+class WindowSizeGrip(QSizeGrip):
+    """Automatically positioning SizeGrip.
+    """
+    def __init__(self, parent):
+        QSizeGrip.__init__(self, parent)
+        self.__corner = Qt.BottomRightCorner
+
+        self.resize(self.sizeHint())
+
+        self.__updatePos()
+
+    def setCorner(self, corner):
+        """Set the corner where the size grip should position itself.
+        """
+        if corner not in [Qt.TopLeftCorner, Qt.TopRightCorner,
+                          Qt.BottomLeftCorner, Qt.BottomRightCorner]:
+            raise ValueError("Qt.Corner flag expected")
+
+        if self.__corner != corner:
+            self.__corner = corner
+            self.__updatePos()
+
+    def corner(self):
+        """Return the corner where the size grip is positioned.
+        """
+        return self.__corner
+
+    def eventFilter(self, obj, event):
+        if obj is self.window():
+            if event.type() == QEvent.Resize:
+                self.__updatePos()
+
+        return QSizeGrip.eventFilter(self, obj, event)
+
+    def showEvent(self, event):
+        if self.window() != self.parent():
+            log.error("%s: Can only show on a top level window.",
+                      type(self).__name__)
+
+        return QSizeGrip.showEvent(self, event)
+
+    def __updatePos(self):
+        window = self.window()
+
+        if window is not self.parent():
+            return
+
+        corner = self.__corner
+        size = self.sizeHint()
+
+        window_geom = window.geometry()
+        window_size = window_geom.size()
+
+        if corner in [Qt.TopLeftCorner, Qt.BottomLeftCorner]:
+            x = 0
+        else:
+            x = window_geom.width() - size.width()
+
+        if corner in [Qt.TopLeftCorner, Qt.TopRightCorner]:
+            y = 0
+        else:
+            y = window_size.height() - size.height()
+
+        self.move(x, y)
