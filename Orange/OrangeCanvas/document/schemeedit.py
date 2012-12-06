@@ -121,8 +121,8 @@ class SchemeEditWidget(QWidget):
         self.__widgetMenu = QMenu(self.tr("&Widget"), self)
         self.__widgetMenu.addAction(self.__openSelectedAction)
         self.__widgetMenu.addSeparator()
-        self.__widgetMenu.addAction(self.__removeSelectedAction)
         self.__widgetMenu.addAction(self.__renameAction)
+        self.__widgetMenu.addAction(self.__removeSelectedAction)
         self.__widgetMenu.addSeparator()
         self.__widgetMenu.addAction(self.__helpAction)
 
