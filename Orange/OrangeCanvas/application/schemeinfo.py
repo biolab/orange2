@@ -74,11 +74,19 @@ class SchemeInfoEdit(QWidget):
     def paintEvent(self, event):
         return StyledWidget_paintEvent(self, event)
 
+    def title(self):
+        return unicode(self.name_edit.text()).strip()
+
+    def description(self):
+        return unicode(self.desc_edit.toPlainText()).strip()
+
 
 class SchemeInfoDialog(QDialog):
     def __init__(self, *args, **kwargs):
         QDialog.__init__(self, *args, **kwargs)
         self.scheme = None
+        self.__autoCommit = True
+
         self.__setupUi()
 
     def __setupUi(self):
@@ -129,7 +137,9 @@ class SchemeInfoDialog(QDialog):
         widget.setSizePolicy(QSizePolicy.MinimumExpanding,
                              QSizePolicy.Fixed)
 
-        self.buttonbox.accepted.connect(self.editor.commit)
+        if self.__autoCommit:
+            self.buttonbox.accepted.connect(self.editor.commit)
+
         self.buttonbox.accepted.connect(self.accept)
         self.buttonbox.rejected.connect(self.reject)
 
@@ -147,6 +157,14 @@ class SchemeInfoDialog(QDialog):
         """Return the check state of the 'Dont show at new scheme' check box.
         """
         return self.__dontShowAtNewSchemeCheck.isChecked()
+
+    def setAutoCommit(self, auto):
+        if self.__autoCommit != auto:
+            self.__autoCommit = auto
+            if auto:
+                self.buttonbox.accepted.connect(self.editor.commit)
+            else:
+                self.buttonbox.accepted.disconnect(self.editor.commit)
 
     def setScheme(self, scheme):
         """Set the scheme to display/edit.

@@ -1113,12 +1113,47 @@ class CanvasMainWindow(QMainWindow):
 
         return status
 
+    def scheme_properties_dialog(self):
+        """Return an empty `SchemeInfo` dialog instance.
+        """
+        settings = QSettings()
+        value_key = "schemeinfo/show-at-new-scheme"
+
+        dialog = SchemeInfoDialog(self)
+
+        dialog.setWindowTitle(self.tr("Scheme Info"))
+        dialog.setFixedSize(725, 450)
+
+        dialog.setDontShowAtNewScheme(
+            not settings.value(value_key, True).toBool()
+        )
+
+        return dialog
+
     def show_scheme_properties(self):
         """Show current scheme properties.
         """
+        settings = QSettings()
+        value_key = "schemeinfo/show-at-new-scheme"
+
         current_doc = self.current_document()
         scheme = current_doc.scheme()
-        return self.show_scheme_properties_for(scheme)
+        dlg = self.scheme_properties_dialog()
+        dlg.setAutoCommit(False)
+        dlg.setScheme(scheme)
+        status = dlg.exec_()
+
+        if status == QDialog.Accepted:
+            editor = dlg.editor
+            stack = current_doc.undoStack()
+            stack.beginMacro(self.tr("Change Info"))
+            current_doc.setTitle(editor.title())
+            current_doc.setDescription(editor.description())
+            stack.endMacro()
+
+            # Store the check state.
+            settings.setValue(value_key, not dlg.dontShowAtNewScheme())
+        return status
 
     def show_scheme_properties_for(self, scheme, window_title=None):
         """Show scheme properties for `scheme` with `window_title (if None
@@ -1128,17 +1163,10 @@ class CanvasMainWindow(QMainWindow):
         settings = QSettings()
         value_key = "schemeinfo/show-at-new-scheme"
 
-        dialog = SchemeInfoDialog(self)
+        dialog = self.scheme_properties_dialog()
 
-        if window_title is None:
-            window_title = self.tr("Scheme Info")
-
-        dialog.setWindowTitle(window_title)
-        dialog.setFixedSize(725, 450)
-
-        dialog.setDontShowAtNewScheme(
-            not settings.value(value_key, True).toBool()
-        )
+        if window_title is not None:
+            dialog.setWindowTitle(window_title)
 
         dialog.setScheme(scheme)
 

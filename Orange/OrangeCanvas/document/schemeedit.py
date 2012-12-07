@@ -514,6 +514,16 @@ class SchemeEditWidget(QWidget):
             self.__quickMenu = menu
         return self.__quickMenu
 
+    def setTitle(self, title):
+        self.__undoStack.push(
+            commands.SetAttrCommand(self.__scheme, "title", title)
+        )
+
+    def setDescription(self, description):
+        self.__undoStack.push(
+            commands.SetAttrCommand(self.__scheme, "description", description)
+        )
+
     def addNode(self, node):
         """Add a new node to the scheme.
         """
