@@ -728,7 +728,12 @@ class CanvasMainWindow(QMainWindow):
                 return QDialog.Rejected
 
         scheme_doc_widget = self.current_document()
+        old_scheme = scheme_doc_widget.scheme()
+
         scheme_doc_widget.setScheme(new_scheme)
+
+        old_scheme.save_widget_settings()
+        old_scheme.deleteLater()
 
         return QDialog.Accepted
 
@@ -777,8 +782,13 @@ class CanvasMainWindow(QMainWindow):
         new_scheme = self.new_scheme_from(filename)
 
         scheme_doc_widget = self.current_document()
+        old_scheme = scheme_doc_widget.scheme()
+
         scheme_doc_widget.setScheme(new_scheme)
         scheme_doc_widget.setPath(filename)
+
+        old_scheme.save_widget_settings()
+        old_scheme.deleteLater()
 
         self.add_recent_scheme(new_scheme.title, filename)
 
@@ -1012,7 +1022,12 @@ class CanvasMainWindow(QMainWindow):
 
             new_scheme = self.new_scheme_from(unicode(selected.path()))
             document = self.current_document()
+            old_scheme = document.scheme()
+
             document.setScheme(new_scheme)
+
+            old_scheme.save_widget_settings()
+            old_scheme.deleteLater()
 
         return status
 
@@ -1302,6 +1317,9 @@ class CanvasMainWindow(QMainWindow):
                 # Reject the event
                 event.ignore()
                 return
+
+        scheme = document.scheme()
+        scheme.save_widget_settings()
 
         # Set an empty scheme to clear the document
         document.setScheme(widgetsscheme.WidgetsScheme())

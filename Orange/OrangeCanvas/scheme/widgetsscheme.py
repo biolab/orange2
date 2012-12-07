@@ -24,8 +24,6 @@ class WidgetsScheme(Scheme):
         self.widget_for_node = {}
         self.signal_manager = orngSignalManager.SignalManager()
 
-        self.__loaded_from = None
-
     def add_node(self, node):
         widget = self.create_widget_instance(node)
 
@@ -49,8 +47,7 @@ class WidgetsScheme(Scheme):
         del self.widget_for_node[node]
 
         # Save settings to user global settings.
-        if not self.__loaded_from:
-            widget.saveSettings()
+        widget.saveSettings()
 
         # Notify the widget it will be deleted.
         widget.onDeleteWidget()
@@ -146,6 +143,13 @@ class WidgetsScheme(Scheme):
         return [self.widget_for_node[node].getSettings(alsoContexts=False)
                 for node in self.nodes]
 
+    def save_widget_settings(self):
+        """Save all widget settings to their global settings file.
+        """
+        for node in self.nodes:
+            widget = self.widget_for_node[node]
+            widget.saveSettings()
+
     def sync_node_properties(self):
         """Sync the widget settings/properties with the SchemeNode.properties.
         Return True if there were any changes in the properties (i.e. if the
@@ -168,14 +172,3 @@ class WidgetsScheme(Scheme):
     def save_to(self, stream):
         self.sync_node_properties()
         Scheme.save_to(self, stream)
-
-    def load_from(self, stream):
-        """Load the scheme from xml formated stream.
-        """
-        if isinstance(stream, basestring):
-            self.__loaded_from = stream
-            stream = open(stream, "rb")
-        elif isinstance(stream, file):
-            self.__loaded_from = stream.name
-
-        Scheme.load_from(self, stream)
