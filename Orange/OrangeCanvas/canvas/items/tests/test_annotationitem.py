@@ -43,6 +43,12 @@ class TestAnnotationItem(TestItems):
         item.setLine(QLineF(100, 100, 100, 200))
         item.setLineWidth(5)
 
+        item = ArrowItem()
+        item.setLine(QLineF(150, 100, 150, 200))
+        item.setLineWidth(10)
+        item.setArrowStyle(ArrowItem.Concave)
+        self.scene.addItem(item)
+
         item = ArrowAnnotation()
         item.setPos(10, 10)
         item.setLine(QLineF(10, 10, 200, 200))

@@ -241,6 +241,10 @@ class TextAnnotation(Annotation):
 
 
 class ArrowItem(GraphicsPathObject):
+
+    #: Arrow Style
+    Plain, Concave = 1, 2
+
     def __init__(self, parent=None, line=None, lineWidth=4, **kwargs):
         GraphicsPathObject.__init__(self, parent, **kwargs)
 
@@ -251,34 +255,64 @@ class ArrowItem(GraphicsPathObject):
 
         self.__lineWidth = lineWidth
 
+        self.__arrowStyle = ArrowItem.Plain
+
         self.__updateArrowPath()
 
     def setLine(self, line):
+        """Set the baseline of the arrow (:class:`QLineF`).
+        """
         if self.__line != line:
             self.__line = QLineF(line)
             self.__updateArrowPath()
 
     def line(self):
+        """Return the baseline of the arrow.
+        """
         return QLineF(self.__line)
 
     def setLineWidth(self, lineWidth):
+        """Set the width of the arrow.
+        """
         if self.__lineWidth != lineWidth:
             self.__lineWidth = lineWidth
             self.__updateArrowPath()
 
     def lineWidth(self):
+        """Return the width of the arrow.
+        """
         return self.__lineWidth
 
+    def setArrowStyle(self, style):
+        """Set the arrow style (`ArrowItem.Plain` or `ArrowItem.Concave`)
+        """
+        if self.__arrowStyle != style:
+            self.__arrowStyle = style
+            self.__updateArrowPath()
+
+    def arrowStyle(self):
+        """Return the arrow style
+        """
+        return self.__arrowStyle
+
     def __updateArrowPath(self):
+        if self.__arrowStyle == ArrowItem.Plain:
+            path = self.__arrowPathPlain()
+        else:
+            path = self.__arrowPathConcave()
+        self.setPath(path)
+
+    def __arrowPathPlain(self):
         line = self.__line
         width = self.__lineWidth
         path = QPainterPath()
         p1, p2 = line.p1(), line.p2()
+
         if p1 == p2:
-            self.setPath(path)
-            return
+            return path
 
         baseline = QLineF(line)
+        # Require some minimum length.
         baseline.setLength(max(line.length() - width * 3, width * 3))
         path.moveTo(baseline.p1())
         path.lineTo(baseline.p2())
@@ -288,7 +322,7 @@ class ArrowItem(GraphicsPathObject):
         path = stroker.createStroke(path)
 
         arrow_head_len = width * 4
-        arrow_head_angle = 60
+        arrow_head_angle = 50
         line_angle = line.angle() - 180
 
         angle_1 = line_angle - arrow_head_angle / 2.0
@@ -298,11 +332,59 @@ class ArrowItem(GraphicsPathObject):
                   p2 + QLineF.fromPolar(arrow_head_len, angle_1).p2(),
                   p2 + QLineF.fromPolar(arrow_head_len, angle_2).p2(),
                   p2]
+
         poly = QPolygonF(points)
         path_head = QPainterPath()
         path_head.addPolygon(poly)
         path = path.united(path_head)
-        self.setPath(path)
+        return path
+
+    def __arrowPathConcave(self):
+        line = self.__line
+        width = self.__lineWidth
+        path = QPainterPath()
+        p1, p2 = line.p1(), line.p2()
+
+        if p1 == p2:
+            return path
+
+        baseline = QLineF(line)
+        # Require some minimum length.
+        baseline.setLength(max(line.length() - width * 3, width * 3))
+
+        start, end = baseline.p1(), baseline.p2()
+        mid = (start + end) / 2.0
+        normal = QLineF.fromPolar(1.0, baseline.angle() + 90).p2()
+
+        path.moveTo(start)
+        path.lineTo(start + (normal * width / 4.0))
+
+        path.quadTo(mid + (normal * width / 4.0),
+                    end + (normal * width / 1.5))
+
+        path.lineTo(end - (normal * width / 1.5))
+        path.quadTo(mid - (normal * width / 4.0),
+                    start - (normal * width / 4.0))
+        path.closeSubpath()
+
+        arrow_head_len = width * 4
+        arrow_head_angle = 50
+        line_angle = line.angle() - 180
+
+        angle_1 = line_angle - arrow_head_angle / 2.0
+        angle_2 = line_angle + arrow_head_angle / 2.0
+
+        points = [p2,
+                  p2 + QLineF.fromPolar(arrow_head_len, angle_1).p2(),
+                  baseline.p2(),
+                  p2 + QLineF.fromPolar(arrow_head_len, angle_2).p2(),
+                  p2]
+
+        poly = QPolygonF(points)
+        path_head = QPainterPath()
+        path_head.addPolygon(poly)
+        path = path.united(path_head)
+        return path
 
 
 class ArrowAnnotation(Annotation):
@@ -322,9 +404,11 @@ class ArrowAnnotation(Annotation):
         self.__arrowItem.setLine(line)
         self.__arrowItem.setBrush(self.__color)
         self.__arrowItem.setPen(QPen(Qt.NoPen))
+        self.__arrowItem.setArrowStyle(ArrowItem.Concave)
+        self.__arrowItem.setLineWidth(5)
 
         self.__shadow = QGraphicsDropShadowEffect(
-            blurRadius=5, offset=QPointF(0.05, 0.05)
+            blurRadius=5, offset=QPointF(1.0, 2.0),
         )
 
         self.__arrowItem.setGraphicsEffect(self.__shadow)
