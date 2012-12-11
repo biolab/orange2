@@ -4,8 +4,9 @@ Test for tooltree
 """
 
 from PyQt4.QtGui import QStandardItemModel, QStandardItem, QAction
+from PyQt4.QtCore import Qt
 
-from ..tooltree import ToolTree
+from ..tooltree import ToolTree, FlattenedTreeItemModel
 
 from ...registry.qt import QtWidgetRegistry
 from ...registry.tests import small_testing_registry
@@ -52,6 +53,49 @@ class TestToolTree(QAppTestCase):
 
         def p(action):
             print "triggered", action.text()
+
+        tree.triggered.connect(p)
+
+        self.app.exec_()
+
+    def test_flattened(self):
+        reg = QtWidgetRegistry(small_testing_registry())
+        source = reg.model()
+
+        model = FlattenedTreeItemModel()
+        model.setSourceModel(source)
+
+        tree = ToolTree()
+        tree.setActionRole(reg.WIDGET_ACTION_ROLE)
+        tree.setModel(model)
+        tree.show()
+
+        changed = []
+        model.dataChanged.connect(
+            lambda start, end: changed.append((start, end))
+        )
+
+        item = source.item(0).child(0)
+
+        item.setText("New text")
+
+        self.assertTrue(len(changed) == 1)
+        self.assertEquals(changed[-1][0].data(Qt.DisplayRole).toString(),
+                          "New text")
+
+        self.assertEquals(model.data(model.index(1)).toString(), "New text")
+
+        model.setFlatteningMode(FlattenedTreeItemModel.InternalNodesDisabled)
+
+        self.assertFalse(model.index(0, 0).flags() & Qt.ItemIsEnabled)
+
+        model.setFlatteningMode(FlattenedTreeItemModel.LeavesOnly)
+
+        self.assertTrue(model.rowCount() == 3)
+
+        def p(action):
+            print "triggered", action.text()
+
         tree.triggered.connect(p)
 
         self.app.exec_()

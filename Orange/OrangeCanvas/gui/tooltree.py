@@ -230,41 +230,68 @@ class FlattenedTreeItemModel(QAbstractProxyModel):
 
     def __init__(self, parent=None):
         QAbstractProxyModel.__init__(self, parent)
-        self.sourceColumn = 0
-        self.flatteningMode = 0
-        self.sourceRootIndex = QModelIndex()
+        self.__sourceColumn = 0
+        self.__flatteningMode = 1
+        self.__sourceRootIndex = QModelIndex()
 
     def setSourceModel(self, model):
+        self.beginResetModel()
+
         curr_model = self.sourceModel()
+
         if curr_model is not None:
             curr_model.dataChanged.disconnect(self._sourceDataChanged)
+            curr_model.rowsInserted.disconnect(self._sourceRowsInserted)
+            curr_model.rowsRemoved.disconnect(self._sourceRowsRemoved)
+            curr_model.rowsMoved.disconnect(self._sourceRowsMoved)
+
         QAbstractProxyModel.setSourceModel(self, model)
         self._updateRowMapping()
-        self.reset()
+
         model.dataChanged.connect(self._sourceDataChanged)
         model.rowsInserted.connect(self._sourceRowsInserted)
         model.rowsRemoved.connect(self._sourceRowsRemoved)
+        model.rowsMoved.connect(self._sourceRowsMoved)
+
+        self.endResetModel()
 
     def setSourceColumn(self, column):
         raise NotImplementedError
 
         self.beginResetModel()
-        self.sourceColumn = column
+        self.__sourceColumn = column
         self._updateRowMapping()
         self.endResetModel()
+
+    def sourceColumn(self):
+        return self.__sourceColumn
 
     def setSourceRootIndex(self, rootIndex):
+        """Set the source root index.
+        """
         self.beginResetModel()
-        self.sourceRootIndex = rootIndex
+        self.__sourceRootIndex = rootIndex
         self._updateRowMapping()
         self.endResetModel()
 
+    def sourceRootIndex(self):
+        """Return the source root index.
+        """
+        return self.__sourceRootIndex
+
     def setFlatteningMode(self, mode):
-        if mode != self.flatteningMode:
+        """Set the flattening mode.
+        """
+        if mode != self.__flatteningMode:
             self.beginResetModel()
-            self.flatteningMode = mode
+            self.__flatteningMode = mode
             self._updateRowMapping()
             self.endResetModel()
+
+    def flatteningMode(self):
+        """Return the flattening mode.
+        """
+        return self.__flatteningMode
 
     def mapFromSource(self, sourceIndex):
         if sourceIndex.isValid():
@@ -306,7 +333,7 @@ class FlattenedTreeItemModel(QAbstractProxyModel):
 
     def flags(self, index):
         flags = QAbstractProxyModel.flags(self, index)
-        if self.flatteningMode & self.InternalNodesDisabled:
+        if self.__flatteningMode == self.InternalNodesDisabled:
             sourceIndex = self.mapToSource(index)
             sourceModel = self.sourceModel()
             if sourceModel.rowCount(sourceIndex) > 0 and \
@@ -316,6 +343,11 @@ class FlattenedTreeItemModel(QAbstractProxyModel):
         return flags
 
     def _indexKey(self, index):
+        """Return a key for `index` from the source model into
+        the _source_offset map. The key is a tuple of row indices on
+        the path from the top if the model to the `index`.
+
+        """
         key_path = []
         parent = index
         while parent.isValid():
@@ -324,6 +356,8 @@ class FlattenedTreeItemModel(QAbstractProxyModel):
         return tuple(reversed(key_path))
 
     def _indexFromKey(self, key_path):
+        """Return an source QModelIndex for the given key.
+        """
         index = self.sourceModel().index(key_path[0], 0)
         for row in key_path[1:]:
             index = index.child(row, 0)
@@ -331,38 +365,50 @@ class FlattenedTreeItemModel(QAbstractProxyModel):
 
     def _updateRowMapping(self):
         source = self.sourceModel()
-        source_key_map = {}
+
         source_key = []
         source_offset_map = {}
 
         def create_mapping(index, key_path):
-            source_offset_map[key_path] = len(source_key_map)
-            source_key_map[key_path] = len(source_key_map)
-            source_key.append(key_path)
-            for i in range(source.rowCount(index)):
-                source_offset_map[key_path + (i, )] = len(source_key_map)
-                source_key_map[key_path + (i,)] = len(source_key_map)
-                source_key.append(key_path + (i,))
+            if source.rowCount(index) > 0:
+                if self.__flatteningMode != self.LeavesOnly:
+                    source_offset_map[key_path] = len(source_offset_map)
+                    source_key.append(key_path)
+
+                for i in range(source.rowCount(index)):
+                    create_mapping(index.child(i, 0), key_path + (i, ))
+
+            else:
+                source_offset_map[key_path] = len(source_offset_map)
+                source_key.append(key_path)
 
         for i in range(source.rowCount()):
             create_mapping(source.index(i, 0), (i,))
 
-        self._source_map = source_key_map
         self._source_key = source_key
         self._source_offset = source_offset_map
 
     def _sourceDataChanged(self, top, bottom):
-        parent = top.parent()
         changed_indexes = []
         for i in range(top.row(), bottom.row() + 1):
-            source_ind = parent.row(i)
+            source_ind = top.sibling(i, 0)
             changed_indexes.append(source_ind)
 
         for ind in changed_indexes:
             self.dataChanged.emit(ind, ind)
 
     def _sourceRowsInserted(self, parent, start, end):
-        pass
+        self.beginResetModel()
+        self._updateRowMapping()
+        self.endResetModel()
 
     def _sourceRowsRemoved(self, parent, start, end):
-        pass
+        self.beginResetModel()
+        self._updateRowMapping()
+        self.endResetModel()
+
+    def _sourceRowsMoved(self, sourceParent, sourceStart, sourceEnd,
+                         destParent, destRow):
+        self.beginResetModel()
+        self._updateRowMapping()
+        self.endResetModel()
