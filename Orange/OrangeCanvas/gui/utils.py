@@ -15,6 +15,8 @@ from PyQt4.QtGui import (
 
 import sip
 
+QWIDGETSIZE_MAX = ((1 << 24) - 1)
+
 
 @contextmanager
 def updates_disabled(widget):

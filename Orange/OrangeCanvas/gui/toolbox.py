@@ -14,8 +14,7 @@ from operator import eq, attrgetter
 from PyQt4.QtGui import (
     QWidget, QFrame, QSizePolicy, QIcon, QFontMetrics, QPainter, QStyle,
     QStyleOptionToolButton, QStyleOptionToolBoxV2, QPalette, QBrush, QPen,
-    QLinearGradient, QColor,
-    QScrollArea, QVBoxLayout, QToolButton,
+    QLinearGradient, QColor, QScrollArea, QVBoxLayout, QToolButton,
     QAction, QActionGroup
 )
 
@@ -249,6 +248,7 @@ class ToolBox(QFrame):
         self.__scrollArea.setWidget(self.__contents)
 
         layout.addWidget(self.__scrollArea)
+
         self.setLayout(layout)
         self.setSizePolicy(QSizePolicy.Fixed,
                            QSizePolicy.MinimumExpanding)

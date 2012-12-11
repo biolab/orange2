@@ -13,11 +13,12 @@ from PyQt4.QtGui import (
     QDockWidget, QAbstractButton, QSizePolicy, QStyle, QIcon, QTransform
 )
 
-from PyQt4.QtCore import Qt, QEvent
+from PyQt4.QtCore import Qt, QTimer, QEvent
 
 from PyQt4.QtCore import pyqtProperty as Property
 
 from .stackedwidget import AnimatedStackedWidget
+from .utils import QWIDGETSIZE_MAX
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +35,8 @@ class CollapsibleDockWidget(QDockWidget):
         self.__collapsedWidget = None
         self.__expanded = True
 
+        self.__trueMinimumWidth = -1
+
         self.setFeatures(QDockWidget.DockWidgetClosable | \
                          QDockWidget.DockWidgetMovable)
         self.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
@@ -44,8 +47,8 @@ class CollapsibleDockWidget(QDockWidget):
         # Use the toolbar horizontal extension button icon as the default
         # for the expand/collapse button
         pm = self.style().standardPixmap(
-                    QStyle.SP_ToolBarHorizontalExtensionButton
-                )
+            QStyle.SP_ToolBarHorizontalExtensionButton
+        )
 
         # Rotate the icon
         transform = QTransform()
@@ -69,8 +72,6 @@ class CollapsibleDockWidget(QDockWidget):
 
         self.__stack.transitionStarted.connect(self.__onTransitionStarted)
         self.__stack.transitionFinished.connect(self.__onTransitionFinished)
-
-        self.__stack.installEventFilter(self)
 
         QDockWidget.setWidget(self, self.__stack)
 
@@ -115,6 +116,7 @@ class CollapsibleDockWidget(QDockWidget):
 
         if self.__expanded:
             self.__stack.setCurrentWidget(widget)
+            self.updateGeometry()
 
     def setCollapsedWidget(self, widget):
         """Set the widget with contents to show while collapsed.
@@ -130,6 +132,7 @@ class CollapsibleDockWidget(QDockWidget):
 
         if not self.__expanded:
             self.__stack.setCurrentWidget(widget)
+            self.updateGeometry()
 
     def setAnimationEnabled(self, animationEnabled):
         """Enable/disable the transition animation.
@@ -146,16 +149,6 @@ class CollapsibleDockWidget(QDockWidget):
             return self.__expandedWidget
         else:
             return self.__collapsedWidget
-
-    def _setExpandedState(self, state):
-        """Set the expanded/collapsed state. `True` indicates an
-        expanded state.
-
-        """
-        if state and not self.__expanded:
-            self.expand()
-        elif not state and self.__expanded:
-            self.collapse()
 
     def expand(self):
         """Expand the dock (same as `setExpanded(True)`)
@@ -179,19 +172,13 @@ class CollapsibleDockWidget(QDockWidget):
             # TODO: which other events can trigger the button (is the button
             # focusable).
 
-        if obj is self.__stack:
-            etype = event.type()
-            if etype == QEvent.Resize:
-                # If the stack resizes
-                obj.resizeEvent(event)
-                size = event.size()
-                size = self.__stack.sizeHint()
-                if size.width() > 0:
-                    left, _, right, _ = self.getContentsMargins()
-                    self.setFixedWidth(size.width() + left + right)
-                return True
-
         return QDockWidget.eventFilter(self, obj, event)
+
+    def event(self, event):
+        if event.type() == QEvent.LayoutRequest:
+            self.__fixMinimumWidth()
+
+        return QDockWidget.event(self, event)
 
     def __onFeaturesChanged(self, features):
         pass
@@ -206,14 +193,42 @@ class CollapsibleDockWidget(QDockWidget):
         self.__fixIcon()
 
     def __onTransitionStarted(self):
-        self.__stack.installEventFilter(self)
+        log.debug("Dock transition started.")
 
     def __onTransitionFinished(self):
-        self.__stack.removeEventFilter(self)
+        log.debug("Dock transition finished (new width %i)",
+                  self.size().width())
+
+    def __fixMinimumWidth(self):
+        # A workaround for forcing the QDockWidget layout to disregard the
+        # default minimumSize which can be to wide for us (overriding the
+        # minimumSizeHint or setting the minimum size directly does not
+        # seem to have an effect (Qt 4.8.3).
         size = self.__stack.sizeHint()
-        left, _, right, _ = self.getContentsMargins()
-        self.setFixedWidth(size.width() + left + right)
-        log.debug("Dock transition finished (new width %i)", size.width())
+        if size.isValid() and not size.isEmpty():
+            left, _, right, _ = self.getContentsMargins()
+            width = size.width() + left + right
+
+            if width < self.minimumSizeHint().width():
+                if not self.__hasFixedWidth():
+                    log.debug("Overriding default minimum size "
+                              "(setFixedWidth(%i))", width)
+                    self.__trueMinimumWidth = self.minimumSizeHint().width()
+                self.setFixedWidth(width)
+            else:
+                if self.__hasFixedWidth():
+                    if width >= self.__trueMinimumWidth:
+                        # Unset the fixed size.
+                        log.debug("Restoring default minimum size "
+                                  "(setFixedWidth(%i))", QWIDGETSIZE_MAX)
+                        self.__trueMinimumWidth = -1
+                        self.setFixedWidth(QWIDGETSIZE_MAX)
+                        self.updateGeometry()
+                    else:
+                        self.setFixedWidth(width)
+
+    def __hasFixedWidth(self):
+        return self.__trueMinimumWidth >= 0
 
     def __fixIcon(self):
         """Fix the dock close icon.
