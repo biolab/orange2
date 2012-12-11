@@ -5,7 +5,7 @@ Quick widget selector menu for the canvas.
 import sys
 import logging
 
-from collections import namedtuple
+from collections import namedtuple, Callable
 
 import numpy
 
@@ -364,10 +364,76 @@ class PagedMenu(QWidget):
         return self.__tab.button(index)
 
 
+class ItemDisableFilter(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        QSortFilterProxyModel.__init__(self, parent)
+
+        self.__filterFunc = None
+
+    def setFilterFunc(self, func):
+        if not (isinstance(func, Callable) or func is None):
+            raise ValueError("A callable object or None expected.")
+
+        if self.__filterFunc != func:
+            self.__filterFunc = func
+            # Mark the whole model as changed.
+            self.dataChanged.emit(self.index(0, 0),
+                                  self.index(self.rowCount(), 0))
+
+    def flags(self, index):
+        source = self.mapToSource(index)
+        flags = source.flags()
+
+        if self.__filterFunc is not None:
+            enabled = flags & Qt.ItemIsEnabled
+            if enabled and not self.__filterFunc(source):
+                flags ^= Qt.ItemIsEnabled
+
+        return flags
+
+
+class MenuPage(ToolTree):
+    def __init__(self, *args, **kwargs):
+        ToolTree.__init__(self, *args, **kwargs)
+
+        # Make sure the initial model is wrapped in a ItemDisableFilter.
+        self.setModel(self.model())
+
+    def setFilterFunc(self, func):
+        proxyModel = self.view().model()
+        proxyModel.setFilterFunc(func)
+
+    def setModel(self, model):
+        proxyModel = ItemDisableFilter(self)
+        proxyModel.setSourceModel(model)
+        ToolTree.setModel(self, proxyModel)
+
+    def setRootIndex(self, index):
+        proxyModel = self.view().model()
+        mappedIndex = proxyModel.mapFromSource(index)
+        ToolTree.setRootIndex(self, mappedIndex)
+
+    def rootIndex(self):
+        proxyModel = self.view().model()
+        return proxyModel.mapToSource(ToolTree.rootIndex(self))
+
+
 class SortFilterProxyModel(QSortFilterProxyModel):
     def __init__(self, parent=None):
         QSortFilterProxyModel.__init__(self, parent)
+
         self.__filterFunc = None
+
+    def setFilterFunc(self, func):
+        if not (isinstance(func, Callable) or func is None):
+            raise ValueError("A callable object or None expected.")
+
+        if self.__filterFunc is not func:
+            self.__filterFunc = func
+            self.invalidateFilter()
+
+    def filterFunc(self):
+        return self.__filterFunc
 
     def filterAcceptsRow(self, row, parent=QModelIndex()):
         accepted = QSortFilterProxyModel.filterAcceptsRow(self, row, parent)
@@ -378,14 +444,6 @@ class SortFilterProxyModel(QSortFilterProxyModel):
         else:
             return accepted
 
-    def filterFunc(self):
-        return self.__filterFunc
-
-    def setFilterFunc(self, func):
-        if self.__filterFunc is not func:
-            self.__filterFunc = func
-            self.invalidateFilter()
-
 
 class SuggestMenuPage(ToolTree):
     def __init__(self, *args, **kwargs):
@@ -395,10 +453,10 @@ class SuggestMenuPage(ToolTree):
         self.setModel(self.model())
 
     def setModel(self, model):
-        self.__sourceModel = model
         flat = FlattenedTreeItemModel(self)
         flat.setSourceModel(model)
         flat.setFlatteningMode(flat.InternalNodesDisabled)
+        flat.setFlatteningMode(flat.LeavesOnly)
         proxy = SortFilterProxyModel(self)
         proxy.setFilterCaseSensitivity(False)
         proxy.setSourceModel(flat)
@@ -440,6 +498,8 @@ class QuickMenu(FramelessWindow):
         FramelessWindow.__init__(self, parent, **kwargs)
         self.setWindowFlags(Qt.Popup)
 
+        self.__filterFunc = None
+
         self.__setupUi()
 
         self.__loop = None
@@ -479,11 +539,16 @@ class QuickMenu(FramelessWindow):
         self.__suggestPage.setActionRole(QtWidgetRegistry.WIDGET_ACTION_ROLE)
         self.__suggestPage.setIcon(icon_loader().get("icons/Search.svg"))
 
+        if sys.platform == "darwin":
+            view = self.__suggestPage.view()
+            view.verticalScrollBar().setAttribute(Qt.WA_MacMiniSize, True)
+            # Don't show the focus frame because it expands into the tab
+            # bar at the top.
+            view.setAttribute(Qt.WA_MacShowFocusRect, False)
+
         self.addPage(self.tr("Quick Search"), self.__suggestPage)
 
-        self.__search.textEdited.connect(
-            self.__on_textEdited
-        )
+        self.__search.textEdited.connect(self.__on_textEdited)
 
         self.__navigator = ItemViewKeyNavigator(self)
         self.__navigator.setView(self.__suggestPage.view())
@@ -532,7 +597,7 @@ class QuickMenu(FramelessWindow):
         return index
 
     def createPage(self, index):
-        page = ToolTree(self)
+        page = MenuPage(self)
         view = page.view()
         delegate = WidgetItemDelegate(view)
         view.setItemDelegate(delegate)
@@ -589,7 +654,10 @@ class QuickMenu(FramelessWindow):
         self.__suggestPage.setModel(model)
 
     def setFilterFunc(self, func):
-        self.__suggestPage.setFilterFunc(func)
+        if func != self.__filterFunc:
+            self.__filterFunc = func
+            for i in range(0, self.__pages.count()):
+                self.__pages.page(i).setFilterFunc(func)
 
     def popup(self, pos=None):
         """Popup the menu at `pos` (in screen coordinates)..
