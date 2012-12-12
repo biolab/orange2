@@ -3,12 +3,11 @@ Scheme Edit widget.
 
 """
 
-import os
 import sys
 import logging
-import StringIO
 
 from operator import attrgetter
+from contextlib import nested
 
 from PyQt4.QtGui import (
     QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QActionGroup,
@@ -299,6 +298,14 @@ class SchemeEditWidget(QWidget):
                          self.__linkEnableAction,
                          self.__linkRemoveAction,
                          self.__linkResetAction])
+
+        # Actions which should be disabled while a multistep
+        # interaction is in progress.
+        self.__disruptiveActions = \
+                [self.__undoAction,
+                 self.__redoAction,
+                 self.__removeSelectedAction,
+                 self.__selectAllAction]
 
     def __setupUi(self):
         layout = QVBoxLayout()
@@ -736,7 +743,7 @@ class SchemeEditWidget(QWidget):
             # Start a new link starting at item
             scene.clearSelection()
             handler = interactions.NewLinkAction(self)
-            scene.set_user_interaction_handler(handler)
+            self._setUserInteractionHandler(handler)
             return handler.mousePressEvent(event)
 
         any_item = scene.item_at(pos)
@@ -760,6 +767,8 @@ class SchemeEditWidget(QWidget):
                 self.__onAnnotationGeometryChanged
             )
 
+            set_enabled_all(self.__disruptiveActions, False)
+
         return False
 
     def sceneMouseMoveEvent(self, event):
@@ -773,7 +782,7 @@ class SchemeEditWidget(QWidget):
             # Set the RectangleSelection (initialized in mousePressEvent)
             # on the scene
             handler = self.__possibleSelectionHandler
-            scene.set_user_interaction_handler(handler)
+            self._setUserInteractionHandler(handler)
             return handler.mouseMoveEvent(event)
 
         return False
@@ -787,6 +796,8 @@ class SchemeEditWidget(QWidget):
             self.__annotationGeomChanged.mapped[QObject].disconnect(
                 self.__onAnnotationGeometryChanged
             )
+
+            set_enabled_all(self.__disruptiveActions, True)
 
             if self.__itemsMoving:
                 self.__scene.mouseReleaseEvent(event)
@@ -817,7 +828,11 @@ class SchemeEditWidget(QWidget):
             if self.__quickMenuTriggers & SchemeEditWidget.Clicked and \
                     mouse_drag_distance(event, Qt.LeftButton) < 1:
                 action = interactions.NewNodeAction(self)
-                action.create_new(event.screenPos())
+
+                with nested(disabled(self.__undoAction),
+                            disabled(self.__redoAction)):
+                    action.create_new(event.screenPos())
+
                 event.accept()
                 return True
 
@@ -832,9 +847,13 @@ class SchemeEditWidget(QWidget):
         if not item and self.__quickMenuTriggers & \
                 SchemeEditWidget.DoubleClicked:
             # Double click on an empty spot
-            # Create a new node quick
+            # Create a new node using QuickMenu
             action = interactions.NewNodeAction(self)
-            action.create_new(event.screenPos())
+
+            with nested(disabled(self.__undoAction),
+                        disabled(self.__redoAction)):
+                action.create_new(event.screenPos())
+
             event.accept()
             return True
 
@@ -876,11 +895,14 @@ class SchemeEditWidget(QWidget):
             # search line
 
         if handler is not None:
-            # Control + Backspace (remove widget action) conflicts with the
-            # 'Clear text action in the search widget, so we disable the
+            # Control + Backspace (remove widget action on Mac OSX) conflicts
+            # with the 'Clear text' action in the search widget (there might
+            # be selected items in the canvas), so we disable the
             # remove widget action so the text editing follows standard
             # 'look and feel'
-            with disabled(self.__removeSelectedAction):
+            with nested(disabled(self.__removeSelectedAction),
+                        disabled(self.__undoAction),
+                        disabled(self.__redoAction)):
                 handler.create_new(QCursor.pos())
 
             event.accept()
@@ -893,6 +915,24 @@ class SchemeEditWidget(QWidget):
 
     def sceneContextMenuEvent(self, event):
         return False
+
+    def _setUserInteractionHandler(self, handler):
+        """Helper method for setting the user interaction handlers.
+        """
+        if self.__scene.user_interaction_handler:
+            self.__scene.user_interaction_handler.ended.disconnect(
+                self.__onInteractionEnded
+            )
+        if handler:
+            handler.ended.connect(self.__onInteractionEnded)
+            # Disable actions which could change the model
+            set_enabled_all(self.__disruptiveActions, False)
+
+        self.__scene.set_user_interaction_handler(handler)
+
+    def __onInteractionEnded(self):
+        self.sender().ended.disconnect(self.__onInteractionEnded)
+        set_enabled_all(self.__disruptiveActions, True)
 
     def __onSelectionChanged(self):
         nodes = self.selectedNodes()
@@ -1052,7 +1092,7 @@ class SchemeEditWidget(QWidget):
 
             handler.ended.connect(action.toggle)
 
-            self.__scene.set_user_interaction_handler(handler)
+            self._setUserInteractionHandler(handler)
 
     def __onFontSizeTriggered(self, action):
         if not self.__newTextAnnotationAction.isChecked():
@@ -1085,7 +1125,7 @@ class SchemeEditWidget(QWidget):
 
             handler.ended.connect(action.toggle)
 
-            self.__scene.set_user_interaction_handler(handler)
+            self._setUserInteractionHandler(handler)
 
     def __onArrowColorTriggered(self, action):
         if not self.__newArrowAnnotationAction.isChecked():
@@ -1174,7 +1214,7 @@ class SchemeEditWidget(QWidget):
             return
 
         handler.editItem(item)
-        self.__scene.set_user_interaction_handler(handler)
+        self._setUserInteractionHandler(handler)
 
         log.info("Control point editing started (%r)." % item)
 
@@ -1209,3 +1249,10 @@ def mouse_drag_distance(event, button=Qt.LeftButton):
     """
     diff = (event.buttonDownScreenPos(button) - event.screenPos())
     return diff.manhattanLength()
+
+
+def set_enabled_all(objects, enable):
+    """Set enabled properties on all objects (QObjects with setEnabled).
+    """
+    for obj in objects:
+        obj.setEnabled(enable)
