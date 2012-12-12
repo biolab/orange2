@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 def list_schemes(package):
     """Return a list of scheme tutorials.
     """
-    resources = pkg_resources.resource_listdir(__name__, ".")
+    resources = pkg_resources.resource_listdir(package.__name__, ".")
     resources = filter(is_ows, resources)
     return sorted(resources)
 
