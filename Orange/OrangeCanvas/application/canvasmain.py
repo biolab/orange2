@@ -111,6 +111,8 @@ class CanvasMainWindow(QMainWindow):
         self.setup_ui()
         self.setup_menu()
 
+        self.restore()
+
         self.resize(800, 600)
 
     def setup_ui(self):
@@ -279,27 +281,6 @@ class CanvasMainWindow(QMainWindow):
         self.output_dock.setWidget(output_view)
 
         self.setMinimumSize(600, 500)
-
-        state = settings.value("state")
-        if state.isValid():
-            self.restoreState(state.toByteArray(),
-                              version=self.SETTINGS_VERSION)
-
-        self.dock_widget.setExpanded(
-            settings.value("canvasdock/expanded", True).toBool()
-        )
-
-        self.toogle_margins_action.setChecked(
-            settings.value("scheme_margins_enabled", True).toBool()
-        )
-
-        self.last_scheme_dir = \
-            settings.value("last_scheme_dir", None).toPyObject()
-
-        if self.last_scheme_dir is not None and \
-                not os.path.exists(self.last_scheme_dir):
-            # if directory no longer exists reset the saved location.
-            self.last_scheme_dir = None
 
     def setup_actions(self):
         """Initialize main window actions.
@@ -574,6 +555,34 @@ class CanvasMainWindow(QMainWindow):
         menu_bar.addMenu(self.help_menu)
 
         self.setMenuBar(menu_bar)
+
+    def restore(self):
+        """Restore the main window state from saved settings.
+        """
+        QSettings.setDefaultFormat(QSettings.IniFormat)
+        settings = QSettings()
+        settings.beginGroup("canvasmainwindow")
+
+        state = settings.value("state")
+        if state.isValid():
+            self.restoreState(state.toByteArray(),
+                              version=self.SETTINGS_VERSION)
+
+        self.dock_widget.setExpanded(
+            settings.value("canvasdock/expanded", True).toBool()
+        )
+
+        self.toogle_margins_action.setChecked(
+            settings.value("scheme_margins_enabled", True).toBool()
+        )
+
+        self.last_scheme_dir = \
+            settings.value("last_scheme_dir", None).toPyObject()
+
+        if self.last_scheme_dir is not None and \
+                not os.path.exists(self.last_scheme_dir):
+            # if directory no longer exists reset the saved location.
+            self.last_scheme_dir = None
 
     def set_document_title(self, title):
         """Set the document title (and the main window title). If `title`
