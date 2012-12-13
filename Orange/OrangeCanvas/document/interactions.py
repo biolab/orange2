@@ -8,7 +8,7 @@ from PyQt4.QtGui import (
     QApplication, QGraphicsRectItem, QPen, QBrush, QColor, QFontMetrics
 )
 
-from PyQt4.QtCore import Qt, QObject, QSizeF, QPointF, QRectF, QLineF
+from PyQt4.QtCore import Qt, QObject, QSizeF, QPointF, QRect, QRectF, QLineF
 from PyQt4.QtCore import pyqtSignal as Signal
 
 from ..registry.qt import QtWidgetRegistry
@@ -573,7 +573,13 @@ class RectangleSelectionAction(UserInteraction):
 
         pos = event.scenePos()
         self.selection_rect = QRectF(self.selection_rect.topLeft(), pos)
-        self.rect_item.setRect(self.selection_rect.normalized())
+
+        rect = self._bound_selection_rect(self.selection_rect.normalized())
+
+        # Need that constant otherwise the sceneRect will still grow
+        pw = self.rect_item.pen().width() + 0.5
+
+        self.rect_item.setRect(rect.adjusted(pw, pw, -pw, -pw))
 
         selected = self.scene.items(self.selection_rect.normalized(),
                                     Qt.IntersectsItemShape,
@@ -596,6 +602,24 @@ class RectangleSelectionAction(UserInteraction):
         if self.rect_item.scene() is not None:
             self.scene.removeItem(self.rect_item)
         UserInteraction.end(self)
+
+    def viewport_rect(self):
+        """Return the bounding rect of the document's viewport on the
+        scene.
+
+        """
+        view = self.document.view()
+        vsize = view.viewport().size()
+        viewportrect = QRect(0, 0, vsize.width(), vsize.height())
+        return view.mapToScene(viewportrect).boundingRect()
+
+    def _bound_selection_rect(self, rect):
+        """Bound the selection `rect` to a sensible size.
+        """
+        srect = self.scene.sceneRect()
+        vrect = self.viewport_rect()
+        maxrect = srect.united(vrect)
+        return rect.intersected(maxrect)
 
 
 class EditNodeLinksAction(UserInteraction):
