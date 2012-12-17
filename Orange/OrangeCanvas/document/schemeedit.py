@@ -755,7 +755,7 @@ class SchemeEditWidget(QWidget):
             rval = handler.mousePressEvent(event)
             if rval == True:
                 self.__possibleSelectionHandler = handler
-            return False
+            return rval
 
         if any_item and event.button() == Qt.LeftButton:
             self.__possibleMouseItemsMove = True

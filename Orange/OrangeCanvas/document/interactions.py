@@ -525,12 +525,15 @@ class RectangleSelectionAction(UserInteraction):
     def __init__(self, document, *args, **kwargs):
         UserInteraction.__init__(self, document, *args, **kwargs)
         self.initial_selection = None
+        self.last_selection = None
         self.selection_rect = None
+        self.modifiers = 0
 
     def mousePressEvent(self, event):
         pos = event.scenePos()
         any_item = self.scene.item_at(pos)
         if not any_item and event.button() & Qt.LeftButton:
+            self.modifiers = event.modifiers()
             self.selection_rect = QRectF(pos, QSizeF(0, 0))
             self.rect_item = QGraphicsRectItem(
                 self.selection_rect.normalized()
@@ -550,6 +553,10 @@ class RectangleSelectionAction(UserInteraction):
             # Clear the focus if necessary.
             if not self.scene.stickyFocus():
                 self.scene.clearFocus()
+
+            if not self.modifiers & Qt.ControlModifier:
+                self.scene.clearSelection()
+
             event.accept()
             return True
         else:
@@ -563,13 +570,19 @@ class RectangleSelectionAction(UserInteraction):
         return True
 
     def mouseReleaseEvent(self, event):
-        self.update_selection(event)
+        if event.button() == Qt.LeftButton:
+            if self.initial_selection is None:
+                # A single click.
+                self.scene.clearSelection()
+            else:
+                self.update_selection(event)
         self.end()
         return True
 
     def update_selection(self, event):
         if self.initial_selection is None:
-            self.initial_selection = self.scene.selectedItems()
+            self.initial_selection = set(self.scene.selectedItems())
+            self.last_selection = self.initial_selection
 
         pos = event.scenePos()
         self.selection_rect = QRectF(self.selection_rect.topLeft(), pos)
@@ -585,19 +598,26 @@ class RectangleSelectionAction(UserInteraction):
                                     Qt.IntersectsItemShape,
                                     Qt.AscendingOrder)
 
-        selected = [item for item in selected if \
-                    item.flags() & Qt.ItemIsSelectable]
-        if event.modifiers() & Qt.ControlModifier:
-            for item in selected:
-                item.setSelected(item not in self.initial_selection)
+        selected = set([item for item in selected if \
+                        item.flags() & Qt.ItemIsSelectable])
+
+        if self.modifiers & Qt.ControlModifier:
+            for item in selected | self.last_selection | \
+                    self.initial_selection:
+                item.setSelected(
+                    (item in selected) ^ (item in self.initial_selection)
+                )
         else:
-            for item in self.initial_selection:
-                item.setSelected(False)
-            for item in selected:
-                item.setSelected(True)
+            for item in selected.union(self.last_selection):
+                item.setSelected(item in selected)
+
+        self.last_selection = set(self.scene.selectedItems())
 
     def end(self):
         self.initial_selection = None
+        self.last_selection = None
+        self.modifiers = 0
+
         self.rect_item.hide()
         if self.rect_item.scene() is not None:
             self.scene.removeItem(self.rect_item)
