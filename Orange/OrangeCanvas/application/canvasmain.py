@@ -584,6 +584,10 @@ class CanvasMainWindow(QMainWindow):
             # if directory no longer exists reset the saved location.
             self.last_scheme_dir = None
 
+        self.canvas_tool_dock.setQuickHelpVisible(
+            settings.value("quick-help/visible", True).toBool()
+        )
+
     def set_document_title(self, title):
         """Set the document title (and the main window title). If `title`
         is an empty string a default 'untitled' placeholder will be used.
@@ -1380,6 +1384,9 @@ class CanvasMainWindow(QMainWindow):
         settings.setValue("last_scheme_dir", self.last_scheme_dir)
         settings.setValue("widgettoolbox/state",
                           self.widgets_tool_box.saveState())
+
+        settings.setValue("quick-help/visible",
+                          self.canvas_tool_dock.quickHelpVisible())
 
         settings.endGroup()
 

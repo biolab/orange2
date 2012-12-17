@@ -93,6 +93,7 @@ class SplitterResizer(QObject):
         """Open the controlled widget (expand it to it sizeHint).
         """
         self.__expanded = True
+        self.__action.setChecked(True)
 
         if not (self.__splitter and self.__widget):
             return
@@ -117,6 +118,7 @@ class SplitterResizer(QObject):
         """Close the controlled widget (shrink to size 0).
         """
         self.__expanded = False
+        self.__action.setChecked(False)
 
         if not (self.__splitter and self.__widget):
             return
