@@ -4,6 +4,8 @@ Canvas Graphics Scene
 """
 
 import logging
+import itertools
+
 from operator import attrgetter
 
 from xml.sax.saxutils import escape
@@ -644,9 +646,23 @@ class CanvasScene(QGraphicsScene):
         else:
             pass
 
-    def item_at(self, pos, type_or_tuple=None):
-        rect = QRectF(pos - QPointF(1.5, 1.5), QSizeF(3, 3))
+    def item_at(self, pos, type_or_tuple=None, buttons=0):
+        """Return the item at `pos` that is an instance of the specified
+        type (`type_or_tuple`). If `buttons` (`Qt.MouseButtons`) is given
+        only return the item if it is the top level item that would
+        accept any of the buttons (`QGraphicsItem.acceptedMouseButtons`).
+
+        """
+        rect = QRectF(pos, QSizeF(1, 1))
         items = self.items(rect)
+
+        if buttons:
+            items = itertools.dropwhile(
+                lambda item: not item.acceptedMouseButtons() & buttons,
+                items
+            )
+            items = list(items)[:1]
+
         if type_or_tuple:
             items = [i for i in items if isinstance(i, type_or_tuple)]
 

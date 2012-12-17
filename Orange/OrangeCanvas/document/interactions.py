@@ -222,7 +222,8 @@ class NewLinkAction(UserInteraction):
 
     def mousePressEvent(self, event):
         anchor_item = self.scene.item_at(event.scenePos(),
-                                         items.NodeAnchorItem)
+                                         items.NodeAnchorItem,
+                                         buttons=Qt.LeftButton)
         if anchor_item and event.button() == Qt.LeftButton:
             # Start a new link starting at item
             self.from_item = anchor_item.parentNodeItem()

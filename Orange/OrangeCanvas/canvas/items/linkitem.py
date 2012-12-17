@@ -20,11 +20,9 @@ class LinkCurveItem(QGraphicsPathItem):
     def __init__(self, parent):
         QGraphicsPathItem.__init__(self, parent)
         assert(isinstance(parent, LinkItem))
-
+        self.setAcceptedMouseButtons(Qt.NoButton)
         self.__canvasLink = parent
         self.setAcceptHoverEvents(True)
-        self.setAcceptedMouseButtons(Qt.RightButton)
-        self.setAcceptedMouseButtons(Qt.LeftButton)
 
         self.shadow = QGraphicsDropShadowEffect(
             blurRadius=5, color=QColor(SHADOW_COLOR),
@@ -117,7 +115,7 @@ class LinkItem(QGraphicsObject):
     def __init__(self, *args):
         QGraphicsObject.__init__(self, *args)
         self.setFlag(QGraphicsItem.ItemHasNoContents, True)
-        self.setAcceptedMouseButtons(Qt.RightButton)
+        self.setAcceptedMouseButtons(Qt.RightButton | Qt.LeftButton)
         self.setAcceptHoverEvents(True)
 
         self.setZValue(self.Z_VALUE)
@@ -340,7 +338,7 @@ class LinkItem(QGraphicsObject):
         # Hover enter event happens when the mouse enters any child object
         # but we only want to show the 'hovered' shadow when the mouse
         # is over the 'curveItem', so we install self as an event filter
-        # on the item and listen to the hover events.
+        # on the LinkCurveItem and listen to its hover events.
         self.curveItem.installSceneEventFilter(self)
         return QGraphicsObject.hoverEnterEvent(self, event)
 

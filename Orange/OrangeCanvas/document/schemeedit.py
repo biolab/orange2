@@ -738,7 +738,8 @@ class SchemeEditWidget(QWidget):
 
         pos = event.scenePos()
 
-        anchor_item = scene.item_at(pos, items.NodeAnchorItem)
+        anchor_item = scene.item_at(pos, items.NodeAnchorItem,
+                                    buttons=Qt.LeftButton)
         if anchor_item and event.button() == Qt.LeftButton:
             # Start a new link starting at item
             scene.clearSelection()
@@ -857,8 +858,10 @@ class SchemeEditWidget(QWidget):
             event.accept()
             return True
 
-        item = scene.item_at(event.scenePos(), items.LinkItem)
-        if item is not None:
+        item = scene.item_at(event.scenePos(), items.LinkItem,
+                             buttons=Qt.LeftButton)
+
+        if item is not None and event.button() == Qt.LeftButton:
             link = self.scene().link_for_item(item)
             action = interactions.EditNodeLinksAction(self, link.source_node,
                                                       link.sink_node)
@@ -1146,7 +1149,8 @@ class SchemeEditWidget(QWidget):
             self.__widgetMenu.popup(globalPos)
             return
 
-        item = self.scene().item_at(scenePos, items.LinkItem)
+        item = self.scene().item_at(scenePos, items.LinkItem,
+                                    buttons=Qt.RightButton)
         if item is not None:
             link = self.scene().link_for_item(item)
             self.__linkEnableAction.setChecked(link.enabled)
