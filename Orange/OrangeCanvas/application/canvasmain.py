@@ -736,13 +736,7 @@ class CanvasMainWindow(QMainWindow):
             if status == QDialog.Rejected:
                 return QDialog.Rejected
 
-        scheme_doc_widget = self.current_document()
-        old_scheme = scheme_doc_widget.scheme()
-
-        scheme_doc_widget.setScheme(new_scheme)
-
-        old_scheme.save_widget_settings()
-        old_scheme.deleteLater()
+        self.set_new_scheme(new_scheme)
 
         return QDialog.Accepted
 
@@ -790,14 +784,10 @@ class CanvasMainWindow(QMainWindow):
 
         new_scheme = self.new_scheme_from(filename)
 
+        self.set_new_scheme(new_scheme)
+
         scheme_doc_widget = self.current_document()
-        old_scheme = scheme_doc_widget.scheme()
-
-        scheme_doc_widget.setScheme(new_scheme)
         scheme_doc_widget.setPath(filename)
-
-        old_scheme.save_widget_settings()
-        old_scheme.deleteLater()
 
         self.add_recent_scheme(new_scheme.title, filename)
 
@@ -836,6 +826,23 @@ class CanvasMainWindow(QMainWindow):
             self.load_scheme(self.recent_schemes[0][1])
 
         return QDialog.Accepted
+
+    def set_new_scheme(self, new_scheme):
+        """Set new_scheme as the current shown scheme.
+        """
+        scheme_doc = self.current_document()
+        old_scheme = scheme_doc.scheme()
+
+        manager = new_scheme.signal_manager
+        if self.freeze_action.isChecked():
+            manager.freeze().push()
+        else:
+            manager.freeze().pop()
+
+        scheme_doc.setScheme(new_scheme)
+
+        old_scheme.save_widget_settings()
+        old_scheme.deleteLater()
 
     def ask_save_changes(self):
         """Ask the user to save the changes to the current scheme.
@@ -1030,13 +1037,8 @@ class CanvasMainWindow(QMainWindow):
             selected = model.item(index)
 
             new_scheme = self.new_scheme_from(unicode(selected.path()))
-            document = self.current_document()
-            old_scheme = document.scheme()
 
-            document.setScheme(new_scheme)
-
-            old_scheme.save_widget_settings()
-            old_scheme.deleteLater()
+            self.set_new_scheme(new_scheme)
 
         return status
 
