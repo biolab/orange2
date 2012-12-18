@@ -929,9 +929,15 @@ class SchemeEditWidget(QWidget):
         """Helper method for setting the user interaction handlers.
         """
         if self.__scene.user_interaction_handler:
+            if isinstance(self.__scene.user_interaction_handler,
+                          (interactions.ResizeArrowAnnotation,
+                           interactions.ResizeTextAnnotation)):
+                self.__scene.user_interaction_handler.commit()
+
             self.__scene.user_interaction_handler.ended.disconnect(
                 self.__onInteractionEnded
             )
+
         if handler:
             handler.ended.connect(self.__onInteractionEnded)
             # Disable actions which could change the model
