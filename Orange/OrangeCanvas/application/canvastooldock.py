@@ -12,7 +12,9 @@ from PyQt4.QtCore import pyqtProperty as Property
 
 from ..gui.toolgrid import ToolGrid
 from ..gui.toolbar import DynamicResizeToolBar
+from ..gui.quickhelp import QuickHelp
 from .widgettoolbox import WidgetToolBox, iter_item
+
 from ..registry.qt import QtWidgetRegistry
 
 
@@ -173,12 +175,7 @@ class SplitterResizer(QObject):
         return QObject.eventFilter(self, obj, event)
 
 
-class QuickHelpWidget(QTextEdit):
-    def __init__(self, *args, **kwargs):
-        QTextEdit.__init__(self, *args, **kwargs)
-
-        self.setReadOnly(True)
-
+class QuickHelpWidget(QuickHelp):
     def minimumSizeHint(self):
         """Reimplemented to allow the Splitter to resize the widget
         with a continuous animation.

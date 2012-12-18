@@ -16,9 +16,14 @@ from PyQt4.QtGui import (
     QIcon, QDesktopServices
 )
 
-from PyQt4.QtCore import Qt, QObject, QEvent, QSignalMapper, QRectF, QUrl
+from PyQt4.QtCore import (
+    Qt, QObject, QEvent, QSignalMapper, QRectF, QUrl, QCoreApplication
+)
+
 from PyQt4.QtCore import pyqtProperty as Property, pyqtSignal as Signal
 
+from ..registry.qt import whats_this_helper
+from ..gui.quickhelp import QuickHelpTipEvent
 from ..gui.utils import message_information, disabled
 from ..scheme import scheme
 from ..canvas.scene import CanvasScene
@@ -94,6 +99,7 @@ class SchemeEditWidget(QWidget):
         self.__itemsMoving = {}
         self.__contextMenuTarget = None
         self.__quickMenu = None
+        self.__quickTip = ""
 
         self.__undoStack = QUndoStack(self)
         self.__undoStack.cleanChanged[bool].connect(self.__onCleanChanged)
@@ -962,6 +968,21 @@ class SchemeEditWidget(QWidget):
         if len(nodes) == 0:
             self.__openSelectedAction.setText(self.tr("Open"))
             self.__removeSelectedAction.setText(self.tr("Remove"))
+
+        focus = self.__scene.focusItem()
+        if isinstance(focus, items.NodeItem):
+            node = self.__scene.node_for_item(focus)
+            desc = node.description
+            tip = whats_this_helper(desc)
+        else:
+            tip = ""
+
+        if tip != self.__quickTip:
+            self.__quickTip = tip
+            ev = QuickHelpTipEvent("", self.__quickTip,
+                                   priority=QuickHelpTipEvent.Permanent)
+
+            QCoreApplication.sendEvent(self, ev)
 
     def __onNodeAdded(self, node):
         widget = self.__scheme.widget_for_node[node]

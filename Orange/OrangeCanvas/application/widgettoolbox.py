@@ -22,8 +22,9 @@ from PyQt4.QtCore import  pyqtSignal as Signal, pyqtProperty as Property
 
 from ..gui.toolbox import ToolBox, create_tab_gradient
 from ..gui.toolgrid import ToolGrid
-
+from ..gui.quickhelp import StatusTipPromoter
 from ..registry.qt import QtWidgetRegistry
+
 
 log = logging.getLogger(__name__)
 
@@ -53,6 +54,7 @@ class WidgetToolGrid(ToolGrid):
         self.__dragListener.dragStartOperationRequested.connect(
             self.__startDrag
         )
+        self.__statusTipPromoter = StatusTipPromoter(self)
 
     def setModel(self, model, rootIndex=QModelIndex()):
         """Set a model (`QStandardItemModel`) for the tool grid. The
@@ -101,11 +103,12 @@ class WidgetToolGrid(ToolGrid):
 
             button = self.buttonForAction(event.action())
             button.installEventFilter(self.__dragListener)
+            button.installEventFilter(self.__statusTipPromoter)
             return
         elif event.type() == QEvent.ActionRemoved:
             button = self.buttonForAction(event.action())
             button.removeEventFilter(self.__dragListener)
-
+            button.removeEventFilter(self.__statusTipPromoter)
             # Removes the button
             ToolGrid.actionEvent(self, event)
             return

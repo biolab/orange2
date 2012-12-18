@@ -143,11 +143,16 @@ class QtWidgetRegistry(QObject, WidgetRegistry):
         """
         name = item.text()
         tooltip = item.toolTip()
+        whatsThis = item.whatsThis()
         icon = item.icon()
         if icon:
-            action = QAction(icon, name, self, toolTip=tooltip)
+            action = QAction(icon, name, self, toolTip=tooltip,
+                             whatsThis=whatsThis,
+                             statusTip=name)
         else:
-            action = QAction(name, self, toolTip=tooltip)
+            action = QAction(name, self, toolTip=tooltip,
+                             whatsThis=whatsThis,
+                             statusTip=name)
 
         widget_desc = item.data(self.WIDGET_DESC_ROLE)
         action.setData(widget_desc)
@@ -245,6 +250,7 @@ class QtWidgetRegistry(QObject, WidgetRegistry):
         style = "ul { margin-top: 1px; margin-bottom: 1px; }"
         tooltip = TOOLTIP_TEMPLATE.format(style=style, tooltip=tooltip)
         item.setToolTip(tooltip)
+        item.setWhatsThis(whats_this_helper(desc))
         item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
         item.setData(QVariant(desc), self.WIDGET_DESC_ROLE)
 
@@ -301,6 +307,21 @@ def tooltip_helper(desc):
     tooltip.append("<b>Outputs</b><ul>{0}</ul>".format(outputs))
 
     return "<hr/>".join(tooltip)
+
+
+def whats_this_helper(desc):
+    """What's this construction helper.
+    """
+    title = desc.name
+    help_url = desc.help
+    description = desc.description
+
+    template = "<h3>{title}</h3>" + \
+               "<p>{description}</p>" + \
+               ("<a href='{url}'>more...</a>" if help_url else "")
+    help_text = template.format(title=title, description=description,
+                                url=help_url)
+    return help_text
 
 
 def run_discovery(cached=False):

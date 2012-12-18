@@ -25,6 +25,7 @@ from PyQt4.QtCore import pyqtProperty as Property
 
 from ..gui.dropshadow import DropShadowFrame
 from ..gui.dock import CollapsibleDockWidget
+from ..gui.quickhelp import QuickHelpTipEvent
 from ..gui.utils import message_critical, message_question, message_information
 
 from .canvastooldock import CanvasToolDock, QuickCategoryToolbar
@@ -193,10 +194,6 @@ class CanvasMainWindow(QMainWindow):
 
         self.widgets_tool_box.triggered.connect(
             self.on_tool_box_widget_activated
-        )
-
-        self.widgets_tool_box.hovered.connect(
-            self.on_tool_box_widget_hovered
         )
 
         self.dock_help = canvas_tool_dock.help
@@ -642,25 +639,6 @@ class CanvasMainWindow(QMainWindow):
             scheme_widget = self.current_document()
             if scheme_widget:
                 scheme_widget.createNewNode(widget_desc)
-
-    def on_tool_box_widget_hovered(self, action):
-        """Mouse is over a widget in the widget toolbox
-        """
-        widget_desc = action.data().toPyObject()
-        title = ""
-        help_text = ""
-        if widget_desc:
-            title = widget_desc.name
-            description = widget_desc.help
-            if not help_text:
-                description = widget_desc.description
-
-            template = "<h3>{title}</h3>" + \
-                       "<p>{description}</p>" + \
-                       "<a href=''>more...</a>"
-            help_text = template.format(title=title, description=description)
-            # TODO: 'More...' link
-        self.set_quick_help_text(help_text)
 
     def on_quick_category_action(self, action):
         """The quick category menu action triggered.
@@ -1403,6 +1381,19 @@ class CanvasMainWindow(QMainWindow):
             self.restoreGeometry(geom_data.toByteArray())
 
         return QMainWindow.showEvent(self, event)
+
+    def event(self, event):
+        if event.type() == QEvent.StatusTip and \
+                isinstance(event, QuickHelpTipEvent):
+            if event.priority() == QuickHelpTipEvent.Normal:
+                self.dock_help.showHelp(event.html())
+            elif event.priority() == QuickHelpTipEvent.Temporary:
+                self.dock_help.showHelp(event.html(), event.timeout())
+            elif event.priority() == QuickHelpTipEvent.Permanent:
+                self.dock_help.showPermanentHelp(event.html())
+            return True
+
+        return QMainWindow.event(self, event)
 
     # Mac OS X
     if sys.platform == "darwin":
