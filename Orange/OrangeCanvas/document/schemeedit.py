@@ -441,6 +441,10 @@ class SchemeEditWidget(QWidget):
             else:
                 self.__cleanSettings = []
 
+            # Clear the current item selection in the scene so edit action
+            # states are updated accordingly.
+            self.__scene.clearSelection()
+
             self.__annotationGeomChanged.deleteLater()
             self.__annotationGeomChanged = QSignalMapper(self)
 

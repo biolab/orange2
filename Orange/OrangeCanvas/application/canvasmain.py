@@ -818,8 +818,6 @@ class CanvasMainWindow(QMainWindow):
         manager = new_scheme.signal_manager
         if self.freeze_action.isChecked():
             manager.freeze().push()
-        else:
-            manager.freeze().pop()
 
         scheme_doc.setScheme(new_scheme)
 
