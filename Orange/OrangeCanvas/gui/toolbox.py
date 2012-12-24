@@ -18,7 +18,7 @@ from PyQt4.QtGui import (
     QAction, QActionGroup
 )
 
-from PyQt4.QtCore import Qt, QSize, QRect, QPoint
+from PyQt4.QtCore import Qt, QObject, QSize, QRect, QPoint, QSignalMapper
 from PyQt4.QtCore import pyqtSignal as Signal, pyqtProperty as Property
 
 from .utils import brush_darker
@@ -198,7 +198,9 @@ class ToolBox(QFrame):
     def setExclusive(self, exclusive):
         """Set exclusive tabs (only one tab can be open at a time).
         """
-        self.__exclusive = exclusive
+        if self.__exclusive != exclusive:
+            self.__exclusive = exclusive
+            self.__tabActionGroup.setExclusive(exclusive)
 
     def exclusive(self):
         return self.__exclusive
@@ -256,8 +258,10 @@ class ToolBox(QFrame):
         self.__tabActionGroup = \
                 QActionGroup(self, objectName="toolbox-tab-action-group")
 
-        self.__tabActionGroup.setExclusive(self.exclusive())
-        self.__tabActionGroup.triggered.connect(self.__onTabActionTriggered)
+        self.__tabActionGroup.setExclusive(self.__exclusive)
+
+        self.__actionMapper = QSignalMapper(self)
+        self.__actionMapper.mapped[QObject].connect(self.__onTabActionToogled)
 
     def setTabButtonHeight(self, height):
         """Set the tab button height.
@@ -359,6 +363,8 @@ class ToolBox(QFrame):
         if toolTip:
             action.setToolTip(toolTip)
         self.__tabActionGroup.addAction(action)
+        self.__actionMapper.setMapping(action, action)
+        action.toggled.connect(self.__actionMapper.map)
 
         button = ToolBoxTabButton(self, objectName="toolbox-tab-button")
         button.setDefaultAction(action)
@@ -395,9 +401,7 @@ class ToolBox(QFrame):
 
         return QSize(200, 200).expandedTo(hint)
 
-    def __onTabActionTriggered(self, action):
-        """
-        """
+    def __onTabActionToogled(self, action):
         page = find(self.__pages, action, key=attrgetter("action"))
         on = action.isChecked()
         page.widget.setVisible(on)
