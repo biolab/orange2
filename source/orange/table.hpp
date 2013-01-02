@@ -41,6 +41,8 @@ public:
   // Iterates through examples of basevector
   #define baseITERATE(x) ITERATE(vector<TExample>, x, examples)
 
+  TExampleTable(const TExampleTable& orig);
+
   TExampleTable(PDomain, bool owns = true);
   TExampleTable(PExampleGenerator orig, bool owns = true); // also copies examples
   TExampleTable(PDomain, PExampleGenerator orig, bool filterMetas = false); // owns = true (cannot change domain of references); copies examples

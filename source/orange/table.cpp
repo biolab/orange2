@@ -32,6 +32,19 @@
 #include "table.ppp"
 
 
+TExampleTable::TExampleTable(const TExampleTable& orig)
+: TExampleGenerator(orig.domain),
+  examples(NULL),
+  _Last(NULL),
+  _EndSpace(NULL),
+  ownsExamples(true)
+{
+  reserve(orig.size());
+  for(int i = 0; i < orig.size(); ++i){
+	  push_back(new TExample(orig.at(i)));
+  }
+}
+
 TExampleTable::TExampleTable(PDomain dom, bool owns)
 : TExampleGenerator(dom),
   examples(NULL),

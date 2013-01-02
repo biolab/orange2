@@ -8,8 +8,12 @@ try:
 except:
     import unittest
 from Orange.testing import testing
+
 import Orange
 import cPickle
+import tempfile
+import gc
+
 
 def native(table):
     table = table.native()
@@ -17,9 +21,11 @@ def native(table):
         table[i] = [v.native() for v in table[i].native()]
     return table
 
+
 def names_iter():
     for name in testing.ALL_DATASETS:
         yield name.replace(" ", "_").replace("-", "_"), (name,)
+
 
 @testing.data_driven(data_iter=names_iter())
 class TestLoading(unittest.TestCase):
@@ -29,7 +35,8 @@ class TestLoading(unittest.TestCase):
         """ Test the loading of the data set
         """
         table = Orange.data.Table(name)
-        self.assertIsNotNone(getattr(table, "attributeLoadStatus"), "No attributeLoadStatus")
+        self.assertIsNotNone(getattr(table, "attributeLoadStatus"),
+                             "No attributeLoadStatus")
 
     @testing.test_on_data
     def test_pickling_on(self, name):
@@ -40,12 +47,9 @@ class TestLoading(unittest.TestCase):
         table_clone = cPickle.loads(s)
 #        self.assertEqual(table.domain, table_clone.domain)
 #        self.assertEqual(table.domain.class_var, table_clone.domain.class_var)
-        self.assertEqual(native(table), native(table_clone), "Native representation is not equal!")
-        
-    
+        self.assertEqual(native(table), native(table_clone),
+                         "Native representation is not equal!")
 
-
-import tempfile
 
 @testing.datasets_driven
 class TestSaving(unittest.TestCase):
@@ -66,6 +70,7 @@ class TestSaving(unittest.TestCase):
             data.save(f.name)
             f.flush()
             data_arff = Orange.data.Table(f.name)
+
     @testing.test_on_datasets(datasets=testing.CLASSIFICATION_DATASETS + \
                               testing.REGRESSION_DATASETS)
     def test_svm_on(self, data):
@@ -86,7 +91,7 @@ class TestSaving(unittest.TestCase):
 
 @testing.datasets_driven
 class TestUnicodeFilenames(unittest.TestCase):
-    
+
     @testing.test_on_data
     def test_tab_on(self, name):
         """ Test the loading and saving to/from unicode (utf-8) filenames.
@@ -96,7 +101,7 @@ class TestUnicodeFilenames(unittest.TestCase):
             table.save(f.name)
             f.flush()
             table1 = Orange.data.Table(f.name)
-        
+
     @testing.test_on_datasets(datasets=testing.CLASSIFICATION_DATASETS + \
                               testing.REGRESSION_DATASETS)
     def test_txt_on(self, name):
@@ -107,7 +112,7 @@ class TestUnicodeFilenames(unittest.TestCase):
             table.save(f.name)
             f.flush()
             table1 = Orange.data.Table(f.name)
-            
+
     @testing.test_on_datasets(datasets=testing.CLASSIFICATION_DATASETS + \
                               testing.REGRESSION_DATASETS)
     def test_arff_on(self, name):
@@ -118,7 +123,7 @@ class TestUnicodeFilenames(unittest.TestCase):
             table.save(f.name)
             f.flush()
             table1 = Orange.data.Table(f.name)
-            
+
     def test_basket(self):
         """ Test the loading and saving to/from unicode (utf-8) filenames.
         """
@@ -153,6 +158,49 @@ class TestHashing(unittest.TestCase):
                            reversed(Orange.data.Table(table))]))
 
         self.assertEquals(a, b)
+
+
+class TestDataOwnership(unittest.TestCase):
+    def test_clone(self):
+        """Test that `clone` method returns a table with it's own copy
+        of the data.
+
+        """
+        iris = Orange.data.Table("iris")
+        clone = iris.clone()
+
+        self.assertTrue(iris.owns_instances and clone.owns_instances)
+        self.assertTrue(all(e1.reference() != e2.reference()
+                            for e1, e2 in zip(iris, clone)))
+
+        clone[0][0] = -1
+        self.assertTrue(iris[0][0] != clone[0][0])
+
+        del clone
+        gc.collect()
+
+    def test_reference(self):
+        iris = Orange.data.Table("iris")
+
+        ref = Orange.data.Table(iris, True)
+
+        self.assertTrue(iris.owns_instances)
+        self.assertFalse(ref.owns_instances)
+
+        self.assertTrue(all(e1.reference() == e2.reference()
+                            for e1, e2 in zip(iris, ref)))
+
+        ref[0][0] = -1
+        self.assertEqual(iris[0][0], -1)
+
+        with self.assertRaises(TypeError):
+            ref.append(
+                Orange.data.Instance(ref.domain,
+                                     [0, 0, 0, 0, "Iris-setosa"])
+            )
+
+        del ref
+        gc.collect()
 
 
 if __name__ == "__main__":
