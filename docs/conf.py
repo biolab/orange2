@@ -47,7 +47,6 @@ import sphinx.ext.autodoc
 import numpydoc
 sphinx.ext.autodoc.inspect = myinspect
 numpydoc.docscrape.inspect = myinspect
-
 module_setup = imp.load_source('module_setup', os.path.join(PATH, '..', 'setup.py'))
 VERSION = module_setup.VERSION
 AUTHOR = module_setup.AUTHOR
@@ -62,6 +61,7 @@ os.environ["orange_no_deprecated_members"] = "1"
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.append(os.path.abspath(os.path.join(PATH, "..")))
+sys.path.append(os.path.abspath(os.path.join(PATH, "..", "Orange")))
 import Orange
 
 # -- General configuration -----------------------------------------------------
