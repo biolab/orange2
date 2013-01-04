@@ -16,55 +16,32 @@ Data
     * - |File_icon| :ref:`File`
       - |DataTable_icon| :ref:`Data Table`
       - |SelectAttributes_icon| :ref:`Select Attributes`
-    * - |Rank_icon| `Rank`_
-      - |PurgeDomain_icon| `Purge Domain`_
-      - |MergeData_icon| `Merge Data`_
-    * - |Concat_icon| `Concatenate`_
-      - |DataSampler_icon| `Data Sampler`_
-      - |SelectData_icon| `Select Data`_
-    * - |Save_icon| `Save`_
-      - |Discretize_icon| `Discretize`_
-      - |Cont_icon| `Continuize`_
-    * - |Impute_icon| `Impute`_
-      - |Outliers_icon| `Outliers`_
+    * - |Rank_icon| :ref:`Rank`
+      - |PurgeDomain_icon| :ref:`Purge Domain`
+      - |MergeData_icon| :ref:`Merge Data`
+    * - |Concat_icon| :ref:`Concatenate`
+      - |DataSampler_icon| :ref:`Data Sampler`
+      - |SelectData_icon| :ref:`Select Data`
+    * - |Save_icon| :ref:`Save`
+      - |Discretize_icon| :ref:`Discretize`
+      - |Cont_icon| :ref:`Continuize`
+    * - |Impute_icon| :ref:`Impute`
+      - |Outliers_icon| :ref:`Outliers`
       -
 
-.. _`Rank`: ../../_static/Data/Rank.htm
-
-.. _`Purge Domain`: ../../_static/Data/PurgeDomain.htm
-
-.. _`Merge Data`: ../../_static/Data/MergeData.htm
-
-.. _`Concatenate`: ../../_static/Data/Concatenate.htm
-
-.. _`Data Sampler`: ../../_static/Data/DataSampler.htm
-
-.. _`Select Data`: ../../_static/Data/SelectData.htm
-
-.. _`Save`: ../../_static/Data/Save.htm
-
-.. _`Discretize`: ../../_static/Data/Discretize.htm
-
-.. _`Continuize`: ../../_static/Data/Continuize.htm
-
-.. _`Impute`: ../../_static/Data/Impute.htm
-
-.. _`Outliers`: ../../_static/Data/Outliers.htm
-
-
-.. |File_icon| image:: data/images/File_icon.png
+.. |File_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/File_48.png
 	:align: middle
 	:alt: File
 	:width: 48
 	:height: 48
 
-.. |DataTable_icon| image:: data/images/DataTable_icon.png
+.. |DataTable_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/DataTable_48.png
 	:align: middle
 	:alt: Data Table
 	:width: 48
 	:height: 48
 	
-.. |SelectAttributes_icon| image:: data/images/SelectAttributes_icon.png
+.. |SelectAttributes_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/SelectAttributes_48.png
 	:align: middle
 	:alt: Select Attributes
 	:width: 48
@@ -144,39 +121,18 @@ Visualize
     :class: widget-catalog-table
     :widths: 1 1 1
     
-    * - |Distributions_icon| `Distributions`_
-      - |ScatterPlot_icon| `Scatter Plot`_
-      - |AttributeStatistics_icon| `Attribute Statistics`_
-    * - |LinearProjection_icon| `Linear Projection`_
-      - |Radviz_icon| `Radviz`_
-      - |Polyviz_icon| `Polyviz`_
-    * - |ParallelCoords_icon| `Parallel Coordinates`_
-      - |SurveyPlot_icon| `Survey Plot`_
-      - |MosaicDisplay_icon| `Mosaic Display`_
-    * - |SieveDiagram_icon| `Sieve Diagram`_
+    * - |Distributions_icon| :ref:`Distributions`
+      - |ScatterPlot_icon| :ref:`Scatter Plot`
+      - |AttributeStatistics_icon| :ref:`Attribute Statistics`
+    * - |LinearProjection_icon| :ref:`Linear Projection`
+      - |Radviz_icon| :ref:`Radviz`
+      - |Polyviz_icon| :ref:`Polyviz`
+    * - |ParallelCoords_icon| :ref:`Parallel Coordinates`
+      - |SurveyPlot_icon| :ref:`Survey Plot`
+      - |MosaicDisplay_icon| :ref:`Mosaic Display`
+    * - |SieveDiagram_icon| :ref:`Sieve Diagram`
       - |SieveMultigram_icon| Sieve Multigram 
       -
-	
-.. _`Distributions`: ../../_static/Visualize/Distributions.htm
-
-.. _`Scatter Plot`: ../../_static/Visualize/Scatterplot.htm
-
-.. _`Attribute Statistics`: ../../_static/Visualize/AttributeStatistics.htm
-
-.. _`Linear Projection`: ../../_static/Visualize/LinearProjection.htm
-
-.. _`Radviz`: ../../_static/Visualize/Radviz.htm
-
-.. _`Polyviz`: ../../_static/Visualize/Polyviz.htm
-
-.. _`Parallel Coordinates`: ../../_static/Visualize/ParallelCoordinates.htm
-
-.. _`Survey Plot`: ../../_static/Visualize/SurveyPlot.htm
-
-.. _`Mosaic Display`: ../../_static/Visualize/MosaicDisplay.htm
-
-.. _`Sieve Diagram`: ../../_static/Visualize/SieveDiagram.htm
-
 
 .. |Distributions_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/Distribution_48.png
 	:align: middle
@@ -252,50 +208,21 @@ Classify
     :class: widget-catalog-table
     :widths: 1 1 1
     
-    * - |NaiveBayes_icon| `Naive Bayes`_
-      - |SVM_icon| `SVM`_
-      - |LogReg_icon| `Logistic Regression`_
-    * - |Majority_icon| `Majority`_
-      - |ClassificationTree_icon| `Classification Tree`_
-      - |ClassificationTreeGraph_icon| `Classification Tree Graph`_ 
-    * - |ClsTreeViewer_icon| `Classification Tree Viewer`_
-      - |CN2Rules_icon| `CN2 Rules`_
-      - |CN2RulesViewer_icon| `CN2 Rules Viewer`_
-    * - |kNN_icon| `k-Nearest Neighbours`_
-      - |Nomogram_icon| `Nomogram`_
-      - |RandomForest_icon| `Random Forest`_
-    * - |C4.5_icon| `C4.5`_
-      - |ITreeBuilder_icon| `Interactive Tree Builder`_
+    * - |NaiveBayes_icon| :ref:`Naive Bayes`
+      - |SVM_icon| :ref:`SVM`
+      - |LogReg_icon| :ref:`Logistic Regression`
+    * - |Majority_icon| :ref:`Majority`
+      - |ClassificationTree_icon| :ref:`Classification Tree`
+      - |ClassificationTreeGraph_icon| :ref:`Classification Tree Graph`
+    * - |ClsTreeViewer_icon| :ref:`Classification Tree Viewer`
+      - |CN2Rules_icon| :ref:`CN2 Rules`
+      - |CN2RulesViewer_icon| :ref:`CN2 Rules Viewer`
+    * - |kNN_icon| :ref:`k-Nearest Neighbours`
+      - |Nomogram_icon| :ref:`Nomogram`
+      - |RandomForest_icon| :ref:`Random Forest`
+    * - |C4.5_icon| :ref:`C4.5`
+      - |ITreeBuilder_icon| :ref:`Interactive Tree Builder`
       -
-
-.. _`Naive Bayes`: ../../_static/Classify/NaiveBayes.htm
-
-.. _`SVM`: ../../_static/Classify/SVM.htm
-
-.. _`Logistic Regression`: ../../_static/Classify/LogisticRegression.htm
-
-.. _`Majority`: ../../_static/Classify/Majority.htm
-
-.. _`Classification Tree`: ../../_static/Classify/ClassificationTree.htm
-
-.. _`Classification Tree Graph`: ../../_static/Classify/ClassificationTreeGraph.htm
-
-.. _`Classification Tree Viewer`: ../../_static/Classify/ClassificationTreeViewer.htm
-
-.. _`CN2 Rules`: ../../_static/Classify/CN2.htm
-
-.. _`CN2 Rules Viewer`: ../../_static/Classify/CN2.htm
-
-.. _`k-Nearest Neighbours`: ../../_static/Classify/kNearestNeighbours.htm
-
-.. _`Nomogram`: ../../_static/Classify/Nomogram.htm
-
-.. _`Random Forest`: ../../_static/Classify/RandomForest.htm
-
-.. _`C4.5`: ../../_static/Classify/C4.5.htm
-
-.. _`Interactive Tree Builder`: ../../_static/Classify/InteractiveTreeBuilder.htm
-
 
 .. |NaiveBayes_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/NaiveBayes_48.png
     :align: middle
@@ -392,15 +319,9 @@ Regression
     * - |Mean_icon| :ref:`Mean`
       - |LinearRegression_icon| :ref:`Linear Regression`
       - |Earth_icon| :ref:`Earth`
-    * - |RegressionTree_icon| `Regression Tree`_
-      - |RegressionTreeGraph_icon| `Regression Tree Graph`_
-      - |Pade_icon| `Pade`_
-
-.. _`Regression Tree`: ../../_static/Regression/RegressionTree.htm
-
-.. _`Regression Tree Graph`: ../../_static/Regression/RegressionTreeGraph.htm
-
-.. _`Pade`: ../../_static/Regression/Pade.htm
+    * - |RegressionTree_icon| :ref:`Regression Tree`
+      - |RegressionTreeGraph_icon| :ref:`Regression Tree Graph`
+      - |Pade_icon| :ref:`Pade`
 
 .. |Mean_icon| image:: ../../../Orange/OrangeWidgets/icons/Unknown.png
     :align: middle
@@ -446,24 +367,13 @@ Evaluate
     :widths: 1 1 1
     :class: widget-catalog-table
     
-    * - |ConfusionMatrix_icon| `Confusion Matrix`_  
-      - |ROCAnalysis_icon| `ROC Analysis`_
-      - |LiftCurve_icon| `Lift Curve`_
-    * - |CalibrationPlot_icon| `Calibration Plot`_
-      - |TestLearners_icon| `Test Learners`_
-      - |Predictions_icon| `Predictions`_
+    * - |ConfusionMatrix_icon| :ref:`Confusion Matrix`
+      - |ROCAnalysis_icon| :ref:`ROC Analysis`
+      - |LiftCurve_icon| :ref:`Lift Curve`
+    * - |CalibrationPlot_icon| :ref:`Calibration Plot`
+      - |TestLearners_icon| :ref:`Test Learners`
+      - |Predictions_icon| :ref:`Predictions`
 
-.. _`Confusion Matrix`: ../../_static/Evaluate/ConfusionMatrix.htm
-
-.. _`ROC Analysis`: ../../_static/Evaluate/ROCAnalysis.htm
-
-.. _`Lift Curve`: ../../_static/Evaluate/LiftCurve.htm
-
-.. _`Calibration Plot`: ../../_static/Evaluate/CalibrationPlot.htm
-
-.. _`Test Learners`: ../../_static/Evaluate/TestLearners.htm
-
-.. _`Predictions`: ../../_static/Evaluate/Predictions.htm
 
 .. |ConfusionMatrix_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/ConfusionMatrix_48.png 
     :align: middle
@@ -509,22 +419,12 @@ Associate
     :widths: 1 1 1
     :class: widget-catalog-table
     
-    * - |AssociationRules_icon| `Association Rules`_ 
-      - |AssociationRulesFilter_icon| `Association Rules Filter`_ 
-      - |AssociationRulesExplorer_icon| `Association Rules Explorer`_ 
-    * - |ItemSets_icon| `Item Sets`  
-      - |ItemSetsExplorer_icon| `Item Sets Explorer` 
+    * - |AssociationRules_icon| :ref:`Association Rules`
+      - |AssociationRulesFilter_icon| :ref:`Association Rules Filter`
+      - |AssociationRulesExplorer_icon| :ref:`Association Rules Explorer`
+    * - |ItemSets_icon| `Item Sets`
+      - |ItemSetsExplorer_icon| `Item Sets Explorer`
       -
-
-.. _`Association Rules`: ../../_static/Associate/AssociationRules.htm
-
-.. _`Association Rules Filter`: ../../_static/Associate/AssociationRulesFilter.htm
-
-.. _`Association Rules Explorer`: ../../_static/Associate/AssociationRulesExplorer.htm
-
-.. _`Item Sets`: ../../_static/Associate/ItemSets.htm
-
-.. _`Item Sets Explorer`: ../../_static/Associate/ItemSetsExplorer.htm
 
 .. |AssociationRules_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/AssociationRules_48.png
     :align: middle
@@ -564,57 +464,21 @@ Unsupervised
     :widths: 1 1 1
     :class: widget-catalog-table
     
-    * - |DistanceFile_icon| `Distance File`_
+    * - |DistanceFile_icon| :ref:`Distance File`
       - |SaveDistanceFile_icon| `Save Distance File`
       - |MatrixTransformation_icon| `Matrix Transformation`
     * - |DistanceMatrixFilter_icon| `Distance Matrix Filter`
-      - |DistanceMap_icon| `Distance Map`_
-      - |ExampleDistance_icon| `Example Distance`_
-    * - |AttributeDistance_icon| `AttributeDistance`_
-      - |HierarchicalClustering_icon| `Hierarchical Clustering`_
-      - |InteractionGraph_icon| `Interaction Graph`_
-    * - |kMeansClustering_icon| `k-Means Clustering`_
-      - |MDS_icon| `MDS`_
+      - |DistanceMap_icon| :ref:`Distance Map`
+      - |ExampleDistance_icon| :ref:`Example Distance`
+    * - |AttributeDistance_icon| :ref:`Attribute Distance`
+      - |HierarchicalClustering_icon| :ref:`Hierarchical Clustering`
+      - |InteractionGraph_icon| :ref:`Interaction Graph`
+    * - |kMeansClustering_icon| :ref:`k-Means Clustering`
+      - |MDS_icon| :ref:`MDS`
       - |PCA_icon| :ref:`PCA`
-    * - |NetworkFile_icon| `Network File`
-      - |NetExplorer_icon| `Net Explorer`_
-      - |NetworkFromDistances_icon| `Network From Distances`
     * - |SOM_icon| `SOM`
       - |SOMVisualizer_icon| `SOM Visualizer`
       -
-
-
-.. _`Distance File`: ../../_static/Unsupervised/DistanceFile.htm
-
-.. _`Save Distance File`: ../../_static/Unsupervised/SaveDistanceFile.htm
-
-.. _`Matrix Transformation`: ../../_static/Unsupervised/`MatrixTransformation.htm
-
-.. _`Distance Matrix Filter`: ../../_static/Unsupervised/DistanceMatrixFilter.htm
-
-.. _`Distance Map`: ../../_static/Unsupervised/DistanceMap.htm
-
-.. _`Example Distance`: ../../_static/Unsupervised/ExampleDistance.htm
-
-.. _`AttributeDistance`: ../../_static/Unsupervised/AttributeDistance.htm
-
-.. _`Hierarchical Clustering`: ../../_static/Unsupervised/HierarchicalClustering.htm
-
-.. _`Interaction Graph`: ../../_static/Unsupervised/InteractionGraph.htm
-
-.. _`k-Means Clustering`: ../../_static/Unsupervised/k-MeansClustering.htm
-
-.. _`MDS`: ../../_static/Unsupervised/MDS.htm
-
-.. _`Network File`: ../../_static/Unsupervised/NetworkFile.htm
-
-.. _`Net Explorer`: ../../_static/Unsupervised/NetExplorer.htm
-
-.. _`Network From Distances`: ../../_static/Unsupervised/NetworkFromDistances.htm
-
-.. _`SOM`: ../../_static/Unsupervised/SOM.htm
-
-.. _`SOM Visualizer`: ../../_static/Unsupervised/SOMVisualizer.htm
 
 .. |DistanceFile_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/DistanceFile_48.png
     :align: middle
@@ -725,14 +589,73 @@ Index:
    :maxdepth: 1
    
    data/file.rst
-   data/data-table.rst
-   data/select-attributes.rst
-   
+   data/datatable.rst
+   data/selectattributes.rst
+   data/rank.rst
+   data/purgedomain.rst
+   data/mergedata.rst
+   data/concatenate.rst
+   data/datasampler.rst
+   data/selectdata.rst
+   data/save.rst
+   data/discretize.rst
+   data/continuize.rst
+   data/impute.rst
+   data/outliers.rst
+
+   visualize/distributions.rst
+   visualize/scatterplot.rst
+   visualize/attributestatistics.rst
+   visualize/linearprojection.rst
+   visualize/radviz.rst
+   visualize/polyviz.rst
+   visualize/parallelcoordinates.rst
+   visualize/surveyplot.rst
+   visualize/mosaicdisplay.rst
+   visualize/sievediagram.rst
+
+   classify/naivebayes.rst
+   classify/svm.rst
+   classify/logisticregression.rst
+   classify/majority.rst
+   classify/classificationtree.rst
+   classify/classificationtreegraph.rst
+   classify/classificationtreeviewer.rst
+   classify/cn2.rst
+   classify/cn2rulesviewer.rst
+   classify/knearestneighbours.rst
+   classify/nomogram.rst
+   classify/randomforest.rst
+   classify/c45.rst
+   classify/interactivetreebuilder.rst
+
    regression/mean.rst
    regression/linear.rst
    regression/earth.rst
-   
-   unsupervized/PCA.rst
+   regression/regressiontree.rst
+   regression/regressiontreegraph.rst
+   regression/pade.rst
+
+   evaluate/confusionmatrix.rst
+   evaluate/rocanalysis.rst
+   evaluate/liftcurve.rst
+   evaluate/calibrationplot.rst
+   evaluate/testlearners.rst
+   evaluate/predictions.rst
+
+   associate/associationrules.rst
+   associate/associationrulesfilter.rst
+   associate/associationrulesexplorer.rst
+
+   unsupervized/distancefile.rst
+   unsupervized/distancemap.rst
+   unsupervized/exampledistance.rst
+   unsupervized/attributedistance.rst
+   unsupervized/hierarchicalclustering.rst
+   unsupervized/interactiongraph.rst
+   unsupervized/kmeansclustering.rst
+   unsupervized/mds.rst
+   unsupervized/pca.rst
 
 ****************
 Index and search

@@ -90,22 +90,11 @@ mouse over its icon in the widget toolbox would yield:
 We will go over the syntax of channel definitions later, but for
 now the following is important:
 
-* Widgets are defined in a Python files.
-* For Orange and Orange canvas to find them, they reside in
-subdirectories in OrangeWidgets directory of Orange installation. The
-name of the subdirectory matters, as this is the name of the widget
-category. Widgets in the same directory will be grouped in the same
-pane of widget toolbox in Orange Canvas.
-*A file describing a widget starts with a header. This, given in
-sort of XMLish style, tells about the name, short description,
-location of an icon and priority of the widget.
-*The sole role of
-priority is to specify the placement (order) of widgets in the Orange
-Canvas toolbox.
-*Somewhere in the code (where we will learn later) there are two
-lines which tell which channels the widgets uses for
-communication. These, together with the header information, completely
-specify the widget as it is seen from the outside.
+   -  Widgets are defined in a Python files.
+   - For Orange and Orange canvas to find them, they reside in subdirectories in OrangeWidgets directory of Orange installation. The name of the subdirectory matters, as this is the name of the widget category. Widgets in the same directory will be grouped in the same pane of widget toolbox in Orange Canvas.
+   - A file describing a widget starts with a header. This, given in sort of XMLish style, tells about the name, short description, location of an icon and priority of the widget.
+   - The sole role of priority is to specify the placement (order) of widgets in the Orange Canvas toolbox.
+   - Somewhere in the code (where we will learn later) there are two lines which tell which channels the widgets uses for communication. These, together with the header information, completely specify the widget as it is seen from the outside.
 
 Oh, by the way. Orange caches widget descriptions to achieve a faster
 startup, but this cache is automatically refreshed at startup if any change

@@ -25,7 +25,7 @@ to that widget simultaneously.
 
 Say we want to build a widget that takes a data set and test
 various predictive modelling techniques on it. A widget has to have an
-input data channel, and this we know how to deal with from our :doc:`previous`
+input data channel, and this we know how to deal with from our :doc:`previous <settings>`
 lesson. But, somehow differently, we
 want to connect any number of widgets which define learners to our
 testing widget. Just like in a schema below, where three different

@@ -44,7 +44,7 @@ regularization parameters can be specified.
     1. The learner/predictor name
     2. Train an ordinary least squares or ridge regression model
     3. If ``Ridge lambda`` is checked the learner will build a ridge regression model
-       with |4| as the ``lambda`` parameter.
+       with 4 as the ``lambda`` parameter.
     4. Ridge lambda parameter.
     5. Use `Lasso`_ regularization.
     6. The Lasso bound (bound on the beta vector L1 norm)
