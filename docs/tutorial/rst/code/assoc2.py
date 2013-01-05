@@ -4,14 +4,15 @@
 # Classes:     orngAssoc.build, Preprocessor_discretize, EquiNDiscretization
 # Referenced:  assoc.htm
 
-import orange, orngAssoc
+import orngAssoc
+import Orange
 
-data = orange.ExampleTable("imports-85")
-data = orange.Preprocessor_discretize(data, \
-  method=orange.EquiNDiscretization(numberOfIntervals=3))
+data = Orange.data.Table("imports-85")
+data = Orange.data.preprocess.Discretize(data, \
+  method=Orange.data.discretization.EqualFreq(numberOfIntervals=3))
 data = data.select(range(10))
 
-rules = orange.AssociationRulesInducer(data, support=0.4)
+rules = Orange.associate.AssociationRulesInducer(data, support=0.4)
 
 n = 5
 print "%i most confident rules:" % (n)

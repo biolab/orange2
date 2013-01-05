@@ -1,17 +1,13 @@
-# Description: Creates a list of association rules, selects five rules and prints them out
-# Category:    description
-# Uses:        imports-85
-# Classes:     orngAssoc.build, Preprocessor_discretize, EquiNDiscretization
-# Referenced:  assoc.htm
+import orngAssoc
+import Orange
 
-import orange, orngAssoc
+data = Orange.data.Table("imports-85")
+data = Orange.data.Table("zoo")
+#data = Orange.data.preprocess.Discretize(data, \
+#  method=Orange.data.discretization.EqualFreq(numberOfIntervals=3))
+# data = data.select(range(10))
 
-data = orange.ExampleTable("imports-85")
-data = orange.Preprocessor_discretize(data, \
-  method=orange.EquiNDiscretization(numberOfIntervals=3))
-data = data.select(range(10))
-
-rules = orange.AssociationRulesInducer(data, support=0.4)
+rules = Orange.associate.AssociationRulesInducer(data, support=0.4)
 
 print "%i rules with support higher than or equal to %5.3f found.\n" % (len(rules), 0.4)
 

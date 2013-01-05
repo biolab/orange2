@@ -2,7 +2,8 @@
 # Category:    modelling
 # Referenced:  c_bagging.htm
 
-import orange, random
+import random
+import Orange
 
 def Learner(examples=None, **kwds):
     learner = apply(Learner_Class, (), kwds)
@@ -36,15 +37,15 @@ class Classifier:
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
-    def __call__(self, example, resultType = orange.GetValue):
+    def __call__(self, example, resultType = Orange.classification.Classifier.GetValue):
         freq = [0.] * len(self.domain.classVar.values)
         for c in self.classifiers:
             freq[int(c(example))] += 1
         index = freq.index(max(freq))
-        value = orange.Value(self.domain.classVar, index)
+        value = Orange.data.Value(self.domain.classVar, index)
         for i in range(len(freq)):
             freq[i] = freq[i]/len(self.classifiers)
-        if resultType == orange.GetValue: return value
-        elif resultType == orange.GetProbabilities: return freq
+        if resultType == Orange.classification.Classifier.GetValue: return value
+        elif resultType == Orange.classification.Classifier.GetProbabilities: return freq
         else: return (value, freq)
         

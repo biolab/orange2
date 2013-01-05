@@ -11,17 +11,18 @@
 # Uses:        crx.tab
 # Referenced:  o_fss.htm
 
-import orange, orngDisc, orngTest, orngStat, orngFSS
+import orngFSS
+import Orange
 
-data = orange.ExampleTable("crx.tab")
+data = Orange.data.Table("crx.tab")
 
-bayes = orange.BayesLearner()
-dBayes = orngDisc.DiscretizedLearner(bayes, name='disc bayes')
-fss = orngFSS.FilterAttsAboveThresh(threshold=0.05)
-fBayes = orngFSS.FilteredLearner(dBayes, filter=fss, name='bayes & fss')
+bayes = Orange.classification.bayes.NaiveLearner()
+dBayes = Orange.feature.discretization.DiscretizedLearner(bayes, name='disc bayes')
+fss = Orange.feature.selection.FilterAboveThreshold(threshold=0.05)
+fBayes = Orange.feature.selection.FilteredLearner(dBayes, filter=fss, name='bayes & fss')
 
 learners = [dBayes, fBayes]
-results = orngTest.crossValidation(learners, data, folds=10, storeClassifiers=1)
+results = Orange.evaluation.testing.cross_validation(learners, data, folds=10, storeClassifiers=1)
 
 # how many attributes did each classifier use?
 
@@ -34,7 +35,7 @@ for lrn in range(len(learners)):
 
 print "\nLearner         Accuracy  #Atts"
 for i in range(len(learners)):
-  print "%-15s %5.3f     %5.2f" % (learners[i].name, orngStat.CA(results)[i], natt[i])
+  print "%-15s %5.3f     %5.2f" % (learners[i].name, Orange.evaluation.scoring.CA(results)[i], natt[i])
 
 # which attributes were used in filtered case?
 
