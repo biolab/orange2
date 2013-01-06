@@ -1,1 +1,1 @@
-.. automodule :: OrangeWidgets.plot.owcurve
+.. automodule :: Orange.OrangeWidgets.plot.owcurve
