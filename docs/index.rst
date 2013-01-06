@@ -32,7 +32,9 @@ Contents
    :maxdepth: 1
 
    widgets/rst/index
-   first-steps/rst/index
+
+..   first-steps/rst/index
+
    tutorial/rst/index
    reference/rst/index
    development/rst/index
