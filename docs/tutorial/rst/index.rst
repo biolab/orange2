@@ -2,33 +2,35 @@
 Orange Tutorial
 ###############
 
-If you are new to Orange, then this is probably the best place to start. This
-tutorial was written with a purpose to provide a gentle tutorial over basic
-functionality of Orange. As Orange is integrated within `Python <http://www.python.org/>`_, the tutorial
-is in essence a guide through some basic Orange scripting in this language.
-Although relying on Python, those of you who have some knowledge on programming
-won't need to learn Python first: the tutorial should be simple enough to skip
-learning Python itself.
+This is a gentle introduction on scripting in Orange. Orange is a Python `Python <http://www.python.org/>`_ library, and the tutorial is a guide through Orange scripting in this language.
 
-Contents:
+We here assume you have already `downloaded and installed Orange <http://orange.biolab.si/download/>`_ and have a working version of Python. Python scripts can run in a terminal window, integrated environments like `PyCharm <http://www.jetbrains.com/pycharm/>`_ and `PythonWin <http://wiki.python.org/moin/PythonWin>`_,
+or shells like `iPython <http://ipython.scipy.org/moin/>`_. Whichever environment you are using, try now to import Orange. Below, we used a Python shell::
+
+   % python
+   >>> import Orange
+   >>> Orange.version.version
+   '2.6a2.dev-a55510d'
+   >>>
+
+If this leaves no error and warning, Orange and Python are properly
+installed and you are ready to continue with this Tutorial.
+
+********
+Contents
+********
 
 .. toctree::
    :maxdepth: 1
 
-   start.rst
-   load-data.rst
-   basic-exploration.rst
+   data.rst
    classification.rst
-   evaluation.rst
-   learners-in-python.rst
    regression.rst
-   association-rules.rst
-   feature-subset-selection.rst
    ensembles.rst
-   discretization.rst
+   python-learners.rst
 
 ****************
-Index and search
+Index and Search
 ****************
 
 * :ref:`genindex`
