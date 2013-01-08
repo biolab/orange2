@@ -6,6 +6,7 @@ import os
 import sys
 import logging
 import operator
+from functools import partial
 
 import pkg_resources
 
@@ -1399,12 +1400,21 @@ class CanvasMainWindow(QMainWindow):
     def event(self, event):
         if event.type() == QEvent.StatusTip and \
                 isinstance(event, QuickHelpTipEvent):
+            # Using singleShot to update the text browser.
+            # If updating directly the application experiences strange random
+            # segfaults (in ~StatusTipEvent in QTextLayout or event just normal
+            # event loop), but only when the contents are larger then the
+            # QTextBrowser's viewport.
             if event.priority() == QuickHelpTipEvent.Normal:
-                self.dock_help.showHelp(event.html())
+                QTimer.singleShot(0, partial(self.dock_help.showHelp,
+                                             event.html()))
             elif event.priority() == QuickHelpTipEvent.Temporary:
-                self.dock_help.showHelp(event.html(), event.timeout())
+                QTimer.singleShot(0, partial(self.dock_help.showHelp,
+                                             event.html(), event.timout()))
             elif event.priority() == QuickHelpTipEvent.Permanent:
-                self.dock_help.showPermanentHelp(event.html())
+                QTimer.singleShot(0, partial(self.dock_help.showPermanentHelp,
+                                             event.html()))
+
             return True
 
         return QMainWindow.event(self, event)
