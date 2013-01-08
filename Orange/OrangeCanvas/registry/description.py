@@ -5,9 +5,10 @@ Widget meta description classes.
 
 import os
 import sys
-
+import warnings
 
 # Exceptions
+
 
 class DescriptionError(Exception):
     pass
@@ -25,9 +26,9 @@ class CategorySpecificationError(DescriptionError):
     pass
 
 
-##############
-# Signal flags
-##############
+###############
+# Channel flags
+###############
 
 # A single signal
 Single = 2
@@ -60,28 +61,50 @@ class InputSignal(object):
         Type of the accepted signals.
     handler : str
         Name of the handler method for the signal.
-    parameters : int
-        Parameter flags.
+    flags : int, optional
+        Channel flags.
+    id : str
+        A unique id of the input signal.
+    doc : str, optional
+        A docstring documenting the channel.
 
     """
-    def __init__(self, name, type, handler, parameters=Single + NonDefault):
+    def __init__(self, name, type, handler, flags=Single + NonDefault,
+                 id=None, doc=None):
         self.name = name
         self.type = type
         self.handler = handler
+        self.id = id
+        self.doc = doc
 
-        if isinstance(parameters, basestring):
-            # parameters are stored as strings
-            parameters = eval(parameters)
+        if isinstance(flags, basestring):
+            # flags are stored as strings
+            warnings.warn("Passing 'flags' as string is deprecated, use "
+                          "integer constants instead",
+                          PendingDeprecationWarning)
+            flags = eval(flags)
 
-        if not (parameters & Single or parameters & Multiple):
-            parameters += Single
+        if not (flags & Single or flags & Multiple):
+            flags += Single
 
-        if not (parameters & Default or parameters & NonDefault):
-            parameters += NonDefault
+        if not (flags & Default or flags & NonDefault):
+            flags += NonDefault
 
-        self.single = parameters & Single
-        self.default = parameters & Default
-        self.explicit = parameters & Explicit
+        self.single = flags & Single
+        self.default = flags & Default
+        self.explicit = flags & Explicit
+        self.flags = flags
+
+
+def input_channel_from_args(args):
+    if isinstance(args, tuple):
+        return InputSignal(*args)
+    elif isinstance(args, dict):
+        return InputSignal(**args)
+    elif isinstance(args, InputSignal):
+        return args
+    else:
+        raise TypeError
 
 
 class OutputSignal(object):
@@ -93,88 +116,119 @@ class OutputSignal(object):
         Name of the channel.
     type : str or `type`
         Type of the output signals.
-    parameters : int
-        Parameter flags.
+    flags : int, optional
+        Channel flags.
+    id : str
+        A unique id of the output signal.
+    doc : str, optional
+        A docstring documenting the channel.
 
     """
-    def __init__(self, name, type, parameters=Single + NonDefault):
+    def __init__(self, name, type, flags=Single + NonDefault,
+                 id=None, doc=None):
         self.name = name
         self.type = type
+        self.id = id
+        self.doc = doc
 
-        if isinstance(parameters, basestring):
-            # parameters are stored as strings
-            parameters = eval(parameters)
+        if isinstance(flags, basestring):
+            # flags are stored as strings
+            warnings.warn("Passing 'flags' as string is deprecated, use "
+                          "integer constants instead",
+                          PendingDeprecationWarning)
+            flags = eval(flags)
 
-        if not (parameters & Single or parameters & Multiple):
-            parameters += Single
+        if not (flags & Single or flags & Multiple):
+            flags += Single
 
-        if not (parameters & Default or parameters & NonDefault):
-            parameters += NonDefault
+        if not (flags & Default or flags & NonDefault):
+            flags += NonDefault
 
-        self.single = parameters & Single
-        self.default = parameters & Default
-        self.explicit = parameters & Explicit
+        self.single = flags & Single
+        self.default = flags & Default
+        self.explicit = flags & Explicit
+        self.dynamic = flags & Dynamic
+        self.flags = flags
 
-        self.dynamic = parameters & Dynamic
         if self.dynamic and not self.single:
             raise SignalSpecificationError(
                 "Output signal can not be 'Multiple' and 'Dynamic'."
                 )
 
 
+def output_channel_from_args(args):
+    if isinstance(args, tuple):
+        return OutputSignal(*args)
+    elif isinstance(args, dict):
+        return OutputSignal(**args)
+    elif isinstance(args, InputSignal):
+        return args
+    else:
+        raise TypeError
+
+
 class WidgetDescription(object):
     """Description of a widget.
 
     Parameters
-    ==========
+    ----------
     name : str
-        A human readable name of the widget (required).
-    category : str
-        A name of the category in which this widget belongs (optional).
-    version : str
-        Version of the widget (optional).
-    description : str
-        A short description of the widget, suitable for a tool tip (optional).
-    long_description : str
-        A longer description of the widget (optional).
-    quialified_name : str
-        A qualified name (import name) of the class implementation (required).
-    package : str
-        A package name where the widget is implemented (optional).
-    project_name : str
-        The distribution name that provides the widget (optional)
-    inputs : list of `InputSignal`
+        A human readable name of the widget.
+    id : str
+        A unique identifier of the widget (in most situations this should
+        be the full module name).
+    category : str, optional
+        A name of the category in which this widget belongs.
+    version : str, optional
+        Version of the widget. By default the widget inherits the project
+        version.
+    description : str, optional
+        A short description of the widget, suitable for a tool tip.
+    long_description : str, optional
+        A longer description of the widget, suitable for a 'what's this?'
+        role.
+    qualified_name : str
+        A qualified name (import name) of the class implementing the widget.
+    package : str, optional
+        A package name where the widget is implemented.
+    project_name : str, optional
+        The distribution name that provides the widget.
+    inputs : list of `InputSignal`, optional
         A list of input channels provided by the widget.
-    outputs : list of `OutputSignal`
-        A list of output channels provided the widget.
-    help : str
-        URL or an URL scheme of a detailed widget help page.
-    author : str
+    outputs : list of `OutputSignal`, optional
+        A list of output channels provided by the widget.
+    help : str, optional
+        URL or an Resource template of a detailed widget help page.
+    author : str, optional
         Author name.
-    author_email : str
+    author_email : str, optional
         Author email address.
-    maintainer : str
+    maintainer : str, optional
         Maintainer name
-    maintainer_email : str
+    maintainer_email : str, optional
         Maintainer email address.
-    keywords : str
-        A comma separated list of keyword phrases.
-    priority : int
+    keywords : list-of-str, optional
+        A list of keyword phrases.
+    priority : int, optional
         Widget priority (the order of the widgets in a GUI presentation).
-    icon : str
+    icon : str, optional
         A filename of the widget icon (in relation to the package).
-    background : str
+    background : str, optional
         Widget's background color (in the canvas GUI).
+    replaces: list-of-str, optional
+        A list of `id`s this widget replaces (optional).
 
     """
-    def __init__(self, name=None, category=None, version=None,
+    def __init__(self, name, id, category=None, version=None,
                  description=None, long_description=None,
                  qualified_name=None, package=None, project_name=None,
-                 inputs=[], outputs=[], help=None,
+                 inputs=[], outputs=[],
                  author=None, author_email=None,
                  maintainer=None, maintainer_email=None,
-                 url=None, keywords=None, priority=sys.maxint,
+                 help=None, url=None, keywords=None,
+                 priority=sys.maxint,
                  icon=None, background=None,
+                 replaces=None,
                  ):
 
         if not qualified_name:
@@ -182,6 +236,7 @@ class WidgetDescription(object):
             raise ValueError("'qualified_name' must be supplied.")
 
         self.name = name
+        self.id = id
         self.category = category
         self.version = version
         self.description = description
@@ -201,10 +256,11 @@ class WidgetDescription(object):
         self.priority = priority
         self.icon = icon
         self.background = background
+        self.replaces = replaces
 
     def __str__(self):
-        return "WidgetDescription(name=%(name)r, category=%(category)r, ...)" \
-                % self.__dict__
+        return ("WidgetDescription(name=%(name)r, id=%(id)r), "
+                "category=%(category)r, ...)") % self.__dict__
 
     def __repr__(self):
         return self.__str__()
@@ -241,11 +297,14 @@ class WidgetDescription(object):
 
         wmod = __import__(import_name, fromlist=[""])
 
+        qualified_name = "%s.%s" % (import_name, widget_name)
+
         inputs = eval(meta.inputList)
         outputs = eval(meta.outputList)
 
-        inputs = [InputSignal(*input) for input in inputs]
-        outputs = [OutputSignal(*output) for output in outputs]
+        inputs = map(input_channel_from_args, inputs)
+
+        outputs = map(output_channel_from_args, outputs)
 
         # Resolve signal type names into concrete type instances
         inputs = [resolveSignal(input, globals=wmod.__dict__)
@@ -262,9 +321,10 @@ class WidgetDescription(object):
 
         desc = WidgetDescription(
              name=meta.name,
+             id=qualified_name,
              category=meta.category,
              description=meta.description,
-             qualified_name="%s.%s" % (import_name, widget_name),
+             qualified_name=qualified_name,
              package=wmod.__package__,
              keywords=meta.tags,
              inputs=inputs,
@@ -311,19 +371,30 @@ class WidgetDescription(object):
             # widget name.
             raise WidgetSpecificationError
 
+        qualified_name = "%s.%s" % (module.__name__, widget_class.__name__)
+
+        id = getattr(module, "ID", module_name)
         inputs = getattr(module, "INPUTS", [])
         outputs = getattr(module, "OUTPUTS", [])
         category = getattr(module, "CATEGORY", default_cat_name)
+        version = getattr(module, "VERSION", None)
         description = getattr(module, "DESCRIPTION", name)
-
-        qualified_name = "%s.%s" % (module.__name__, widget_class.__name__)
+        long_description = getattr(module, "LONG_DESCRIPTION", None)
+        author = getattr(module, "AUTHOR", None)
+        author_email = getattr(module, "AUTHOR_EMAIL", None)
+        maintainer = getattr(module, "MAINTAINER", None)
+        maintainer_email = getattr(module, "MAINTAINER_EMAIL", None)
+        help = getattr(module, "HELP", None)
+        url = getattr(module, "URL", None)
 
         icon = getattr(module, "ICON", None)
         priority = getattr(module, "PRIORITY", sys.maxint)
         keywords = getattr(module, "KEYWORDS", None)
+        background = getattr(module, "BACKGROUND", None)
+        replaces = getattr(module, "REPLACES", None)
 
-        inputs = [InputSignal(*t) for t in inputs]
-        outputs = [OutputSignal(*t) for t in outputs]
+        inputs = map(input_channel_from_args, inputs)
+        outputs = map(output_channel_from_args, outputs)
 
         # Convert all signal types into qualified names.
         # This is to prevent any possible import problems when cached
@@ -334,22 +405,33 @@ class WidgetDescription(object):
 
         return WidgetDescription(
             name=name,
+            id=id,
             category=category,
+            version=version,
             description=description,
+            long_description=long_description,
             qualified_name=qualified_name,
             package=module.__package__,
             inputs=inputs,
             outputs=outputs,
-            icon=icon,
+            author=author,
+            author_email=author_email,
+            maintainer=maintainer,
+            maintainer_email=maintainer_email,
+            help=help,
+            url=url,
+            keywords=keywords,
             priority=priority,
-            keywords=keywords)
+            icon=icon,
+            background=background,
+            replaces=replaces)
 
 
 class CategoryDescription(object):
     """Description of a widget category.
 
     Parameters
-    ==========
+    ----------
 
     name : str
         A human readable name.
@@ -375,10 +457,9 @@ class CategoryDescription(object):
     def __init__(self, name=None, version=None,
                  description=None, long_description=None,
                  qualified_name=None, package=None,
-                 project_name=None, help=None,
-                 author=None, author_email=None,
+                 project_name=None, author=None, author_email=None,
                  maintainer=None, maintainer_email=None,
-                 url=None, keywords=None,
+                 url=None, help=None, keywords=None,
                  widgets=None, priority=sys.maxint,
                  icon=None, background=None
                  ):
@@ -390,12 +471,12 @@ class CategoryDescription(object):
         self.qualified_name = qualified_name
         self.package = package
         self.project_name = project_name
-        self.help = help
         self.author = author
         self.author_email = author_email
         self.maintainer = maintainer
         self.maintainer_email = maintainer_email
         self.url = url
+        self.help = help
         self.keywords = keywords
         self.widgets = widgets or []
         self.priority = priority
@@ -427,12 +508,12 @@ class CategoryDescription(object):
         name = getattr(package, "NAME", default_name)
         description = getattr(package, "DESCRIPTION", None)
         long_description = getattr(package, "LONG_DESCRIPTION", None)
-        help = getattr(package, "HELP", None)
         author = getattr(package, "AUTHOR", None)
         author_email = getattr(package, "AUTHOR_EMAIL", None)
         maintainer = getattr(package, "MAINTAINER", None)
         maintainer_email = getattr(package, "MAINTAINER_MAIL", None)
         url = getattr(package, "URL", None)
+        help = getattr(package, "HELP", None)
         keywords = getattr(package, "KEYWORDS", None)
         widgets = getattr(package, "WIDGETS", None)
         priority = getattr(package, "PRIORITY", sys.maxint - 1)

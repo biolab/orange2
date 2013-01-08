@@ -5,6 +5,7 @@ Qt Model classes for widget registry.
 import bisect
 
 from xml.sax.saxutils import escape
+from urllib import urlencode
 
 from PyQt4.QtGui import (
     QStandardItemModel, QStandardItem, QColor, QBrush, QAction
@@ -202,6 +203,7 @@ class QtWidgetRegistry(QObject, WidgetRegistry):
             icon = desc.icon
         else:
             icon = "icons/default-category.svg"
+
         icon = icon_loader.from_description(desc).get(icon)
         item.setIcon(icon)
 
@@ -216,6 +218,7 @@ class QtWidgetRegistry(QObject, WidgetRegistry):
         item.setData(brush, self.BACKGROUND_ROLE)
 
         tooltip = desc.description if desc.description else desc.name
+
         item.setToolTip(tooltip)
         item.setFlags(Qt.ItemIsEnabled)
         item.setData(QVariant(desc), self.CATEGORY_DESC_ROLE)
@@ -314,14 +317,25 @@ def whats_this_helper(desc):
     """
     title = desc.name
     help_url = desc.help
-    description = desc.description
 
-    template = "<h3>{title}</h3>" + \
-               "<p>{description}</p>" + \
-               ("<a href='{url}'>more...</a>" if help_url else "")
-    help_text = template.format(title=title, description=description,
-                                url=help_url)
-    return help_text
+    if not help_url:
+        help_url = "help://search?" + urlencode({"id": desc.id})
+
+    description = desc.description
+    long_description = desc.long_description
+
+    template = ["<h3>{0}</h3>".format(escape(title))]
+
+    if description:
+        template.append("<p>{0}</p>".format(escape(description)))
+
+    if long_description:
+        template.append("<p>{0}</p>".format(escape(long_description[:100])))
+
+    if help_url:
+        template.append("<a href='{0}'>more...</a>".format(escape(help_url)))
+
+    return "\n".join(template)
 
 
 def run_discovery(cached=False):

@@ -31,19 +31,31 @@ def addOrigin(examples, filename):
 
 
 NAME = "File"
-DESCRIPTION = "Reads a data table from a file."
+ID = "orange.widgets.data.file"
 
-LONG_DESCRIPTION = """Read a data table from a supported file format on
-the the filesystem and send it to the the output."""
+DESCRIPTION = """
+Read a data table from a supported file format on the the file system and
+send it to the the output.
+"""
+
+LONG_DESCRIPTION = """
+This is the widget you will probably use at the start of every schema to read
+the input data file (data table with examples). The widget maintains a
+history of most recently used data files. For convenience, the history
+also includes a directory with the sample data sets that come with Orange.
+"""
 
 ICON = "icons/File.svg"
 AUTHOR = "Janez Demsar"
 MAINTAINER_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
 PRIORITY = 10
 CATEGORY = "Data"
-HELP = "docs/html/data/file.html"
 
-OUTPUTS = [("Data", orange.ExampleTable,)]
+KEYWORDS = ["data", "file", "load", "read"]
+
+OUTPUTS = [{"name": "Data",
+            "type": orange.ExampleTable,
+            "doc": "Attribute-valued data set read from the input file."}]
 
 WIDGET_CLASS = "OWFile"
 
