@@ -7,7 +7,6 @@ A tool box with a tool grid for each category.
 
 """
 
-from ast import literal_eval
 import logging
 
 from PyQt4.QtGui import (
@@ -15,9 +14,11 @@ from PyQt4.QtGui import (
     QBrush
 )
 
-from PyQt4.QtCore import Qt, QModelIndex, QSize
+from PyQt4.QtCore import (
+    Qt, QObject, QModelIndex, QSize, QEvent, QMimeData, QByteArray,
+    QDataStream, QIODevice
+)
 
-from PyQt4.QtCore import QObject, QEvent, QMimeData
 from PyQt4.QtCore import  pyqtSignal as Signal, pyqtProperty as Property
 
 from ..gui.toolbox import ToolBox, create_tab_gradient
@@ -264,36 +265,39 @@ class WidgetToolBox(ToolBox):
         .. note:: Individual tabs are stored by their action's text.
 
         """
-        version = 1
+        version = 2
 
-        tabs = []
-        for i in range(self.count()):
-            tab_action = self.tabAction(i)
-            name = unicode(tab_action.text())
-            state = tab_action.isChecked()
-            tabs.append((name, state))
+        actions = map(self.tabAction, range(self.count()))
+        expanded = [action for action in actions if action.isChecked()]
+        expanded = [action.text() for action in expanded]
 
-        return str((version, tabs))
+        byte_array = QByteArray()
+        stream = QDataStream(byte_array, QIODevice.WriteOnly)
+        stream.writeInt(version)
+        stream.writeQStringList(expanded)
+
+        return byte_array
 
     def restoreState(self, state):
-        """Restore the toolbox from `state`.
+        """Restore the toolbox from a :class:`QByteArray` `state`.
+
+        .. note:: The toolbox should already be populated for the state
+                  changes to take effect.
+
         """
-        try:
-            version, tabs = literal_eval(str(state))
-        except (ValueError, SyntaxError, TypeError):
-            return False
+        # In version 1 of saved state the state was saved in
+        # a simple dict repr string.
+        if isinstance(state, QByteArray):
+            stream = QDataStream(state, QIODevice.ReadOnly)
+            version = stream.readInt()
+            if version == 2:
+                expanded = stream.readQStringList()
+                for action in map(self.tabAction, range(self.count())):
+                    if (action.text() in expanded) != action.isChecked():
+                        action.trigger()
 
-        if version != 1:
-            return False
-
-        state = dict(tabs)
-
-        for i in range(self.count()):
-            tab_action = self.tabAction(i)
-            name = unicode(tab_action.text())
-            checked = state.get(name, tab_action.isChecked())
-            if checked != tab_action.isChecked():
-                tab_action.trigger()
+                return True
+        return False
 
     def setModel(self, model):
         """Set the widget registry model for this toolbox.
