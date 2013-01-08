@@ -2,16 +2,16 @@ Orange Documentation
 ====================
 
 
-Widget Catalog
---------------
+Visual Programming
+------------------
 
 :doc:`Widget catalog <widgets/rst/index>` contains descriptions of most widgets as they appear in the latest version of Orange.
 
 
-Scripting Documentation
------------------------
+Data Mining by Scripting in Python
+----------------------------------
 
-A beginner should start with the :doc:`tutorial <tutorial/rst/index>`, which shows how to do simple stuff like loading data and constructing classifiers.
+:doc:`tutorial <tutorial/rst/index>`which shows how to do simple stuff like loading data and constructing classifiers.
 
 For everyday programming in Orange, use :doc:`reference <reference/rst/index>`.
 
