@@ -41,11 +41,15 @@ def dump(classifier):
     formatstr = "%"+str(longest)+"s %10s %10s %10s %10s %10s"
     out.append(formatstr % ("Feature", "beta", "st. error", "wald Z", "P", "OR=exp(beta)"))
     out.append('')
-    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
+    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"
     out.append(formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0]))
-    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %s"    
+    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %s"
     for i in range(len(classifier.continuized_domain.features)):
-        exp = decimal.Decimal(math.e) ** decimal.Decimal(classifier.beta[i+1])
+        try:
+            exp = decimal.Decimal(math.e) ** decimal.Decimal(classifier.beta[i+1])
+        except TypeError:
+            # Python 2.6 does not support creating Decimals from float
+            exp = decimal.Decimal(str(math.e)) ** decimal.Decimal(str(classifier.beta[i+1]))
         out.append(formatstr % (classifier.continuized_domain.features[i].name,
             classifier.beta[i+1],
             classifier.beta_se[i+1],
@@ -54,7 +58,7 @@ def dump(classifier):
             format_decimal(exp)))
 
     return '\n'.join(out)
-        
+
 
 def has_discrete_values(domain):
     """
