@@ -631,7 +631,7 @@ class CanvasMainWindow(QMainWindow):
 
         # Restore possibly saved widget toolbox tab states
         settings = QSettings()
-        state = settings.value("canvasmainwindow/widgettoolbox/state",
+        state = settings.value("mainwindow/widgettoolbox/state",
                                 defaultValue=None)
         state = state.toPyObject()
         if state:
@@ -1391,7 +1391,7 @@ class CanvasMainWindow(QMainWindow):
 
     def showEvent(self, event):
         settings = QSettings()
-        geom_data = settings.value("canvasmainwindow/geometry")
+        geom_data = settings.value("mainwindow/geometry")
         if geom_data.isValid():
             self.restoreGeometry(geom_data.toByteArray())
 
