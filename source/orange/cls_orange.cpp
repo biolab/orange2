@@ -392,9 +392,6 @@ PyObject *Orange_getattr1(TPyOrange *self, const char *name)
       {}
     }
  
-    if (!strcmp(name, "name") || !strcmp(name, "shortDescription") || !strcmp(name, "description"))
-      return PyString_FromString("");
-
     PyErr_Format(PyExc_AttributeError, "'%s' has no attribute '%s'", self->ob_type->tp_name, name);
     return PYNULL;
   PyCATCH;
@@ -1021,6 +1018,74 @@ PyObject *Orange_str(TPyOrange *self)
     return name ? PyString_FromFormat("%s '%s'", tp_name, name)
                 : PyString_FromFormat("<%s instance at %p>", tp_name, self->ptr);
   PyCATCH
+}
+
+
+char const *genericNames[] = {"Classifier", "Learner", "Discretizer", NULL};
+
+PyObject *Orange_get_name(TPyOrange *self)
+{
+  PyTRY
+    PyObject *pyname = Orange_getattr1(self, "name");
+    if (!pyname) { 
+      PyErr_Clear();
+      if (self->orange_dict) {
+        pyname = PyDict_GetItemString(self->orange_dict, "name");
+        Py_XINCREF(pyname);
+      }
+    }
+    if (pyname) {
+      if (PyString_Check(pyname)) {
+        return pyname;
+      }
+      PyObject *pystr = PyObject_Repr(pyname);
+      Py_DECREF(pyname);
+      return pystr;
+    }
+
+    char const *tp_name = self->ob_type->tp_name;
+    char const *dotp = tp_name + strlen(tp_name);
+    while((dotp != tp_name) && (*dotp != '.')) {
+      dotp--;
+    }
+	if (*dotp == '.') {
+	  dotp++;
+	}
+	if (*dotp == '_') {
+	  dotp++;
+	}
+    char *name = (char *)malloc(strlen(dotp) + 1);
+    strcpy(name, dotp);
+
+	const int lenname = strlen(name);
+	char *nameend = name + lenname;
+    for(char const *const *gen = genericNames; *gen; gen++) {
+		if (strlen(*gen) < lenname) {
+		    char *cap = nameend - strlen(*gen);
+		    if (!strcmp(cap, *gen)) {
+              *cap = 0;
+              break;
+			}
+		}
+	}
+    if ((*name >= 'A') && (*name <= 'Z')) {
+      *name ^= 32;
+      }
+    return PyString_FromString(name);
+  PyCATCH
+}
+
+
+
+int Orange_set_name(TPyOrange *self, PyObject *arg)
+{
+  PyTRY
+    int res = Orange_setattr1(self, "name", arg);
+    if (res == 1) {
+        res = Orange_setattrDictionary(self, "name", arg, false);
+    }
+    return res;
+  PyCATCH_1
 }
 
 
