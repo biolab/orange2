@@ -1,7 +1,7 @@
 import Orange
 import random
 
-data = Orange.data.Table("housing")
+data = Orange.data.Table("voting")
 test = Orange.data.Table(random.sample(data, 5))
 train = Orange.data.Table([d for d in data if d not in test])
 
