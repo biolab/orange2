@@ -4,7 +4,7 @@ import logging
 from PyQt4.QtGui import (
     QGraphicsItem, QGraphicsPathItem, QGraphicsWidget, QGraphicsTextItem,
     QGraphicsDropShadowEffect, QPainterPath, QPainterPathStroker,
-    QPolygonF, QColor, QPen, QBrush
+    QPolygonF, QColor, QPen
 )
 
 from PyQt4.QtCore import (
@@ -420,6 +420,7 @@ class ArrowAnnotation(Annotation):
         if self.__line != line:
             self.__line = line
 
+            # local item coordinate system
             geom = self.geometry().translated(-self.pos())
 
             if geom.isNull() and not line.isNull():
@@ -434,38 +435,26 @@ class ArrowAnnotation(Annotation):
             self.__arrowItem.setLine(line)
             self.__line = line
 
+            # parent item coordinate system
             geom.translate(self.pos())
             self.setGeometry(geom)
 
+    def line(self):
+        """Return the arrow base line.
+        """
+        return QLineF(self.__line)
+
     def setColor(self, color):
+        """Set arrow brush color.
+        """
         if self.__color != color:
             self.__color = QColor(color)
             self.__updateBrush()
 
     def color(self):
-        return QColor(self.__color)
-
-    def adjustGeometry(self):
-        """Adjust the widget geometry to exactly fit the arrow inside
-        while preserving the arrow path scene geometry.
-
+        """Return the arrow brush color.
         """
-        geom = self.geometry().translated(-self.pos())
-        line = self.__line
-        line_rect = QRectF(line.p1(), line.p2()).normalized()
-        if geom.isNull() and not line.isNull():
-            geom = QRectF(0, 0, 1, 1)
-        if not (geom.contains(line_rect)):
-            geom = geom.united(line_rect)
-        geom = geom.intersected(line_rect)
-        diff = geom.topLeft()
-        line = QLineF(line.p1() - diff, line.p2() - diff)
-        geom.translate(self.pos())
-        self.setGeometry(geom)
-        self.setLine(line)
-
-    def line(self):
-        return QLineF(self.__line)
+        return QColor(self.__color)
 
     def setLineWidth(self, lineWidth):
         """Set the arrow line width.
@@ -476,6 +465,30 @@ class ArrowAnnotation(Annotation):
         """Return the arrow line width.
         """
         return self.__arrowItem.lineWidth()
+
+    def adjustGeometry(self):
+        """Adjust the widget geometry to exactly fit the arrow inside
+        while preserving the arrow path scene geometry.
+
+        """
+        # local system coordinate
+        geom = self.geometry().translated(-self.pos())
+        line = self.__line
+
+        arrow_rect = self.__arrowItem.shape().boundingRect()
+
+        if geom.isNull() and not line.isNull():
+            geom = QRectF(0, 0, 1, 1)
+
+        if not (geom.contains(arrow_rect)):
+            geom = geom.united(arrow_rect)
+
+        geom = geom.intersected(arrow_rect)
+        diff = geom.topLeft()
+        line = QLineF(line.p1() - diff, line.p2() - diff)
+        geom.translate(self.pos())
+        self.setGeometry(geom)
+        self.setLine(line)
 
     def shape(self):
         arrow_shape = self.__arrowItem.shape()
