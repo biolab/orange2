@@ -1,28 +1,19 @@
 Orange Documentation
 ====================
 
+Visual programming:
 
-Visual Programming
-------------------
+- :doc:`Widget catalog <widgets/rst/index>`
 
-:doc:`Widget catalog <widgets/rst/index>`
+Python scripting:
 
+- :doc:`Tutorial <tutorial/rst/index>`
+- :doc:`Reference <reference/rst/index>`
 
-Data Mining by Scripting in Python
-----------------------------------
+Development documentation:
 
-:doc:`Tutorial <tutorial/rst/index>`
-
-:doc:`Reference <reference/rst/index>`
-
-
-
-Orange Development Documentation
---------------------------------
-
-:doc:`Widget development manual <extend-widgets/rst/index>`
-
-`Wiki pages for developers <http://orange.biolab.si/trac>`_
+- :doc:`Widget development manual <extend-widgets/rst/index>`
+- `Wiki pages for developers <http://orange.biolab.si/trac>`_
 
 Indices and tables
 ==================
