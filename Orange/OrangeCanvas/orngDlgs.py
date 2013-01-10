@@ -726,7 +726,9 @@ class AddOnManagerSummary(QDialog):
 
 class AddOnManagerDialog(QDialog):
     def __init__(self, canvasDlg, *args):
-        apply(QDialog.__init__,(self,) + args)
+        QDialog.__init__(self, *args)
+        self.setModal(True)
+
         self.canvasDlg = canvasDlg
         self.setWindowTitle("Add-on Management")
         self.topLayout = QVBoxLayout(self)
@@ -889,7 +891,7 @@ class AddOnManagerDialog(QDialog):
     def pcb(self, max, val):
         self.progress.setMaximum(max)
         self.progress.setValue(val)
-        self.progress.repaint()
+        qApp.processEvents(QEventLoop.ExcludeUserInputEvents)
 
     def reloadRepo(self):
         # Reload add-on list.
