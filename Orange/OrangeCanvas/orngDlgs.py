@@ -847,27 +847,56 @@ class AddOnManagerDialog(QDialog):
         self.busy(True)
         self.repaint()
         add, remove, upgrade = self.to_install(), self.to_remove(), self.to_upgrade
+
+        def errormessage(title, message, details=None, exc_info=None):
+            box = QMessageBox(QMessageBox.Critical, title, message,
+                              parent=self)
+
+            if details is not None:
+                box.setDetailedText(details)
+            elif exc_info:
+                import traceback
+                if isinstance(exc_info, tuple):
+                    details = traceback.format_exception(*(exc_info + (10,)))
+                else:
+                    details = traceback.format_exc(10)
+                box.setDetailedText(details)
+
+            return box.exec_()
+
         for name in upgrade:
             try:
                 self.busy("Upgrading %s ..." % name)
                 self.repaint()
                 Orange.utils.addons.upgrade(name, self.pcb)
             except Exception, e:
-                QMessageBox.critical(self, "Error", "Problem upgrading add-on %s: %s" % (name, e))
+                errormessage("Error",
+                             "Problem upgrading add-on %s: %s" % (name, e),
+                             exc_info=True)
+            except SystemExit, e:
+                errormessage("Error", "Abnormal exit", exc_info=True)
+
         for name in remove:
             try:
                 self.busy("Uninstalling %s ..." % name)
                 self.repaint()
                 Orange.utils.addons.uninstall(name, self.pcb)
             except Exception, e:
-                QMessageBox.critical(self, "Error", "Problem uninstalling add-on %s: %s" % (name, e))
+                errormessage("Error",
+                             "Problem uninstalling add-on %s: %s" % (name, e),
+                             exc_info=True)
+
         for name in add:
             try:
                 self.busy("Installing %s ..." % name)
                 self.repaint()
                 Orange.utils.addons.install(name, self.pcb)
             except Exception, e:
-                QMessageBox.critical(self, "Error", "Problem installing add-on %s: %s" % (name, e))
+                errormessage("Error",
+                             "Problem installing add-on %s: %s" % (name, e),
+                             exc_info=True)
+            except SystemExit, e:
+                errormessage("Error", "Abnormal exit", exc_info=True)
 
         if len(upgrade) > 0:
             QMessageBox.warning(self, "Restart Orange", "After upgrading add-ons, it is very important to restart Orange to make sure the changes have been applied.")
