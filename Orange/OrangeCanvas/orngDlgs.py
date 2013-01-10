@@ -5,6 +5,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from orngCanvasItems import MyCanvasText
+from contextlib import closing
 import OWGUI, sys, os
 
 has_pip = True
@@ -907,9 +908,10 @@ class AddOnManagerDialog(QDialog):
     def upgradeCandidates(self):
         result = []
         import Orange.utils.addons
-        for ao in Orange.utils.addons.addons.values():
-            if ao.installed_version and ao.available_version and ao.installed_version != ao.available_version:
-                result.append(ao.name)
+        with closing(Orange.utils.addons.open_addons()) as addons:
+            for ao in addons.values():
+                if ao.installed_version and ao.available_version and ao.installed_version != ao.available_version:
+                    result.append(ao.name)
         return result
     
     def upgradeAll(self):
@@ -1002,10 +1004,11 @@ class AddOnManagerDialog(QDialog):
 
     def enableDisableButtons(self):
         import Orange.utils.addons
-        aos = Orange.utils.addons.addons.values()
-        self.upgradeAllButton.setEnabled(any(ao.installed_version and ao.available_version and
-                                             ao.installed_version != ao.available_version and
-                                             ao.name not in self.to_upgrade for ao in aos))
+        with closing(Orange.utils.addons.open_addons()) as addons:
+            aos = addons.values()
+            self.upgradeAllButton.setEnabled(any(ao.installed_version and ao.available_version and
+                                                 ao.installed_version != ao.available_version and
+                                                 ao.name not in self.to_upgrade for ao in aos))
         
     def currentItemChanged(self, new, previous):
         # Refresh info pane & button states
@@ -1052,11 +1055,12 @@ class AddOnManagerDialog(QDialog):
         self.lst.clear()
         
         # Add repositories and add-ons
-        addons = {}
-        for name in Orange.utils.addons.search_index(self.searchStr):
-            addons[name.lower()] = Orange.utils.addons.addons[name.lower()]
-        self.addAddOnsToTree(addons, selected = selected_addon, to_install=to_install, to_remove=to_remove)
-        self.refreshInfoPane()
+        with closing(Orange.utils.addons.open_addons()) as global_addons:
+            addons = {}
+            for name in Orange.utils.addons.search_index(self.searchStr):
+                addons[name.lower()] = global_addons[name.lower()]
+            self.addAddOnsToTree(addons, selected = selected_addon, to_install=to_install, to_remove=to_remove)
+            self.refreshInfoPane()
 
         #TODO Should we somehow show the legacy registered addons?
 
