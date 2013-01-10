@@ -978,10 +978,10 @@ class AddOnManagerDialog(QDialog):
             import orngEnviron
             addon = self.getAddOnFromItem(item)
         if addon:
-            self.lblDescription.setText(addon.summary.strip() +"\n"+ addon.description.strip())
-            self.lblVerAvailValue.setText(addon.available_version)
+            self.lblDescription.setText((addon.summary.strip() or "") +"\n"+ (addon.description.strip() or ""))
+            self.lblVerAvailValue.setText(addon.available_version or "")
 
-            self.lblVerInstalledValue.setText(addon.installed_version if addon.installed_version else "-") #TODO Tell whether it's a system-wide installation
+            self.lblVerInstalledValue.setText(addon.installed_version or "-") #TODO Tell whether it's a system-wide installation
             self.upgradeButton.setVisible(bool(addon.installed_version and addon.installed_version!=addon.available_version) and addon.name not in self.to_upgrade) #TODO Disable if it's a system-wide installation
             self.donotUpgradeButton.setVisible(addon.name in self.to_upgrade)
             self.webButton.setVisible(bool(addon.homepage))
