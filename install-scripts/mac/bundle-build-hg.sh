@@ -31,14 +31,26 @@ fi
 #Python interpreter in the bundle
 PYTHON=${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/python
 
+#easy_install script in the bundle
+EASY_INSTALL=${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/easy_install
+
 #Python version
 PY_VER=`$PYTHON -c "import sys; print sys.version[:3]"`
+
+# First install/upgrade distrubute. The setup.py scripts might
+# need it
+echo "Installing/upgrading distribute in the bundle"
+echo "============================================="
+$EASY_INSTALL -U distribute
+
 
 echo "Checkouting and building orange"
 echo "==============================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange orange $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
 echo "Specifically building orangeqt"
+echo "------------------------------"
+
 CUR_DIR=`pwd`
 cd $REPOS_DIR/orange/source/orangeqt
 echo "Fixing sip/pyqt configuration"
@@ -55,6 +67,7 @@ echo "Fixing Qt plugins search path"
 echo "[Paths]
 Plugins = ../../../../../Resources/Qt4/plugins/" > $APP/Contents/Frameworks/Python.framework/Resources/Python.app/Contents/Resources/qt.conf
 
+
 echo "Checkouting and building bioinformatics addon"
 echo "============================================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-bioinformatics bioinformatics $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
@@ -64,14 +77,9 @@ echo "==================================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-text text $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
 echo "Installing networkx"
-echo "+++++++++++++++++++++"
+echo "+++++++++++++++++++"
 ./bundle-inject-pypi.sh networkx-1.6 http://pypi.python.org/packages/source/n/networkx/networkx-1.6.tar.gz $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
-echo "Installing distribute"
-echo "+++++++++++++++++++++"
-./bundle-inject-pypi.sh distribute-0.6.24 http://pypi.python.org/packages/source/d/distribute/distribute-0.6.24.tar.gz $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
-
-# TODO: from here on we could use easy_install to install pip and then use that
 echo "Installing suds library"
 echo "+++++++++++++++++++++++"
 ./bundle-inject-pypi.sh suds-0.4 http://pypi.python.org/packages/source/s/suds/suds-0.4.tar.gz $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
