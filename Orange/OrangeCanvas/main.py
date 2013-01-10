@@ -15,7 +15,7 @@ from contextlib import nested
 import pkg_resources
 
 from PyQt4.QtGui import QFont, QColor
-from PyQt4.QtCore import QRect, QSettings, QDir
+from PyQt4.QtCore import Qt, QRect, QSettings, QDir
 
 from Orange import OrangeCanvas
 from Orange.OrangeCanvas.application.application import CanvasApplication
@@ -35,6 +35,14 @@ log = logging.getLogger(__name__)
 
 def qt_logging_handle(msg_type, message):
     print msg_type, message
+
+
+def running_in_ipython():
+    try:
+        __IPYTHON__
+        return True
+    except NameError:
+        return False
 
 
 def main(argv=None):
@@ -114,11 +122,12 @@ def main(argv=None):
                 stylesheet = os.path.extsep.join([stylesheet, "qss"])
 
             pkg_name = OrangeCanvas.__name__
-            resource = os.path.join("styles", stylesheet)
+            resource = "styles/" + stylesheet
 
             if pkg_resources.resource_exists(pkg_name, resource):
-                stylesheet_string = pkg_resources.resource_string(
-                                        pkg_name, resource)
+                stylesheet_string = \
+                    pkg_resources.resource_string(pkg_name, resource)
+
                 base = pkg_resources.resource_filename(pkg_name, "styles")
 
                 pattern = re.compile(
@@ -219,16 +228,30 @@ def main(argv=None):
                  args[0])
         canvas_window.load_scheme(args[0])
 
-    disable_redirect = \
-        settings.value("mainwindow/no-stdout-redirect", False).toBool() or \
-        options.no_redirect
+    stdout_redirect = \
+        settings.value("output/redirect-stdout", True).toBool()
 
-    if not disable_redirect:
-        output = canvas_window.output_view()
+    stderr_redirect = \
+        settings.value("output/redirect-stderr", True).toBool()
+
+    # cmd line option overrides settings, and not redirect possible
+    # under ipython
+    if options.no_redirect or running_in_ipython():
+        stderr_redirect = stdout_redirect = False
+
+    output_view = canvas_window.output_view()
+
+    if stdout_redirect:
+        stdout = output_view
     else:
-        output = None
+        stdout = sys.stdout
 
-    with nested(redirect_stdout(output), redirect_stderr(output)):
+    if stderr_redirect:
+        stderr = output_view
+    else:
+        stderr = sys.stderr
+
+    with nested(redirect_stdout(stdout), redirect_stderr(stderr)):
         log.info("Entering main event loop.")
         try:
             status = app.exec_()

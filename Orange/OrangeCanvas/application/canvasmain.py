@@ -121,9 +121,6 @@ class CanvasMainWindow(QMainWindow):
     def setup_ui(self):
         """Setup main canvas ui
         """
-        QSettings.setDefaultFormat(QSettings.IniFormat)
-        settings = QSettings()
-        settings.beginGroup("mainwindow")
 
         log.info("Setting up Canvas main window.")
 
@@ -562,11 +559,6 @@ class CanvasMainWindow(QMainWindow):
         QSettings.setDefaultFormat(QSettings.IniFormat)
         settings = QSettings()
         settings.beginGroup("mainwindow")
-
-        state = settings.value("state")
-        if state.isValid():
-            self.restoreState(state.toByteArray(),
-                              version=self.SETTINGS_VERSION)
 
         self.dock_widget.setExpanded(
             settings.value("canvasdock/expanded", True).toBool()
@@ -1241,8 +1233,7 @@ class CanvasMainWindow(QMainWindow):
         dlg = UserSettingsDialog(self)
         dlg.show()
         status = dlg.exec_()
-
-        if status == QDialog.Accepted:
+        if status == 0:
             self.__update_from_settings()
 
     def show_output_view(self):
@@ -1391,7 +1382,14 @@ class CanvasMainWindow(QMainWindow):
 
     def showEvent(self, event):
         settings = QSettings()
-        geom_data = settings.value("mainwindow/geometry")
+        settings.beginGroup("mainwindow")
+
+        # Restore geometry and dock/toolbar state
+        state = settings.value("state")
+        if state.isValid():
+            self.restoreState(state.toByteArray(),
+                              version=self.SETTINGS_VERSION)
+        geom_data = settings.value("geometry")
         if geom_data.isValid():
             self.restoreGeometry(geom_data.toByteArray())
 
@@ -1443,6 +1441,55 @@ class CanvasMainWindow(QMainWindow):
         """Translate the string.
         """
         return unicode(QMainWindow.tr(self, sourceText, disambiguation, n))
+
+    def __update_from_settings(self):
+        settings = QSettings()
+        settings.beginGroup("mainwindow")
+        toolbox_floatable = settings.value("toolbox-dock-floatable",
+                                           defaultValue=False)
+
+        features = self.dock_widget.features()
+        features = updated_flags(features, QDockWidget.DockWidgetFloatable,
+                                 toolbox_floatable.toBool())
+        self.dock_widget.setFeatures(features)
+
+        toolbox_exclusive = settings.value("toolbox-dock-exclusive",
+                                           defaultValue=False)
+        self.widgets_tool_box.setExclusive(toolbox_exclusive.toBool())
+
+        settings.endGroup()
+        settings.beginGroup("quickmenu")
+
+        triggers = 0
+        dbl_click = settings.value("trigger-on-double-click",
+                                   defaultValue=True)
+        if dbl_click.toBool():
+            triggers |= SchemeEditWidget.DoubleClicked
+
+        left_click = settings.value("trigger-on-left-click",
+                                    defaultValue=False)
+        if left_click.toBool():
+            triggers |= SchemeEditWidget.Clicked
+
+        space_press = settings.value("trigger-on-space-key",
+                                     defaultValue=True)
+        if space_press.toBool():
+            triggers |= SchemeEditWidget.SpaceKey
+
+        any_press = settings.value("trigger-on-any-key",
+                                   defaultValue=False)
+        if any_press.toBool():
+            triggers |= SchemeEditWidget.AnyKey
+
+        self.scheme_widget.setQuickMenuTriggers(triggers)
+
+
+def updated_flags(flags, mask, state):
+    if state:
+        flags |= mask
+    else:
+        flags &= ~mask
+    return flags
 
 
 def identity(item):

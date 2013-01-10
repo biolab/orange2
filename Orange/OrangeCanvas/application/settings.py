@@ -193,6 +193,8 @@ class UserSettingsDialog(QMainWindow):
         self._manager = BindingManager(self,
                                        submitPolicy=BindingManager.AutoSubmit)
 
+        self.__loop = None
+
         self.__settings = config.settings()
         self.__setupUi()
 
@@ -279,7 +281,7 @@ class UserSettingsDialog(QMainWindow):
         self.bind(cb1, "checked", "quickmenu/trigger-on-double-click")
         self.bind(cb2, "checked", "quickmenu/trigger-on-left-click")
         self.bind(cb3, "checked", "quickmenu/trigger-on-space-key")
-        self.bind(cb3, "checked", "quickmenu/trigger-on-any-key")
+        self.bind(cb4, "checked", "quickmenu/trigger-on-any-key")
 
         quickmenu.layout().addWidget(cb1)
         quickmenu.layout().addWidget(cb2)
@@ -466,14 +468,20 @@ class UserSettingsDialog(QMainWindow):
                           exc_info=True)
 
     def exec_(self):
-        loop = QEventLoop()
+        self.__loop = QEventLoop()
         self.show()
-        status = loop.exec_()
+        status = self.__loop.exec_()
+        self.__loop = None
+        return status
 
     def showEvent(self, event):
         sh = self.centralWidget().sizeHint()
         self.resize(sh)
         return QMainWindow.showEvent(self, event)
+
+    def hideEvent(self, event):
+        QMainWindow.hideEvent(self, event)
+        self.__loop.exit(0)
 
     def __macOnToolBarAction(self, action):
         index, _ = action.data().toInt()
