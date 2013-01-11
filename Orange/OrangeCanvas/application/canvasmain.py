@@ -32,7 +32,7 @@ from ..gui.utils import message_critical, message_question, message_information
 from .canvastooldock import CanvasToolDock, QuickCategoryToolbar
 from .aboutdialog import AboutDialog
 from .schemeinfo import SchemeInfoDialog
-from .outputview import OutputText
+from .outputview import OutputView
 from .settings import UserSettingsDialog
 from ..document.schemeedit import SchemeEditWidget
 
@@ -274,7 +274,7 @@ class CanvasMainWindow(QMainWindow):
 
         self.output_dock.hide()
 
-        output_view = OutputText()
+        output_view = OutputView()
         self.output_dock.setWidget(output_view)
 
         self.setMinimumSize(600, 500)

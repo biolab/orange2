@@ -20,6 +20,7 @@ from PyQt4.QtCore import Qt, QRect, QSettings, QDir
 from Orange import OrangeCanvas
 from Orange.OrangeCanvas.application.application import CanvasApplication
 from Orange.OrangeCanvas.application.canvasmain import CanvasMainWindow
+from Orange.OrangeCanvas.application.outputview import TextStream
 
 from Orange.OrangeCanvas.gui.splashscreen import SplashScreen, QPixmap
 from Orange.OrangeCanvas.config import cache_dir
@@ -234,7 +235,7 @@ def main(argv=None):
     stderr_redirect = \
         settings.value("output/redirect-stderr", True).toBool()
 
-    # cmd line option overrides settings, and not redirect possible
+    # cmd line option overrides settings / no redirect is possible
     # under ipython
     if options.no_redirect or running_in_ipython():
         stderr_redirect = stdout_redirect = False
@@ -242,12 +243,19 @@ def main(argv=None):
     output_view = canvas_window.output_view()
 
     if stdout_redirect:
-        stdout = output_view
+        stdout = TextStream()
+        stdout.stream.connect(output_view.write)
+        # also connect to original fd
+        stdout.stream.connect(sys.stdout.write)
     else:
         stdout = sys.stdout
 
     if stderr_redirect:
-        stderr = output_view
+        error_writer = output_view.formated(color=Qt.red)
+        stderr = TextStream()
+        stderr.stream.connect(error_writer.write)
+        # also connect to original fd
+        stderr.stream.connect(sys.stderr.write)
     else:
         stderr = sys.stderr
 

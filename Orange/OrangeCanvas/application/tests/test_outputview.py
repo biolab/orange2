@@ -1,13 +1,17 @@
-from datetime import datetime
+import multiprocessing.pool
 
+from datetime import datetime
+from threading import current_thread
+
+from PyQt4.QtCore import Qt, QThread
 from ...gui.test import QAppTestCase
 
-from ..outputview import OutputText
+from ..outputview import OutputView, TextStream
 
 
 class TestOutputView(QAppTestCase):
     def test_outputview(self):
-        output = OutputText()
+        output = OutputView()
         output.show()
 
         line1 = "A line \n"
@@ -38,3 +42,69 @@ class TestOutputView(QAppTestCase):
         advance()
 
         self.app.exec_()
+
+    def test_formated(self):
+        output = OutputView()
+        output.show()
+
+        output.write("A sword day, ")
+        with output.formated(color=Qt.red) as f:
+            f.write("a red day...\n")
+
+            with f.formated(color=Qt.green) as f:
+                f.write("Actually sir, orcs bleed green.\n")
+
+        bold = output.formated(weight=100, underline=True)
+        bold.write("Shutup")
+
+        self.app.exec_()
+
+    def test_threadsafe(self):
+        output = OutputView()
+        output.resize(500, 300)
+        output.show()
+
+        blue_formater = output.formated(color=Qt.blue)
+        red_formater = output.formated(color=Qt.red)
+
+        correct = []
+
+        def check_thread(*args):
+            correct.append(QThread.currentThread() == self.app.thread())
+
+        blue = TextStream()
+        blue.stream.connect(blue_formater.write)
+        blue.stream.connect(check_thread)
+
+        red = TextStream()
+        red.stream.connect(red_formater.write)
+        red.stream.connect(check_thread)
+
+        def printer(i):
+            if i % 12 == 0:
+                fizzbuz = "fizzbuz"
+            elif i % 4 == 0:
+                fizzbuz = "buz"
+            elif i % 3 == 0:
+                fizzbuz = "fizz"
+            else:
+                fizzbuz = str(i)
+
+            if i % 2:
+                writer = blue
+            else:
+                writer = red
+
+            writer.write("Greetings from thread {0}. "
+                         "This is {1}\n".format(current_thread().name,
+                                                fizzbuz))
+
+        pool = multiprocessing.pool.ThreadPool(100)
+        res = pool.map_async(printer, range(10000))
+
+        self.app.exec_()
+
+        res.wait()
+
+        self.assertTrue(all(correct))
+        self.assertTrue(len(correct) == 10000)
