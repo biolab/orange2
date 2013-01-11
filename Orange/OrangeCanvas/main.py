@@ -20,7 +20,7 @@ from PyQt4.QtCore import Qt, QRect, QSettings, QDir
 from Orange import OrangeCanvas
 from Orange.OrangeCanvas.application.application import CanvasApplication
 from Orange.OrangeCanvas.application.canvasmain import CanvasMainWindow
-from Orange.OrangeCanvas.application.outputview import TextStream
+from Orange.OrangeCanvas.application.outputview import TextStream, ExceptHook
 
 from Orange.OrangeCanvas.gui.splashscreen import SplashScreen, QPixmap
 from Orange.OrangeCanvas.config import cache_dir
@@ -258,6 +258,10 @@ def main(argv=None):
         stderr.stream.connect(sys.stderr.write)
     else:
         stderr = sys.stderr
+
+    if stderr_redirect:
+        sys.excepthook = ExceptHook()
+        sys.excepthook.handledException.connect(output_view.parent().show)
 
     with nested(redirect_stdout(stdout), redirect_stderr(stderr)):
         log.info("Entering main event loop.")

@@ -1,3 +1,4 @@
+import sys
 import multiprocessing.pool
 
 from datetime import datetime
@@ -6,7 +7,7 @@ from threading import current_thread
 from PyQt4.QtCore import Qt, QThread
 from ...gui.test import QAppTestCase
 
-from ..outputview import OutputView, TextStream
+from ..outputview import OutputView, TextStream, ExceptHook
 
 
 class TestOutputView(QAppTestCase):
@@ -108,3 +109,32 @@ class TestOutputView(QAppTestCase):
 
         self.assertTrue(all(correct))
         self.assertTrue(len(correct) == 10000)
+
+    def test_excepthook(self):
+        output = OutputView()
+        output.resize(500, 300)
+        output.show()
+
+        red_formater = output.formated(color=Qt.red)
+
+        red = TextStream()
+        red.stream.connect(red_formater.write)
+
+        hook = ExceptHook(stream=red)
+
+        def raise_exception(i):
+            try:
+                if i % 2 == 0:
+                    raise ValueError("odd")
+                else:
+                    raise ValueError("even")
+            except Exception:
+                # explicitly call hook (Thread class has it's own handler)
+                hook(*sys.exc_info())
+
+        pool = multiprocessing.pool.ThreadPool(10)
+        res = pool.map_async(raise_exception, range(100))
+
+        self.app.exec_()
+
+        res.wait()

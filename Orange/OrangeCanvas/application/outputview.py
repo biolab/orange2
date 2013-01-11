@@ -1,12 +1,15 @@
 """
 """
+import sys
+import traceback
+
 from functools import wraps
 from PyQt4.QtGui import (
     QWidget, QPlainTextEdit, QVBoxLayout, QTextCursor, QTextCharFormat,
     QFont, QFontMetrics
 )
 
-from PyQt4.QtCore import Qt, QObject, QEvent, QCoreApplication
+from PyQt4.QtCore import Qt, QObject, QEvent, QCoreApplication, QThread
 from PyQt4.QtCore import pyqtSignal as Signal
 
 
@@ -263,3 +266,35 @@ class TextStream(QObject):
         if event.type() == QueuedCallEvent.QueuedCall:
             event.call()
             event.accept()
+
+
+class ExceptHook(QObject):
+    handledException = Signal()
+
+    def __init__(self, parent=None, stream=None):
+        QObject.__init__(self, parent)
+        self.stream = stream
+
+    def __call__(self, exc_type, exc_value, tb):
+        text = traceback.format_exception(exc_type, exc_value, tb)
+        separator = "-" * 80 + "\n"
+        if QThread.currentThread() != QCoreApplication.instance().thread():
+            header = exc_type.__name__ + " (in non GUI thread)"
+        else:
+            header = exc_type.__name__
+
+        header_fmt = "%%%is\n"
+        if tb:
+            header += (header_fmt % (80 - len(header))) % text[0].strip()
+            del text[0]
+        else:
+            header
+
+        if self.stream is None:
+            stream = sys.stderr
+        else:
+            stream = self.stream
+
+        stream.writelines([separator, header] + text)
+
+        self.handledException.emit()
