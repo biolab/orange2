@@ -94,6 +94,7 @@ class SchemeEditWidget(QWidget):
         self.__quickMenuTriggers = SchemeEditWidget.SpaceKey | \
                                    SchemeEditWidget.DoubleClicked
         self.__emptyClickButtons = 0
+        self.__channelNamesVisible = True
         self.__possibleSelectionHandler = None
         self.__possibleMouseItemsMove = False
         self.__itemsMoving = {}
@@ -319,6 +320,8 @@ class SchemeEditWidget(QWidget):
         layout.setSpacing(0)
 
         scene = CanvasScene()
+        scene.set_channel_names_visible(self.__channelNamesVisible)
+
         view = CanvasView(scene)
         view.setFrameStyle(CanvasView.NoFrame)
         view.setRenderHint(QPainter.Antialiasing)
@@ -400,6 +403,21 @@ class SchemeEditWidget(QWidget):
     def quickMenuTriggres(self):
         return self.__quickMenuTriggers
 
+    def setChannelNamesVisible(self, visible):
+        """Set channel names visibility state. When enabled the links
+        in the view will have a visible source/sink channel names
+        displayed over them.
+
+        """
+        if self.__channelNamesVisible != visible:
+            self.__channelNamesVisible = visible
+            self.__scene.set_channel_names_visible(visible)
+
+    def channelNamesVisible(self):
+        """Return the channel name visibility state.
+        """
+        return self.__channelNamesVisible
+
     def undoStack(self):
         """Return the undo stack.
         """
@@ -408,8 +426,8 @@ class SchemeEditWidget(QWidget):
     def setPath(self, path):
         """Set the path associated with the current scheme.
 
-    .. note:: Calling `setScheme` will invalidate the path (i.e. set it
-              to an empty string)
+        .. note:: Calling `setScheme` will invalidate the path (i.e. set it
+                  to an empty string)
 
         """
         if self.__path != path:
@@ -467,6 +485,8 @@ class SchemeEditWidget(QWidget):
 
             self.__scene = CanvasScene()
             self.__view.setScene(self.__scene)
+            self.__scene.set_channel_names_visible(self.__channelNamesVisible)
+
             self.__scene.installEventFilter(self)
 
             self.__scene.set_registry(self.__registry)

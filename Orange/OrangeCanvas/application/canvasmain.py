@@ -589,6 +589,8 @@ class CanvasMainWindow(QMainWindow):
             settings.value("quick-help/visible", True).toBool()
         )
 
+        self.__update_from_settings()
+
     def set_document_title(self, title):
         """Set the document title (and the main window title). If `title`
         is an empty string a default 'untitled' placeholder will be used.
@@ -1482,6 +1484,12 @@ class CanvasMainWindow(QMainWindow):
             triggers |= SchemeEditWidget.AnyKey
 
         self.scheme_widget.setQuickMenuTriggers(triggers)
+
+        settings.endGroup()
+        settings.beginGroup("schemeedit")
+        show_channel_names = settings.value("show-channel-names",
+                                            defaultValue=True)
+        self.scheme_widget.setChannelNamesVisible(show_channel_names.toBool())
 
 
 def updated_flags(flags, mask, state):
