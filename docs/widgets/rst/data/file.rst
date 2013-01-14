@@ -3,7 +3,7 @@
 File
 ====
 
-.. image:: images/File_icon.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/File_48.png
    :alt: File widget icon
    
 Signals
@@ -59,7 +59,7 @@ Examples
 
 Any of your schemas should probably start with the :ref:`File` widget. In the schema below,
 the widget is used to read the data that is then sent to both :ref:`Data Table` widget and 
-to widget that displays `Attribute Statistics`_.
+to widget that displays :ref:`Attribute Statistics`.
 
 .. image:: images/File_schema.png
    :alt: Example schema with File widget

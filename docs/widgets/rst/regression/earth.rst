@@ -54,7 +54,7 @@ learners, for instance Test Learners.
 	   penalty for the GCV calculation)
 
 
-After changing one or more settings, you need to push |5| ``Apply``, 
+After changing one or more settings, you need to push 5 ``Apply``,
 which will put the new learner on the output and, if the training
 examples are given, construct a new predictor and output it as well.
 

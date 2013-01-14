@@ -5,6 +5,7 @@
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from orngCanvasItems import MyCanvasText
+from contextlib import closing
 import OWGUI, sys, os
 
 has_pip = True
@@ -725,7 +726,9 @@ class AddOnManagerSummary(QDialog):
 
 class AddOnManagerDialog(QDialog):
     def __init__(self, canvasDlg, *args):
-        apply(QDialog.__init__,(self,) + args)
+        QDialog.__init__(self, *args)
+        self.setModal(True)
+
         self.canvasDlg = canvasDlg
         self.setWindowTitle("Add-on Management")
         self.topLayout = QVBoxLayout(self)
@@ -844,27 +847,56 @@ class AddOnManagerDialog(QDialog):
         self.busy(True)
         self.repaint()
         add, remove, upgrade = self.to_install(), self.to_remove(), self.to_upgrade
+
+        def errormessage(title, message, details=None, exc_info=None):
+            box = QMessageBox(QMessageBox.Critical, title, message,
+                              parent=self)
+
+            if details is not None:
+                box.setDetailedText(details)
+            elif exc_info:
+                import traceback
+                if isinstance(exc_info, tuple):
+                    details = traceback.format_exception(*(exc_info + (10,)))
+                else:
+                    details = traceback.format_exc(10)
+                box.setDetailedText(details)
+
+            return box.exec_()
+
         for name in upgrade:
             try:
                 self.busy("Upgrading %s ..." % name)
                 self.repaint()
                 Orange.utils.addons.upgrade(name, self.pcb)
             except Exception, e:
-                QMessageBox.critical(self, "Error", "Problem upgrading add-on %s: %s" % (name, e))
+                errormessage("Error",
+                             "Problem upgrading add-on %s: %s" % (name, e),
+                             exc_info=True)
+            except SystemExit, e:
+                errormessage("Error", "Abnormal exit", exc_info=True)
+
         for name in remove:
             try:
                 self.busy("Uninstalling %s ..." % name)
                 self.repaint()
                 Orange.utils.addons.uninstall(name, self.pcb)
             except Exception, e:
-                QMessageBox.critical(self, "Error", "Problem uninstalling add-on %s: %s" % (name, e))
+                errormessage("Error",
+                             "Problem uninstalling add-on %s: %s" % (name, e),
+                             exc_info=True)
+
         for name in add:
             try:
                 self.busy("Installing %s ..." % name)
                 self.repaint()
                 Orange.utils.addons.install(name, self.pcb)
             except Exception, e:
-                QMessageBox.critical(self, "Error", "Problem installing add-on %s: %s" % (name, e))
+                errormessage("Error",
+                             "Problem installing add-on %s: %s" % (name, e),
+                             exc_info=True)
+            except SystemExit, e:
+                errormessage("Error", "Abnormal exit", exc_info=True)
 
         if len(upgrade) > 0:
             QMessageBox.warning(self, "Restart Orange", "After upgrading add-ons, it is very important to restart Orange to make sure the changes have been applied.")
@@ -888,7 +920,7 @@ class AddOnManagerDialog(QDialog):
     def pcb(self, max, val):
         self.progress.setMaximum(max)
         self.progress.setValue(val)
-        self.progress.repaint()
+        qApp.processEvents(QEventLoop.ExcludeUserInputEvents)
 
     def reloadRepo(self):
         # Reload add-on list.
@@ -907,9 +939,10 @@ class AddOnManagerDialog(QDialog):
     def upgradeCandidates(self):
         result = []
         import Orange.utils.addons
-        for ao in Orange.utils.addons.addons.values():
-            if ao.installed_version and ao.available_version and ao.installed_version != ao.available_version:
-                result.append(ao.name)
+        with closing(Orange.utils.addons.open_addons()) as addons:
+            for ao in addons.values():
+                if ao.installed_version and ao.available_version and ao.installed_version != ao.available_version:
+                    result.append(ao.name)
         return result
     
     def upgradeAll(self):
@@ -976,10 +1009,10 @@ class AddOnManagerDialog(QDialog):
             import orngEnviron
             addon = self.getAddOnFromItem(item)
         if addon:
-            self.lblDescription.setText(addon.summary.strip() +"\n"+ addon.description.strip())
-            self.lblVerAvailValue.setText(addon.available_version)
+            self.lblDescription.setText((addon.summary.strip() or "") +"\n"+ (addon.description.strip() or ""))
+            self.lblVerAvailValue.setText(addon.available_version or "")
 
-            self.lblVerInstalledValue.setText(addon.installed_version if addon.installed_version else "-") #TODO Tell whether it's a system-wide installation
+            self.lblVerInstalledValue.setText(addon.installed_version or "-") #TODO Tell whether it's a system-wide installation
             self.upgradeButton.setVisible(bool(addon.installed_version and addon.installed_version!=addon.available_version) and addon.name not in self.to_upgrade) #TODO Disable if it's a system-wide installation
             self.donotUpgradeButton.setVisible(addon.name in self.to_upgrade)
             self.webButton.setVisible(bool(addon.homepage))
@@ -1002,10 +1035,11 @@ class AddOnManagerDialog(QDialog):
 
     def enableDisableButtons(self):
         import Orange.utils.addons
-        aos = Orange.utils.addons.addons.values()
-        self.upgradeAllButton.setEnabled(any(ao.installed_version and ao.available_version and
-                                             ao.installed_version != ao.available_version and
-                                             ao.name not in self.to_upgrade for ao in aos))
+        with closing(Orange.utils.addons.open_addons()) as addons:
+            aos = addons.values()
+            self.upgradeAllButton.setEnabled(any(ao.installed_version and ao.available_version and
+                                                 ao.installed_version != ao.available_version and
+                                                 ao.name not in self.to_upgrade for ao in aos))
         
     def currentItemChanged(self, new, previous):
         # Refresh info pane & button states
@@ -1052,11 +1086,12 @@ class AddOnManagerDialog(QDialog):
         self.lst.clear()
         
         # Add repositories and add-ons
-        addons = {}
-        for name in Orange.utils.addons.search_index(self.searchStr):
-            addons[name.lower()] = Orange.utils.addons.addons[name.lower()]
-        self.addAddOnsToTree(addons, selected = selected_addon, to_install=to_install, to_remove=to_remove)
-        self.refreshInfoPane()
+        with closing(Orange.utils.addons.open_addons()) as global_addons:
+            addons = {}
+            for name in Orange.utils.addons.search_index(self.searchStr):
+                addons[name.lower()] = global_addons[name.lower()]
+            self.addAddOnsToTree(addons, selected = selected_addon, to_install=to_install, to_remove=to_remove)
+            self.refreshInfoPane()
 
         #TODO Should we somehow show the legacy registered addons?
 

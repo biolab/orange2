@@ -30,6 +30,7 @@ import os
 import sys
 import platform
 from collections import namedtuple, defaultdict
+from contextlib import closing
 
 import Orange.utils.environ
 
@@ -46,16 +47,20 @@ OrangeAddOn = namedtuple('OrangeAddOn', ['name', 'available_version', 'installed
 INDEX_RE = "[^a-z0-9-']"  # RE for splitting entries in the search index
 
 AOLIST_FILE = os.path.join(Orange.utils.environ.orange_settings_dir, "addons.shelve")
-try:
-    addons = shelve.open(AOLIST_FILE, 'c')
-    if any(name != name.lower() for name, record in addons.items()):  # Try to read the whole list and check for sanity.
-        raise Exception("Corrupted add-on list.")
-except:
-    if os.path.isfile(AOLIST_FILE):
-        os.remove(AOLIST_FILE)
-    addons = shelve.open(AOLIST_FILE, 'n')
+def open_addons():
+    try:
+        addons = shelve.open(AOLIST_FILE, 'c')
+        if any(name != name.lower() for name, record in addons.items()):  # Try to read the whole list and check for sanity.
+            raise Exception("Corrupted add-on list.")
+    except:
+        if os.path.isfile(AOLIST_FILE):
+            os.remove(AOLIST_FILE)
+        addons = shelve.open(AOLIST_FILE, 'n')
+    return addons
 
-addons_corrupted = len(addons)==0
+global addons_corrupted
+with closing(open_addons()) as addons:
+    addons_corrupted = len(addons)==0
 
 addon_refresh_callback = []
 
@@ -65,22 +70,24 @@ def rebuild_index():
     global index
 
     index = defaultdict(list)
-    for name, ao in addons.items():
-        for s in [name, ao.summary, ao.description, ao.author] + (ao.keywords if ao.keywords else []):
-            if not s:
-                continue
-            words = [word for word in re.split(INDEX_RE, s.lower())
-                     if len(word)>1]
-            for word in words:
-                for i in range(len(word)):
-                    index[word[:i+1]].append(name)
+    with closing(open_addons()) as addons:
+        for name, ao in addons.items():
+            for s in [name, ao.summary, ao.description, ao.author] + (ao.keywords if ao.keywords else []):
+                if not s:
+                    continue
+                words = [word for word in re.split(INDEX_RE, s.lower())
+                         if len(word)>1]
+                for word in words:
+                    for i in range(len(word)):
+                        index[word[:i+1]].append(name)
 
 def search_index(query):
     global index
     result = set()
     words = [word for word in re.split(INDEX_RE, query.lower()) if len(word)>1]
     if not words:
-        return addons.keys()
+        with closing(open_addons()) as addons:
+            return addons.keys()
     for word in words:
         result.update(index[word])
     return result
@@ -103,69 +110,70 @@ def refresh_available_addons(force=False, progress_callback=None):
     except:
         readthedocs = None
 
+    global addons_corrupted
     docs = {}
     if progress_callback:
         progress_callback(len(pkg_dict)+1, 1)
-    for i, (name, (_, version)) in enumerate(pkg_dict.items()):
-        if force or name not in addons or addons[name.lower()].available_version != version:
-            try:
-                data = pypi.release_data(name, version)
-                rel = pypi.release_urls(name, version)[0]
+    with closing(open_addons()) as addons:
+        for i, (name, (_, version)) in enumerate(pkg_dict.items()):
+            if force or name not in addons or addons[name.lower()].available_version != version:
+                try:
+                    data = pypi.release_data(name, version)
+                    rel = pypi.release_urls(name, version)[0]
 
-                if readthedocs:
-                    try:
-                        docs = readthedocs.project.get(slug=name.lower())['objects'][0]
-                    except:
-                        docs = {}
-                addons[name.lower()] = OrangeAddOn(name = name,
-                                           available_version = data['version'],
-                                           installed_version = addons[name.lower()].installed_version if name.lower() in addons else None,
-                                           summary = data['summary'],
-                                           description = data.get('description', ''),
-                                           author = str((data.get('author', '') or '') + ' ' + (data.get('author_email', '') or '')).strip(),
-                                           docs_url = data.get('docs_url', docs.get('subdomain', '')),
-                                           keywords = data.get('keywords', "").split(","),
-                                           homepage = data.get('home_page', ''),
-                                           package_url = data.get('package_url', ''),
-                                           release_url = rel.get('url', None),
-                                           release_size = rel.get('size', -1),
-                                           python_version = rel.get('python_version', None))
-            except Exception, e:
-                import traceback
-                traceback.print_exc()
-                warnings.warn('Could not load data for the following add-on: %s'%name)
-        if progress_callback:
-            progress_callback(len(pkg_dict)+1, i+2)
-    addons_corrupted = False
-    addons.sync()
+                    if readthedocs:
+                        try:
+                            docs = readthedocs.project.get(slug=name.lower())['objects'][0]
+                        except:
+                            docs = {}
+                    addons[name.lower()] = OrangeAddOn(name = name,
+                                               available_version = data['version'],
+                                               installed_version = addons[name.lower()].installed_version if name.lower() in addons else None,
+                                               summary = data['summary'],
+                                               description = data.get('description', ''),
+                                               author = str((data.get('author', '') or '') + ' ' + (data.get('author_email', '') or '')).strip(),
+                                               docs_url = data.get('docs_url', docs.get('subdomain', '')),
+                                               keywords = data.get('keywords', "").split(","),
+                                               homepage = data.get('home_page', ''),
+                                               package_url = data.get('package_url', ''),
+                                               release_url = rel.get('url', None),
+                                               release_size = rel.get('size', -1),
+                                               python_version = rel.get('python_version', None))
+                except Exception, e:
+                    import traceback
+                    traceback.print_exc()
+                    warnings.warn('Could not load data for the following add-on: %s'%name)
+            if progress_callback:
+                progress_callback(len(pkg_dict)+1, i+2)
+        addons_corrupted = False
 
     rebuild_index()
 
 def load_installed_addons():
     found = set()
-    for entry_point in pkg_resources.iter_entry_points(ADDONS_ENTRY_POINT):
-        name, version = entry_point.dist.project_name, entry_point.dist.version
-        #TODO We could import setup.py from entry_point.location and load descriptions and such ...
-        if name.lower() in addons:
-            addons[name.lower()] = addons[name.lower()]._replace(installed_version = version)
-        else:
-            addons[name.lower()] = OrangeAddOn(name = name,
-                available_version = None,
-                installed_version = version,
-                summary = "",
-                description = "",
-                author = "",
-                docs_url = "",
-                keywords = "",
-                homepage = "",
-                package_url = "",
-                release_url = "",
-                release_size = None,
-                python_version = None)
-        found.add(name.lower())
-    for name in set(addons).difference(found):
-        addons[name.lower()] = addons[name.lower()]._replace(installed_version = None)
-    addons.sync()
+    with closing(open_addons()) as addons:
+        for entry_point in pkg_resources.iter_entry_points(ADDONS_ENTRY_POINT):
+            name, version = entry_point.dist.project_name, entry_point.dist.version
+            #TODO We could import setup.py from entry_point.location and load descriptions and such ...
+            if name.lower() in addons:
+                addons[name.lower()] = addons[name.lower()]._replace(installed_version = version)
+            else:
+                addons[name.lower()] = OrangeAddOn(name = name,
+                    available_version = None,
+                    installed_version = version,
+                    summary = "",
+                    description = "",
+                    author = "",
+                    docs_url = "",
+                    keywords = "",
+                    homepage = "",
+                    package_url = "",
+                    release_url = "",
+                    release_size = None,
+                    python_version = None)
+            found.add(name.lower())
+        for name in set(addons).difference(found):
+            addons[name.lower()] = addons[name.lower()]._replace(installed_version = None)
     rebuild_index()
 
 def run_setup(setup_script, args):
@@ -208,7 +216,8 @@ def install(name, progress_callback=None):
     try:
         import urllib
         rh = (lambda done, bs, fs: progress_callback(fs/bs, done)) if progress_callback else None
-        egg = urllib.urlretrieve(addons[name.lower()].release_url, reporthook=rh)[0]
+        with closing(open_addons()) as addons:
+            egg = urllib.urlretrieve(addons[name.lower()].release_url, reporthook=rh)[0]
     except Exception, e:
         raise Exception("Unable to download add-on from repository: %s" % e)
 
@@ -217,7 +226,8 @@ def install(name, progress_callback=None):
             tmpdir = tempfile.mkdtemp()
             egg_contents = tarfile.open(egg)
             egg_contents.extractall(tmpdir)
-            setup_py = os.path.join(tmpdir, name+'-'+addons[name.lower()].available_version, 'setup.py')
+            with closing(open_addons()) as addons:
+                setup_py = os.path.join(tmpdir, name+'-'+addons[name.lower()].available_version, 'setup.py')
         except Exception, e:
             raise Exception("Unable to unpack add-on: %s" % e)
 

@@ -1,6 +1,7 @@
 import Orange
 from Orange.utils import deprecated_keywords, deprecated_members
 from Orange.data import preprocess
+import decimal
 import math
 
 
@@ -8,6 +9,15 @@ from numpy import dot, array, identity, reshape, diagonal, \
     transpose, concatenate, sqrt, sign
 from numpy.linalg import inv
 from Orange.core import LogRegClassifier, LogRegFitter, LogRegFitter_Cholesky
+
+def format_decimal(x, prec=2):
+    """Allows arbitrary precision with scientific notation"""
+    tup = x.as_tuple()
+    digits = list(tup.digits[:prec + 1])
+    sign = '-' if tup.sign else ''
+    dec = ''.join(str(i) for i in digits[1:])
+    exp = x.adjusted()
+    return '{sign}{int}.{dec}e{exp}'.format(sign=sign, int=digits[0], dec=dec, exp=exp)
 
 def dump(classifier):
     """ Return a formatted string describing the logistic regression model
@@ -31,14 +41,24 @@ def dump(classifier):
     formatstr = "%"+str(longest)+"s %10s %10s %10s %10s %10s"
     out.append(formatstr % ("Feature", "beta", "st. error", "wald Z", "P", "OR=exp(beta)"))
     out.append('')
-    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
+    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"
     out.append(formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0]))
-    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"    
+    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %s"
     for i in range(len(classifier.continuized_domain.features)):
-        out.append(formatstr % (classifier.continuized_domain.features[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), math.exp(classifier.beta[i+1])))
+        try:
+            exp = decimal.Decimal(math.e) ** decimal.Decimal(classifier.beta[i+1])
+        except TypeError:
+            # Python 2.6 does not support creating Decimals from float
+            exp = decimal.Decimal(str(math.e)) ** decimal.Decimal(str(classifier.beta[i+1]))
+        out.append(formatstr % (classifier.continuized_domain.features[i].name,
+            classifier.beta[i+1],
+            classifier.beta_se[i+1],
+            classifier.wald_Z[i+1],
+            abs(classifier.P[i+1]),
+            format_decimal(exp)))
 
     return '\n'.join(out)
-        
+
 
 def has_discrete_values(domain):
     """

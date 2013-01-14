@@ -47,7 +47,6 @@ import sphinx.ext.autodoc
 import numpydoc
 sphinx.ext.autodoc.inspect = myinspect
 numpydoc.docscrape.inspect = myinspect
-
 module_setup = imp.load_source('module_setup', os.path.join(PATH, '..', 'setup.py'))
 VERSION = module_setup.VERSION
 AUTHOR = module_setup.AUTHOR
@@ -62,6 +61,7 @@ os.environ["orange_no_deprecated_members"] = "1"
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.append(os.path.abspath(os.path.join(PATH, "..")))
+sys.path.append(os.path.abspath(os.path.join(PATH, "..", "Orange")))
 import Orange
 
 # -- General configuration -----------------------------------------------------
@@ -176,7 +176,7 @@ html_title = TITLE
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = []
+html_static_path = ["../Orange/doc/widgets"]
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.

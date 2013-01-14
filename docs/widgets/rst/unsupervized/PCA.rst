@@ -45,4 +45,4 @@ of the input data.
 
 The number of components of the transformation can be selected using either
 the `Components Selection` input box or by dragging the vertical cutoff line
-in the graph (|5|).
+in the graph.

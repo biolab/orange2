@@ -6,7 +6,9 @@ except:
 
 from orngLR import LogRegLearner, Univariate_LogRegLearner, StepWiseFSS, StepWiseFSS_Filter
 
-from Orange.classification.logreg import LibLinearLogRegLearner
+from Orange.classification.logreg import LibLinearLogRegLearner, dump
+import Orange
+
 def datasets_iter():
     for name, (data,) in testing.datasets_iter(testing.CLASSIFICATION_DATASETS):
         if len(data.domain.class_var.values) == 2:
@@ -21,7 +23,7 @@ class TestLogRegLearner(testing.LearnerTestCase):
         """ Test LogRegLearner.
         """
         if len(dataset) < len(dataset.domain):
-            raise unittest.SkipTest("No enough examples")
+            raise unittest.SkipTest("Not enough examples")
         testing.LearnerTestCase.test_learner_on(self, dataset)
 
 
@@ -46,6 +48,22 @@ class TestLibLinearLogRegLearner(testing.LearnerTestCase):
         """ Test LibLinearLogRegLearner.
         """
         testing.LearnerTestCase.test_learner_on(self, dataset)
+
+class TestUtils(unittest.TestCase):
+    def test_dump(self):
+        """Test for dump() failing (OverflowError: math range error on math.exp)
+         on classifiers with high beta"""
+        quality = Orange.feature.Discrete('quality')
+        quality.add_value('low')
+        quality.add_value('high')
+        price = Orange.feature.Continuous('price')
+        variables = [price, quality]
+        matrix = [[0.01, 'high'], [0.001, 'low']]
+        domain = Orange.data.Domain(variables)
+        data = Orange.data.Table(domain, matrix)
+        classifier = LogRegLearner(data)
+        text_dump = dump(classifier)
+
 
 if __name__ == "__main__":
     unittest.main()
