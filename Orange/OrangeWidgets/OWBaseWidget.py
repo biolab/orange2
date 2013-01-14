@@ -385,7 +385,8 @@ class OWBaseWidget(QDialog):
         if self.parent != None and isinstance(self.parent, QTabWidget):
             self.parent.setTabText(self.parent.indexOf(self), caption)
         else:
-            self.captionTitle = caption     # we have to save caption title in case progressbar will change it
+            # we have to save caption title in case progressbar will change it
+            self.captionTitle = unicode(caption)
             self.setWindowTitle(caption)
 
     # put this widget on top of all windows
