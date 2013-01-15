@@ -31,8 +31,8 @@ from distutils.extension import Extension
 
 NAME = 'Orange'
 
-VERSION = '2.6'
-ISRELEASED = True
+VERSION = '2.6.1'
+ISRELEASED = False
 
 DESCRIPTION = 'Orange, a component-based data mining framework.'
 LONG_DESCRIPTION = open(os.path.join(os.path.dirname(__file__), 'README.txt')).read()
