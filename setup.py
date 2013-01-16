@@ -746,13 +746,15 @@ EXTRAS_REQUIRE = {
 DEPENDENCY_LINKS = (
 )
 
-# TODO: Use entry points for automatic script creation
-# http://packages.python.org/distribute/setuptools.html#automatic-script-creation
 ENTRY_POINTS = {
     'gui_scripts': (
             'orange-canvas = Orange.OrangeCanvas.main:main',
+    ),
+    'orange.canvas.help': (
+            'intersphinx = Orange.OrangeWidgets:intersphinx',
     )
 }
+
 
 def setup_package():
     write_version_py()
@@ -778,12 +780,8 @@ def setup_package():
         include_package_data = True,
         zip_safe = False,
 
-        # TODO: Should migrate those for distribute (using entry points)
         cmdclass = cmdclass,
         ext_modules = ext_modules,
-#        scripts = (
-#            "bin/orange-canvas",
-#        ),
     )
 
 if __name__ == '__main__':
