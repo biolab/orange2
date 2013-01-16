@@ -15,4 +15,6 @@ DESCRIPTION = "Widgets for association rules."
 
 BACKGROUND = "#ACE3CE"
 
+ICON = "icons/Category-Associate.svg"
+
 PRIORITY = 7
