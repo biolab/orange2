@@ -336,7 +336,7 @@ class CanvasScene(QGraphicsScene):
         self.link_item_added.emit(item)
 
         log.info("Added link %r -> %r to '%s'" % \
-                 (item.sourceItem.title, item.sinkItem.title, self))
+                 (item.sourceItem.title(), item.sinkItem.title(), self))
 
         self.__anchor_layout.invalidateLink(item)
 
