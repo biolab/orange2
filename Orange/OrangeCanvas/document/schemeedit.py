@@ -520,6 +520,10 @@ class SchemeEditWidget(QWidget):
 
             self.__scene.set_scheme(scheme)
 
+            if self.__scheme:
+                for node in self.__scheme.nodes:
+                    self.__onNodeAdded(node)
+
     def scheme(self):
         """Return the :class:`Scheme` edited by the widget.
         """
@@ -681,6 +685,22 @@ class SchemeEditWidget(QWidget):
                 self.__scene.item_for_node(node).setPos(x, y)
 
             self.__undoStack.endMacro()
+
+    def focusNode(self):
+        """Return the current focused `SchemeNode` or None if no
+        node has focus.
+
+        """
+        focus = self.__scene.focusItem()
+        node = None
+        if isinstance(focus, items.NodeItem):
+            try:
+                node = self.__scene.node_for_item(focus)
+            except KeyError:
+                # in case the node has been removed but the scene was not
+                # yet fully updated.
+                node = None
+        return node
 
     def selectedNodes(self):
         """Return all selected `SchemeNode` items.
@@ -1000,10 +1020,9 @@ class SchemeEditWidget(QWidget):
             self.__openSelectedAction.setText(self.tr("Open"))
             self.__removeSelectedAction.setText(self.tr("Remove"))
 
-        focus = self.__scene.focusItem()
-        if isinstance(focus, items.NodeItem):
-            node = self.__scene.node_for_item(focus)
-            desc = node.description
+        focus = self.focusNode()
+        if focus is not None:
+            desc = focus.description
             tip = whats_this_helper(desc)
         else:
             tip = ""
