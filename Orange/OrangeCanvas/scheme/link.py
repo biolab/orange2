@@ -164,3 +164,12 @@ class SchemeLink(QObject):
 
     tool_tip = Property(str, fget=tool_tip,
                           fset=set_tool_tip)
+
+    def __str__(self):
+        return u"{0}(({1}, {2}) -> ({3}, {4}))".format(
+                    type(self).__name__,
+                    self.source_node.title,
+                    self.source_channel.name,
+                    self.sink_node.title,
+                    self.sink_channel.name
+                )
