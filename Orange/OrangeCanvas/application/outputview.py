@@ -235,9 +235,9 @@ def queued_blocking(method):
     """
     @wraps(method)
     def delay_method_call(self, *args, **kwargs):
-        event = QueuedCallEvent(method, args, kwargs)
+        event = QueuedCallEvent(method, (self,) + args, kwargs)
         QCoreApplication.postEvent(self, event)
-        QCoreApplication.flush()
+        QCoreApplication.sendPostedEvents()
         return event.result()
 
     return delay_method_call
@@ -245,7 +245,7 @@ def queued_blocking(method):
 
 class TextStream(QObject):
     stream = Signal(basestring)
-    flushed = Signal(basestring)
+    flushed = Signal()
 
     def __init__(self, parent=None):
         QObject.__init__(self, parent)
