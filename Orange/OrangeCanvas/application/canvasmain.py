@@ -272,27 +272,25 @@ class CanvasMainWindow(QMainWindow):
 
         self.output_dock = QDockWidget(self.tr("Output"),
                                        objectName="output-dock")
-
         self.output_dock.setAllowedAreas(Qt.BottomDockWidgetArea)
-
-        self.addDockWidget(Qt.BottomDockWidgetArea, self.output_dock)
-        self.output_dock.setFloating(True)
-
-        self.output_dock.hide()
-
         output_view = OutputView()
+        # Set widget before calling addDockWidget, otherwise the dock
+        # does not resize properly on first undock
         self.output_dock.setWidget(output_view)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.output_dock)
+
+        self.output_dock.setFloating(True)
+        self.output_dock.hide()
 
         self.help_dock = QDockWidget(self.tr("Help"),
                                      objectName="help-dock")
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.help_dock)
-        self.help_dock.setFloating(True)
         self.help_dock.setAllowedAreas(Qt.NoDockWidgetArea)
-
-        self.help_dock.hide()
-
         self.help_view = QWebView()
         self.help_dock.setWidget(self.help_view)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.help_dock)
+
+        self.help_dock.setFloating(True)
+        self.help_dock.hide()
 
         self.setMinimumSize(600, 500)
 
