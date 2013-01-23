@@ -99,6 +99,64 @@ class FakeToolBar(QToolBar):
         pass
 
 
+class DockableWindow(QDockWidget):
+    def __init__(self, *args, **kwargs):
+        QDockWidget.__init__(self, *args, **kwargs)
+
+        # Fist show after floating
+        self.__firstShow = True
+        # flags to use while floating
+        self.__windowFlags = Qt.Window
+        self.setWindowFlags(self.__windowFlags)
+        self.topLevelChanged.connect(self.__on_topLevelChanged)
+        self.visibilityChanged.connect(self.__on_visbilityChanged)
+
+        self.__closeAction = QAction(self.tr("Close"), self,
+                                     shortcut=QKeySequence.Close,
+                                     triggered=self.close,
+                                     enabled=self.isFloating())
+        self.topLevelChanged.connect(self.__closeAction.setEnabled)
+        self.addAction(self.__closeAction)
+
+    def setFloatingWindowFlags(self, flags):
+        """
+        Set `windowFlags` to use while the widget is floating (undocked).
+        """
+        self.__windowFlags = flags
+        if self.isFloating():
+            self.__fixWindowFlags()
+
+    def floatingWindowFlags(self):
+        """
+        Return the `windowFlags` used when the widget is floating.
+        """
+        return self.__windowFlags
+
+    def __fixWindowFlags(self):
+        if self.isFloating():
+            update_window_flags(self, self.__windowFlags)
+
+    def __on_topLevelChanged(self, floating):
+        if floating:
+            self.__firstShow = True
+            self.__fixWindowFlags()
+
+    def __on_visbilityChanged(self, visible):
+        if visible and self.isFloating() and self.__firstShow:
+            self.__firstShow = False
+            self.__fixWindowFlags()
+
+
+def update_window_flags(widget, flags):
+    currflags = widget.windowFlags()
+    if int(flags) != int(currflags):
+        hidden = widget.isHidden()
+        widget.setWindowFlags(flags)
+        # setting the flags hides the widget
+        if not hidden:
+            widget.show()
+
+
 class CanvasMainWindow(QMainWindow):
     SETTINGS_VERSION = 2
 
@@ -107,6 +165,7 @@ class CanvasMainWindow(QMainWindow):
 
         self.__scheme_margins_enabled = True
         self.__document_title = "untitled"
+        self.__first_show = True
 
         self.widget_registry = None
         self.last_scheme_dir = None
@@ -144,6 +203,7 @@ class CanvasMainWindow(QMainWindow):
         self.setCorner(Qt.BottomLeftCorner, Qt.LeftDockWidgetArea)
         self.setCorner(Qt.BottomRightCorner, Qt.RightDockWidgetArea)
 
+        self.setDockOptions(QMainWindow.AnimatedDocks)
         # Create an empty initial scheme inside a container with fixed
         # margins.
         w = QWidget()
@@ -270,26 +330,20 @@ class CanvasMainWindow(QMainWindow):
             self._on_dock_location_changed
         )
 
-        self.output_dock = QDockWidget(self.tr("Output"),
-                                       objectName="output-dock")
+        self.output_dock = DockableWindow(self.tr("Output"), self,
+                                          objectName="output-dock")
         self.output_dock.setAllowedAreas(Qt.BottomDockWidgetArea)
         output_view = OutputView()
         # Set widget before calling addDockWidget, otherwise the dock
         # does not resize properly on first undock
         self.output_dock.setWidget(output_view)
-        self.addDockWidget(Qt.BottomDockWidgetArea, self.output_dock)
-
-        self.output_dock.setFloating(True)
         self.output_dock.hide()
 
-        self.help_dock = QDockWidget(self.tr("Help"),
-                                     objectName="help-dock")
+        self.help_dock = DockableWindow(self.tr("Help"), self,
+                                        objectName="help-dock")
         self.help_dock.setAllowedAreas(Qt.NoDockWidgetArea)
         self.help_view = QWebView()
         self.help_dock.setWidget(self.help_view)
-        self.addDockWidget(Qt.LeftDockWidgetArea, self.help_dock)
-
-        self.help_dock.setFloating(True)
         self.help_dock.hide()
 
         self.setMinimumSize(600, 500)
@@ -1380,17 +1434,19 @@ class CanvasMainWindow(QMainWindow):
         QTimer.singleShot(0, application.closeAllWindows)
 
     def showEvent(self, event):
-        settings = QSettings()
-        settings.beginGroup("mainwindow")
+        if self.__first_show:
+            settings = QSettings()
+            settings.beginGroup("mainwindow")
 
-        # Restore geometry and dock/toolbar state
-        state = settings.value("state")
-        if state.isValid():
-            self.restoreState(state.toByteArray(),
-                              version=self.SETTINGS_VERSION)
-        geom_data = settings.value("geometry")
-        if geom_data.isValid():
-            self.restoreGeometry(geom_data.toByteArray())
+            # Restore geometry and dock/toolbar state
+            state = settings.value("state")
+            if state.isValid():
+                self.restoreState(state.toByteArray(),
+                                  version=self.SETTINGS_VERSION)
+            geom_data = settings.value("geometry")
+            if geom_data.isValid():
+                self.restoreGeometry(geom_data.toByteArray())
+            self.__first_show = False
 
         return QMainWindow.showEvent(self, event)
 
@@ -1429,6 +1485,7 @@ class CanvasMainWindow(QMainWindow):
                 log.info("Setting help to url: %r", url)
                 self.help_view.setUrl(QUrl(url))
                 self.help_dock.show()
+                self.help_dock.raise_()
                 return True
 
         return QMainWindow.event(self, event)
@@ -1504,6 +1561,37 @@ class CanvasMainWindow(QMainWindow):
         show_channel_names = settings.value("show-channel-names",
                                             defaultValue=True)
         self.scheme_widget.setChannelNamesVisible(show_channel_names.toBool())
+
+        settings.endGroup()
+
+        settings.beginGroup("output")
+        stay_on_top = settings.value("stay-on-top", defaultValue=True)
+        if stay_on_top.toBool():
+            self.output_dock.setFloatingWindowFlags(Qt.Tool)
+        else:
+            self.output_dock.setFloatingWindowFlags(Qt.Window)
+
+        dockable = settings.value("dockable", defaultValue=True,)
+        if dockable.toBool():
+            self.output_dock.setAllowedAreas(Qt.BottomDockWidgetArea)
+        else:
+            self.output_dock.setAllowedAreas(Qt.NoDockWidgetArea)
+
+        settings.endGroup()
+
+        settings.beginGroup("help")
+        stay_on_top = settings.value("stay-on-top", defaultValue=True)
+        if stay_on_top.toBool():
+            self.help_dock.setFloatingWindowFlags(Qt.Tool)
+        else:
+            self.help_dock.setFloatingWindowFlags(Qt.Window)
+
+        dockable = settings.value("dockable", defaultValue=False)
+        if dockable.toBool():
+            self.help_dock.setAllowedAreas(Qt.LeftDockWidgetArea | \
+                                           Qt.RightDockWidgetArea)
+        else:
+            self.help_dock.setAllowedAreas(Qt.NoDockWidgetArea)
 
 
 def updated_flags(flags, mask, state):
