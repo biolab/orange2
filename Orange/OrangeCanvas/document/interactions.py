@@ -8,13 +8,17 @@ from PyQt4.QtGui import (
     QApplication, QGraphicsRectItem, QPen, QBrush, QColor, QFontMetrics
 )
 
-from PyQt4.QtCore import Qt, QObject, QSizeF, QPointF, QRect, QRectF, QLineF
+from PyQt4.QtCore import (
+    Qt, QObject, QCoreApplication, QSizeF, QPointF, QRect, QRectF, QLineF
+)
+
 from PyQt4.QtCore import pyqtSignal as Signal
 
 from ..registry.qt import QtWidgetRegistry
 from .. import scheme
 from ..canvas import items
 from ..canvas.items import controlpoints
+from ..gui.quickhelp import QuickHelpTipEvent
 from . import commands
 
 log = logging.getLogger(__name__)
@@ -235,6 +239,18 @@ class NewLinkAction(UserInteraction):
                 self.sink_item = self.from_item
 
             event.accept()
+
+            helpevent = QuickHelpTipEvent(
+                self.tr("Create a new link"),
+                self.tr('<h3>Create new link</h3>'
+                        '<p>Drag a link to an existing node or release on '
+                        'an empty spot to create a new node.</p>'
+#                        '<a href="help://orange-canvas/create-new-links">'
+#                        'More ...</a>'
+                        )
+            )
+            QCoreApplication.postEvent(self.document, helpevent)
+
             return True
         else:
             # Whoever put us in charge did not know what he was doing.
@@ -462,6 +478,8 @@ class NewLinkAction(UserInteraction):
 
     def end(self):
         self.cleanup()
+        helpevent = QuickHelpTipEvent("", "")
+        QCoreApplication.postEvent(self.document, helpevent)
         UserInteraction.end(self)
 
     def cancel(self, reason=UserInteraction.OtherReason):
@@ -709,6 +727,17 @@ class NewArrowAnnotation(UserInteraction):
 
     def start(self):
         self.document.view().setCursor(Qt.CrossCursor)
+
+        helpevent = QuickHelpTipEvent(
+            self.tr("Click and drag to create a new arrow"),
+            self.tr('<h3>New arrow annotation</h3>'
+                    '<p>Click and drag to create a new arrow annotation</p>'
+#                    '<a href="help://orange-canvas/arrow-annotations>'
+#                    'More ...</a>'
+                    )
+        )
+        QCoreApplication.postEvent(self.document, helpevent)
+
         UserInteraction.start(self)
 
     def setColor(self, color):
@@ -768,6 +797,11 @@ class NewArrowAnnotation(UserInteraction):
         self.arrow_item = None
         self.annotation = None
         self.document.view().setCursor(Qt.ArrowCursor)
+
+        # Clear the help tip
+        helpevent = QuickHelpTipEvent("", "")
+        QCoreApplication.postEvent(self.document, helpevent)
+
         UserInteraction.end(self)
 
 
@@ -789,6 +823,18 @@ class NewTextAnnotation(UserInteraction):
 
     def start(self):
         self.document.view().setCursor(Qt.CrossCursor)
+
+        helpevent = QuickHelpTipEvent(
+            self.tr("Click to create a new text annotation"),
+            self.tr('<h3>New text annotation</h3>'
+                    '<p>Click (and drag to resize) on the canvas to create '
+                    'a new text annotation item.</p>'
+#                    '<a href="help://orange-canvas/text-annotations">'
+#                    'More ...</a>'
+                    )
+        )
+        QCoreApplication.postEvent(self.document, helpevent)
+
         UserInteraction.start(self)
 
     def createNewAnnotation(self, rect):
@@ -882,6 +928,11 @@ class NewTextAnnotation(UserInteraction):
         self.annotation_item = None
         self.annotation = None
         self.document.view().setCursor(Qt.ArrowCursor)
+
+        # Clear the help tip
+        helpevent = QuickHelpTipEvent("", "")
+        QCoreApplication.postEvent(self.document, helpevent)
+
         UserInteraction.end(self)
 
 

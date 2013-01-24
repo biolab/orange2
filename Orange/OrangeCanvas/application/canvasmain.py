@@ -1463,7 +1463,7 @@ class CanvasMainWindow(QMainWindow):
                                              event.html()))
             elif event.priority() == QuickHelpTipEvent.Temporary:
                 QTimer.singleShot(0, partial(self.dock_help.showHelp,
-                                             event.html(), event.timout()))
+                                             event.html(), event.timeout()))
             elif event.priority() == QuickHelpTipEvent.Permanent:
                 QTimer.singleShot(0, partial(self.dock_help.showPermanentHelp,
                                              event.html()))
