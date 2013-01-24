@@ -309,6 +309,14 @@ class LinksEditWidget(QGraphicsWidget):
         if not compatible_channels(output, input):
             return
 
+        if output not in self.source.output_channels():
+            raise ValueError("%r is not an output channel of %r" % \
+                             (output, self.source))
+
+        if input not in self.sink.input_channels():
+            raise ValueError("%r is not an input channel of %r" % \
+                             (input, self.sink))
+
         if input.single:
             # Remove existing link
             for s1, s2, _ in self.__links:

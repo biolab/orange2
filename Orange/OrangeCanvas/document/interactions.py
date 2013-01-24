@@ -423,10 +423,20 @@ class NewLinkAction(UserInteraction):
                     show_link_dialog = True
 
                 if show_link_dialog:
+                    existing = self.scheme.find_links(source_node=source_node,
+                                                      sink_node=sink_node)
+
+                    if existing:
+                        # EditLinksDialog will populate the view with
+                        # existing links
+                        initial_links = None
+                    else:
+                        initial_links = [(source, sink)]
+
                     links_action = EditNodeLinksAction(
                                     self.document, source_node, sink_node)
                     try:
-                        links_action.edit_links()
+                        links_action.edit_links(initial_links)
                     except Exception:
                         log.error("'EditNodeLinksAction' failed",
                                   exc_info=True)
@@ -667,7 +677,15 @@ class EditNodeLinksAction(UserInteraction):
         self.source_node = source_node
         self.sink_node = sink_node
 
-    def edit_links(self):
+    def edit_links(self, initial_links=None):
+        """
+        Show and execute the `EditLinksDialog`.
+        Optional `initial_links` list can provide the initial
+        `(source, sink)` channel tuples to show in the view, otherwise
+        the dialog is populated with existing links in the scheme
+        (pass an empty list to disable all initial links).
+
+        """
         from ..canvas.editlinksdialog import EditLinksDialog
 
         log.info("Constructing a Link Editor dialog.")
@@ -680,8 +698,11 @@ class EditNodeLinksAction(UserInteraction):
         existing_links = [(link.source_channel, link.sink_channel)
                           for link in links]
 
+        if initial_links is None:
+            initial_links = list(existing_links)
+
         dlg.setNodes(self.source_node, self.sink_node)
-        dlg.setLinks(existing_links)
+        dlg.setLinks(initial_links)
 
         log.info("Executing a Link Editor Dialog.")
         rval = dlg.exec_()
