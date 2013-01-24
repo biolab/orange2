@@ -380,8 +380,10 @@ class NewLinkAction(UserInteraction):
             item = action.property("item").toPyObject()
             desc = item.data(QtWidgetRegistry.WIDGET_DESC_ROLE).toPyObject()
             pos = event.scenePos()
-            node = scheme.SchemeNode(desc, position=(pos.x(), pos.y()))
+            node = self.document.newNodeHelper(desc,
+                                               position=(pos.x(), pos.y()))
             return node
+
 
     def connect_existing(self, node):
         """Connect anchor_item to `node`.
@@ -543,7 +545,9 @@ class NewNodeAction(UserInteraction):
             # Get the scene position
             view = self.document.view()
             pos = view.mapToScene(view.mapFromGlobal(pos))
-            node = scheme.SchemeNode(desc, position=(pos.x(), pos.y()))
+
+            node = self.document.newNodeHelper(desc,
+                                               position=(pos.x(), pos.y()))
             self.document.addNode(node)
             return node
 
