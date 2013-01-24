@@ -695,12 +695,29 @@ class EditNodeLinksAction(UserInteraction):
             stack = self.document.undoStack()
             stack.beginMacro("Edit Links")
 
+            # First remove links into a single sink channel,
+            # but only the ones that do not have self.source_node as
+            # a source (they will be removed later from links_to_remove)
+            for _, sink_channel in links_to_add:
+                if sink_channel.single:
+                    existing = self.scheme.find_links(
+                        sink_node=self.sink_node,
+                        sink_channel=sink_channel
+                    )
+
+                    existing = [link for link in existing
+                                if link.source_node is not self.source_node]
+
+                    if existing:
+                        assert len(existing) == 1
+                        self.document.removeLink(existing[0])
+
             for source_channel, sink_channel in links_to_remove:
                 links = self.scheme.find_links(source_node=self.source_node,
                                                source_channel=source_channel,
                                                sink_node=self.sink_node,
                                                sink_channel=sink_channel)
-
+                assert len(links) == 1
                 self.document.removeLink(links[0])
 
             for source_channel, sink_channel in links_to_add:
@@ -708,6 +725,7 @@ class EditNodeLinksAction(UserInteraction):
                                          self.sink_node, sink_channel)
 
                 self.document.addLink(link)
+
             stack.endMacro()
 
 
