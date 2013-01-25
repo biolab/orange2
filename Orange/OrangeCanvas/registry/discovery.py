@@ -297,12 +297,11 @@ class WidgetDiscovery(object):
                     try:
                         module = asmodule(name)
                     except ImportError:
-                        log.warning("Could not import %r.", name,
-                                    exc_info=True)
+                        log.info("Could not import %r.", name, exc_info=True)
                         continue
                     except Exception:
-                        log.error("Error while importing %r.", name,
-                                  exc_info=True)
+                        log.warning("Error while importing %r.", name,
+                                    exc_info=True)
                         continue
 
                     try:
