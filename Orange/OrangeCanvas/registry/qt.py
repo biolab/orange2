@@ -20,7 +20,7 @@ from .base import WidgetRegistry
 
 from ..resources import icon_loader
 
-from . import NAMED_COLORS
+from . import cache, NAMED_COLORS
 
 
 class QtWidgetDiscovery(QObject, WidgetDiscovery):
@@ -41,9 +41,9 @@ class QtWidgetDiscovery(QObject, WidgetDiscovery):
         QObject.__init__(self, parent)
         WidgetDiscovery.__init__(self, registry, cached_descriptions)
 
-    def run(self):
+    def run(self, entry_points_iter):
         self.discovery_start.emit()
-        WidgetDiscovery.run(self)
+        WidgetDiscovery.run(self, entry_points_iter)
         self.discovery_finished.emit()
 
     def handle_widget(self, description):
@@ -338,12 +338,12 @@ def whats_this_helper(desc):
     return "\n".join(template)
 
 
-def run_discovery(cached=False):
-    """Run the default discovery and return an instance
-    of :class:`QtWidgetRegistry`.
+def run_discovery(entry_points_iter, cached=False):
+    """
+    Run the default discovery and return an instance of
+    :class:`QtWidgetRegistry`.
 
     """
-    from . import cache
     reg_cache = {}
     if cached:
         reg_cache = cache.registry_cache()

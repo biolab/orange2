@@ -83,4 +83,4 @@ class TestDiscovery(unittest.TestCase):
 
     def test_run(self):
         disc = self.discovery_class()
-        disc.run()
+        disc.run("example.does.not.exist.but.it.does.not.matter.")

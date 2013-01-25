@@ -8,7 +8,6 @@ import sys
 import stat
 import glob
 import logging
-import itertools
 import types
 import pkgutil
 from collections import namedtuple
@@ -20,7 +19,7 @@ from .description import (
 )
 
 from . import VERSION_HEX
-
+from . import cache, WidgetRegistry
 
 log = logging.getLogger(__name__)
 
@@ -52,36 +51,9 @@ def default_category_for_module(module):
     return CategoryDescription(name=name, qualified_name=qualified_name)
 
 
-WIDGETS_ENTRY = "orange.widgets"
-
-
-# This could also be achieved by declaring the entry point in
-# Orange's setup.py
-def default_entry_point():
-    """Return a default orange.widgets entry point for loading
-    default Orange Widgets.
-
-    """
-    dist = pkg_resources.get_distribution("Orange")
-    ep = pkg_resources.EntryPoint("Orange Widgets", "Orange.OrangeWidgets",
-                                  dist=dist)
-    return ep
-
-
-def widgets_entry_points():
-    """Return an EntryPoint iterator for all 'orange.widget' entry
-    points including the default Orange Widgets.
-
-    """
-    ep_iter = pkg_resources.iter_entry_points(WIDGETS_ENTRY)
-    chain = [[default_entry_point()],
-             ep_iter
-             ]
-    return itertools.chain(*chain)
-
-
 class WidgetDiscovery(object):
-    """Base widget discovery runner.
+    """
+    Base widget discovery runner.
     """
 
     def __init__(self, registry=None, cached_descriptions=None):
@@ -92,23 +64,30 @@ class WidgetDiscovery(object):
             self.cached_descriptions.clear()
             self.cached_descriptions["!VERSION"] = version
 
-    def run(self):
-        """Run the widget discovery process.
+    def run(self, entry_points_iter):
         """
-        for entry_point in widgets_entry_points():
+        Run the widget discovery process from an entry point iterator
+        (yielding :class:`pkg_resources.EntryPoint` instances).
+
+        """
+        if isinstance(entry_points_iter, basestring):
+            entry_points_iter = \
+                pkg_resources.iter_entry_points(entry_points_iter)
+
+        for entry_point in entry_points_iter:
             try:
                 point = entry_point.load()
             except pkg_resources.DistributionNotFound:
-                log.error("Could not load %r (unsatisfied dependencies).",
-                          entry_point.name, exc_info=True)
+                log.error("Could not load '%s' (unsatisfied dependencies).",
+                          entry_point, exc_info=True)
                 continue
             except ImportError:
-                log.error("An ImportError occurred while loading an "
-                          "entry point", exc_info=True)
+                log.error("An ImportError occurred while loading "
+                          "entry point '%s'", entry_point, exc_info=True)
                 continue
             except Exception:
-                log.error("An exception occurred while loading an "
-                          "entry point", exc_info=True)
+                log.error("An exception occurred while loading "
+                          "entry point '%s'", entry_point, exc_info=True)
                 continue
 
             try:
@@ -556,12 +535,12 @@ def asmodule(module):
         raise TypeError(type(module))
 
 
-def run_discovery(cached=False):
-    """Run the default widget discovery and return the WidgetRegisty
+def run_discovery(entry_point, cached=False):
+    """
+    Run the default widget discovery and return a :class:`WidgetRegistry`
     instance.
 
     """
-    from . import cache, WidgetRegistry
     reg_cache = {}
     if cached:
         reg_cache = cache.registry_cache()
