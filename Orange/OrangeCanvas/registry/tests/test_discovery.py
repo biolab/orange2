@@ -27,8 +27,9 @@ class TestDiscovery(unittest.TestCase):
         desc = CategoryDescription(name="C", qualified_name="M.C")
         disc.handle_category(desc)
 
-        desc = WidgetDescription(name="SomeWidget", category="C",
-                                 qualified_name="Some.Widget")
+        desc = WidgetDescription(name="SomeWidget", id="some.widget",
+                                 qualified_name="Some.Widget",
+                                 category="C",)
         disc.handle_widget(desc)
 
     def test_file(self):
