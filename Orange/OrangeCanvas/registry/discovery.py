@@ -1,5 +1,10 @@
 """
-Widget discovery.
+Widget Discovery
+================
+
+Discover which widgets are installed/available.
+
+This module implements a discovery process
 
 """
 
@@ -32,16 +37,17 @@ _CacheEntry = \
          "mtime",            # Modified time
          "project_name",     # distribution name (if available)
          "project_version",  # distribution version (if available)
-         "exc_type",         # exception type
-         "exc_val",          # exception value (string)
+         "exc_type",         # exception type when last trying to import
+         "exc_val",          # exception value (str of value)
          "description"       # WidgetDescription instance
          ]
     )
 
 
 def default_category_for_module(module):
-    """Return a default constructed :class:`CategoryDescription`
-    for `module`.
+    """
+    Return a default constructed :class:`CategoryDescription`
+    for a `module`.
 
     """
     if isinstance(module, basestring):
@@ -68,6 +74,9 @@ class WidgetDiscovery(object):
         """
         Run the widget discovery process from an entry point iterator
         (yielding :class:`pkg_resources.EntryPoint` instances).
+
+        As a convenience, if `entry_points_iter` is a string it will be used
+        to retrieve the iterator using `pkg_resources.iter_entry_points`.
 
         """
         if isinstance(entry_points_iter, basestring):
@@ -119,17 +128,18 @@ class WidgetDiscovery(object):
                           entry_point, exc_info=True)
 
     def process_directory(self, directory):
-        """Process and locate any widgets in directory
-        (old style widget discovery).
+        """
+        Process and locate any widgets in directory on a file system,
+        i.e. examines all .py files in the directory, delegating the
+        to `process_file` (deprecated)
 
         """
         for filename in glob.glob(os.path.join(directory, "*.py")):
             self.process_file(filename)
 
     def process_file(self, filename):
-        """Process .py file containing the widget code
-        (old stye widget discovery).
-
+        """
+        Process .py file containing the widget code (deprecated).
         """
         filename = fix_pyext(filename)
         # TODO: zipped modules
@@ -153,8 +163,10 @@ class WidgetDiscovery(object):
 
         self.handle_widget(desc)
 
-    def process_widget_module(self, module, name=None, distribution=None):
-        """Process a widget module.
+    def process_widget_module(self, module, name=None, category_name=None,
+                              distribution=None):
+        """
+        Process a widget module.
         """
         try:
             desc = self.widget_description(module, widget_name=name,
@@ -166,7 +178,8 @@ class WidgetDiscovery(object):
         self.handle_widget(desc)
 
     def process_category_package(self, category, name=None, distribution=None):
-        """Process a category package.
+        """
+        Process a category package.
         """
         cat_desc = None
         category = asmodule(category)
@@ -209,7 +222,8 @@ class WidgetDiscovery(object):
             self.handle_widget(desc)
 
     def process_loader(self, callable):
-        """Process a callable loader function.
+        """
+        Process a callable loader function.
         """
         try:
             callable(self)
@@ -225,11 +239,13 @@ class WidgetDiscovery(object):
             elif isinstance(desc, WidgetDescription):
                 self.handle_widget(desc)
             else:
-                log.error("Category or Widget Description instance expected."
-                          "Got %r.", desc)
+                log.error("Category or Widget Description instance "
+                          "expected. Got %r.", desc)
 
     def handle_widget(self, desc):
-        """Handle a found widget description.
+        """
+        Handle a found widget description.
+
         Base implementation adds it to the registry supplied in the
         constructor.
 
@@ -238,7 +254,9 @@ class WidgetDiscovery(object):
             self.registry.register_widget(desc)
 
     def handle_category(self, desc):
-        """Handle a found category description.
+        """
+        Handle a found category description.
+
         Base implementation adds it to the registry supplied in the
         constructor.
 
@@ -248,8 +266,9 @@ class WidgetDiscovery(object):
 
     def iter_widget_descriptions(self, package, category_name=None,
                                  distribution=None):
-        """Return an iterator over widget descriptions
-        accessible from `package`.
+        """
+        Return an iterator over widget descriptions accessible from
+        `package`.
 
         """
         package = asmodule(package)
@@ -305,7 +324,8 @@ class WidgetDiscovery(object):
 
     def widget_description(self, module, widget_name=None,
                            category_name=None, distribution=None):
-        """Return a widget description from a module.
+        """
+        Return a widget description from a module.
         """
         if isinstance(module, basestring):
             module = __import__(module, fromlist=[""])
@@ -344,7 +364,8 @@ class WidgetDiscovery(object):
 
     def cache_insert(self, module, mtime, description, distribution=None,
                      error=None):
-        """Insert the description into the cache.
+        """
+        Insert the description into the cache.
         """
         if isinstance(module, types.ModuleType):
             mod_path = module.__file__
@@ -376,7 +397,8 @@ class WidgetDiscovery(object):
                             description)
 
     def cache_get(self, mod_path, distribution=None):
-        """Get the cache entry for mod_path.
+        """
+        Get the cache entry for `mod_path`.
         """
         if isinstance(mod_path, types.ModuleType):
             mod_path = mod_path.__file__
@@ -384,7 +406,8 @@ class WidgetDiscovery(object):
         return self.cached_descriptions.get(mod_path)
 
     def cache_has_valid_entry(self, mod_path, distribution=None):
-        """Does the cache have a valid entry for mod_path.
+        """
+        Does the cache have a valid entry for `mod_path.
         """
         mod_path = fix_pyext(mod_path)
 
@@ -411,15 +434,16 @@ class WidgetDiscovery(object):
         return False
 
     def cache_can_ignore(self, mod_path, distribution=None):
-        """Can the mod_path be ignored (i.e. it was determined that it
+        """
+        Can the `mod_path` be ignored (i.e. it was determined that it
         could not contain a valid widget description, for instance the
-        module does not hava a valid description and was not changed from
-        the last run).
+        module does not have a valid description and was not changed from
+        the last discovery run).
 
         """
         mod_path = fix_pyext(mod_path)
         if not os.path.exists(mod_path):
-            # Possible orphaned .pyc file
+            # Possible orphaned .py[co] file
             return True
 
         mtime = os.stat(mod_path).st_mtime
@@ -431,11 +455,12 @@ class WidgetDiscovery(object):
             return False
 
     def cache_log_error(self, mod_path, error, distribution=None):
-        """Cache that the `error` occurred while processing mod_path.
+        """
+        Cache that the `error` occurred while processing `mod_path`.
         """
         mod_path = fix_pyext(mod_path)
         if not os.path.exists(mod_path):
-            # Possible orphaned .pyc file
+            # Possible orphaned .py[co] file
             return
         mtime = os.stat(mod_path).st_mtime
 
@@ -443,8 +468,9 @@ class WidgetDiscovery(object):
 
 
 def fix_pyext(mod_path):
-    """Fix a module filename path extension to always end with the
-    modules source file (i.e. strip compiled/optimzed .pyc,p.pyo
+    """
+    Fix a module filename path extension to always end with the
+    modules source file (i.e. strip compiled/optimized .pyc, .pyo
     extension and replace it with .py).
 
     """
@@ -488,9 +514,8 @@ def widget_descriptions_from_package(package):
 
 
 def module_name_split(name):
-    """Split the module name into pacakge name and module
-    name inside the pacakge.
-
+    """
+    Split the module name into package name and module name.
     """
     if "." in name:
         package_name, module = name.rsplit(".", 1)
@@ -500,7 +525,8 @@ def module_name_split(name):
 
 
 def module_modified_time(module):
-    """Return the `module`s source filename and modified time as a tuple
+    """
+    Return the `module`s source filename and modified time as a tuple
     (source_filename, modified_time). In case the module is from a zipped
     package the modified time is that of of the archive.
 
@@ -508,9 +534,6 @@ def module_modified_time(module):
     module = asmodule(module)
     name = module.__name__
     module_filename = module.__file__
-
-#    if os.path.splitext(module_filename)[-1] in [".pyc", ".pyo"]:
-#        module_filename = module_filename[:-1]
 
     provider = pkg_resources.get_provider(name)
     if provider.loader:
@@ -523,7 +546,8 @@ def module_modified_time(module):
 
 
 def asmodule(module):
-    """Return the module references by `module` name. If `module` is
+    """
+    Return the module references by `module` name. If `module` is
     already an imported module instance, return it as is.
 
     """
