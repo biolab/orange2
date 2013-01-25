@@ -1506,8 +1506,12 @@ class CanvasMainWindow(QMainWindow):
 
         def changeEvent(self, event):
             if event.type() == QEvent.WindowStateChange:
-                # Enable/disable window menu based on minimized state
-                self.window_menu.setEnabled(not self.isMinimized())
+                # Can get 'Qt.WindowNoState' before the widget is fully
+                # initialized
+                if hasattr(self, "window_state"):
+                    # Enable/disable window menu based on minimized state
+                    self.window_menu.setEnabled(not self.isMinimized())
+
             QMainWindow.changeEvent(self, event)
 
     def tr(self, sourceText, disambiguation=None, n=-1):
