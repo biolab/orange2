@@ -75,7 +75,7 @@ if __name__=="__main__":
     ow = OWAttributeSampler()
     ow.show()
 
-    data = orange.ExampleTable('../datasets/iris.tab')
+    data = orange.ExampleTable('iris.tab')
     ow.dataset(data)
 
     appl.exec_()

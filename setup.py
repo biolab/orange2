@@ -633,11 +633,14 @@ def all_with_extension(path, extensions):
     return [os.path.join(path, "*.%s"%extension) for extension in extensions]
 
 # TODO: Simply replace with include_package_data = True and configure missed files in MANIFEST.in?
+
+#Marko 20120128: Removed "doc/style.css", "doc/widgets/*/*.*" from the package
+
 def get_package_data():
     package_data = {
         "Orange":
-            ["orangerc.cfg", "doc/style.css", "doc/widgets/*/*.*"] +\
-             all_with_extension(path="doc/datasets", extensions=("tab", "csv", "basket")) +\
+            ["orangerc.cfg" ] +\
+             all_with_extension(path="datasets", extensions=("tab", "csv", "basket")) +\
              all_with_extension(path="testing/regression/tests_20", extensions=("net", "tab", "basket", "csv")),
         "Orange.OrangeCanvas": ["icons/*.png", "orngCanvas.pyw", "WidgetTabs.txt"],
         "Orange.OrangeWidgets": ["icons/*.png", "icons/backgrounds/*.png", "report/index.html"],

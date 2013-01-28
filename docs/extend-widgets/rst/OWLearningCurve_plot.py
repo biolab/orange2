@@ -279,7 +279,7 @@ if __name__=="__main__":
     l1.name = 'Naive Bayes'
     ow.learner(l1, 1)
 
-    data = orange.ExampleTable('../datasets/iris.tab')
+    data = orange.ExampleTable('iris.tab')
     ow.dataset(data)
 
     l2 = orange.BayesLearner()

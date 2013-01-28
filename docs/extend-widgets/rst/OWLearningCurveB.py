@@ -178,7 +178,7 @@ if __name__=="__main__":
     l1.name = 'Naive Bayes'
     ow.learner(l1, 1)
 
-    data = orange.ExampleTable('../datasets/iris.tab')
+    data = orange.ExampleTable('iris.tab')
     indices = orange.MakeRandomIndices2(data, p0 = 0.7)
     train = data.select(indices, 0)
     test = data.select(indices, 1)
