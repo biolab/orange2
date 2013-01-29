@@ -26,7 +26,7 @@ call hg update --clean
 
 cdd e:\orange\scripts
 
-copy /q snapshot\Orange\doc\LICENSES license.txt
+copy /q snapshot\LICENSES license.txt
 
 copy /q snapshot\install-scripts\* .
 
