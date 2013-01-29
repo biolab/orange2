@@ -161,7 +161,7 @@ def output_channel_from_args(args):
         return OutputSignal(*args)
     elif isinstance(args, dict):
         return OutputSignal(**args)
-    elif isinstance(args, InputSignal):
+    elif isinstance(args, OutputSignal):
         return args
     else:
         raise TypeError
