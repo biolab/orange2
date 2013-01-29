@@ -14,22 +14,6 @@ from OWWidget import *
 import OWGUI, string, os, sys, warnings
 import orngIO
 
-warnings.filterwarnings("error", ".*" , orange.KernelWarning, "OWFile", 11)
-
-class FileNameContextHandler(ContextHandler):
-    def match(self, context, imperfect, filename):
-        return context.filename == filename and 2
-
-
-def addOrigin(examples, filename):
-    vars = examples.domain.variables + examples.domain.getmetas().values()
-    strings = [var for var in vars if isinstance(var, orange.StringVariable)]
-    dirname, basename = os.path.split(filename)
-    for var in strings:
-        if "type" in var.attributes and "origin" not in var.attributes:
-            var.attributes["origin"] = dirname
-
-
 NAME = "File"
 ID = "orange.widgets.data.file"
 
@@ -53,11 +37,32 @@ CATEGORY = "Data"
 
 KEYWORDS = ["data", "file", "load", "read"]
 
-OUTPUTS = [{"name": "Data",
-            "type": orange.ExampleTable,
-            "doc": "Attribute-valued data set read from the input file."}]
+OUTPUTS = (
+    {"name": "Data",
+     "type": orange.ExampleTable,
+     "doc": "Attribute-valued data set read from the input file.",
+    },
+)
 
 WIDGET_CLASS = "OWFile"
+
+# This is why the 'call''s line number is important. Actually you can
+# move it but you need to make sure the following filter's lineno is updated
+warnings.filterwarnings("error", ".*", orange.KernelWarning, "OWFile", 11)
+
+
+class FileNameContextHandler(ContextHandler):
+    def match(self, context, imperfect, filename):
+        return context.filename == filename and 2
+
+
+def addOrigin(examples, filename):
+    vars = examples.domain.variables + examples.domain.getmetas().values()
+    strings = [var for var in vars if isinstance(var, orange.StringVariable)]
+    dirname, basename = os.path.split(filename)
+    for var in strings:
+        if "type" in var.attributes and "origin" not in var.attributes:
+            var.attributes["origin"] = dirname
 
 
 class OWFile(OWWidget):
@@ -74,7 +79,6 @@ class OWFile(OWWidget):
                ".basket": "Basket file"}
     formats.update(dict((ft[1][2:], ft[0]) for ft in registeredFileTypes))
      
-                 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "File", wantMainArea = 0, resizingEnabled = 1)
 

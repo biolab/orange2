@@ -10,6 +10,45 @@ import OWGUI, orange, orngCN2, sys
 
 from orngWrap import PreprocessedLearner
 
+NAME = "CN2"
+
+DESCRIPTION = "Rule-based (CN2) learner/classifier"
+
+AUTHOR = "Ales Erjavec"
+
+PRIORITY = 300
+
+ICON = "icons/CN2.svg"
+
+# Sphinx documentation label reference
+HELP_REF = "CN2 Rules"
+
+INPUTS = (
+    dict(name="Data", type=ExampleTable, handler="dataset",
+         doc="Training data set",
+         id="train-data"),
+
+    dict(name="Preprocess", type=PreprocessedLearner,
+         handler="setPreprocessor",
+         doc="Data preprocessor",
+         id="preprocessor")
+)
+
+OUTPUTS = (
+    dict(name="Learner", type=orange.Learner,
+         doc="A CN2 Rules learner instance",
+         id="learner"),
+
+    dict(name="Classifier", type=orange.Classifier,
+         doc="A rule classifier induced from given training data.",
+         id="classifier"),
+
+    dict(name="Unordered CN2 Classifier", type=orngCN2.CN2UnorderedClassifier,
+         doc="Same as 'Classifier'",
+         id="unordered-cn2-classifier")
+)
+
+
 class CN2ProgressBar(orange.ProgressCallback):
     def __init__(self, widget, start=0.0, end=0.0):
         self.start = start

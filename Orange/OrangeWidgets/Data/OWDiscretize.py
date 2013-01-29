@@ -22,8 +22,6 @@ CATEGORY = "Data"
 PRIORITY = 2100
 ICON = "icons/Discretize.svg"
 
-HELP = "docs/html/data/discretize.html"
-
 INPUTS = [("Data", orange.ExampleTable, "setData")]
 OUTPUTS = [("Data", orange.ExampleTable,)]
 
