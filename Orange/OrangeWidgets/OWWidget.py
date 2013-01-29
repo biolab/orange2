@@ -6,8 +6,13 @@
 
 from OWBaseWidget import *
 
+
 class OWWidget(OWBaseWidget):
-    def __init__(self, parent=None, signalManager=None, title="Orange Widget", wantGraph=False, wantStatusBar=False, savePosition=True, wantMainArea=1, noReport=False, showSaveGraph=1, resizingEnabled=1, wantStateInfoWidget=None, **args):
+    def __init__(self, parent=None, signalManager=None, title="Orange Widget",
+                 wantGraph=False, wantStatusBar=False, savePosition=True,
+                 wantMainArea=1, noReport=False, showSaveGraph=1,
+                 resizingEnabled=1, wantStateInfoWidget=None,
+                 **args):
         """
         Initialization
         Parameters:
@@ -57,7 +62,7 @@ class OWWidget(OWBaseWidget):
         
 
         self.__reportData = None
-        if OWReport.get_instance() and not noReport and hasattr(self, "sendReport"):
+        if not noReport and hasattr(self, "sendReport"):
             self.buttonBackground.show()
             self.reportButton = OWGUI.button(self.buttonBackground, self, "&Report", self.reportAndFinish, debuggingEnabled=0)
             self.reportButton.setAutoDefault(0)
@@ -168,17 +173,14 @@ class OWWidget(OWBaseWidget):
     def reportAndFinish(self):
         self.sendReport()
         self.finishReport()
-        
-    def startReport(self, name=None, needDirectory=False):
+
+    def startReport(self, name=None):
         if self.__reportData is not None:
             print "Cannot open a new report when an old report is still active"
             return False
         self.reportName = name or self.windowTitle()
         self.__reportData = ""
-        if needDirectory:
-            return OWReport.get_instance().createDirectory()
-        else:
-            return True
+        return True
 
     def reportSection(self, title):
         if self.__reportData is None:
@@ -207,7 +209,7 @@ class OWWidget(OWBaseWidget):
     def reportImage(self, filenameOrFunc, *args):
         if self.__reportData is None:
             self.startReport()
-            
+
         if type(filenameOrFunc) in [str, unicode]:
             self.__reportData += '    <IMG src="%s"/>\n' % filenameOrFunc
         else:
@@ -282,12 +284,14 @@ class OWWidget(OWBaseWidget):
             self.reportSettings("", settings)
         elif ifNone is not None:
             self.reportRaw(ifNone)
-        
 
-       
     def finishReport(self):
         if self.__reportData is not None:
-            OWReport.get_instance()(self.reportName, self.__reportData or "", self.widgetId, self.windowIcon())#, self.getSettings(False))
+            report = OWReport.get_instance()
+#            report(self.reportName, self.__reportData or "",
+#                   self.widgetId, self.windowIcon())
+            report.appendReport(self.reportName, self.__reportData,
+                                sender=self)
             self.__reportData = None
 
 import OWReport
