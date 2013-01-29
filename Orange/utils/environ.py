@@ -126,7 +126,7 @@ def _get_default_env():
     install_dir = os.path.dirname(install_dir) # Orange/
 
     doc_install_dir = os.path.join(install_dir, "doc")
-    dataset_install_dir = os.path.join(install_dir, "doc", "datasets")
+    dataset_install_dir = os.path.join(install_dir, "datasets")
 
     canvas_install_dir = os.path.join(install_dir, "OrangeCanvas")
     widget_install_dir = os.path.join(install_dir, "OrangeWidgets")

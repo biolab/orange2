@@ -34,10 +34,6 @@ from Orange.OrangeCanvas.registry import cache
 log = logging.getLogger(__name__)
 
 
-def qt_logging_handle(msg_type, message):
-    print msg_type, message
-
-
 def running_in_ipython():
     try:
         __IPYTHON__
@@ -202,7 +198,7 @@ def main(argv=None):
         widget_registry = cPickle.load(open(cache_filename, "rb"))
         widget_registry = qt.QtWidgetRegistry(widget_registry)
     else:
-        widget_discovery.run()
+        widget_discovery.run(config.widgets_entry_points())
         # Store cached descriptions
         cache.save_registry_cache(widget_discovery.cached_descriptions)
         cPickle.dump(WidgetRegistry(widget_registry),

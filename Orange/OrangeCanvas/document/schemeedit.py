@@ -5,6 +5,7 @@ Scheme Edit widget.
 
 import sys
 import logging
+import itertools
 
 from operator import attrgetter
 from contextlib import nested
@@ -520,6 +521,10 @@ class SchemeEditWidget(QWidget):
 
             self.__scene.set_scheme(scheme)
 
+            if self.__scheme:
+                for node in self.__scheme.nodes:
+                    self.__onNodeAdded(node)
+
     def scheme(self):
         """Return the :class:`Scheme` edited by the widget.
         """
@@ -553,35 +558,81 @@ class SchemeEditWidget(QWidget):
         return self.__quickMenu
 
     def setTitle(self, title):
+        """
+        Set the scheme title.
+        """
         self.__undoStack.push(
             commands.SetAttrCommand(self.__scheme, "title", title)
         )
 
     def setDescription(self, description):
+        """
+        Set the scheme description string.
+        """
         self.__undoStack.push(
             commands.SetAttrCommand(self.__scheme, "description", description)
         )
 
     def addNode(self, node):
-        """Add a new node to the scheme.
+        """
+        Add a new node (:class:`SchemeNode`) to the document.
         """
         command = commands.AddNodeCommand(self.__scheme, node)
         self.__undoStack.push(command)
 
-    def createNewNode(self, description):
-        """Create a new `SchemeNode` and add it to the document at left of the
-        last added node.
+    def createNewNode(self, description, title=None, position=None):
+        """
+        Create a new `SchemeNode` and add it to the document. The new
+        node is constructed using `newNodeHelper` method.
 
         """
-        node = scheme.SchemeNode(description)
-
-        if self.scheme().nodes:
-            x, y = self.scheme().nodes[-1].position
-            node.position = (x + 150, y)
-        else:
-            node.position = (150, 150)
-
+        node = self.newNodeHelper(description, title, position)
         self.addNode(node)
+
+        return node
+
+    def newNodeHelper(self, description, title=None, position=None):
+        """
+        Return a new initialized `SchemeNode`. If title and position are
+        not supplied they are initialized to a sensible defaults.
+
+        """
+        if title is None:
+            title = self.enumerateTitle(description.name)
+
+        if position is None:
+            position = self.nextPosition()
+
+        return scheme.SchemeNode(description, title=title, position=position)
+
+    def enumerateTitle(self, title):
+        """
+        Enumerate a title string (i.e. add a number in parentheses) so it is
+        not equal to any node title in the current scheme.
+
+        """
+        curr_titles = set([node.title for node in self.scheme().nodes])
+        template = title + " ({0})"
+
+        enumerated = itertools.imap(template.format, itertools.count(1))
+        candidates = itertools.chain([title], enumerated)
+
+        seq = itertools.dropwhile(curr_titles.__contains__, candidates)
+        return next(seq)
+
+    def nextPosition(self):
+        """
+        Return the next default node position (x, y) tuple. This is
+        a position left of the last added node.
+
+        """
+        nodes = self.scheme().nodes
+        if nodes:
+            x, y = nodes[-1].position
+            position = (x + 150, y)
+        else:
+            position = (150, 150)
+        return position
 
     def removeNode(self, node):
         """Remove a `node` (:class:`SchemeNode`) from the scheme
@@ -682,6 +733,22 @@ class SchemeEditWidget(QWidget):
 
             self.__undoStack.endMacro()
 
+    def focusNode(self):
+        """Return the current focused `SchemeNode` or None if no
+        node has focus.
+
+        """
+        focus = self.__scene.focusItem()
+        node = None
+        if isinstance(focus, items.NodeItem):
+            try:
+                node = self.__scene.node_for_item(focus)
+            except KeyError:
+                # in case the node has been removed but the scene was not
+                # yet fully updated.
+                node = None
+        return node
+
     def selectedNodes(self):
         """Return all selected `SchemeNode` items.
         """
@@ -741,8 +808,7 @@ class SchemeEditWidget(QWidget):
                 )
                 desc = self.__registry.widget(unicode(qname))
                 pos = event.scenePos()
-                node = scheme.SchemeNode(desc, position=(pos.x(), pos.y()))
-                self.addNode(node)
+                self.createNewNode(desc, position=(pos.x(), pos.y()))
                 return True
 
             elif etype == QEvent.GraphicsSceneMousePress:
@@ -1000,10 +1066,9 @@ class SchemeEditWidget(QWidget):
             self.__openSelectedAction.setText(self.tr("Open"))
             self.__removeSelectedAction.setText(self.tr("Remove"))
 
-        focus = self.__scene.focusItem()
-        if isinstance(focus, items.NodeItem):
-            node = self.__scene.node_for_item(focus)
-            desc = node.description
+        focus = self.focusNode()
+        if focus is not None:
+            desc = focus.description
             tip = whats_this_helper(desc)
         else:
             tip = ""

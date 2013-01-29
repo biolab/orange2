@@ -35,7 +35,7 @@ Classification uses two types of objects: learners and classifiers. Learners con
 
 Above, we read the data, constructed a `naive Bayesian learner <http://en.wikipedia.org/wiki/Naive_Bayes_classifier>`_, gave it the data set to construct a classifier, and used it to predict the class of the first data item. We also use these concepts in the following code that predicts the classes of the first five instances in the data set:
 
-.. literalinclude: code/classification-classifier1.py
+.. literalinclude:: code/classification-classifier1.py
    :lines: 4-
 
 The script outputs::
@@ -55,7 +55,7 @@ To find out what is the probability that the classifier assigns
 to, say, democrat class, we need to call the classifier with
 additional parameter that specifies the output type. If this is ``Orange.classification.Classifier.GetProbabilities``, the classifier will output class probabilities:
 
-.. literalinclude: code/classification-classifier2.py
+.. literalinclude:: code/classification-classifier2.py
    :lines: 4-
 
 The output of the script also shows how badly the naive Bayesian classifier missed the class for the thrid data item::
@@ -74,7 +74,7 @@ Cross-Validation
 
 Validating the accuracy of classifiers on the training data, as we did above, serves demonstration purposes only. Any performance measure that assess accuracy should be estimated on the independent test set. Such is also a procedure called `cross-validation <http://en.wikipedia.org/wiki/Cross-validation_(statistics)>`_, which averages performance estimates across several runs, each time considering a different training and test subsets as sampled from the original data set:
 
-.. literalinclude: code/classification-cv.py
+.. literalinclude:: code/classification-cv.py
    :lines: 3-
 
 .. index::
@@ -110,7 +110,7 @@ Some of these are included in the code that estimates the probability of a targe
 .. index::
    single: classification; k-nearest neighbors
 
-.. literalinclude: code/classification-other.py
+.. literalinclude:: code/classification-other.py
 
 For these five data items, there are no major differences between predictions of observed classification algorithms::
 
@@ -124,7 +124,7 @@ For these five data items, there are no major differences between predictions of
 
 The following code cross-validates several learners. Notice the difference between this and the code above. Cross-validation requires learners, while in the script above, learners were immediately given the data and the calls returned classifiers.
 
-.. literalinclude: code/classification-cv2.py
+.. literalinclude:: code/classification-cv2.py
 
 Logistic regression wins in area under ROC curve::
 
@@ -137,7 +137,7 @@ Reporting on Classification Models
 
 Classification models are objects, exposing every component of its structure. For instance, one can traverse classification tree in code and observe the associated data instances, probabilities and conditions. It is often, however, sufficient, to provide textual output of the model. For logistic regression and trees, this is illustrated in the script below:
 
-.. literalinclude: code/classification-models.py
+.. literalinclude:: code/classification-models.py
 
    The logistic regression part of the output is:
    

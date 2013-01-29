@@ -10,6 +10,51 @@ import OWGUI
 from exceptions import Exception
 from orngWrap import PreprocessedLearner
 
+NAME = "k Nearest Neighbours"
+
+ID = "orange.widgets.classify.knn"
+
+DESCRIPTION = "K-nearest neighbours learner/classifier."
+
+ICON = "icons/kNearestNeighbours.svg"
+
+AUTHOR = "Janez Demsar"
+
+PRIORITY = 25
+
+HELP_REF = "k-Nearest Neighbours"
+
+KEYWORDS = ["knn"]
+
+INPUTS = (
+    InputSignal(name="Data",
+                type=ExampleTable,
+                handler="setData",
+                doc="Training data set",
+                id="train-data"),
+
+    InputSignal(name="Preprocess",
+                type=PreprocessedLearner,
+                handler="setPreprocessor",
+                id="preprocessor")
+)
+
+OUTPUTS = (
+    OutputSignal(name="Learner",
+                 type=orange.Learner,
+                 doc="The kNN learner with settings as specified in "
+                     "the dialog",
+                 id="learner"),
+
+    OutputSignal(name="kNN Classifier",
+                 type=orange.kNNClassifier,
+                 doc="A kNN classifier trained on 'Data'.",
+                 id="knn-classifier")
+)
+
+WIDGET_CLASS = "OWKNN"
+
+
 class OWKNN(OWWidget):
     settingsList = ["name", "k", "metrics", "ranks", "normalize", "ignoreUnknowns"]
 
@@ -116,17 +161,13 @@ class OWKNN(OWWidget):
                 self.error(str(errValue))
         self.send("kNN Classifier", self.classifier)
 
-##############################################################################
-# Test the widget, run from DOS prompt
-# > python OWDataTable.py)
-# Make sure that a sample data set (adult_sample.tab) is in the directory
 
-if __name__=="__main__":
-    a=QApplication(sys.argv)
-    ow=OWKNN()
+if __name__ == "__main__":
+    a = QApplication(sys.argv)
+    ow = OWKNN()
 
-##    dataset = orange.ExampleTable('adult_sample')
-##    ow.setData(dataset)
+    dataset = orange.ExampleTable('adult_sample')
+    ow.setData(dataset)
 
     ow.show()
     a.exec_()

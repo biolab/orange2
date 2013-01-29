@@ -5,10 +5,6 @@
 <icon>icons/ScatterPlot.svg</icon>
 <priority>1000</priority>
 """
-# ScatterPlot.py
-#
-# Show data using scatterplot
-#
 from OWWidget import *
 from OWScatterPlotGraph import *
 from OWkNNOptimization import *
@@ -18,21 +14,78 @@ from orngScaleData import *
 from OWGraph import OWGraph
 
 
-###########################################################################################
+NAME = "Scatter Plot"
+
+DESCRIPTION = "Scatter plot graph visualization"
+
+LONG_DESCRIPTION = """
+This widget provides a standard 2-dimensional scatter plot
+visualization for both continuous and discrete-valued attributes.
+"""
+
+ID = "orange.widgets.visualization.scatterplot"
+
+ICON = "icons/ScatterPlot.svg"
+
+AUTHOR = "Gregor Leban"
+
+PRIORITY = 1000
+
+INPUTS = (
+    dict(name="Data", type=ExampleTable, handler="setData", flags=Default,
+         doc="Primary input data set.",
+         id="primary-data"),
+
+    dict(name="Data Subset", type=ExampleTable, handler="setSubsetData",
+         doc="Additional data set with a subset of instances in 'Data'",
+         id="subset-data"),
+
+    dict(name="Features", type=AttributeList, handler="setShownAttributes",
+         doc="A subset of features in 'Data' to display",
+         id="feature-subset"),
+
+    dict(name="Evaluation Results", type=orngTest.ExperimentResults,
+         handler="setTestResults",
+         id="evaluation-results"),
+
+    dict(name="VizRank Learner", type=orange.Learner,
+         handler="setVizRankLearner",
+         id="vizrank-learner"),
+)
+
+OUTPUTS = (
+    dict(name="Selected Data", type=ExampleTable,
+         doc="Selected data subset",
+         id="selected-data"),
+
+    dict(name="Other Data", type=ExampleTable,
+         doc="Data subset not included in 'Selected Data'",
+         id="unselected-data")
+)
+
+
+###############################################################################
 ##### WIDGET : Scatterplot visualization
-###########################################################################################
+###############################################################################
 class OWScatterPlot(OWWidget):
-    settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showGridlines", "graph.showAxisScale", "graph.useAntialiasing",
-                    "graph.showLegend", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols", "graph.showProbabilities",
-                    "graph.alphaValue", "graph.showDistributions", "autoSendSelection", "toolbarSelection", "graph.sendSelectionOnUpdate",
-                    "colorSettings", "selectedSchemaIndex", "VizRankLearnerName"]
-    jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
+    settingsList = ["graph.pointWidth", "graph.showXaxisTitle",
+                    "graph.showYLaxisTitle", "showGridlines",
+                    "graph.showAxisScale", "graph.useAntialiasing",
+                    "graph.showLegend", "graph.jitterSize",
+                    "graph.jitterContinuous", "graph.showFilledSymbols",
+                    "graph.showProbabilities", "graph.alphaValue",
+                    "graph.showDistributions", "autoSendSelection",
+                    "toolbarSelection", "graph.sendSelectionOnUpdate",
+                    "colorSettings", "selectedSchemaIndex",
+                    "VizRankLearnerName"]
+
+    jitterSizeNums = [0.0, 0.1, 0.5, 1, 2, 3, 4, 5, 7, 10, 15, 20, 30, 40, 50]
 
     contextHandlers = {"": DomainContextHandler("", ["attrX", "attrY",
                                                      (["attrColor", "attrShape", "attrSize"], DomainContextHandler.Optional),
                                                      ("attrLabel", DomainContextHandler.Optional + DomainContextHandler.IncludeMetaAttributes)])}
 
-    def __init__(self, parent=None, signalManager = None):
+    def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, "Scatter Plot", TRUE)
 
         self.inputs =  [("Data", ExampleTable, self.setData, Default), ("Data Subset", ExampleTable, self.setSubsetData), ("Features", AttributeList, self.setShownAttributes), ("Evaluation Results", orngTest.ExperimentResults, self.setTestResults), ("VizRank Learner", orange.Learner, self.setVizRankLearner)]

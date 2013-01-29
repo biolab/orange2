@@ -99,7 +99,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=BasicWidget()
     ow.show()
-    data = orange.ExampleTable(r"../../doc/datasets/iris.tab")
+    data = orange.ExampleTable("iris.tab")
     ow.set_data(data)
     ow.handleNewSignals()
     a.exec_()

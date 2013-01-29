@@ -73,8 +73,8 @@ class SchemeNode(QObject):
         raise ValueError("%r not found." % name)
 
     def __str__(self):
-        return "SchemeNode(description=%s, title=%r, ...)" % \
-                (str(self.description), self.title)
+        return u"SchemeNode(description_id=%s, title=%r, ...)" % \
+                (str(self.description.id), self.title)
 
     def __repr__(self):
         return str(self)

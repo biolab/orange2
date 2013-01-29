@@ -69,6 +69,6 @@ if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWDataSamplerC()
     ow.show()
-    dataset = orange.ExampleTable('../datasets/iris.tab')
+    dataset = orange.ExampleTable('iris.tab')
     ow.data(dataset)
     appl.exec_()

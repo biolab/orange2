@@ -487,7 +487,7 @@ when empty.
         This is the default behaviour on data set iris with 150 data
         instances described by four features and a class value::
 
-	    >>> data = orange.ExampleTable("../datasets/iris")
+	    >>> data = orange.ExampleTable("iris")
 	    >>> a, c, w = data.toNumpy()
 	    >>> a.shape
 	    (150, 4)

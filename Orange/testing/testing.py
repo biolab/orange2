@@ -100,12 +100,10 @@ TEST_CLASSLESS = 8
 DISCRETIZE_DOMAIN = 16
 CONTINUIZE_DOMAIN = 32
 
-datasetsdir = os.path.join(os.path.dirname(orange.__file__), "doc", "datasets")
-
 def open_data(name, flags=0):
     """ Open a named data-set return it. 
     """
-    dataset = orange.ExampleTable(os.path.join(datasetsdir, name))
+    dataset = orange.ExampleTable(name)
     if flags & CONTINUIZE_DOMAIN:
         preprocessor = preprocess.Continuize()
         dataset = preprocessor(dataset)

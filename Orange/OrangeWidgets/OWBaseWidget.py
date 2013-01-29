@@ -26,14 +26,25 @@ from Orange import misc
 import Orange.utils
 from Orange.utils import debugging as orngDebugging
 from string import *
-from orngSignalManager import *
+
+from Orange.OrangeCanvas.registry.description import (
+    Default, NonDefault, Single, Multiple, Explicit, Dynamic,
+    InputSignal, OutputSignal
+)
+
+from Orange.OrangeCanvas.scheme.widgetsscheme import (
+    SignalLink, WidgetsSignalManager, SignalWrapper
+)
+
 import OWGUI
+
 
 ERROR = 0
 WARNING = 1
 
 TRUE=1
 FALSE=0
+
 
 def unisetattr(self, name, value, grandparent):
     if "." in name:
@@ -162,8 +173,8 @@ class OWBaseWidget(QDialog):
         # needed by signalWrapper to know when everything was sent
         self.parent = parent
         self.needProcessing = 0     # used by signalManager
-        if not signalManager: self.signalManager = globalSignalManager        # use the global instance of signalManager  - not advised
-        else:                 self.signalManager = signalManager              # use given instance of signal manager
+
+        self.signalManager = signalManager
 
         self.inputs = []     # signalName:(dataType, handler, onlySingleConnection)
         self.outputs = []    # signalName: dataType
@@ -192,9 +203,6 @@ class OWBaseWidget(QDialog):
         self._private_thread_pools = {}
         self.asyncCalls = []
         self.asyncBlock = False
-        
-        self.connect(self, SIGNAL("blockingStateChanged(bool)"), lambda bool :self.signalManager.log.info("Blocking state changed %s %s" % (str(self), str(bool))))
-
 
     # uncomment this when you need to see which events occured
     """
@@ -397,8 +405,8 @@ class OWBaseWidget(QDialog):
 
 
     def send(self, signalName, value, id = None):
-        if not self.hasOutputName(signalName):
-            print "Warning! Signal '%s' is not a valid signal name for the '%s' widget. Please fix the signal name." % (signalName, self.captionTitle)
+#        if not self.hasOutputName(signalName):
+#            print "Warning! Signal '%s' is not a valid signal name for the '%s' widget. Please fix the signal name." % (signalName, self.captionTitle)
 
         if self.linksOut.has_key(signalName):
             self.linksOut[signalName][id] = value
