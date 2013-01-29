@@ -21,6 +21,8 @@ if not hasattr(QObject, "pyqtConfigure"):
 
 from OWContexts import *
 import sys, time, random, user, os, os.path, cPickle, copy
+import logging
+
 import orange
 from Orange import misc
 import Orange.utils
@@ -39,11 +41,13 @@ from Orange.OrangeCanvas.scheme.widgetsscheme import (
 import OWGUI
 
 
+_log = logging.getLogger(__name__)
+
 ERROR = 0
 WARNING = 1
 
-TRUE=1
-FALSE=0
+TRUE = 1
+FALSE = 0
 
 
 def unisetattr(self, name, value, grandparent):
@@ -115,9 +119,6 @@ class ControlledAttributesDict(dict):
         self.master.setControllers(self.master, key, self.master, "")
 
 
-
-##################
-# this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
 from orange import ExampleTable
 
 class AttributeList(list):
@@ -131,9 +132,7 @@ widgetId = 0
 class OWBaseWidget(QDialog):
     def __new__(cls, *arg, **args):
         self = QDialog.__new__(cls)
-        
-        #print "arg", arg
-        #print "args: ", args
+
         self.currentContexts = {}   # the "currentContexts" MUST be the first thing assigned to a widget
         self._useContexts = 1       # do you want to use contexts
         self._owInfo = 1            # currently disabled !!!
@@ -405,16 +404,13 @@ class OWBaseWidget(QDialog):
 
 
     def send(self, signalName, value, id = None):
-#        if not self.hasOutputName(signalName):
-#            print "Warning! Signal '%s' is not a valid signal name for the '%s' widget. Please fix the signal name." % (signalName, self.captionTitle)
-
         if self.linksOut.has_key(signalName):
             self.linksOut[signalName][id] = value
         else:
             self.linksOut[signalName] = {id:value}
 
-        self.signalManager.send(self, signalName, value, id)
-
+        if self.signalManager is not None:
+            self.signalManager.send(self, signalName, value, id)
 
     def getdeepattr(self, attr, **argkw):
         try:
@@ -791,24 +787,22 @@ class OWBaseWidget(QDialog):
     def setWidgetStateHandler(self, handler):
         self.widgetStateHandler = handler
 
-
     # if we are in debug mode print the event into the file
-    def printEvent(self, text, eventVerbosity = 1):
-        self.signalManager.addEvent(self.captionTitle + ": " + text, eventVerbosity = eventVerbosity)
+    def printEvent(self, text, eventVerbosity=1):
+        text = self.captionTitle + ": " + text
+
+        if eventVerbosity > 0:
+            _log.debug(text)
+        else:
+            _log.info(text)
+
         if self.eventHandler:
-            self.eventHandler(self.captionTitle + ": " + text, eventVerbosity)
+            self.eventHandler(text, eventVerbosity)
 
     def openWidgetHelp(self):
         if "widgetInfo" in self.__dict__:  # This widget is on a canvas.
             qApp.canvasDlg.helpWindow.showHelpFor(self.widgetInfo, True)
-        
-    def focusInEvent(self, *ev):
-        #print "focus in"
-        #if qApp.canvasDlg.settings["synchronizeHelp"]:  on ubuntu: pops up help window on first widget focus for every widget   
-        #    qApp.canvasDlg.helpWindow.showHelpFor(self, True)
-        QDialog.focusInEvent(self, *ev)
-        
-    
+
     def keyPressEvent(self, e):
         if e.key() in (Qt.Key_Help, Qt.Key_F1):
             self.openWidgetHelp()
@@ -818,15 +812,13 @@ class OWBaseWidget(QDialog):
         else:
             QDialog.keyPressEvent(self, e)
 
-    def information(self, id = 0, text = None):
+    def information(self, id=0, text=None):
         self.setState("Info", id, text)
-        #self.setState("Warning", id, text)
 
-    def warning(self, id = 0, text = ""):
+    def warning(self, id=0, text=""):
         self.setState("Warning", id, text)
-        #self.setState("Info", id, text)        # if we want warning just set information
 
-    def error(self, id = 0, text = ""):
+    def error(self, id=0, text=""):
         self.setState("Error", id, text)
 
     def setState(self, stateType, id, text):
@@ -837,8 +829,11 @@ class OWBaseWidget(QDialog):
                     self.widgetState[stateType].pop(val)
                     changed = 1
         else:
-            if type(id) == str:
-                text = id; id = 0       # if we call information(), warning(), or error() function with only one parameter - a string - then set id = 0
+            if isinstance(id, basestring):
+                # if we call information(), warning(), or error() function
+                # with only one parameter - a string - then set id = 0
+                text = id
+                id = 0
             if not text:
                 if self.widgetState[stateType].has_key(id):
                     self.widgetState[stateType].pop(id)
@@ -948,9 +943,15 @@ class OWBaseWidget(QDialog):
             (Qt.ControlModifier, Qt.Key_M): lambda self: self.showMaximized if self.isMinimized() else self.showMinimized(),
             (Qt.ControlModifier, Qt.Key_W): lambda self: self.setVisible(not self.isVisible())}
 
-
     def scheduleSignalProcessing(self):
-        self.signalManager.scheduleSignalProcessing(self)
+        """
+        Schedule signal processing by the signal manager.
+
+        ..note:: The processing is already scheduled at the most appropriate
+                 time so you should have few uses for this method.
+        """
+        if self.signalManager is not None:
+            self.signalManager.scheduleSignalProcessing(self)
 
     def setBlocking(self, state=True):
         """ Set blocking flag for this widget. While this flag is set this
