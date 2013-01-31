@@ -19,6 +19,7 @@ companion :class:`WidgetsSignalManager` class.
 import logging
 
 import sip
+from PyQt4.QtGui import QShortcut, QKeySequence, QWhatsThisClickedEvent
 from PyQt4.QtCore import Qt, QCoreApplication, QEvent
 
 from .signalmanager import SignalManager, compress_signals, can_enable_dynamic
@@ -124,6 +125,9 @@ class WidgetsScheme(Scheme):
         widget.progressBarValueChanged.connect(node.set_progress)
         widget.processingStateChanged.connect(node.set_processing_state)
 
+        # Install a help shortcut on the widget
+        help_shortcut = QShortcut(QKeySequence("F1"), widget)
+        help_shortcut.activated.connect(self.__on_help_request)
         return widget
 
     def close_all_open_widgets(self):
@@ -165,6 +169,20 @@ class WidgetsScheme(Scheme):
     def save_to(self, stream):
         self.sync_node_properties()
         Scheme.save_to(self, stream)
+
+    def __on_help_request(self):
+        """
+        Help shortcut was pressed. We send a `QWhatsThisClickedEvent` and
+        hope someone responds to it.
+
+        """
+        # Sender is the QShortcut, and parent the OWBaseWidget
+        widget = self.sender().parent()
+        node = self.node_for_widget.get(widget)
+        if node:
+            url = "help://search?id={0}".format(node.description.id)
+            event = QWhatsThisClickedEvent(url)
+            QCoreApplication.sendEvent(self, event)
 
 
 class WidgetsSignalManager(SignalManager):

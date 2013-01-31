@@ -800,13 +800,14 @@ class OWBaseWidget(QDialog):
             self.eventHandler(text, eventVerbosity)
 
     def openWidgetHelp(self):
-        if "widgetInfo" in self.__dict__:  # This widget is on a canvas.
+        if "widgetInfo" in self.__dict__ and \
+                hasattr(qApp, "canvasDlg"):
+            # This widget is on a canvas.
             qApp.canvasDlg.helpWindow.showHelpFor(self.widgetInfo, True)
 
     def keyPressEvent(self, e):
         if e.key() in (Qt.Key_Help, Qt.Key_F1):
             self.openWidgetHelp()
-#            e.ignore()
         elif (int(e.modifiers()), e.key()) in OWBaseWidget.defaultKeyActions:
             OWBaseWidget.defaultKeyActions[int(e.modifiers()), e.key()](self)
         else:

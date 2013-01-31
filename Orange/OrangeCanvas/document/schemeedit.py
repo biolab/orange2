@@ -15,11 +15,11 @@ from PyQt4.QtGui import (
     QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QActionGroup,
     QKeySequence, QUndoStack, QGraphicsItem, QGraphicsObject,
     QGraphicsTextItem, QCursor, QFont, QPainter, QPixmap, QColor,
-    QIcon, QDesktopServices, QWhatsThisClickedEvent
+    QIcon, QWhatsThisClickedEvent
 )
 
 from PyQt4.QtCore import (
-    Qt, QObject, QEvent, QSignalMapper, QRectF, QUrl, QCoreApplication
+    Qt, QObject, QEvent, QSignalMapper, QRectF, QCoreApplication
 )
 
 from PyQt4.QtCore import pyqtProperty as Property, pyqtSignal as Signal
@@ -447,6 +447,7 @@ class SchemeEditWidget(QWidget):
                 self.__scheme.title_changed.disconnect(self.titleChanged)
                 self.__scheme.node_added.disconnect(self.__onNodeAdded)
                 self.__scheme.node_removed.disconnect(self.__onNodeRemoved)
+                self.__scheme.removeEventFilter(self)
 
             self.__scheme = scheme
 
@@ -524,6 +525,8 @@ class SchemeEditWidget(QWidget):
             if self.__scheme:
                 for node in self.__scheme.nodes:
                     self.__onNodeAdded(node)
+
+                self.__scheme.installEventFilter(self)
 
     def scheme(self):
         """Return the :class:`Scheme` edited by the widget.
@@ -825,6 +828,11 @@ class SchemeEditWidget(QWidget):
                 return self.sceneKeyReleaseEvent(event)
             elif etype == QEvent.GraphicsSceneContextMenu:
                 return self.sceneContextMenuEvent(event)
+
+        elif obj is self.__scheme:
+            if event.type() == QEvent.WhatsThisClicked:
+                # Re post the event
+                self.__showHelpFor(event.href())
 
         return QWidget.eventFilter(self, obj, event)
 
@@ -1290,16 +1298,21 @@ class SchemeEditWidget(QWidget):
             desc = node.description
 
             help_url = "help://search?" + urlencode({"id": desc.id})
+            self.__showHelpFor(help_url)
 
-            # Notify the parent chain and let them respond
-            ev = QWhatsThisClickedEvent(help_url)
-            handled = QCoreApplication.sendEvent(self, ev)
+    def __showHelpFor(self, help_url):
+        """
+        Show help for an "help" url.
+        """
+        # Notify the parent chain and let them respond
+        ev = QWhatsThisClickedEvent(help_url)
+        handled = QCoreApplication.sendEvent(self, ev)
 
-            if not handled:
-                message_information(
-                    self.tr("Sorry there is no documentation available for "
-                            "this widget."),
-                    parent=self)
+        if not handled:
+            message_information(
+                self.tr("Sorry there is no documentation available for "
+                        "this widget."),
+                parent=self)
 
     def __toggleLinkEnabled(self, enabled):
         """Link enabled state was toggled in the context menu.
