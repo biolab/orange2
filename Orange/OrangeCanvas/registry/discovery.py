@@ -520,7 +520,7 @@ def module_name_split(name):
     if "." in name:
         package_name, module = name.rsplit(".", 1)
     else:
-        package_name, module = "", module
+        package_name, module = "", name
     return package_name, module
 
 
