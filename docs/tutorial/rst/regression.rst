@@ -53,7 +53,7 @@ Cross Validation
 
 Just like for classification, the same evaluation module (``Orange.evaluation``) is available for regression. Its testing submodule includes procedures such as cross-validation, leave-one-out testing and similar, and functions in scoring submodule can assess the accuracy from the testing:
 
-.. literalinclude:: code/regression-other.py
+.. literalinclude:: code/regression-cv.py
    :lines: 3-
 
 .. index: 
