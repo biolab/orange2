@@ -20,11 +20,12 @@ import logging
 
 import sip
 from PyQt4.QtGui import QShortcut, QKeySequence, QWhatsThisClickedEvent
-from PyQt4.QtCore import Qt, QCoreApplication, QEvent
+from PyQt4.QtCore import Qt, QCoreApplication, QEvent, SIGNAL
 
 from .signalmanager import SignalManager, compress_signals, can_enable_dynamic
 from .scheme import Scheme, SchemeNode
 from .utils import name_lookup, check_arg, check_type
+from ..resources import icon_loader
 from ..config import rc
 
 log = logging.getLogger(__name__)
@@ -34,8 +35,11 @@ class WidgetsScheme(Scheme):
     """
     A Scheme containing Orange Widgets managed with a `WidgetsSignalManager`
     instance.
-    This class handles the lifetime (creation/deletion, etc.) of OWBaseWidget
-    instances corresponding to the nodes of the scheme.
+
+    Extends the base `Scheme` class to handle the lifetime
+    (creation/deletion, etc.) of `OWBaseWidget` instances corresponding to
+    the nodes in the scheme. It also delegates the interwidget signal
+    propagation to an instance of `WidgetsSignalManager`.
 
     """
     def __init__(self, parent=None, title=None, description=None):
@@ -110,7 +114,9 @@ class WidgetsScheme(Scheme):
 
         # Add the node/widget mapping s before calling __init__
         # Some OWWidgets might already send data in the constructor
+        # (should this be forbidden? Raise a warning?)
         self.signal_manager.on_node_added(node)
+
         self.widget_for_node[node] = widget
         self.node_for_widget[widget] = node
 
@@ -118,12 +124,20 @@ class WidgetsScheme(Scheme):
         widget.setCaption(node.title)
         widget.widgetInfo = desc
 
+        widget.setWindowIcon(
+            icon_loader.from_description(desc).get(desc.icon)
+        )
+
         widget.setVisible(node.properties.get("visible", False))
 
         node.title_changed.connect(widget.setCaption)
+
         # Bind widgets progress/processing state back to the node's properties
         widget.progressBarValueChanged.connect(node.set_progress)
         widget.processingStateChanged.connect(node.set_processing_state)
+        self.connect(widget,
+                     SIGNAL("blockingStateChanged(bool)"),
+                     self.signal_manager._update)
 
         # Install a help shortcut on the widget
         help_shortcut = QShortcut(QKeySequence("F1"), widget)
@@ -391,8 +405,8 @@ class WidgetsSignalManager(SignalManager):
             w1 = scheme.widget_for_node[link.source_node]
             w2 = scheme.widget_for_node[link.sink_node]
 
-            # Input/OutputSignal are reused from description. interface
-            # is almost the same
+            # Input/OutputSignal are reused from description. Interface
+            # is almost the same as it was in orngSignalManager
             return SignalLink(w1, link.source_channel,
                               w2, link.sink_channel,
                               link.enabled)
@@ -487,16 +501,19 @@ class SignalWrapper(object):
     """
     Signal (actually slot) wrapper used by OWBaseWidget.connect overload.
     This disables (freezes) the widget's signal manager when slots are
-    invoked from GUI signals. Not sure if this is still needed, plenty of
-    widgets use the base QObject.connect
+    invoked from GUI signals. Not sure if this is still needed, could instead
+    just set the blocking flag on the widget itself.
 
     """
     def __init__(self, widget, method):
         self.widget = widget
         self.method = method
 
-    def __call__(self, *k):
+    def __call__(self, *args):
         manager = self.widget.signalManager
-
-        with manager.freeze(self.method):
-            self.method(*k)
+        if manager:
+            with manager.freeze(self.method):
+                self.method(*args)
+        else:
+            # Might be running stand alone without a manager.
+            self.method(*args)
