@@ -22,7 +22,12 @@ class TerminalView(QPlainTextEdit):
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
 
         font = self.font()
-        font.setStyleHint(QFont.Monospace)
+        if hasattr(QFont, "Monospace"):
+            # Why is this not available on Debian squeeze
+            font.setStyleHint(QFont.Monospace)
+        else:
+            font.setStyleHint(QFont.Courier)
+
         font.setFamily("Monaco")
         font.setPointSize(12)
         self.setFont(font)
