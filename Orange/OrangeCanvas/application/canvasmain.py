@@ -17,13 +17,15 @@ from PyQt4.QtGui import (
 )
 
 from PyQt4.QtCore import (
-    Qt, QEvent, QSize, QUrl, QSettings, QTimer, QFile
+    Qt, QEvent, QSize, QUrl, QTimer, QFile, QByteArray
 )
 
 from PyQt4.QtWebKit import QWebView
 
 from PyQt4.QtCore import pyqtProperty as Property
 
+# Compatibility with PyQt < v4.8.3
+from ..utils.qtcompat import QSettings
 
 from ..gui.dropshadow import DropShadowFrame
 from ..gui.dock import CollapsibleDockWidget
@@ -168,7 +170,10 @@ class CanvasMainWindow(QMainWindow):
         self.__first_show = True
 
         self.widget_registry = None
-        self.last_scheme_dir = None
+
+        self.last_scheme_dir = QDesktopServices.StandardLocation(
+            QDesktopServices.DocumentsLocation
+        )
 
         self.recent_schemes = config.recent_schemes()
 
@@ -630,32 +635,35 @@ class CanvasMainWindow(QMainWindow):
         settings.beginGroup("mainwindow")
 
         self.dock_widget.setExpanded(
-            settings.value("canvasdock/expanded", True).toBool()
+            settings.value("canvasdock/expanded", True, type=bool)
         )
 
-        floatable = settings.value("toolbox-dock-floatable", False).toBool()
+        floatable = settings.value("toolbox-dock-floatable", False, type=bool)
         if floatable:
             self.dock_widget.setFeatures(self.dock_widget.features() | \
                                          QDockWidget.DockWidgetFloatable)
 
         self.widgets_tool_box.setExclusive(
-            settings.value("toolbox-dock-exclusive", False).toBool()
+            settings.value("toolbox-dock-exclusive", False, type=bool)
         )
 
         self.toogle_margins_action.setChecked(
-            settings.value("scheme-margins-enabled", True).toBool()
+            settings.value("scheme-margins-enabled", True, type=bool)
         )
 
-        self.last_scheme_dir = \
-            settings.value("last-scheme-dir", None).toPyObject()
+        default_dir = QDesktopServices.storageLocation(
+            QDesktopServices.DocumentsLocation
+        )
 
-        if self.last_scheme_dir is not None and \
-                not os.path.exists(self.last_scheme_dir):
+        self.last_scheme_dir = settings.value("last-scheme-dir", default_dir,
+                                              type=unicode)
+
+        if not os.path.exists(self.last_scheme_dir):
             # if directory no longer exists reset the saved location.
-            self.last_scheme_dir = None
+            self.last_scheme_dir = default_dir
 
         self.canvas_tool_dock.setQuickHelpVisible(
-            settings.value("quick-help/visible", True).toBool()
+            settings.value("quick-help/visible", True, type=bool)
         )
 
         self.__update_from_settings()
@@ -696,9 +704,10 @@ class CanvasMainWindow(QMainWindow):
 
         # Restore possibly saved widget toolbox tab states
         settings = QSettings()
+
         state = settings.value("mainwindow/widgettoolbox/state",
-                                defaultValue=None)
-        state = state.toPyObject()
+                                defaultValue=QByteArray(),
+                                type=QByteArray)
         if state:
             self.widgets_tool_box.restoreState(state)
 
@@ -785,7 +794,8 @@ class CanvasMainWindow(QMainWindow):
         new_scheme = widgetsscheme.WidgetsScheme()
 
         settings = QSettings()
-        show = settings.value("schemeinfo/show-at-new-scheme", True).toBool()
+        show = settings.value("schemeinfo/show-at-new-scheme", True,
+                              type=bool)
 
         if show:
             status = self.show_scheme_properties_for(
@@ -1169,7 +1179,7 @@ class CanvasMainWindow(QMainWindow):
         settings = QSettings()
 
         dialog.setShowAtStartup(
-            settings.value("startup/show-welcome-screen", True).toBool()
+            settings.value("startup/show-welcome-screen", True, type=bool)
         )
 
         status = dialog.exec_()
@@ -1193,7 +1203,7 @@ class CanvasMainWindow(QMainWindow):
         dialog.setFixedSize(725, 450)
 
         dialog.setDontShowAtNewScheme(
-            not settings.value(value_key, True).toBool()
+            not settings.value(value_key, True, type=bool)
         )
 
         return dialog
@@ -1439,13 +1449,15 @@ class CanvasMainWindow(QMainWindow):
             settings.beginGroup("mainwindow")
 
             # Restore geometry and dock/toolbar state
-            state = settings.value("state")
-            if state.isValid():
-                self.restoreState(state.toByteArray(),
-                                  version=self.SETTINGS_VERSION)
-            geom_data = settings.value("geometry")
-            if geom_data.isValid():
-                self.restoreGeometry(geom_data.toByteArray())
+            state = settings.value("state", QByteArray(), type=QByteArray)
+            if state:
+                self.restoreState(state, version=self.SETTINGS_VERSION)
+
+            geom_data = settings.value("geometry", QByteArray(),
+                                       type=QByteArray)
+            if geom_data:
+                self.restoreGeometry(geom_data)
+
             self.__first_show = False
 
         return QMainWindow.showEvent(self, event)
@@ -1523,39 +1535,45 @@ class CanvasMainWindow(QMainWindow):
         settings = QSettings()
         settings.beginGroup("mainwindow")
         toolbox_floatable = settings.value("toolbox-dock-floatable",
-                                           defaultValue=False)
+                                           defaultValue=False,
+                                           type=bool)
 
         features = self.dock_widget.features()
         features = updated_flags(features, QDockWidget.DockWidgetFloatable,
-                                 toolbox_floatable.toBool())
+                                 toolbox_floatable)
         self.dock_widget.setFeatures(features)
 
         toolbox_exclusive = settings.value("toolbox-dock-exclusive",
-                                           defaultValue=False)
-        self.widgets_tool_box.setExclusive(toolbox_exclusive.toBool())
+                                           defaultValue=False,
+                                           type=bool)
+        self.widgets_tool_box.setExclusive(toolbox_exclusive)
 
         settings.endGroup()
         settings.beginGroup("quickmenu")
 
         triggers = 0
         dbl_click = settings.value("trigger-on-double-click",
-                                   defaultValue=True)
-        if dbl_click.toBool():
+                                   defaultValue=True,
+                                   type=bool)
+        if dbl_click:
             triggers |= SchemeEditWidget.DoubleClicked
 
         left_click = settings.value("trigger-on-left-click",
-                                    defaultValue=False)
-        if left_click.toBool():
+                                    defaultValue=False,
+                                    type=bool)
+        if left_click:
             triggers |= SchemeEditWidget.Clicked
 
         space_press = settings.value("trigger-on-space-key",
-                                     defaultValue=True)
-        if space_press.toBool():
+                                     defaultValue=True,
+                                     type=bool)
+        if space_press:
             triggers |= SchemeEditWidget.SpaceKey
 
         any_press = settings.value("trigger-on-any-key",
-                                   defaultValue=False)
-        if any_press.toBool():
+                                   defaultValue=False,
+                                   type=bool)
+        if any_press:
             triggers |= SchemeEditWidget.AnyKey
 
         self.scheme_widget.setQuickMenuTriggers(triggers)
@@ -1563,20 +1581,23 @@ class CanvasMainWindow(QMainWindow):
         settings.endGroup()
         settings.beginGroup("schemeedit")
         show_channel_names = settings.value("show-channel-names",
-                                            defaultValue=True)
-        self.scheme_widget.setChannelNamesVisible(show_channel_names.toBool())
+                                            defaultValue=True,
+                                            type=bool)
+        self.scheme_widget.setChannelNamesVisible(show_channel_names)
 
         settings.endGroup()
 
         settings.beginGroup("output")
-        stay_on_top = settings.value("stay-on-top", defaultValue=True)
-        if stay_on_top.toBool():
+        stay_on_top = settings.value("stay-on-top", defaultValue=True,
+                                     type=bool)
+        if stay_on_top:
             self.output_dock.setFloatingWindowFlags(Qt.Tool)
         else:
             self.output_dock.setFloatingWindowFlags(Qt.Window)
 
-        dockable = settings.value("dockable", defaultValue=True,)
-        if dockable.toBool():
+        dockable = settings.value("dockable", defaultValue=True,
+                                  type=bool)
+        if dockable:
             self.output_dock.setAllowedAreas(Qt.BottomDockWidgetArea)
         else:
             self.output_dock.setAllowedAreas(Qt.NoDockWidgetArea)
@@ -1584,14 +1605,16 @@ class CanvasMainWindow(QMainWindow):
         settings.endGroup()
 
         settings.beginGroup("help")
-        stay_on_top = settings.value("stay-on-top", defaultValue=True)
-        if stay_on_top.toBool():
+        stay_on_top = settings.value("stay-on-top", defaultValue=True,
+                                     type=bool)
+        if stay_on_top:
             self.help_dock.setFloatingWindowFlags(Qt.Tool)
         else:
             self.help_dock.setFloatingWindowFlags(Qt.Window)
 
-        dockable = settings.value("dockable", defaultValue=False)
-        if dockable.toBool():
+        dockable = settings.value("dockable", defaultValue=False,
+                                  type=bool)
+        if dockable:
             self.help_dock.setAllowedAreas(Qt.LeftDockWidgetArea | \
                                            Qt.RightDockWidgetArea)
         else:

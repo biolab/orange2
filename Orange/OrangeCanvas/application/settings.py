@@ -21,7 +21,7 @@ from PyQt4.QtGui import (
 )
 
 from PyQt4.QtCore import (
-    Qt, QEventLoop, QAbstractItemModel, QModelIndex, QSettings,
+    Qt, QEventLoop, QAbstractItemModel, QModelIndex
 )
 
 log = logging.getLogger(__name__)
@@ -481,7 +481,9 @@ class UserSettingsDialog(QMainWindow):
 
     def hideEvent(self, event):
         QMainWindow.hideEvent(self, event)
-        self.__loop.exit(0)
+        if self.__loop is not None:
+            self.__loop.exit(0)
+            self.__loop = None
 
     def __macOnToolBarAction(self, action):
         index, _ = action.data().toInt()

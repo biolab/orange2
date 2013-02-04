@@ -15,7 +15,7 @@ from contextlib import nested
 import pkg_resources
 
 from PyQt4.QtGui import QFont, QColor
-from PyQt4.QtCore import Qt, QRect, QSettings, QDir
+from PyQt4.QtCore import Qt, QRect, QDir
 
 from Orange import OrangeCanvas
 from Orange.OrangeCanvas.application.application import CanvasApplication
@@ -26,6 +26,7 @@ from Orange.OrangeCanvas.gui.splashscreen import SplashScreen, QPixmap
 from Orange.OrangeCanvas.config import cache_dir
 from Orange.OrangeCanvas import config
 from Orange.OrangeCanvas.utils.redirect import redirect_stdout, redirect_stderr
+from Orange.OrangeCanvas.utils.qtcompat import QSettings
 
 from Orange.OrangeCanvas.registry import qt
 from Orange.OrangeCanvas.registry import WidgetRegistry, set_global_registry
@@ -171,7 +172,7 @@ def main(argv=None):
     )
 
     want_splash = \
-        settings.value("startup/show-splash-screen", True).toBool() and \
+        settings.value("startup/show-splash-screen", True, type=bool) and \
         not options.no_splash
 
     if want_splash:
@@ -208,7 +209,7 @@ def main(argv=None):
     canvas_window.show()
 
     want_welcome = \
-        settings.value("startup/show-welcome-screen", True).toBool() \
+        settings.value("startup/show-welcome-screen", True, type=bool) \
         and not options.no_welcome
 
     canvas_window.raise_()
@@ -226,10 +227,10 @@ def main(argv=None):
         canvas_window.load_scheme(args[0])
 
     stdout_redirect = \
-        settings.value("output/redirect-stdout", True).toBool()
+        settings.value("output/redirect-stdout", True, type=bool)
 
     stderr_redirect = \
-        settings.value("output/redirect-stderr", True).toBool()
+        settings.value("output/redirect-stderr", True, type=bool)
 
     # cmd line option overrides settings / no redirect is possible
     # under ipython

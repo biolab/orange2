@@ -11,9 +11,12 @@ import itertools
 import pkg_resources
 
 from PyQt4.QtGui import QDesktopServices
-from PyQt4.QtCore import QCoreApplication, QSettings
+from PyQt4.QtCore import QCoreApplication
 
 from .utils.settings import Settings, config_slot
+
+# Import QSettings from qtcompat module (compatibility with PyQt < 4.8.3
+from .utils.qtcompat import QSettings
 
 log = logging.getLogger(__name__)
 
