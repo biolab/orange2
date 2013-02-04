@@ -11,13 +11,15 @@ import logging
 
 from collections import namedtuple, MutableMapping
 
-from PyQt4.QtCore import QObject, QVariant, QString, QChar, QEvent, \
-                         QSettings, QCoreApplication
+from PyQt4.QtCore import QObject, QString, QChar, QEvent, QCoreApplication
 
 from PyQt4.QtCore import pyqtSignal as Signal
-from PyQt4.QtCore import PYQT_VERSION, pyqtWrapperType
+from PyQt4.QtCore import pyqtWrapperType
 
 from . import toPyObject
+
+# Import QSettings from qtcompat module (compatibility with PyQt < 4.8.3
+from .qtcompat import QSettings
 
 log = logging.getLogger(__name__)
 
@@ -67,81 +69,10 @@ class SettingChangedEvent(QEvent):
         return self.__oldValue
 
 
-class _Settings(QSettings):
-    def __init__(self, parent=None):
-        QSettings.__init__(self, parent)
-
-    def _fullKey(self, key):
-        group = unicode(self.group())
-        if group:
-            return "{0}/{1}".format(group.rstrip("/"), unicode(key))
-        else:
-            return unicode(key)
-
-    def _value(self, key, defaultValue, type):
-        if PYQT_VERSION < 0x40803:
-            # QSettings.value does not have `type` argument before PyQt4 4.8.3
-            value = QSettings.value(self, key, defaultValue)
-
-            if type is not None:
-                value = qvariant_to_py(value, type)
-        else:
-            value = QSettings.value(self, key, defaultValue, type)
-
-        return value
-
-    def value(self, key, defaultValue=None, type=None):
-        """
-        """
-        if QSettings.contains(self, key):
-            value = self._value(key, defaultValue, type)
-        else:
-            value = QSettings.value(self, key, defaultValue)
-        return value
-
-
-def _check_error((val, status)):
-    if not status:
-        raise TypeError()
-    else:
-        return val
-
-
-def qvariant_to_py(variant, py_type):
-    """Convert a QVariant object to a python object of type `py_type`.
-    """
-    vtype = variant.type()
-
-    if vtype == QVariant.Invalid:
-        if py_type is not None:
-            raise TypeError("Invalid variant type")
-        else:
-            return None
-
-    elif vtype in [QVariant.Hash, QVariant.Map]:
-        variant = variant.toPyObject()
-        return dict((unicode(key), py_type(value))
-                    for key, value in variant.items())
-
-    elif vtype == QVariant.List:
-        variant = variant.toPyObject()
-        return [py_type(item) for item in variant]
-
-    if issubclass(py_type, basestring):
-        return py_type(variant.toString())
-    elif py_type == bool:
-        return variant.toBool()
-    elif py_type == int:
-        return _check_error(variant.toInt())
-    elif py_type == float:
-        return _check_error(variant.toDouble())
-    else:
-        raise NotImplementedError
-
-
 def qt_to_mapped_type(value):
-    """Try to convert a Qt value to the corresponding python
-    mapped type (i.e. QString to unicode, etc.)
+    """
+    Try to convert a Qt value to the corresponding python mapped type
+    (i.e. QString to unicode, etc.).
 
     """
     if isinstance(value, QString):
@@ -164,6 +95,9 @@ class _pickledvalue(object):
 
 
 class Settings(QObject, MutableMapping):
+    """
+    A `dict` like interface to a QSettings store.
+    """
     __metaclass__ = QABCMeta
 
     valueChanged = Signal(unicode, object)
@@ -183,6 +117,9 @@ class Settings(QObject, MutableMapping):
         self.__store = store
 
     def __key(self, key):
+        """
+        Return the full key (including group path).
+        """
         if self.__path:
             return "/".join([self.__path, key])
         else:
@@ -226,20 +163,16 @@ class Settings(QObject, MutableMapping):
 
     def __value(self, fullkey, value_type):
         typesafe = value_type is not None
-        if PYQT_VERSION < 0x40803:
-            # QSettings.value does not have `type` argument.
+
+        if value_type is None:
             value = toPyObject(self.__store.value(fullkey))
-            typesafe = False
         else:
-            if value_type is None:
+            try:
+                value = self.__store.value(fullkey, type=value_type)
+            except TypeError:
+                # In case the value was pickled in a type unsafe mode
                 value = toPyObject(self.__store.value(fullkey))
-            else:
-                try:
-                    value = self.__store.value(fullkey, type=value_type)
-                except TypeError:
-                    # In case the value was pickled in a type unsafe mode
-                    value = toPyObject(self.__store.value(fullkey))
-                    typesafe = False
+                typesafe = False
 
         if not typesafe:
             if isinstance(value, _pickledvalue):
@@ -254,10 +187,6 @@ class Settings(QObject, MutableMapping):
 
     def __setValue(self, fullkey, value, value_type=None):
         typesafe = value_type is not None
-        if PYQT_VERSION < 0x40803:
-            # QSettings.value does not have `type` argument.
-            typesafe = False
-
         if not typesafe:
             # value is stored in a _pickledvalue wrapper to force PyQt
             # to store it in a pickled format so we don't lose the type
@@ -274,7 +203,7 @@ class Settings(QObject, MutableMapping):
             raise KeyError(key)
 
         if self.isgroup(key):
-            raise KeyError("is a group")
+            raise KeyError("{0!r} is a group".format(key))
 
         fullkey = self.__key(key)
         slot = self.__defaults.get(fullkey, None)
@@ -349,7 +278,8 @@ class Settings(QObject, MutableMapping):
         return Settings(self, self.__defaults.values(), path, self.__store)
 
     def isgroup(self, key):
-        """Is the `key` a settings group i.e. does it have subkeys.
+        """
+        Is the `key` a settings group i.e. does it have subkeys.
         """
         if key not in self:
             raise KeyError("{0!r} is not a valid key".format(key))
@@ -357,19 +287,22 @@ class Settings(QObject, MutableMapping):
         return len(self.group(key)) > 0
 
     def isdefault(self, key):
-        """Is the value for key the default.
+        """
+        Is the value for key the default.
         """
         if key not in self:
             raise KeyError(key)
         return not self.__store.contains(self.__key(key))
 
     def clear(self):
-        """Clear the settings and restore the defaults.
+        """
+        Clear the settings and restore the defaults.
         """
         self.__store.clear()
 
     def add_default_slot(self, default):
-        """Add a default slot to the settings This also replaces any
+        """
+        Add a default slot to the settings This also replaces any
         previously set value for the key.
 
         """
@@ -393,7 +326,8 @@ class Settings(QObject, MutableMapping):
         return self.__defaults[self.__key(key)]
 
     def values(self):
-        """Return a list over of all values in the settings.
+        """
+        Return a list over of all values in the settings.
         """
         return MutableMapping.values(self)
 
