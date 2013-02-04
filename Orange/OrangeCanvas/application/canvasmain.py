@@ -30,7 +30,7 @@ from ..utils.qtcompat import QSettings
 from ..gui.dropshadow import DropShadowFrame
 from ..gui.dock import CollapsibleDockWidget
 from ..gui.quickhelp import QuickHelpTipEvent
-from ..gui.utils import message_critical, message_question
+from ..gui.utils import message_critical, message_question, message_warning
 
 from ..help import HelpManager
 
@@ -42,6 +42,7 @@ from .settings import UserSettingsDialog
 from ..document.schemeedit import SchemeEditWidget
 
 from ..scheme import widgetsscheme
+from ..scheme.readwrite import parse_scheme
 
 from . import welcomedialog
 from ..preview import previewdialog, previewmodel
@@ -866,17 +867,30 @@ class CanvasMainWindow(QMainWindow):
 
         """
         new_scheme = widgetsscheme.WidgetsScheme()
+        errors = []
         try:
-            new_scheme.load_from(open(filename, "rb"))
+            parse_scheme(new_scheme, open(filename, "rb"),
+                         error_handler=errors.append)
         except Exception:
             message_critical(
                  self.tr("Could not load Orange Scheme file"),
                  title=self.tr("Error"),
-                 informative_text=self.tr("An unexpected error occurred"),
+                 informative_text=self.tr("An unexpected error occurred "
+                                          "while loading %r.") % filename,
                  exc_info=True,
                  parent=self)
             return None
-
+        if errors:
+            message_warning(
+                self.tr("Errors occured while loading the scheme."),
+                title=self.tr("Problem"),
+                informative_text=self.tr(
+                     "There were problems loading some "
+                     "of the widgets/links in the "
+                     "scheme."
+                ),
+                details="\n".join(map(repr, errors))
+            )
         return new_scheme
 
     def reload_last(self):
