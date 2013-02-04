@@ -6,8 +6,11 @@
 <priority>20</priority>
 <keywords>knn</keywords>
 """
+from OWWidget import *
 
-from OWKNN import *
+from OWKNN import OWKNN
+from orngWrap import PreprocessedLearner
+
 
 class OWKNNRegression(OWKNN):
     def __init__(self, parent=None, signalManager=None, title="kNN Regression"):
