@@ -95,7 +95,7 @@ class SchemeLink(QObject):
         if not compatible_channels(source_channel, sink_channel):
             raise IncompatibleChannelTypeError(
                     "Cannot connect %r to %r" \
-                    % (source_channel, sink_channel)
+                    % (source_channel.type, sink_channel.type)
                 )
 
         self.__enabled = enabled
