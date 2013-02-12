@@ -22,14 +22,13 @@ def thread_safe_queue(func):
     from functools import wraps, partial
     @wraps(func)
     def safe_wrapper(self, *args, **kwargs):
-        if not hasattr(self, "_thread_safe_thread"): 
+        if not hasattr(self, "_thread_safe_thread"):
             self._thread_safe_thread = self.thread()
         if QThread.currentThread() is not self._thread_safe_thread:
-            print >> sys.stderr, "Calling", func, "with", args, kwargs, "from the wrong thread.", "Queuing the call!"
             QMetaObject.invokeMethod(self, "queuedInvoke", Qt.QueuedConnection, Q_ARG("PyQt_PyObject", partial(safe_wrapper, self, *args, **kwargs)))
         else:
             return func(self, *args, **kwargs)
-            
+
     return safe_wrapper
 
 class OutputWindow(QDialog):
@@ -49,6 +48,7 @@ class OutputWindow(QDialog):
 
         self.defaultExceptionHandler = sys.excepthook
         self.defaultSysOutHandler = sys.stdout
+        self.defaultSysErrHandler = sys.stderr
 
         self.logFile = open(os.path.join(canvasDlg.canvasSettingsDir, "outputLog.html"), "w") # create the log file
         self.unfinishedText = ""
@@ -98,14 +98,20 @@ class OutputWindow(QDialog):
     def catchException(self, catch):
         if __DISABLE_OUTPUT__:
             return
-        if catch: sys.excepthook = self.exceptionHandler
-        else:     sys.excepthook = self.defaultExceptionHandler
+        if catch:
+            sys.excepthook = self.exceptionHandler
+        else:
+            sys.excepthook = self.defaultExceptionHandler
 
     def catchOutput(self, catch):
         if __DISABLE_OUTPUT__:
-            return 
-        if catch:    sys.stdout = self
-        else:         sys.stdout = self.defaultSysOutHandler
+            return
+        if catch:
+            sys.stdout = self
+            sys.stderr = self
+        else:
+            sys.stdout = self.defaultSysOutHandler
+            sys.stderr = self.defaultSysErrHandler
 
     def clear(self):
         self.textOutput.clear()

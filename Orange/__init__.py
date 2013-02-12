@@ -35,6 +35,7 @@ def _import(name):
             UserWarning, 2)
         alreadyWarned = True
 
+
 def _import_addons():
     globals_dict = globals()
     for entry_point in pkg_resources.iter_entry_points(ADDONS_ENTRY_POINT):
@@ -107,6 +108,7 @@ _import("classification.svm")
 _import("classification.logreg")
 _import("classification.knn")
 _import("classification.majority")
+_import("classification.neural")
 
 _import("tuning")
 

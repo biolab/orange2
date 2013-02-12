@@ -12,8 +12,9 @@ tree.name = "tree"
 learners = [lin, earth, tree]
 
 res = Orange.evaluation.testing.cross_validation(learners, data, folds=5)
-mse = Orange.evaluation.scoring.RMSE(res)
+rmse = Orange.evaluation.scoring.RMSE(res)
 
 print "Learner  RMSE"
 for i in range(len(learners)):
-  print "%-7s %5.2f" % (learners[i].name, mse[i])
+    print "{0:8}".format(learners[i].name),
+    print "%.2f" % rmse[i]

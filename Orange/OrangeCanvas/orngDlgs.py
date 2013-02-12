@@ -2,11 +2,16 @@
 # Description:
 #    signal dialog, canvas options dialog
 
+import sys
+import os
+import subprocess
+from contextlib import closing
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from orngCanvasItems import MyCanvasText
-from contextlib import closing
-import OWGUI, sys, os
+
+import OWGUI
 
 has_pip = True
 try:
@@ -724,6 +729,7 @@ class AddOnManagerSummary(QDialog):
         self.memo.update()
         self.memo.setMinimumHeight(min(300, documentSize.height() + 2 * self.memo.frameWidth()))
 
+
 class AddOnManagerDialog(QDialog):
     def __init__(self, canvasDlg, *args):
         QDialog.__init__(self, *args)
@@ -869,12 +875,15 @@ class AddOnManagerDialog(QDialog):
                 self.busy("Upgrading %s ..." % name)
                 self.repaint()
                 Orange.utils.addons.upgrade(name, self.pcb)
+            except subprocess.CalledProcessError, ex:
+                errormessage("Error",
+                             "setup.py script exited with error code %i" \
+                             % ex.returncode,
+                             details=ex.output)
             except Exception, e:
                 errormessage("Error",
                              "Problem upgrading add-on %s: %s" % (name, e),
                              exc_info=True)
-            except SystemExit, e:
-                errormessage("Error", "Abnormal exit", exc_info=True)
 
         for name in remove:
             try:
@@ -891,12 +900,16 @@ class AddOnManagerDialog(QDialog):
                 self.busy("Installing %s ..." % name)
                 self.repaint()
                 Orange.utils.addons.install(name, self.pcb)
+            except subprocess.CalledProcessError, ex:
+                errormessage("Error",
+                             "setup.py script exited with error code %i" \
+                             % ex.returncode,
+                             details=ex.output)
+
             except Exception, e:
                 errormessage("Error",
                              "Problem installing add-on %s: %s" % (name, e),
                              exc_info=True)
-            except SystemExit, e:
-                errormessage("Error", "Abnormal exit", exc_info=True)
 
         if len(upgrade) > 0:
             QMessageBox.warning(self, "Restart Orange", "After upgrading add-ons, it is very important to restart Orange to make sure the changes have been applied.")

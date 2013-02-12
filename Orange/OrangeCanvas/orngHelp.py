@@ -30,8 +30,12 @@ class HelpWindow(QDialog):
         self.layout().addWidget(self.helpBrowser)
         
     def showHelpFor(self, widgetInfo, bringToFront=False):
-        helpFileName = os.path.join(widgetInfo.docDir(), "%s.htm" % (widgetInfo.fileName[2:])).replace("\\", "/")
-        if not os.path.exists(helpFileName):
+        helpFileName = None
+        docdir = widgetInfo.docDir()
+        if docdir is not None:
+            helpFileName = os.path.join(widgetInfo.docDir(), "%s.htm" % (widgetInfo.fileName[2:])).replace("\\", "/")
+
+        if helpFileName is None or not os.path.exists(helpFileName):
             QMessageBox.warning( None, "Not available", "Sorry, there is no documentation available for this widget.", QMessageBox.Ok)
             return
         self.open("file:///"+helpFileName)

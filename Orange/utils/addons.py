@@ -29,6 +29,8 @@ import shutil
 import os
 import sys
 import platform
+import subprocess
+
 from collections import namedtuple, defaultdict
 from contextlib import closing
 
@@ -176,37 +178,29 @@ def load_installed_addons():
             addons[name.lower()] = addons[name.lower()]._replace(installed_version = None)
     rebuild_index()
 
+
 def run_setup(setup_script, args):
-    old_dir = os.getcwd()
-    save_argv = sys.argv[:]
-    save_path = sys.path[:]
-    setup_dir = os.path.abspath(os.path.dirname(setup_script))
-    temp_dir = os.path.join(setup_dir,'temp')
-    if not os.path.isdir(temp_dir): os.makedirs(temp_dir)
-    save_tmp = tempfile.tempdir
-    save_modules = sys.modules.copy()
-    try:
-        tempfile.tempdir = temp_dir
-        os.chdir(setup_dir)
-        try:
-            sys.argv[:] = [setup_script]+list(args)
-            sys.path.insert(0, setup_dir)
-            execfile(
-                    "setup.py",
-                    {'__file__':setup_script, '__name__':'__main__'}
-                )
-        except SystemExit, v:
-            if v.args and v.args[0]:
-                raise
-                # Normal exit, just return
-    finally:
-        sys.modules.update(save_modules)
-        for key in list(sys.modules):
-            if key not in save_modules: del sys.modules[key]
-        os.chdir(old_dir)
-        sys.path[:] = save_path
-        sys.argv[:] = save_argv
-        tempfile.tempdir = save_tmp
+    """
+    Run `setup_script` with `args` in a subprocess, using
+    :ref:`subprocess.check_output`.
+
+    """
+    source_root = os.path.dirname(setup_script)
+    executable = sys.executable
+    extra_kwargs = {}
+    if os.name == "nt" and os.path.basename(executable) == "pythonw.exe":
+        dirname, _ = os.path.split(executable)
+        executable = os.path.join(dirname, "python.exe")
+        # by default a new console window would show up when executing the
+        # script
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        extra_kwargs["startupinfo"] = startupinfo
+
+    subprocess.check_output([executable, setup_script] + args,
+                             cwd=source_root,
+                             stderr=subprocess.STDOUT,
+                             **extra_kwargs)
 
 
 def install(name, progress_callback=None):
@@ -234,13 +228,10 @@ def install(name, progress_callback=None):
         if not os.path.isfile(setup_py):
             raise Exception("Unable to install add-on - it is not properly packed.")
 
-        try:
-            switches = []
-            if site.USER_SITE in sys.path:   # we're not in a virtualenv
-                switches.append('--user')
-            run_setup(setup_py, ['install'] + switches)
-        except Exception, e:
-            raise Exception("Unable to install add-on: %s" % e)
+        switches = []
+        if site.USER_SITE in sys.path:   # we're not in a virtualenv
+            switches.append('--user')
+        run_setup(setup_py, ['install'] + switches)
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)
 
