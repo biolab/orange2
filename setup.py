@@ -750,9 +750,9 @@ DEPENDENCY_LINKS = (
 )
 
 ENTRY_POINTS = {
-    'gui_scripts': (
-            'orange-canvas = Orange.OrangeCanvas.main:main',
-    ),
+#    'gui_scripts': (
+#            'orange-canvas = Orange.OrangeCanvas.main:main',
+#    ),
     'orange.canvas.help': (
             'intersphinx = Orange.OrangeWidgets:intersphinx',
     )
@@ -785,6 +785,9 @@ def setup_package():
 
         cmdclass = cmdclass,
         ext_modules = ext_modules,
+        scripts = (
+            'bin/orange-canvas',
+        ),
     )
 
 if __name__ == '__main__':
