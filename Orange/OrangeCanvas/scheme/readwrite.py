@@ -29,6 +29,22 @@ class UnknownWidgetDefinition(Exception):
     pass
 
 
+def sniff_version(stream):
+    """
+    Parse a scheme stream and return the scheme's version string.
+    """
+    doc = parse(stream)
+    scheme_el = doc.getroot()
+    version = scheme_el.attrib.get("version", None)
+    # Fallback: check for "widgets" tag.
+    if scheme_el.find("widgets") is not None:
+        version = "1.0"
+    else:
+        version = "2.0"
+
+    return version
+
+
 def parse_scheme(scheme, stream, error_handler=None):
     """
     Parse a saved scheme from `stream` and populate a `scheme`

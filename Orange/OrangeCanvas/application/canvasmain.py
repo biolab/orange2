@@ -30,7 +30,8 @@ from ..utils.qtcompat import QSettings
 from ..gui.dropshadow import DropShadowFrame
 from ..gui.dock import CollapsibleDockWidget
 from ..gui.quickhelp import QuickHelpTipEvent
-from ..gui.utils import message_critical, message_question, message_warning
+from ..gui.utils import message_critical, message_question, \
+                        message_warning, message_information
 
 from ..help import HelpManager
 
@@ -42,7 +43,7 @@ from .settings import UserSettingsDialog
 from ..document.schemeedit import SchemeEditWidget
 
 from ..scheme import widgetsscheme
-from ..scheme.readwrite import parse_scheme
+from ..scheme.readwrite import parse_scheme, sniff_version
 
 from . import welcomedialog
 from ..preview import previewdialog, previewmodel
@@ -951,6 +952,23 @@ class CanvasMainWindow(QMainWindow):
         elif selected == QMessageBox.Cancel:
             return QDialog.Rejected
 
+    def check_can_save(self, document, path):
+        """
+        Check if saving the document to `path` would prevent it from
+        being read by the version 1.0 of scheme parser.
+
+        """
+        if path and os.path.exists(path):
+            version = sniff_version(open(path, "rb"))
+            if version == "1.0":
+                message_information(
+                    self.tr("Can not overwrite a version 1.0 ows file. "
+                            "Please save your work to a new file"),
+                    title="Info",
+                    parent=self)
+                return False
+        return True
+
     def save_scheme(self):
         """Save the current scheme. If the scheme does not have an associated
         path then prompt the user to select a scheme file. Return
@@ -961,7 +979,7 @@ class CanvasMainWindow(QMainWindow):
         document = self.current_document()
         curr_scheme = document.scheme()
 
-        if document.path():
+        if document.path() and self.check_can_save(document, document.path()):
             curr_scheme.save_to(open(document.path(), "wb"))
             document.setModified(False)
             self.add_recent_scheme(curr_scheme.title, document.path())
@@ -998,6 +1016,9 @@ class CanvasMainWindow(QMainWindow):
 
         if filename:
             filename = unicode(filename)
+            if not self.check_can_save(document, filename):
+                return QDialog.Rejected
+
             dirname, basename = os.path.split(filename)
             self.last_scheme_dir = dirname
 
