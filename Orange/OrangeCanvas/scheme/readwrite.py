@@ -2,11 +2,9 @@
 Scheme save/load routines.
 """
 import sys
-import StringIO
 import shutil
 
 from xml.etree.ElementTree import TreeBuilder, Element, ElementTree, parse
-from xml.dom import minidom
 
 from collections import defaultdict
 
@@ -434,19 +432,41 @@ def scheme_to_ows_stream(scheme, stream, pretty=False):
     """Write scheme to a a stream in Orange Scheme .ows (v 2.0) format.
     """
     tree = scheme_to_etree(scheme)
-    buffer = StringIO.StringIO()
+
+    if pretty:
+        indent(tree.getroot(), 0)
 
     if sys.version_info < (2, 7):
         # in Python 2.6 the write does not have xml_declaration parameter.
-        tree.write(buffer, encoding="utf-8")
+        tree.write(stream, encoding="utf-8")
     else:
-        tree.write(buffer, encoding="utf-8", xml_declaration=True)
+        tree.write(stream, encoding="utf-8", xml_declaration=True)
 
-    if pretty:
-        dom = minidom.parse(StringIO.StringIO(buffer.getvalue()))
-        pretty_xml = dom.toprettyxml(encoding="utf-8")
-        buffer = StringIO.StringIO(pretty_xml)
-    else:
-        buffer.seek(0)
 
-    shutil.copyfileobj(buffer, stream)
+def indent(element, level=0, indent="\t"):
+    """
+    Indent an instance of a :class:`Element`. Based on
+    `http://effbot.org/zone/element-lib.htm#prettyprint`_).
+
+    """
+    def empty(text):
+        return not text or not text.strip()
+
+    def indent_(element, level, last):
+        child_count = len(element)
+
+        if child_count:
+            if empty(element.text):
+                element.text = "\n" + indent * (level + 1)
+
+            if empty(element.tail):
+                element.tail = "\n" + indent * (level + (-1 if last else 0))
+
+            for i, child in enumerate(element):
+                indent_(child, level + 1, i == child_count - 1)
+
+        else:
+            if empty(element.tail):
+                element.tail = "\n" + indent * (level + (-1 if last else 0))
+
+    return indent_(element, level, True)
