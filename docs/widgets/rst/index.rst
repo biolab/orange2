@@ -6,8 +6,6 @@ Orange Widgets
 Data
 ----
 
-.. The first row shows how to insert rst documentation, the rest 
-   link to the old documentation that is copied to '_static' 
 
 .. list-table::
     :class: widget-catalog-table
@@ -655,7 +653,7 @@ Index:
    unsupervized/interactiongraph.rst
    unsupervized/kmeansclustering.rst
    unsupervized/mds.rst
-   unsupervized/pca.rst
+   unsupervized/PCA.rst
 
 ****************
 Index and search
