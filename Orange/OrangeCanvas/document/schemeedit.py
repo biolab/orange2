@@ -776,7 +776,7 @@ class SchemeEditWidget(QWidget):
         """
         name, ok = QInputDialog.getText(
                     self, self.tr("Rename"),
-                    unicode(self.tr("Enter a new name for the %r widget")) \
+                    unicode(self.tr("Enter a new name for the '%s' widget")) \
                     % node.title,
                     text=node.title
                     )
