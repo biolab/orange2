@@ -1543,7 +1543,7 @@ class CanvasMainWindow(QMainWindow):
         if self.open_in_external_browser:
             QDesktopServices.openUrl(QUrl(url))
         else:
-            self.help_view.setUrl(QUrl(url))
+            self.help_view.load(QUrl(url))
             self.help_dock.show()
             self.help_dock.raise_()
 
