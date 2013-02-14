@@ -179,6 +179,7 @@ class CanvasMainWindow(QMainWindow):
 
         self.recent_schemes = config.recent_schemes()
 
+        self.open_in_external_browser = False
         self.help = HelpManager(self)
 
         self.setup_actions()
@@ -1529,13 +1530,22 @@ class CanvasMainWindow(QMainWindow):
                     return False
 
             if url:
-                log.info("Setting help to url: %r", url)
-                self.help_view.setUrl(QUrl(url))
-                self.help_dock.show()
-                self.help_dock.raise_()
+                self.show_help(url)
                 return True
 
         return QMainWindow.event(self, event)
+
+    def show_help(self, url):
+        """
+        Show `url` in a help window.
+        """
+        log.info("Setting help to url: %r", url)
+        if self.open_in_external_browser:
+            QDesktopServices.openUrl(QUrl(url))
+        else:
+            self.help_view.setUrl(QUrl(url))
+            self.help_dock.show()
+            self.help_dock.raise_()
 
     # Mac OS X
     if sys.platform == "darwin":
@@ -1654,6 +1664,10 @@ class CanvasMainWindow(QMainWindow):
                                            Qt.RightDockWidgetArea)
         else:
             self.help_dock.setAllowedAreas(Qt.NoDockWidgetArea)
+
+        self.open_in_external_browser = \
+            settings.value("open-in-external-browser", defaultValue=False,
+                           type=bool)
 
 
 def updated_flags(flags, mask, state):
