@@ -690,7 +690,7 @@ class OWPaintData(OWWidget):
              ]
     settingsList = ["commitOnChange"]
     def __init__(self, parent=None, signalManager=None, name="Data Generator"):
-        OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
+        OWWidget.__init__(self, parent, signalManager, name)
         
         self.outputs = [("Data", ExampleTable)]
         

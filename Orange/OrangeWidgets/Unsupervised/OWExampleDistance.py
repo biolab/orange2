@@ -5,102 +5,135 @@
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>1300</priority>
 """
-import orange, math
+
 import OWGUI
 from OWWidget import *
-import random
-import orngClustering
-import orngMisc
 
-##############################################################################
-# main class
+import Orange
+
+from Orange import distance
+from Orange.utils import progress_bar_milestones
+
 
 class OWExampleDistance(OWWidget):
     settingsList = ["Metrics", "Normalize"]
     contextHandlers = {"": DomainContextHandler("", ["Label"])}
 
-    def __init__(self, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, 'ExampleDistance', wantMainArea = 0, resizingEnabled = 0)
+    def __init__(self, parent=None, signalManager=None):
+        OWWidget.__init__(self, parent, signalManager, 'ExampleDistance',
+                          wantMainArea=False, resizingEnabled=False)
 
-        self.inputs = [("Data", ExampleTable, self.dataset)]
-        self.outputs = [("Distances", orange.SymMatrix)]
+        self.inputs = [("Data", Orange.data.Table, self.dataset)]
+        self.outputs = [("Distances", Orange.misc.SymMatrix)]
 
         self.Metrics = 0
         self.Normalize = True
+        self.Absolute = False
         self.Label = ""
         self.loadSettings()
         self.data = None
         self.matrix = None
 
         self.metrics = [
-            ("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
-            ("Pearson Correlation", orngClustering.ExamplesDistanceConstructor_PearsonR),
-            ("Spearman Rank Correlation", orngClustering.ExamplesDistanceConstructor_SpearmanR),
-            ("Manhattan", orange.ExamplesDistanceConstructor_Manhattan),
-            ("Hamming", orange.ExamplesDistanceConstructor_Hamming),
-            ("Relief", orange.ExamplesDistanceConstructor_Relief),
+            ("Euclidean", distance.Euclidean),
+            ("Pearson Correlation", distance.PearsonR),
+            ("Spearman Rank Correlation", distance.SpearmanR),
+            ("Manhattan", distance.Manhattan),
+            ("Hamming", distance.Hamming),
+            ("Relief", distance.Relief),
             ]
 
-        cb = OWGUI.comboBox(self.controlArea, self, "Metrics", box="Distance Metrics",
+        cb = OWGUI.comboBox(
+            self.controlArea, self, "Metrics", box="Distance Metrics",
             items=[x[0] for x in self.metrics],
-            tooltip="Choose metrics to measure pairwise distance between examples.",
-            callback=self.distMetricChanged, valueType=str)
+            tooltip=("Choose metrics to measure pairwise distance between "
+                     "examples."),
+            callback=self.distMetricChanged,
+            valueType=str
+        )
+
         cb.setMinimumWidth(170)
-        
+
         OWGUI.separator(self.controlArea)
-        
-        box = OWGUI.widgetBox(self.controlArea, "Normalization", 
+
+        box = OWGUI.widgetBox(self.controlArea, "Settings",
                               addSpace=True)
-        self.normalizeCB = OWGUI.checkBox(box, self, "Normalize", "Normalize data", 
+
+        self.normalizeCB = OWGUI.checkBox(box, self, "Normalize",
+                                          "Normalize data",
                                           callback=self.computeMatrix)
-        
+
         self.normalizeCB.setEnabled(self.Metrics in [0, 3])
-        
-        self.labelCombo = OWGUI.comboBox(self.controlArea, self, "Label", box="Example Label",
+
+        self.absoluteCB = OWGUI.checkBox(
+            box, self, "Absolute",
+            "Absolute correlations",
+            tooltip=("Use absolute correlations "
+                     "for distances."),
+            callback=self.computeMatrix
+        )
+
+        self.absoluteCB.setEnabled(self.Metrics in [1, 2])
+
+        self.labelCombo = OWGUI.comboBox(
+            self.controlArea, self, "Label",
+            box="Example Label",
             items=[],
             tooltip="Attribute used for example labels",
-            callback=self.setLabel, sendSelectedValue = 1)
+            callback=self.setLabel,
+            sendSelectedValue=True
+        )
 
-        self.labelCombo.setDisabled(1)
-        
+        self.labelCombo.setDisabled(True)
+
         OWGUI.rubber(self.controlArea)
 
     def sendReport(self):
+        metric = self.metrics[self.Metrics][0]
+        if self.Metrics in [0, 3] and self.Normalize:
+            metric = "Normalized " + metric
+        elif self.Metrics in [1, 2] and self.Absolute:
+            metric = "Absolute " + metric
+
         self.reportSettings("Settings",
-                            [("Metrics", self.metrics[self.Metrics][0]),
+                            [("Metrics", metric),
                              ("Label", self.Label)])
         self.reportData(self.data)
 
     def distMetricChanged(self):
         self.normalizeCB.setEnabled(self.Metrics in [0, 3])
+        self.absoluteCB.setEnabled(self.Metrics in [1, 2])
         self.computeMatrix()
 
     def computeMatrix(self):
         if not self.data:
             return
+
         data = self.data
-        constructor = self.metrics[self.Metrics][1]()
-        constructor.normalize = self.Normalize
-        dist = constructor(data)
+        if self.Metrics in [1, 2] and self.Absolute:
+            if self.Metrics == 1:
+                constructor = distance.PearsonRAbsolute()
+            else:
+                constructor = distance.SpearmanRAbsolute()
+        else:
+            constructor = self.metrics[self.Metrics][1]()
+            constructor.normalize = self.Normalize
+
         self.error(0)
+        self.progressBarInit()
         try:
-            self.matrix = orange.SymMatrix(len(data))
-        except orange.KernelException, ex:
+            matrix = distance.distance_matrix(data, constructor,
+                                              self.progressBarSet)
+        except Orange.core.KernelException, ex:
             self.error(0, "Could not create distance matrix! %s" % str(ex))
-            self.matrix = None
-            self.send("Distances", None)
-            return
-        self.matrix.setattr('items', data)
-        pb = OWGUI.ProgressBar(self, 100)
-        milestones  = orngMisc.progressBarMilestones(len(data)*(len(data)-1)/2, 100)
-        count = 0
-        for i in range(len(data)):
-            for j in range(i+1):
-                self.matrix[i, j] = dist(data[i], data[j])
-                if count in milestones:
-                    pb.advance()
-                count += 1
-        pb.finish()
+            matrix = None
+
+        self.progressBarFinished()
+
+        if matrix:
+            matrix.setattr('items', data)
+
+        self.matrix = matrix
         self.send("Distances", self.matrix)
 
     def setLabel(self):
@@ -115,8 +148,11 @@ class OWExampleDistance(OWWidget):
         labels = [m.name for m in d.domain.getmetas().values()] + \
                  [a.name for a in d.domain.variables]
         self.labelCombo.addItems(labels)
-        # here we would need to use the domain dependent setting of the label id
-        self.labelCombo.setCurrentIndex(0); self.Label = labels[0]
+
+        # here we would need to use the domain dependent setting of the
+        # label id
+        self.labelCombo.setCurrentIndex(0)
+        self.Label = labels[0]
         self.setLabel()
 
     def dataset(self, data):
@@ -125,15 +161,14 @@ class OWExampleDistance(OWWidget):
             self.setLabelComboItems()
             self.computeMatrix()
         else:
+            self.data = None
+            self.matrix = None
+            self.labelCombo.clear()
             self.send("Distances", None)
 
-##################################################################################################
-# test script
 
-if __name__=="__main__":
-    import os
-    data = orange.ExampleTable(r'../../doc/datasets/glass')
-    data = orange.ExampleTable('glass')
+if __name__ == "__main__":
+    data = Orange.data.Table('glass')
     a = QApplication(sys.argv)
     ow = OWExampleDistance()
     ow.show()
