@@ -25,7 +25,8 @@ class OWSOM(OWWidget):
         self.inputs = [("Data", Orange.data.Table, self.setData)]
         self.outputs = [("Classifier", Orange.core.Classifier),
                         ("Learner", Orange.core.Learner),
-                        ("SOM", som.SOMMap)]
+                        ("SOM", som.SOMMap),
+                        ("Codebook vectors", Orange.data.Table)]
 
         self.LearnerName = "SOM Map"
         self.xdim = 5
@@ -142,6 +143,7 @@ class OWSOM(OWWidget):
             self.send("Classifier", None)
             self.send("SOM", None)
             self.send("Learner", None)
+            self.send("odebook vectors", None)
 
     def ApplySettings(self):
         topology = self.TopolMap[self.topology]
@@ -173,6 +175,7 @@ class OWSOM(OWWidget):
             if self.data.domain.class_var:
                 self.send("Classifier", self.classifier)
             self.send("SOM", self.classifier)
+            self.send("Codebook vectors", codebook_table(self.classifier))
 
     def sendReport(self):
         self.reportSettings(
@@ -189,6 +192,17 @@ class OWSOM(OWWidget):
               (self.radius1, self.radius2)),
              ("Number of iterations", self.iterations1)
             ])
+
+
+def codebook_table(map):
+    """
+    Return n Orange.data.Table instance of all the codebook vectors
+    in the given SOMMap instance.
+
+    """
+    nodes = list(map.map)
+    instances = [node.reference_instance for node in nodes]
+    return Orange.data.Table(map.data.domain, instances)
 
 
 if __name__ == "__main__":
