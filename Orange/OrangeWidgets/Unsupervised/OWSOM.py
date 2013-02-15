@@ -6,8 +6,9 @@
 <priority>5010</priority>
 """
 
-import orange
-import orngSOM
+import Orange
+from Orange.projection import som
+
 from OWWidget import *
 import OWGUI
 
@@ -21,15 +22,15 @@ class OWSOM(OWWidget):
         OWWidget.__init__(self, parent, signalManager, name,
                           wantMainArea=False)
 
-        self.inputs = [("Data", ExampleTable, self.setData)]
-        self.outputs = [("Classifier", orange.Classifier),
-                        ("Learner", orange.Learner),
-                        ("SOM", orngSOM.SOMMap)]
+        self.inputs = [("Data", Orange.data.Table, self.setData)]
+        self.outputs = [("Classifier", Orange.core.Classifier),
+                        ("Learner", Orange.core.Learner),
+                        ("SOM", som.SOMMap)]
 
         self.LearnerName = "SOM Map"
         self.xdim = 5
         self.ydim = 10
-        self.initialization = orngSOM.InitializeLinear
+        self.initialization = som.InitializeLinear
         self.neighborhood = 0
         self.topology = 0
         self.alphaType = 0
@@ -42,11 +43,11 @@ class OWSOM(OWWidget):
         self.alpha2 = 0.01
         self.loadSettings()
 
-        self.TopolMap = [orngSOM.HexagonalTopology,
-                         orngSOM.RectangularTopology]
+        self.TopolMap = [som.HexagonalTopology,
+                         som.RectangularTopology]
 
-        self.NeighMap = [orngSOM.NeighbourhoodGaussian,
-                         orngSOM.NeighbourhoodBubble]
+        self.NeighMap = [som.NeighbourhoodGaussian,
+                         som.NeighbourhoodBubble]
 
         self.learnerName = OWGUI.lineEdit(
             self.controlArea, self, "LearnerName",
@@ -96,6 +97,8 @@ class OWSOM(OWWidget):
         OWGUI.rubber(self.controlArea)
 
         self.data = None
+        self.classifier = None
+        self.learner = None
 
         self.resize(100, 100)
 
@@ -113,20 +116,20 @@ class OWSOM(OWWidget):
                          "values: %s." % \
                          ", ".join(attr.name for attr in exclude))
 
-            exclude_class = data.domain.classVar in exclude
+            exclude_class = data.domain.class_var in exclude
             if exclude_class:
                 self.warning(1236,
                              "Excluding class attribute: %s" % \
-                             data.domain.classVar.name)
+                             data.domain.class_var.name)
 
-            domain = orange.Domain(
+            domain = Orange.data.Domain(
                 [attr for attr in data.domain.variables
                  if attr not in exclude],
-                data.domain.classVar if not exclude_class else False
+                data.domain.class_var if not exclude_class else False
             )
 
             domain.addmetas(data.domain.getmetas())
-            data = orange.ExampleTable(domain, data)
+            data = Orange.data.Table(domain, data)
 
         return data
 
@@ -144,7 +147,7 @@ class OWSOM(OWWidget):
         topology = self.TopolMap[self.topology]
         neigh = self.NeighMap[self.neighborhood]
 
-        self.learner = orngSOM.SOMLearner(
+        self.learner = som.SOMLearner(
             name=self.LearnerName,
             map_shape=(self.xdim, self.ydim),
             topology=topology,
@@ -167,7 +170,7 @@ class OWSOM(OWWidget):
             self.progressBarFinished()
             self.classifier.name = self.LearnerName
             self.classifier.setattr("data", self.data)
-            if self.data.domain.classVar:
+            if self.data.domain.class_var:
                 self.send("Classifier", self.classifier)
             self.send("SOM", self.classifier)
 
@@ -192,7 +195,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = OWSOM()
     w.show()
-    data = orange.ExampleTable("../../doc/datasets/iris.tab")
+    data = Orange.data.Table("iris")
 
     w.setData(data)
     app.exec_()
