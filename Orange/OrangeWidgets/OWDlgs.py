@@ -21,7 +21,7 @@ import OWQCanvasFuncts
 
 class OWChooseImageSizeDlg(OWBaseWidget):
     settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName", "penWidthFactor"]
-    def __init__(self, graph, extraButtons = [], defaultName="graph", parent=None):
+    def __init__(self, graph, extraButtons = [], defaultName="graph", parent=None, saveMatplotlib=None):
         OWBaseWidget.__init__(self, parent, None, "Image settings", modal = TRUE, resizingEnabled = 0)
 
         self.graph = graph
@@ -54,7 +54,12 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         box = OWGUI.widgetBox(self.space, 1)
         #self.printButton =          OWGUI.button(self.space, self, "Print", callback = self.printPic)
         self.saveImageButton =      OWGUI.button(box, self, "Save Image", callback = self.saveImage)
-        if not (_have_gl and isinstance(graph, QGLWidget)):
+
+        # If None we try to determine if save can succeed automatically
+        if saveMatplotlib is None:
+            saveMatplotlib = self.canSaveToMatplotlib(graph)
+
+        if saveMatplotlib and not (_have_gl and isinstance(graph, QGLWidget)):
             self.saveMatplotlibButton = OWGUI.button(box, self, "Save Graph as matplotlib Script", callback = self.saveToMatplotlib)
         for (text, funct) in extraButtons:
             butt = OWGUI.button(box, self, text, callback = funct)
@@ -212,6 +217,19 @@ class OWChooseImageSizeDlg(OWBaseWidget):
                 QMessageBox.information(self,'Matplotlib missing',"File was saved, but you will not be able to run it because you don't have matplotlib installed.\nYou can download matplotlib for free at matplotlib.sourceforge.net.", QMessageBox.Ok)
 
         QDialog.accept(self)
+
+    def canSaveToMatplotlib(self, graph):
+        if _have_qwt and isinstance(graph, QwtPlot):
+            # TODO: check all curve items.
+            return True
+
+        elif isinstance(graph, QGraphicsScene):
+            items = graph.items()
+            supported = set([QGraphicsRectItem, QGraphicsLineItem,
+                             QGraphicsTextItem, OWQCanvasFuncts.OWCanvasText])
+            return all(type(item) in supported for item in items)
+        else:
+            return False
 
     # ############################################################
     # EXTRA FUNCTIONS ############################################
