@@ -307,7 +307,8 @@ class OWPythonScript(OWWidget):
                         ("out_classifier", Orange.core.Classifier, Dynamic)]
 
         try:
-            self.inputs.append(("in_network", Orange.network.Graph, self.setNetwork))
+            self.inputs.append(("in_network", Orange.network.Graph,
+                                self.setNetwork))
             self.outputs.append(("out_network", Orange.network.Graph))
         except:
             pass
@@ -317,6 +318,7 @@ class OWPythonScript(OWWidget):
         self.in_distance = None
         self.in_learner = None
         self.in_classifier = None
+        self.auto_execute = False
 
         self.codeFile = ''
         self.libraryListSource = [Script("Hello world",
@@ -404,6 +406,9 @@ class OWPythonScript(OWWidget):
 
         self.runBox = OWGUI.widgetBox(self.controlArea, 'Run')
         OWGUI.button(self.runBox, self, "Execute", callback=self.execute)
+        OWGUI.checkBox(self.runBox, self, "auto_execute", "Auto execute",
+                       tooltip=("Run the script automatically whenever "
+                                "the inputs to the widget change."))
 
         self.splitCanvas = QSplitter(Qt.Vertical, self.mainArea)
         self.mainArea.layout().addWidget(self.splitCanvas)
@@ -468,6 +473,10 @@ class OWPythonScript(OWWidget):
 
     def setClassifier(self, classifier):
         self.in_classifier = classifier
+
+    def handleNewSignals(self):
+        if self.auto_execute:
+            self.execute()
 
     def selectedScriptIndex(self):
         rows = self.libraryView.selectionModel().selectedRows()
