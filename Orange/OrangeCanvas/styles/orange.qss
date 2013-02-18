@@ -76,6 +76,7 @@ WidgetToolBox ToolGrid QToolButton {
     /* border-bottom: 2px solid #B5B8B8;
     border-right: 2px solid #B5B8B8; */
     background-color: #F2F2F2;
+    border-radius: 8px;
 }
 
 
@@ -85,6 +86,10 @@ WidgetToolBox ToolGrid QToolButton[last-column] {
 
 WidgetToolBox  ToolGrid QToolButton:focus {
     background-color: palette(window);
+}
+
+WidgetToolBox  ToolGrid QToolButton:hover {
+    background-color: palette(dark);
 }
 
 WidgetToolBox  ToolGrid QToolButton:pressed {
