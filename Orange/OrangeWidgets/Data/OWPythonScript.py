@@ -299,25 +299,20 @@ class OWPythonScript(OWWidget):
                         self.setDistanceMatrix),
                        ("in_learner", Orange.core.Learner, self.setLearner),
                        ("in_classifier", Orange.core.Classifier,
-                        self.setClassifier)]
+                        self.setClassifier),
+                       ("in_object", object, self.setObject)]
 
         self.outputs = [("out_data", Orange.data.Table),
                         ("out_distance", Orange.misc.SymMatrix),
                         ("out_learner", Orange.core.Learner),
-                        ("out_classifier", Orange.core.Classifier, Dynamic)]
-
-        try:
-            self.inputs.append(("in_network", Orange.network.Graph,
-                                self.setNetwork))
-            self.outputs.append(("out_network", Orange.network.Graph))
-        except:
-            pass
+                        ("out_classifier", Orange.core.Classifier, Dynamic),
+                        ("out_object", object, Dynamic)]
 
         self.in_data = None
-        self.in_network = None
         self.in_distance = None
         self.in_learner = None
         self.in_classifier = None
+        self.in_object = None
         self.auto_execute = False
 
         self.codeFile = ''
@@ -465,14 +460,14 @@ class OWPythonScript(OWWidget):
     def setDistanceMatrix(self, dm):
         self.in_distance = dm
 
-    def setNetwork(self, net):
-        self.in_network = net
-
     def setLearner(self, learner):
         self.in_learner = learner
 
     def setClassifier(self, classifier):
         self.in_classifier = classifier
+
+    def setObject(self, obj):
+        self.in_object = obj
 
     def handleNewSignals(self):
         if self.auto_execute:
