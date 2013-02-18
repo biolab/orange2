@@ -89,7 +89,7 @@ WidgetToolBox  ToolGrid QToolButton:focus {
 }
 
 WidgetToolBox  ToolGrid QToolButton:hover {
-    background-color: palette(dark);
+    background-color: palette(light);
 }
 
 WidgetToolBox  ToolGrid QToolButton:pressed {
