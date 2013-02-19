@@ -179,10 +179,10 @@ is true for probability estimator constructors.
         :type distribution: :class:`~Orange.statistics.distribution.Distribution`
 
         :param priori: prior distribution.
-        :type distribution: :class:`~Orange.statistics.distribution.Distribution`
+        :type priori: :class:`~Orange.statistics.distribution.Distribution`
 
         :param instances: input data.
-        :type distribution: :class:`Orange.data.Table`
+        :type instances: :class:`Orange.data.Table`
 
         :param weight_id: ID of the weight attribute.
         :type weight_id: int
@@ -229,10 +229,10 @@ is true for probability estimator constructors.
         :type table: :class:`Orange.statistics.contingency.Table`
 
         :param prior: prior distribution.
-        :type distribution: :class:`~Orange.statistics.distribution.Distribution`
+        :type prior: :class:`~Orange.statistics.distribution.Distribution`
 
         :param instances: input data.
-        :type distribution: :class:`Orange.data.Table`
+        :type instances: :class:`Orange.data.Table`
 
         :param weight_id: ID of the weight attribute.
         :type weight_id: int
@@ -329,7 +329,7 @@ Common Components
 
 .. class:: ConditionalByRows
 
-    Bases: :class:`ConditionalEstimator`
+    Bases: :class:`ConditionalEstimatorConstructor`
 
     .. attribute:: estimator_constructor
 
@@ -347,10 +347,10 @@ Common Components
         :type table: :class:`Orange.statistics.contingency.Table`
 
         :param prior: prior distribution.
-        :type distribution: :class:`~Orange.statistics.distribution.Distribution`
+        :type prior: :class:`~Orange.statistics.distribution.Distribution`
 
         :param instances: input data.
-        :type distribution: :class:`Orange.data.Table`
+        :type instances: :class:`Orange.data.Table`
 
         :param weight_id: ID of the weight attribute.
         :type weight_id: int
