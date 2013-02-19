@@ -18,7 +18,9 @@ log = logging.getLogger(__name__)
 
 
 class ToolTree(QWidget):
-    """A ListView like presentation of a list of actions.
+    """
+    A ListView like presentation of a list of actions.
+
     """
     triggered = Signal(QAction)
     hovered = Signal(QAction)
@@ -71,35 +73,40 @@ class ToolTree(QWidget):
         self.setLayout(layout)
 
     def setTitle(self, title):
-        """Set the title
+        """
+        Set the title
         """
         if self.__title != title:
             self.__title = title
             self.update()
 
     def title(self):
-        """Return the title of this tool tree.
+        """
+        Return the title of this tool tree.
         """
         return self.__title
 
     title_ = Property(unicode, fget=title, fset=setTitle)
 
     def setIcon(self, icon):
-        """Set icon for this tool tree.
+        """
+        Set icon for this tool tree.
         """
         if self.__icon != icon:
             self.__icon = icon
             self.update()
 
     def icon(self):
-        """Return the icon of this tool tree.
+        """
+        Return the icon of this tool tree.
         """
         return self.__icon
 
     icon_ = Property(QIcon, fget=icon, fset=setIcon)
 
     def setFlattened(self, flatten):
-        """Show the actions in a flattened view.
+        """
+        Show the actions in a flattened view.
         """
         if self.__flattened != flatten:
             self.__flattened = flatten
@@ -112,6 +119,9 @@ class ToolTree(QWidget):
             self.__view.setModel(model)
 
     def flattened(self):
+        """
+        Are actions shown in a flattened tree (a list).
+        """
         return self.__flattened
 
     def setModel(self, model):

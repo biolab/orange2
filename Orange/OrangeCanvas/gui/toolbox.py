@@ -1,10 +1,10 @@
 """
 ==============
-ToolBox Widget
+Tool Box Widget
 ==============
 
-A reimplementation of the QToolBox widget but with all the tabs
-in a single QScrollArea and support for multiple open tabs.
+A reimplementation of the :class:`QToolBox` widget that keeps all the tabs
+in a single :class:`QScrollArea` instance and can keep multiple open tabs.
 
 """
 
@@ -39,7 +39,8 @@ FOCUS_OUTLINE_COLOR = "#609ED7"
 
 
 def create_tab_gradient(base_color):
-    """Create a default background gradient for a tab button from a single
+    """
+    Create a default background gradient for a tab button from a single
     color.
 
     """
@@ -54,17 +55,23 @@ def create_tab_gradient(base_color):
 
 
 class ToolBoxTabButton(QToolButton):
-    """A tab button for an item in a ToolBox.
+    """
+    A tab button for an item in a :class:`ToolBox`.
     """
 
     def setNativeStyling(self, state):
-        """Render tab buttons as native QToolButtons.
+        """
+        Render tab buttons as native :class:`QToolButtons`.
+        If set to `False` (default) the button is pained using a
+        custom routine.
+
         """
         self.__nativeStyling = state
         self.update()
 
     def nativeStyling(self):
-        """Use native QStyle's QToolButton look.
+        """
+        Use :class:`QStyle`'s to paint the class:`QToolButton` look.
         """
         return self.__nativeStyling
 
@@ -209,24 +216,31 @@ class _ToolBoxScrollArea(QScrollArea):
 
 
 class ToolBox(QFrame):
-    """A tool box widget.
     """
+    A tool box widget.
+    """
+    # Emitted when a tab is toggled.
     tabToogled = Signal(int, bool)
 
     def setExclusive(self, exclusive):
-        """Set exclusive tabs (only one tab can be open at a time).
+        """
+        Set exclusive tabs (only one tab can be open at a time).
         """
         if self.__exclusive != exclusive:
             self.__exclusive = exclusive
             self.__tabActionGroup.setExclusive(exclusive)
 
     def exclusive(self):
+        """
+        Are the tabs in the toolbox exclusive.
+        """
         return self.__exclusive
 
     exclusive_ = Property(bool,
-                         fget=exclusive,
-                         fset=setExclusive,
-                         designable=True)
+                          fget=exclusive,
+                          fset=setExclusive,
+                          designable=True,
+                          doc="Exclusive tabs")
 
     def __init__(self, parent=None, **kwargs):
         QFrame.__init__(self, parent, **kwargs)
@@ -282,7 +296,8 @@ class ToolBox(QFrame):
         self.__actionMapper.mapped[QObject].connect(self.__onTabActionToogled)
 
     def setTabButtonHeight(self, height):
-        """Set the tab button height.
+        """
+        Set the tab button height.
         """
         if self.__tabButtonHeight != height:
             self.__tabButtonHeight = height
@@ -290,10 +305,14 @@ class ToolBox(QFrame):
                 page.button.setFixedHeight(height)
 
     def tabButtonHeight(self):
+        """
+        Return the tab button height.
+        """
         return self.__tabButtonHeight
 
     def setTabIconSize(self, size):
-        """Set the tab button icon size.
+        """
+        Set the tab button icon size.
         """
         if self.__tabIconSize != size:
             self.__tabIconSize = size
@@ -301,25 +320,53 @@ class ToolBox(QFrame):
                 page.button.setIconSize(size)
 
     def tabIconSize(self):
+        """
+        Return the tab icon size.
+        """
         return self.__tabIconSize
 
-    def tabButton(self, i):
-        """Return the tab button for the `i`-th item.
+    def tabButton(self, index):
         """
-        return self.__pages[i].button
+        Return the tab button at `index`
+        """
+        return self.__pages[index].button
 
-    def tabAction(self, i):
-        """Return open/close action for the `i`-th tab.
+    def tabAction(self, index):
         """
-        return self.__pages[i].action
+        Return open/close action for the tab at `index`.
+        """
+        return self.__pages[index].action
 
     def addItem(self, widget, text, icon=None, toolTip=None):
-        """Add the `widget` in a new tab. Return the index of the new tab.
+        """
+        Append the `widget` in a new tab and return its index.
+
+        Parameters
+        ----------
+        widget : :class:`QWidget`
+            A widget to be inserted. The toolbox takes ownership
+            of the widget.
+
+        text : str
+            Name/title of the new tab.
+
+        icon : :class:`QIcon`, optional
+            An icon for the tab button.
+
+        toolTip : str, optional
+            Tool tip for the tab button.
+
         """
         return self.insertItem(self.count(), widget, text, icon, toolTip)
 
     def insertItem(self, index, widget, text, icon=None, toolTip=None):
-        """Insert the `widget` in a new tab at position `index`.
+        """
+        Insert the `widget` in a new tab at position `index`.
+
+        See also
+        --------
+        ToolBox.addItem
+
         """
         button = self.createTabButton(widget, text, icon, toolTip)
 
@@ -346,10 +393,17 @@ class ToolBox(QFrame):
         return index
 
     def removeItem(self, index):
+        """
+        Remove the widget at `index`.
+
+        .. note:: The widget hidden but is is not deleted.
+
+        """
         self.__contentsLayout.takeAt(2 * index + 1)
         self.__contentsLayout.takeAt(2 * index)
         page = self.__pages.pop(index)
 
+        # Update the page indexes
         for i in range(index, self.count()):
             self.__pages[i] = self.__pages[i]._replace(index=i)
 
@@ -366,15 +420,20 @@ class ToolBox(QFrame):
         self.updateGeometry()
 
     def count(self):
+        """
+        Return the number of widgets inserted in the toolbox.
+        """
         return len(self.__pages)
 
     def widget(self, index):
-        """Return the widget at index.
+        """
+        Return the widget at `index`.
         """
         return self.__pages[index].widget
 
     def createTabButton(self, widget, text, icon=None, toolTip=None):
-        """Create the tab button for `widget`.
+        """
+        Create the tab button for `widget`.
         """
         action = QAction(text, self)
         action.setCheckable(True)
@@ -403,7 +462,8 @@ class ToolBox(QFrame):
         return button
 
     def ensureWidgetVisible(self, child, xmargin=50, ymargin=50):
-        """Scroll the contents so child widget instance is visible inside
+        """
+        Scroll the contents so child widget instance is visible inside
         the viewport.
 
         """
@@ -506,7 +566,8 @@ def identity(arg):
 
 
 def find(iterable, *what, **kwargs):
-    """find(iterable, [what, [key=None, [predicate=operator.eq]]])
+    """
+    find(iterable, [what, [key=None, [predicate=operator.eq]]])
     """
     if what:
         what = what[0]

@@ -1,5 +1,6 @@
 """
-Orange Canvas Splash Screen
+A splash screen widget with support for positioning of the message text.
+
 """
 
 from PyQt4.QtGui import (
@@ -12,6 +13,21 @@ from .utils import is_transparency_supported
 
 
 class SplashScreen(QSplashScreen):
+    """
+    Splash screen widget.
+
+    Parameters
+    ----------
+    parent : :class:`QWidget`
+        Parent widget
+
+    pixmap : :class:`QPixmap`
+        Splash window pixmap.
+
+    textRect : :class:`QRect`
+        Bounding rectangle of the shown message on the widget.
+
+    """
     def __init__(self, parent=None, pixmap=None, textRect=None, **kwargs):
         QSplashScreen.__init__(self, parent, **kwargs)
         self.__textRect = textRect
@@ -29,14 +45,16 @@ class SplashScreen(QSplashScreen):
         self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
 
     def setTextRect(self, rect):
-        """Set the rectangle in which to show the message text.
+        """
+        Set the rectangle (:class:`QRect`) in which to show the message text.
         """
         if self.__textRect != rect:
             self.__textRect = rect
             self.update()
 
     def textRect(self):
-        """Return the text rect.
+        """
+        Return the text message rectangle.
         """
         return self.__textRect
 
@@ -46,7 +64,8 @@ class SplashScreen(QSplashScreen):
         self.raise_()
 
     def drawContents(self, painter):
-        """Reimplementation of drawContents to limit the drawing
+        """
+        Reimplementation of drawContents to limit the drawing
         inside `textRext`.
 
         """
@@ -74,6 +93,9 @@ class SplashScreen(QSplashScreen):
             painter.drawText(rect, self.__alignment, self.__message)
 
     def showMessage(self, message, alignment=Qt.AlignLeft, color=Qt.black):
+        """
+        Show the `message` with `color` and `alignment`.
+        """
         # Need to store all this arguments for drawContents (no access
         # methods)
         self.__alignment = alignment

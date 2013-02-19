@@ -13,6 +13,7 @@ Python scripting:
 Development documentation:
 
 - :doc:`Widget development manual <extend-widgets/rst/index>`
+- :doc:`Canvas development reference <canvas/index>`
 - `Wiki pages for developers <http://orange.biolab.si/trac>`_
 
 Indices and tables

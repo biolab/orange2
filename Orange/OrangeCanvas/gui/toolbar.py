@@ -1,5 +1,5 @@
 """
-A custom toolbar.
+A custom toolbar with linear uniform size layout.
 
 """
 from __future__ import division
@@ -14,7 +14,8 @@ log = logging.getLogger(__name__)
 
 
 class DynamicResizeToolBar(QToolBar):
-    """A QToolBar subclass that dynamically resizes its tool buttons
+    """
+    A :class:`QToolBar` subclass that dynamically resizes its tool buttons
     to fit available space (this is done by setting fixed size on the
     button instances).
 
