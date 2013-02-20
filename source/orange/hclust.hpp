@@ -79,9 +79,9 @@ public:
     PHierarchicalCluster restructure(TClusterW *, PIntList elementIndices, TIntList::iterator &currentElement, int &currentIndex);
 
 private:
-    TClusterW *THierarchicalClustering::merge_CompleteLinkage(TClusterW **clusters, float *callbackMilestones);
-    TClusterW *THierarchicalClustering::merge_SingleLinkage(TClusterW **clusters, float *callbackMilestones);
-    TClusterW *THierarchicalClustering::merge_AverageLinkage(TClusterW **clusters, float *callbackMilestones);
+    TClusterW *merge_CompleteLinkage(TClusterW **clusters, float *callbackMilestones);
+    TClusterW *merge_SingleLinkage(TClusterW **clusters, float *callbackMilestones);
+    TClusterW *merge_AverageLinkage(TClusterW **clusters, float *callbackMilestones);
     // Average linkage also computes Ward's linkage
 
 private:

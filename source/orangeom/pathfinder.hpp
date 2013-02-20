@@ -134,7 +134,7 @@ private:
      * @param B: Second distance matrix
      * @param result: The resulting matrix
      */
-    void TPathfinder::op(const Matrix &A, const Matrix &B, Matrix &result) const;
+    void op(const Matrix &A, const Matrix &B, Matrix &result) const;
     
     /**
      * Calculates all the possible new distances between nodes i and j.

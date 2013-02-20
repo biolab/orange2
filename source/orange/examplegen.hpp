@@ -150,7 +150,7 @@ public:
   bool operator == (const TExampleIterator &other);
   bool operator != (const TExampleIterator &other);
 
-  inline TExampleIterator &TExampleIterator::operator ++ ()
+  inline TExampleIterator &operator ++ ()
   { if (!example)
       raiseErrorWho("exampleIterator", "out of range");
     generator->increaseIterator(*this);
