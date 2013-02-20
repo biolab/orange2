@@ -1526,12 +1526,18 @@ class CanvasMainWindow(QMainWindow):
                 try:
                     url = self.help.search(url)
                 except KeyError:
+                    url = None
                     log.info("No help topic found for %r", url)
-                    return False
 
             if url:
                 self.show_help(url)
-                return True
+            else:
+                message_information(
+                    self.tr("Sorry there is no documentation available for "
+                            "this widget."),
+                    parent=self)
+
+            return True
 
         return QMainWindow.event(self, event)
 
