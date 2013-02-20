@@ -2458,7 +2458,13 @@ PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, 
 
 	argp = args;
 	if ((argp != argc) && ((*argp==Py_None) || PyOrDistribution_Check(*argp))) {
-		dist = (*argp==Py_None) ? PDistribution() : PyOrange_AsDistribution(*argp++);
+		if (*argp == Py_None){
+			dist = PDistribution();
+			argp++;
+		} else {
+			dist = PyOrange_AsDistribution(*argp++);
+		}
+
 		if ((argp != argc) && PyOrDistribution_Check(*argp))
 			apriori = PyOrange_AsDistribution(*argp++);
 	}
@@ -2514,7 +2520,7 @@ PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObje
 	PContingency cont, apriori;
 	PExampleGenerator gen;
 	int weightID = 0;
-	if (!PyArg_UnpackTuple(uargs, "ProbabilityEstimatorConstructor.call", 0, 4, args, args+1, args+2, args+3))
+	if (!PyArg_UnpackTuple(uargs, "ConditionalProbabilityEstimatorConstructor.call", 0, 4, args, args+1, args+2, args+3))
 		return PYNULL;
 
 	PyObject **argp = args, **argc = args;
@@ -2524,7 +2530,13 @@ PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObje
 
 	argp = args;
 	if ((argp != argc) && ((*argp==Py_None) || PyOrContingency_Check(*argp))) {
-		cont = (*argp==Py_None) ? PContingency() : PyOrange_AsContingency(*argp++);
+		if (*argp==Py_None){
+			cont = PContingency();
+			argp++;
+		} else {
+			cont = PyOrange_AsContingency(*argp++);
+		}
+
 		if ((argp != argc) && PyOrDistribution_Check(*argp))
 			apriori = PyOrange_AsDistribution(*argp++);
 	}
@@ -2538,7 +2550,7 @@ PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObje
 	}
 
 	if (argp != argc)
-		PYERROR(PyExc_TypeError, "Invalid arguments for 'ProbabilityEstimatorConstructor.call'", PYNULL);
+		PYERROR(PyExc_TypeError, "Invalid arguments for 'ConditionalProbabilityEstimatorConstructor.call'", PYNULL);
 
 	return WrapOrange(cest->call(cont, apriori, gen, weightID));
 	PyCATCH
