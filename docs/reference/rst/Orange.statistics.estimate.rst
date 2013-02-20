@@ -2,9 +2,9 @@
 
 .. index:: Probability Estimation
 
-=======================================
+=====================================
 Probability Estimation (``estimate``)
-=======================================
+=====================================
 
 Probability estimators compute probabilities of values of class variable.
 They come in two flavours:
@@ -163,7 +163,7 @@ Probability Estimation Constructors
 
 
 Base classes
-=============
+============
 
 All probability estimators are derived from two base classes: one for
 unconditional and the other for conditional probability estimation. The same
@@ -194,6 +194,10 @@ is true for probability estimator constructors.
         just pass :obj:`None` for the latter.) When both,
         distribution and instances are given, it is up to constructor to
         decide what to use.
+
+        .. note:: The `instances` and `weight_id` argument are at the moment
+            only used by :class:`ConditionalByRows`. The rest of the builtin
+            constructors require that `distribution` is given.
 
 .. class:: Estimator
 
@@ -244,6 +248,10 @@ is true for probability estimator constructors.
         just pass :obj:`None` for the latter.) When both,
         distribution and instances are given, it is up to constructor to
         decide what to use.
+
+        .. note:: The `instances` and `weight_id` argument are at the moment
+            only used by :class:`ConditionalByRows`. The rest of the builtin
+            constructors require that `table` is given.
 
 .. class:: ConditionalEstimator
 
@@ -391,3 +399,38 @@ Common Components
         For detailed description of handling of different combinations of
         parameters, see the inherited :obj:`ConditionalEstimator.__call__`.
 
+
+Example
+=======
+
+    >>> import Orange
+    >>> iris = Orange.data.Table("iris")
+    >>>
+    >>> # discrete class distribution
+    >>> iris_dist = Orange.statistics.distribution.Distribution("iris", iris)
+    >>> # m estimate constructor
+    >>> mest_constructor = Orange.statistics.estimate.M(m=10)
+    >>>
+    >>> # create the estimator
+    >>> mest = mest_constructor(iris_dist)
+    >>> print "%.2f" % mest(iris[0]['iris'])
+    0.33
+    >>> # petal length (continuous) distribution
+    >>> plength_dist = Orange.statistics.distribution.Distribution("petal length", iris)
+    >>> plength_dist.normalize()
+    >>>
+    >>> # loess contructor
+    >>> loess_est_constructor = Orange.statistics.estimate.Loess()
+    >>>
+    >>> # create the loess estimator
+    >>> loess_est = loess_est_constructor(plength_dist)
+    >>>
+    >>> print "%.2f" % loess_est(iris[0]['petal length'])
+    0.04
+    >>> # contingency matrix for the conditional estimator
+    >>> contingency = Orange.statistics.contingency.VarClass('petal length', iris)
+    >>> conditional_loess_constructor = Orange.statistics.estimate.ConditionalLoess()
+    >>>
+    >>> cloess_est = conditional_loess_constructor(contingency)
+    >>> print cloess_est(iris[0]['petal length'])
+    <0.980, 0.008, 0.012>
