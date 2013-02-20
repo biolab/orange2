@@ -1203,11 +1203,11 @@ class CanvasMainWindow(QMainWindow):
                     icon=canvas_icons("Tutorials.svg")
                     )
 
-        top_row = [self.get_started_action, tutorials_action,
+        bottom_row = [self.get_started_action, tutorials_action,
                    self.documentation_action]
 
         self.new_action.triggered.connect(dialog.accept)
-        bottom_row = [new_action, open_action, recent_action]
+        top_row = [new_action, open_action, recent_action]
 
         dialog.addRow(top_row, background="light-grass")
         dialog.addRow(bottom_row, background="light-orange")
