@@ -279,7 +279,7 @@ class SchemeEditWidget(QWidget):
                     objectName="help-action",
                     toolTip=self.tr("Show widget help"),
                     triggered=self.__onHelpAction,
-                    shortcut=QKeySequence.HelpContents
+                    shortcut=QKeySequence("F1")
                     )
 
         self.__linkEnableAction = \
@@ -1077,7 +1077,7 @@ class SchemeEditWidget(QWidget):
         focus = self.focusNode()
         if focus is not None:
             desc = focus.description
-            tip = whats_this_helper(desc)
+            tip = whats_this_helper(desc, include_more_link=True)
         else:
             tip = ""
 
