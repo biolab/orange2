@@ -15,7 +15,7 @@ CanvasMainWindow {
     background-color: #E9EFF2;
 }
 
-CanvasMainWindow::separator {
+QMainWindow::separator {
     width: 1px; /* when vertical */
     height: 1px; /* when horizontal */
 }
