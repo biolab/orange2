@@ -380,10 +380,14 @@ class NewLinkAction(UserInteraction):
             item = action.property("item").toPyObject()
             desc = item.data(QtWidgetRegistry.WIDGET_DESC_ROLE).toPyObject()
             pos = event.scenePos()
+            # a new widget should be placed so that the connection
+            # stays as it was
+            offset = 31 * (-1 if self.direction == self.FROM_SINK else
+                           1 if self.direction == self.FROM_SOURCE else 0)
             node = self.document.newNodeHelper(desc,
-                                               position=(pos.x(), pos.y()))
+                                               position=(pos.x() + offset,
+                                                         pos.y()))
             return node
-
 
     def connect_existing(self, node):
         """Connect anchor_item to `node`.
