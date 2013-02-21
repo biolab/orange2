@@ -14,7 +14,8 @@ from collections import namedtuple, MutableMapping
 from PyQt4.QtCore import QObject, QString, QChar, QEvent, QCoreApplication
 
 from PyQt4.QtCore import pyqtSignal as Signal
-from PyQt4.QtCore import pyqtWrapperType
+
+pyqtWrapperType = type(QObject)
 
 from . import toPyObject
 
