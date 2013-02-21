@@ -885,7 +885,7 @@ class NewTextAnnotation(UserInteraction):
         """
         annot = scheme.SchemeTextAnnotation(rect_to_tuple(rect))
         font = {"family": unicode(self.font.family()),
-                "size": self.font.pointSize()}
+                "size": self.font.pixelSize()}
         annot.set_font(font)
 
         item = self.scene.add_annotation(annot)

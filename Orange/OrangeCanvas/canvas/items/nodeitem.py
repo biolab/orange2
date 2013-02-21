@@ -696,8 +696,6 @@ class NodeItem(QGraphicsObject):
         self.captionTextItem = QGraphicsTextItem(self)
         self.captionTextItem.setPlainText("")
         self.captionTextItem.setPos(0, 33)
-        font = QFont("Helvetica", 12)
-        self.captionTextItem.setFont(font)
 
         def iconItem(standard_pixmap):
             item = GraphicsIconItem(self, icon=standard_icon(standard_pixmap),
@@ -772,6 +770,21 @@ class NodeItem(QGraphicsObject):
         return self.__title
 
     title_ = Property(unicode, fget=title, fset=setTitle)
+
+    def setFont(self, font):
+        """
+        Set the title text font.
+        """
+        if font != self.font():
+            self.prepareGeometryChange()
+            self.captionTextItem.setFont(font)
+            self.__updateTitleText()
+
+    def font(self):
+        """
+        Return the title text font.
+        """
+        return self.captionTextItem.font()
 
     def setProcessingState(self, state):
         """Set the node processing state i.e. the node is processing

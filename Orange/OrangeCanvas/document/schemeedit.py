@@ -35,7 +35,6 @@ from . import interactions
 from . import commands
 from . import quickmenu
 
-
 log = logging.getLogger(__name__)
 
 
@@ -173,10 +172,12 @@ class SchemeEditWidget(QWidget):
                          triggered=self.__onFontSizeTriggered)
 
         def font(size):
-            return QFont("Helvetica", size)
+            f = QFont(self.font())
+            f.setPixelSize(size)
+            return f
 
         for size in [12, 14, 16, 18, 20, 22, 24]:
-            action = QAction("%ip" % size, group,
+            action = QAction("%ipx" % size, group,
                              checkable=True,
                              font=font(size))
 
@@ -323,6 +324,7 @@ class SchemeEditWidget(QWidget):
 
         scene = CanvasScene()
         scene.set_channel_names_visible(self.__channelNamesVisible)
+        scene.setFont(self.font())
 
         view = CanvasView(scene)
         view.setFrameStyle(CanvasView.NoFrame)
@@ -489,6 +491,7 @@ class SchemeEditWidget(QWidget):
             self.__scene = CanvasScene()
             self.__view.setScene(self.__scene)
             self.__scene.set_channel_names_visible(self.__channelNamesVisible)
+            self.__scene.setFont(self.font())
 
             self.__scene.installEventFilter(self)
 
@@ -791,6 +794,12 @@ class SchemeEditWidget(QWidget):
         if self.isWindowModified() != (not clean):
             self.setWindowModified(not clean)
             self.modificationChanged.emit(not clean)
+
+    def changeEvent(self, event):
+        if event.type() == QEvent.FontChange:
+            self.__updateFont()
+
+        QWidget.changeEvent(self, event)
 
     def eventFilter(self, obj, event):
         # Filter the scene's drag/drop events.
@@ -1367,6 +1376,18 @@ class SchemeEditWidget(QWidget):
             handler.end()
 
             log.info("Control point editing finished.")
+
+    def __updateFont(self):
+        actions = self.__fontActionGroup.actions()
+        font = self.font()
+        for action in actions:
+            size = action.font().pixelSize()
+            action_font = QFont(font)
+            action_font.setPixelSize(size)
+            action.setFont(action_font)
+
+        if self.__scene:
+            self.__scene.setFont(font)
 
 
 def geometry_from_annotation_item(item):
