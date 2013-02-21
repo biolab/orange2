@@ -275,7 +275,7 @@ public:
   bool storeExamples; //P stores examples corresponding to rules
 
   TAssociationRulesSparseInducer(float asupp=0.3, float aconf=0, int awei=0);
-  TSparseItemsetTree *TAssociationRulesSparseInducer::buildTree(PExampleGenerator examples, const int &weightID, long &i, float &fullWeight);
+  TSparseItemsetTree *buildTree(PExampleGenerator examples, const int &weightID, long &i, float &fullWeight);
   PAssociationRules operator()(PExampleGenerator, const int &weightID);
 
 private:

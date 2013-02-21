@@ -40,7 +40,7 @@ public:
   TPythonValue(const TPythonValue &other);
   TPythonValue(PyObject *value);
 
-  TPythonValue &TPythonValue::operator =(const TPythonValue &other);
+  TPythonValue &operator =(const TPythonValue &other);
 
   ~TPythonValue();
 

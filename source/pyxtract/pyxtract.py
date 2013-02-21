@@ -809,7 +809,7 @@ def writeExterns():
 
     externsfile.write('#define PyOr%s_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOr%s_Type)\n' % (type, type))
     if classdefs[type].datastructure == "TPyOrange":
-      externsfile.write('#define PyOrange_As%s(op) (*(GCPtr< T%s > *)(void *)(&PyOrange_AS_Orange(op)))\n' % (type, type))
+      externsfile.write('#define PyOrange_As%s(op) (static_cast<GCPtr< T%s > >(PyOrange_AS_Orange(op)))\n' % (type, type))
       externsfile.write('\n')
 
   classdefi=classdefs.items()
