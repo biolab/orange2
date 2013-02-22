@@ -8,26 +8,26 @@ a dendrogram viewer.</description>
 """
 from __future__ import with_statement
 
+import sys
 import os
-import math
 from operator import add
 
 import numpy
 
-from OWWidget import *
+from PyQt4.QtGui import *
+from PyQt4.QtCore import *
+
+from OWWidget import OWWidget, DomainContextHandler, ContextField
 from OWQCanvasFuncts import *
 import OWClustering
 import OWGUI
 import OWColorPalette
 
-import orange
-from Orange.clustering import hierarchical
-
 from OWDlgs import OWChooseImageSizeDlg
 from OWGraphics import GraphicsSimpleTextList
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+import Orange
+from Orange.clustering import hierarchical
 
 
 class OWHierarchicalClustering(OWWidget):
@@ -47,16 +47,17 @@ class OWHierarchicalClustering(OWWidget):
         OWWidget.__init__(self, parent, signalManager,
                           'Hierarchical Clustering', wantGraph=True)
 
-        self.inputs = [("Distances", orange.SymMatrix, self.set_matrix)]
-        self.outputs = [("Selected Data", ExampleTable),
-                        ("Other Data", ExampleTable),
-                        ("Centroids", ExampleTable)]
+        self.inputs = [("Distances", Orange.misc.SymMatrix, self.set_matrix)]
+
+        self.outputs = [("Selected Data", Orange.data.Table),
+                        ("Other Data", Orange.data.Table),
+                        ("Centroids", Orange.data.Table)]
 
         self.linkage = [
-            ("Single linkage", orange.HierarchicalClustering.Single),
-            ("Average linkage", orange.HierarchicalClustering.Average),
-            ("Ward's linkage", orange.HierarchicalClustering.Ward),
-            ("Complete linkage", orange.HierarchicalClustering.Complete),
+            ("Single linkage", hierarchical.HierarchicalClustering.Single),
+            ("Average linkage", hierarchical.HierarchicalClustering.Average),
+            ("Ward's linkage", hierarchical.HierarchicalClustering.Ward),
+            ("Complete linkage", hierarchical.HierarchicalClustering.Complete),
         ]
 
         self.Linkage = 3
@@ -93,8 +94,10 @@ class OWHierarchicalClustering(OWWidget):
 
         #HC Settings
         OWGUI.comboBox(self.controlArea, self, "Linkage", box="Linkage",
-                items=self.linkageMethods, tooltip="Choose linkage method",
-                callback=self.run_clustering, addSpace=True)
+                       items=self.linkageMethods,
+                       tooltip="Choose linkage method",
+                       callback=self.run_clustering,
+                       addSpace=True)
         #Label
         box = OWGUI.widgetBox(self.controlArea, "Annotation", addSpace=True)
         self.labelCombo = OWGUI.comboBox(
@@ -105,10 +108,10 @@ class OWHierarchicalClustering(OWWidget):
         )
 
         OWGUI.spin(box, self, "TextSize", label="Text size",
-                        min=5, max=15, step=1,
-                        callback=self.update_font,
-                        controlWidth=40,
-                        keyboardTracking=False)
+                   min=5, max=15, step=1,
+                   callback=self.update_font,
+                   controlWidth=40,
+                   keyboardTracking=False)
 
         # Dendrogram graphics settings
         dendrogramBox = OWGUI.widgetBox(self.controlArea, "Limits",
@@ -217,8 +220,8 @@ class OWHierarchicalClustering(OWWidget):
                      scale.scene_rect_update)
 
         self.connect(self.dendrogram,
-                    SIGNAL("dendrogramGeometryChanged(QRectF)"),
-                    self.on_dendrogram_geometry_change)
+                     SIGNAL("dendrogramGeometryChanged(QRectF)"),
+                     self.on_dendrogram_geometry_change)
 
         self.connect(self.dendrogram,
                      SIGNAL("cutoffValueChanged(float)"),
@@ -268,7 +271,7 @@ class OWHierarchicalClustering(OWWidget):
              ("Annotation", self.labelCombo.currentText()),
              self.PrintDepthCheck and ("Shown depth limited to",
                                        self.PrintDepth),
-             self.SelectionMode and hasattr(self, "cutoff_height") and \
+             self.SelectionMode and hasattr(self, "cutoff_height") and
              ("Cutoff line at", self.cutoff_height)]
         )
 
@@ -278,11 +281,11 @@ class OWHierarchicalClustering(OWWidget):
         footer = self.footerView.scene()
         canvases = header, graph, footer
 
-        buffer = QPixmap(max(c.width() for c in canvases),
+        pixmap = QPixmap(max(c.width() for c in canvases),
                          sum(c.height() for c in canvases))
 
-        painter = QPainter(buffer)
-        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255)))
+        painter = QPainter(pixmap)
+        painter.fillRect(pixmap.rect(), QBrush(QColor(255, 255, 255)))
         header.render(painter,
                       QRectF(0, 0, header.width(), header.height()),
                       QRectF(0, 0, header.width(), header.height()))
@@ -300,11 +303,14 @@ class OWHierarchicalClustering(OWWidget):
 
         def save_to(filename):
             _, ext = os.path.splitext(filename)
-            buffer.save(filename, ext[1:])
+            pixmap.save(filename, ext[1:])
 
         self.reportImage(save_to)
 
     def clear(self):
+        """
+        Clear the widget state.
+        """
         self.matrix = None
         self.root_cluster = None
         self.selected_clusters = []
@@ -312,6 +318,9 @@ class OWHierarchicalClustering(OWWidget):
         self.labelCombo.clear()
 
     def set_matrix(self, data):
+        """
+        Set the input data matrix.
+        """
         self.clear()
         self.matrix = data
         self.closeContext()
@@ -322,18 +331,19 @@ class OWHierarchicalClustering(OWWidget):
             self.labelCombo.clear()
             self.send("Selected Data", None)
             self.send("Other Data", None)
+            self.send("Centroids", None)
             self.classificationBox.setDisabled(True)
             return
 
         self.matrixSource = "Unknown"
         items = getattr(self.matrix, "items")
-        if isinstance(items, orange.ExampleTable):
+        if isinstance(items, Orange.data.Table):
             # Example Table from Example Distance
             domain = items.domain
             self.labels = ["None", "Default"] + \
                           [a.name for a in domain.attributes]
-            if domain.classVar:
-                self.labels.append(domain.classVar.name)
+            if domain.class_var:
+                self.labels.append(domain.class_var.name)
 
             self.labelInd = range(len(self.labels) - 2)
             self.labels.extend([m.name for m in domain.getmetas().values()])
@@ -371,7 +381,7 @@ class OWHierarchicalClustering(OWWidget):
 
         try:
             self.run_clustering()
-        except orange.KernelException, ex:
+        except Orange.core.KernelException, ex:
             self.error(0, "Could not cluster data! %s" % ex.message)
             self.setMatrix(None)
 
@@ -394,8 +404,9 @@ class OWHierarchicalClustering(OWWidget):
             except AttributeError:
                 labels = [str(item) for item in items]
 
-        elif self.Annotation > 1 and isinstance(items, ExampleTable):
-            attr = self.labelInd[min(self.Annotation - 2, len(self.labelInd) - 1)]
+        elif self.Annotation > 1 and isinstance(items, Orange.data.Table):
+            attr = self.labelInd[min(self.Annotation - 2,
+                                     len(self.labelInd) - 1)]
             labels = [str(ex[attr]) for ex in items]
         else:
             labels = [str(item) for item in items]
@@ -409,7 +420,7 @@ class OWHierarchicalClustering(OWWidget):
                 self.progressBarSet(value * 100)
 
             self.progressBarInit()
-            self.root_cluster = orange.HierarchicalClustering(
+            self.root_cluster = hierarchical.HierarchicalClustering(
                 self.matrix,
                 linkage=self.linkage[self.Linkage][1],
                 progressCallback=callback
@@ -552,11 +563,13 @@ class OWHierarchicalClustering(OWWidget):
             self.send("Centroids", None)
             return
 
-        if isinstance(items, ExampleTable):
+        new_meta_id = Orange.feature.Descriptor.new_meta_id
+
+        if isinstance(items, Orange.data.Table):
             c = [i for i in range(len(maps)) for j in maps[i]]
             aid = clustVar = None
             if self.AppendClusters:
-                clustVar = orange.EnumVariable(
+                clustVar = Orange.feature.Discrete(
                     str(self.ClassifyName),
                     values=["Cluster " + str(i) for i in range(len(maps))] + \
                            ["Other"]
@@ -564,31 +577,33 @@ class OWHierarchicalClustering(OWWidget):
 
                 origDomain = items.domain
                 if self.addIdAs == 0:
-                    domain = orange.Domain(origDomain.attributes, clustVar)
-                    if origDomain.classVar:
-                        domain.addmeta(orange.newmetaid(), origDomain.classVar)
+                    domain = Orange.data.Domain(origDomain.attributes,
+                                                clustVar)
+                    if origDomain.class_var:
+                        domain.addmeta(new_meta_id(), origDomain.class_var)
                     aid = -1
                 elif self.addIdAs == 1:
-                    domain = orange.Domain(origDomain.attributes + [clustVar],
-                                           origDomain.classVar)
+                    domain = Orange.data.Domain(origDomain.attributes + \
+                                                [clustVar],
+                                                origDomain.class_var)
 
                     aid = len(origDomain.attributes)
                 else:
-                    domain = orange.Domain(origDomain.attributes,
-                                           origDomain.classVar)
+                    domain = Orange.data.Domain(origDomain.attributes,
+                                                origDomain.class_var)
 
-                    aid = orange.newmetaid()
+                    aid = new_meta_id()
                     domain.addmeta(aid, clustVar)
 
                 domain.addmetas(origDomain.getmetas())
                 table1 = table2 = None
                 if selected:
-                    table1 = orange.ExampleTable(domain, selected)
+                    table1 = Orange.data.Table(domain, selected)
                     for i in range(len(selected)):
                         table1[i][clustVar] = clustVar("Cluster " + str(c[i]))
 
                 if unselected:
-                    table2 = orange.ExampleTable(domain, unselected)
+                    table2 = Orange.data.Table(domain, unselected)
                     for ex in table2:
                         ex[clustVar] = clustVar("Other")
 
@@ -596,29 +611,36 @@ class OWHierarchicalClustering(OWWidget):
                 self.unselectedExamples = table2
             else:
                 self.selectedExamples = \
-                    orange.ExampleTable(selected) if selected else None
+                    Orange.data.Table(selected) if selected else None
 
                 self.unselectedExamples = \
-                    orange.ExampleTable(unselected) if unselected else None
+                    Orange.data.Table(unselected) if unselected else None
 
             self.send("Selected Data", self.selectedExamples)
             self.send("Other Data", self.unselectedExamples)
 
             self.centroids = None
             if self.selectedExamples:
-                self.centroids = orange.ExampleTable(self.selectedExamples.domain)
+                domain = self.selectedExamples.domain
+                self.centroids = Orange.data.Table(domain)
                 for i in range(len(maps)):
-                    clusterEx = [ex for cluster, ex in zip(c, self.selectedExamples)
+                    clusterEx = [ex for cluster, ex in \
+                                 zip(c, self.selectedExamples)
                                  if cluster == i]
-                    clusterEx = orange.ExampleTable(clusterEx)
-                    contstat = orange.DomainBasicAttrStat(clusterEx)
-                    discstat = orange.DomainDistributions(clusterEx, 0, 0, 1)
+                    clusterEx = Orange.data.Table(clusterEx)
+                    contstat = Orange.statistics.basic.Domain(clusterEx)
+                    discstat = Orange.statistics.distribution.Domain(
+                        clusterEx, 0, 0, 1
+                    )
+
                     ex = [cs.avg if cs else (ds.modus() if ds else "?")
                           for cs, ds in zip(contstat, discstat)]
-                    example = orange.Example(self.centroids.domain, ex)
+
+                    example = Orange.data.Instance(domain, ex)
                     if clustVar is not None:
                         example[clustVar] = clustVar(i)
                     self.centroids.append(ex)
+
             self.send("Centroids", self.centroids)
 
         elif self.matrixSource == "Data Distance":
@@ -944,6 +966,7 @@ class AxisScale(QGraphicsWidget):
             left = - metrics.boundingRect(ticks[0]).width() / 2.0
             right = geometry.width() + \
                     metrics.boundingRect(ticks[-1]).width() / 2.0
+
             rect = QRectF(left, 0.0, right - left, h)
         else:
             h = geometry.height()
@@ -1037,17 +1060,14 @@ def test():
     app = QApplication(sys.argv)
     w = OWHierarchicalClustering()
     w.show()
-    data = orange.ExampleTable("../../doc/datasets/iris.tab")
-    id = orange.newmetaid()
-    data.domain.addmeta(id, orange.FloatVariable("a"))
+    data = Orange.data.Table("iris")
+    id = Orange.feature.Descriptor.new_meta_id()
+    data.domain.addmeta(id, Orange.feature.Continuous("a"))
     data.addMetaAttribute(id)
-    matrix = orange.SymMatrix(len(data))
-    dist = orange.ExamplesDistanceConstructor_Euclidean(data)
-    matrix = orange.SymMatrix(len(data))
+
+    dist = Orange.distance.Euclidean()
+    matrix = Orange.distance.distance_matrix(data, dist)
     matrix.setattr('items', data)
-    for i in range(len(data)):
-        for j in range(i + 1):
-            matrix[i, j] = dist(data[i], data[j])
 
     w.set_matrix(matrix)
     app.exec_()
