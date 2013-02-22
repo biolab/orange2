@@ -1,5 +1,6 @@
 """
-Widget meta description classes.
+Widget meta description classes
+===============================
 
 """
 
@@ -211,7 +212,7 @@ class WidgetDescription(object):
         A list of output channels provided by the widget.
     help : str, optional
         URL or an Resource template of a detailed widget help page.
-    help_ref: str, optional
+    help_ref : str, optional
         A text reference id that can be used to identify the help
         page, for instance an intersphinx reference.
     author : str, optional
@@ -230,7 +231,7 @@ class WidgetDescription(object):
         A filename of the widget icon (in relation to the package).
     background : str, optional
         Widget's background color (in the canvas GUI).
-    replaces: list-of-str, optional
+    replaces : list-of-str, optional
         A list of `id`s this widget replaces (optional).
 
     """

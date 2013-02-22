@@ -407,7 +407,7 @@ class WidgetDiscovery(object):
 
     def cache_has_valid_entry(self, mod_path, distribution=None):
         """
-        Does the cache have a valid entry for `mod_path.
+        Does the cache have a valid entry for `mod_path`.
         """
         mod_path = fix_pyext(mod_path)
 

@@ -1,9 +1,11 @@
 """
-===============
-Widget Registry
-===============
+The registry module implements discovery and description of the widgets
+that are available/installed. The :class:`WidgetRegistry` is a repository
+of :class:`WidgetDescription` and :class:`CategoryDescription` instances
+forming a two level widget hierarchy ([category]/[widget]).
 
-A registry (and discovery) of available widgets.
+The :class:`WidgetDiscovery` can be used to populate the registry.
+
 
 """
 
@@ -40,6 +42,7 @@ from .description import (
 
 from .base import WidgetRegistry, VERSION_HEX
 from . import discovery
+from .discovery import WidgetDiscovery
 
 log = logging.getLogger(__name__)
 
