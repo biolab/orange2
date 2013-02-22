@@ -8,8 +8,8 @@ from xml.sax.saxutils import escape
 from PyQt4.QtGui import (
     QGraphicsItem, QGraphicsPathItem, QGraphicsObject,
     QGraphicsTextItem, QGraphicsDropShadowEffect, QGraphicsView,
-    QPen, QBrush, QColor, QPalette, QFont, QIcon, QStyle,
-    QPainter, QPainterPath, QPainterPathStroker, QApplication
+    QPen, QBrush, QColor, QPalette, QIcon, QStyle, QPainter,
+    QPainterPath, QPainterPathStroker, QApplication
 )
 
 from PyQt4.QtCore import Qt, QPointF, QRectF, QSize, QTimer
@@ -25,8 +25,8 @@ from .utils import uniform_linear_layout
 
 
 def create_palette(light_color, color):
-    """Return a new `QPalette` from for the NodeShapeItem.
-
+    """
+    Return a new :class:`QPalette` from for the :class:`NodeBodyItem`.
     """
     palette = QPalette()
 
@@ -48,8 +48,8 @@ def create_palette(light_color, color):
 
 
 def default_palette():
-    """Create and return a default palette for a node.
-
+    """
+    Create and return a default palette for a node.
     """
     return create_palette(QColor(NAMED_COLORS["light-orange"]),
                           QColor(NAMED_COLORS["orange"]))
@@ -60,8 +60,8 @@ FOCUS_OUTLINE_COLOR = "#609ED7"
 
 
 class NodeBodyItem(QGraphicsPathItem):
-    """The central part (body) of the `NodeItem`.
-
+    """
+    The central part (body) of the `NodeItem`.
     """
     def __init__(self, parent=None):
         QGraphicsPathItem.__init__(self, parent)
@@ -95,7 +95,8 @@ class NodeBodyItem(QGraphicsPathItem):
     # TODO: The body item should allow the setting of arbitrary painter
     # paths (for instance rounded rect, ...)
     def setShapeRect(self, rect):
-        """Set the shape items `rect`. The item should be confined within
+        """
+        Set the item's shape `rect`. The item should be confined within
         this rect.
 
         """
@@ -105,18 +106,25 @@ class NodeBodyItem(QGraphicsPathItem):
         self.__shapeRect = rect
 
     def setPalette(self, palette):
-        """Set the shape color palette.
+        """
+        Set the body color palette (:class:`QPalette`).
         """
         self.palette = palette
         self.__updateBrush()
 
     def setProcessingState(self, state):
-        """Set the processing state of the node.
+        """
+        Set the processing state of the node.
         """
         self.__processingState = state
         self.update()
 
     def setProgress(self, progress):
+        """
+        Set the progress indicator state of the node. `progress` should
+        be a number between 0 and 100.
+
+        """
         self.__progress = progress
         self.update()
 
@@ -131,7 +139,8 @@ class NodeBodyItem(QGraphicsPathItem):
         return QGraphicsPathItem.hoverLeaveEvent(self, event)
 
     def paint(self, painter, option, widget):
-        """Paint the shape and a progress meter.
+        """
+        Paint the shape and a progress meter.
         """
         # Let the default implementation draw the shape
         if option.state & QStyle.State_Selected:
@@ -185,9 +194,10 @@ class NodeBodyItem(QGraphicsPathItem):
     # QStyle flags (State_Selected. State_HasFocus)
 
     def setSelected(self, selected):
-        """Set the `selected` state.
+        """
+        Set the `selected` state.
 
-        .. note:: The item does not have QGraphicsItem.ItemIsSelectable flag.
+        .. note:: The item does not have `QGraphicsItem.ItemIsSelectable` flag.
                   This property is instead controlled by the parent NodeItem.
 
         """
@@ -195,20 +205,25 @@ class NodeBodyItem(QGraphicsPathItem):
         self.__updateBrush()
 
     def setHasFocus(self, focus):
-        """Set the `has focus` state.
+        """
+        Set the `has focus` state.
 
-        .. note:: The item does not have QGraphicsItem.ItemIsFocusable flag.
+        .. note:: The item does not have `QGraphicsItem.ItemIsFocusable` flag.
                   This property is instead controlled by the parent NodeItem.
+
         """
         self.__hasFocus = focus
         self.__updateShadowState()
 
 
 class AnchorPoint(QGraphicsObject):
-    """A anchor indicator on the NodeAnchorItem
+    """
+    A anchor indicator on the :class:`NodeAnchorItem`.
     """
 
+    # Signal emitted when the item's scene position changes.
     scenePositionChanged = Signal(QPointF)
+
     anchorDirectionChanged = Signal(QPointF)
 
     def __init__(self, *args):
@@ -219,19 +234,22 @@ class AnchorPoint(QGraphicsObject):
         self.__direction = QPointF()
 
     def anchorScenePos(self):
-        """Return anchor position in scene coordinates.
+        """
+        Return anchor position in scene coordinates.
         """
         return self.mapToScene(QPointF(0, 0))
 
     def setAnchorDirection(self, direction):
-        """Set the preferred direction (QPointF) in item coordinates.
+        """
+        Set the preferred direction (QPointF) in item coordinates.
         """
         if self.__direction != direction:
             self.__direction = direction
             self.anchorDirectionChanged.emit(direction)
 
     def anchorDirection(self):
-        """Return the preferred anchor direction.
+        """
+        Return the preferred anchor direction.
         """
         return self.__direction
 
@@ -246,7 +264,8 @@ class AnchorPoint(QGraphicsObject):
 
 
 class NodeAnchorItem(GraphicsPathObject):
-    """The left/right widget input/output anchors.
+    """
+    The left/right widget input/output anchors.
     """
 
     def __init__(self, parent, *args):
@@ -283,14 +302,16 @@ class NodeAnchorItem(GraphicsPathObject):
         self.__shape = None
 
     def parentNodeItem(self):
-        """Return a parent `NodeItem` or `None` if this anchor's
-        parent is not a `NodeItem` instance.
+        """
+        Return a parent :class:`NodeItem` or ``None`` if this anchor's
+        parent is not a :class:`NodeItem` instance.
 
         """
         return self.__parentNodeItem
 
     def setAnchorPath(self, path):
-        """Set the anchor's curve path as a QPainterPath.
+        """
+        Set the anchor's curve path as a :class:`QPainterPath`.
         """
         self.__anchorPath = path
         # Create a stroke of the path.
@@ -317,14 +338,16 @@ class NodeAnchorItem(GraphicsPathObject):
             self.setBrush(self.normalBrush)
 
     def anchorPath(self):
-        """Return the QPainterPath of the anchor path (a curve on
-        which the anchor points lie)
+        """
+        Return the anchor path (:class:`QPainterPath`). This is a curve on
+        which the anchor points lie.
 
         """
         return self.__anchorPath
 
     def setAnchored(self, anchored):
-        """Set the items anchored state. When false the item draws it self
+        """
+        Set the items anchored state. When ``False`` the item draws it self
         with a dotted stroke.
 
         """
@@ -337,24 +360,37 @@ class NodeAnchorItem(GraphicsPathObject):
             self.setBrush(self.normalBrush)
 
     def setConnectionHint(self, hint=None):
-        """Set the connection hint. This can be used to indicate if
+        """
+        Set the connection hint. This can be used to indicate if
         a connection can be made or not.
 
         """
         raise NotImplementedError
 
     def count(self):
-        """Return the number of anchor points.
+        """
+        Return the number of anchor points.
         """
         return len(self.__points)
 
     def addAnchor(self, anchor, position=0.5):
-        """Add a new AnchorPoint to this item and return it's index.
+        """
+        Add a new :class:`AnchorPoint` to this item and return it's index.
+
+        The `position` specifies where along the `anchorPath` is the new
+        point inserted.
+
         """
         return self.insertAnchor(self.count(), anchor, position)
 
     def insertAnchor(self, index, anchor, position=0.5):
-        """Insert a new AnchorPoint at `index`.
+        """
+        Insert a new :class:`AnchorPoint` at `index`.
+
+        See also
+        --------
+        NodeAnchorItem.addAnchor
+
         """
         if anchor in self.__points:
             raise ValueError("%s already added." % anchor)
@@ -373,7 +409,8 @@ class NodeAnchorItem(GraphicsPathObject):
         return index
 
     def removeAnchor(self, anchor):
-        """Remove and delete the anchor point.
+        """
+        Remove and delete the anchor point.
         """
         anchor = self.takeAnchor(anchor)
 
@@ -382,7 +419,8 @@ class NodeAnchorItem(GraphicsPathObject):
         anchor.deleteLater()
 
     def takeAnchor(self, anchor):
-        """Remove the anchor but don't delete it.
+        """
+        Remove the anchor but don't delete it.
         """
         index = self.__points.index(anchor)
 
@@ -407,19 +445,20 @@ class NodeAnchorItem(GraphicsPathObject):
         del self.__pointPositions[index]
 
     def anchorPoints(self):
-        """Return a list of anchor points.
+        """
+        Return a list of anchor points.
         """
         return list(self.__points)
 
     def anchorPoint(self, index):
-        """Return the anchor point at `index`.
+        """
+        Return the anchor point at `index`.
         """
         return self.__points[index]
 
     def setAnchorPositions(self, positions):
-        """Set the anchor positions in percentages (0..1) along
-        the path curve.
-
+        """
+        Set the anchor positions in percentages (0..1) along the path curve.
         """
         if self.__pointPositions != positions:
             self.__pointPositions = list(positions)
@@ -427,7 +466,8 @@ class NodeAnchorItem(GraphicsPathObject):
             self.__updatePositions()
 
     def anchorPositions(self):
-        """Return the positions of anchor points as a list of floats where
+        """
+        Return the positions of anchor points as a list of floats where
         each float is between 0 and 1 and specifies where along the anchor
         path does the point lie (0 is at start 1 is at the end).
 
@@ -463,19 +503,22 @@ class NodeAnchorItem(GraphicsPathObject):
 
 
 class SourceAnchorItem(NodeAnchorItem):
-    """A source anchor item
+    """
+    A source anchor item
     """
     pass
 
 
 class SinkAnchorItem(NodeAnchorItem):
-    """A sink anchor item.
+    """
+    A sink anchor item.
     """
     pass
 
 
 def standard_icon(standard_pixmap):
-    """Return return the application style's standard icon for a
+    """
+    Return return the application style's standard icon for a
     `QStyle.StandardPixmap`.
 
     """
@@ -484,7 +527,8 @@ def standard_icon(standard_pixmap):
 
 
 class GraphicsIconItem(QGraphicsItem):
-    """A graphics item displaying an `QIcon`.
+    """
+    A graphics item displaying an :class:`QIcon`.
     """
     def __init__(self, parent=None, icon=None, iconSize=None, **kwargs):
         QGraphicsItem.__init__(self, parent, **kwargs)
@@ -504,19 +548,22 @@ class GraphicsIconItem(QGraphicsItem):
         self.__icon = QIcon(icon)
 
     def setIcon(self, icon):
-        """Set the icon (:class:`QIcon`).
+        """
+        Set the icon (:class:`QIcon`).
         """
         if self.__icon != icon:
             self.__icon = QIcon(icon)
             self.update()
 
     def icon(self):
-        """Return the icon (:class:`QIcon`).
+        """
+        Return the icon (:class:`QIcon`).
         """
         return QIcon(self.__icon)
 
     def setIconSize(self, size):
-        """Set the icon (and this item's) size (:class:`QSize`).
+        """
+        Set the icon (and this item's) size (:class:`QSize`).
         """
         if self.__iconSize != size:
             self.prepareGeometryChange()
@@ -524,12 +571,14 @@ class GraphicsIconItem(QGraphicsItem):
             self.update()
 
     def iconSize(self):
-        """Return the icon size (:class:`QSize`).
+        """
+        Return the icon size (:class:`QSize`).
         """
         return QSize(self.__iconSize)
 
     def setTransformationMode(self, mode):
-        """Set pixmap transformation mode. (`Qt.SmoothTransformation` or
+        """
+        Set pixmap transformation mode. (`Qt.SmoothTransformation` or
         `Qt.FastTransformation`).
 
         """
@@ -538,7 +587,8 @@ class GraphicsIconItem(QGraphicsItem):
             self.update()
 
     def transformationMode(self):
-        """Return the pixmap transformation mode.
+        """
+        Return the pixmap transformation mode.
         """
         return self.__transformationMode
 
@@ -587,26 +637,27 @@ class GraphicsIconItem(QGraphicsItem):
 
 
 class NodeItem(QGraphicsObject):
-    """An widget node item in the canvas.
+    """
+    An widget node item in the canvas.
     """
 
+    # Scene position of the node has changed.
     positionChanged = Signal()
-    """Position of the node on the canvas changed"""
 
+    # Geometry of the channel anchors changed
     anchorGeometryChanged = Signal()
-    """Geometry of the channel anchors changed"""
 
+    # The item has been activated (by a mouse double click or a keyboard).
     activated = Signal()
-    """The item has been activated (by a mouse double click or a keyboard)"""
 
+    # The item is under the mouse.
     hovered = Signal()
-    """The item is under the mouse."""
 
+    #: Span of the anchor in degrees
     ANCHOR_SPAN_ANGLE = 90
-    """Span of the anchor in degrees"""
 
+    #: Z value of the item
     Z_VALUE = 100
-    """Z value of the item"""
 
     def __init__(self, widget_description=None, parent=None, **kwargs):
         QGraphicsObject.__init__(self, parent, **kwargs)
@@ -648,8 +699,9 @@ class NodeItem(QGraphicsObject):
 
     @classmethod
     def from_node(cls, node):
-        """Create an `NodeItem` instance and initialize it from an
-        `SchemeNode` instance.
+        """
+        Create an :class:`NodeItem` instance and initialize it from a
+        :class:`SchemeNode` instance.
 
         """
         self = cls()
@@ -659,14 +711,16 @@ class NodeItem(QGraphicsObject):
 
     @classmethod
     def from_node_meta(cls, meta_description):
-        """Create an `NodeItem` instance from a node meta description.
+        """
+        Create an `NodeItem` instance from a node meta description.
         """
         self = cls()
         self.setWidgetDescription(meta_description)
         return self
 
     def setupGraphics(self):
-        """Set up the graphics.
+        """
+        Set up the graphics.
         """
         shape_rect = QRectF(-24, -24, 48, 48)
 
@@ -707,8 +761,11 @@ class NodeItem(QGraphicsObject):
         self.warningItem = iconItem(QStyle.SP_MessageBoxWarning)
         self.infoItem = iconItem(QStyle.SP_MessageBoxInformation)
 
+    # TODO: Remove the set[Widget|Category]Description. The user should
+    # handle setting of icons, title, ...
     def setWidgetDescription(self, desc):
-        """Set widget description.
+        """
+        Set widget description.
         """
         self.widget_description = desc
         if desc is None:
@@ -730,6 +787,9 @@ class NodeItem(QGraphicsObject):
         self.setToolTip(tooltip)
 
     def setWidgetCategory(self, desc):
+        """
+        Set the widget category.
+        """
         self.category_description = desc
         if desc and desc.background:
             background = NAMED_COLORS.get(desc.background, desc.background)
@@ -738,7 +798,8 @@ class NodeItem(QGraphicsObject):
                 self.setColor(color)
 
     def setIcon(self, icon):
-        """Set the widget's icon
+        """
+        Set the node item's icon.
         """
         if isinstance(icon, QIcon):
             self.icon_item = GraphicsIconItem(self.shapeItem, icon=icon,
@@ -748,32 +809,39 @@ class NodeItem(QGraphicsObject):
             raise TypeError
 
     def setColor(self, color, selectedColor=None):
-        """Set the widget color.
+        """
+        Set the widget color.
         """
         if selectedColor is None:
             selectedColor = saturated(color, 150)
         palette = create_palette(color, selectedColor)
         self.shapeItem.setPalette(palette)
 
-    def setPalette(self):
-        """
-        """
-        pass
+    def setPalette(self, palette):
+        # TODO: The palette should override the `setColor`
+        raise NotImplementedError
 
     def setTitle(self, title):
-        """Set the widget title.
+        """
+        Set the node title. The title text is displayed at the bottom of the
+        node.
+
         """
         self.__title = title
         self.__updateTitleText()
 
     def title(self):
+        """
+        Return the node title.
+        """
         return self.__title
 
-    title_ = Property(unicode, fget=title, fset=setTitle)
+    title_ = Property(unicode, fget=title, fset=setTitle,
+                      doc="Node title text.")
 
     def setFont(self, font):
         """
-        Set the title text font.
+        Set the title text font (:class:`QFont`).
         """
         if font != self.font():
             self.prepareGeometryChange()
@@ -787,7 +855,8 @@ class NodeItem(QGraphicsObject):
         return self.captionTextItem.font()
 
     def setProcessingState(self, state):
-        """Set the node processing state i.e. the node is processing
+        """
+        Set the node processing state i.e. the node is processing
         (is busy) or is idle.
 
         """
@@ -799,13 +868,17 @@ class NodeItem(QGraphicsObject):
                 self.setProgress(-1)
 
     def processingState(self):
+        """
+        The node processing state.
+        """
         return self.__processingState
 
     processingState_ = Property(int, fget=processingState,
                                 fset=setProcessingState)
 
     def setProgress(self, progress):
-        """Set the node work progress indicator.
+        """
+        Set the node work progress state (number between 0 and 100).
         """
         if progress is None or progress < 0:
             progress = -1
@@ -817,12 +890,20 @@ class NodeItem(QGraphicsObject):
             self.__updateTitleText()
 
     def progress(self):
+        """
+        Return the node work progress state.
+        """
         return self.__progress
 
-    progress_ = Property(float, fget=progress, fset=setProgress)
+    progress_ = Property(float, fget=progress, fset=setProgress,
+                         doc="Node progress state.")
 
     def setProgressMessage(self, message):
-        """Set the node work progress message.
+        """
+        Set the node work progress message.
+
+        .. note:: Not yet implemented
+
         """
         pass
 
@@ -842,7 +923,8 @@ class NodeItem(QGraphicsObject):
             self.__updateMessages()
 
     def newInputAnchor(self):
-        """Create and return a new input anchor point.
+        """
+        Create and return a new input anchor point.
         """
         if not (self.widget_description and self.widget_description.inputs):
             raise ValueError("Widget has no inputs.")
@@ -857,7 +939,8 @@ class NodeItem(QGraphicsObject):
         return anchor
 
     def removeInputAnchor(self, anchor):
-        """Remove input anchor.
+        """
+        Remove input anchor.
         """
         self.inputAnchorItem.removeAnchor(anchor)
 
@@ -866,7 +949,8 @@ class NodeItem(QGraphicsObject):
         self.inputAnchorItem.setAnchorPositions(positions)
 
     def newOutputAnchor(self):
-        """Create a new output anchor indicator.
+        """
+        Create a new output anchor indicator.
         """
         if not (self.widget_description and self.widget_description.outputs):
             raise ValueError("Widget has no outputs.")
@@ -881,7 +965,8 @@ class NodeItem(QGraphicsObject):
         return anchor
 
     def removeOutputAnchor(self, anchor):
-        """Remove output anchor.
+        """
+        Remove output anchor.
         """
         self.outputAnchorItem.removeAnchor(anchor)
 
@@ -890,24 +975,28 @@ class NodeItem(QGraphicsObject):
         self.outputAnchorItem.setAnchorPositions(positions)
 
     def inputAnchors(self):
-        """Return a list of input anchor points.
+        """
+        Return a list of input anchor points.
         """
         return self.inputAnchorItem.anchorPoints()
 
     def outputAnchors(self):
-        """Return a list of output anchor points.
+        """
+        Return a list of output anchor points.
         """
         return self.outputAnchorItem.anchorPoints()
 
     def setAnchorRotation(self, angle):
-        """Set the anchor rotation.
+        """
+        Set the anchor rotation.
         """
         self.inputAnchorItem.setRotation(angle)
         self.outputAnchorItem.setRotation(angle)
         self.anchorGeometryChanged.emit()
 
     def anchorRotation(self):
-        """Return the anchor rotation.
+        """
+        Return the anchor rotation.
         """
         return self.inputAnchorItem.rotation()
 
@@ -918,15 +1007,13 @@ class NodeItem(QGraphicsObject):
         return self.childrenBoundingRect()
 
     def shape(self):
-        """Reimplemented: Return the shape of the 'shapeItem', This is used
-        for hit testing in QGraphicsScene.
-
-        """
-        # Should this return the union of all child items?
+        # Shape for mouse hit detection.
+        # TODO: Should this return the union of all child items?
         return self.shapeItem.shape()
 
     def __updateTitleText(self):
-        """Update the title text item.
+        """
+        Update the title text item.
         """
         title_safe = escape(self.title())
         if self.progress() > 0:
@@ -944,7 +1031,8 @@ class NodeItem(QGraphicsObject):
         self.captionTextItem.setPos(-width / 2.0, 33)
 
     def __updateMessages(self):
-        """Update message items (position, visibility and tool tips).
+        """
+        Update message items (position, visibility and tool tips).
         """
         items = [self.errorItem, self.warningItem, self.infoItem]
         messages = [self.__error, self.__warning, self.__info]
@@ -1016,7 +1104,8 @@ TOOLTIP_TEMPLATE = """\
 
 
 def NodeItem_toolTipHelper(node, links_in=[], links_out=[]):
-    """A helper function for constructing a standard tooltop for the node
+    """
+    A helper function for constructing a standard tooltop for the node
     in on the canvas.
 
     Parameters:

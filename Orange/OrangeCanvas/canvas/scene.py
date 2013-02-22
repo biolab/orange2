@@ -1,5 +1,7 @@
 """
+=====================
 Canvas Graphics Scene
+=====================
 
 """
 
@@ -32,41 +34,42 @@ NodeItemSignalMapper = typed_signal_mapper(items.NodeItem)
 
 
 class CanvasScene(QGraphicsScene):
-    """A Graphics Scene for displaying and editing an Orange Scheme.
+    """
+    A Graphics Scene for displaying and editing an :class:`Scheme`.
     """
 
+    #: An node item has been added to the scene.
     node_item_added = Signal(items.NodeItem)
-    """An node item has been added to the scene"""
 
+    #: An node item has been removed from the scene
     node_item_removed = Signal(items.LinkItem)
-    """An node item has been removed from the scene"""
 
-    node_item_position_changed = Signal(items.NodeItem, QPointF)
-    """The position of a node has changed"""
-
-    node_item_double_clicked = Signal(items.NodeItem)
-    """An node item has been double clicked"""
-
-    node_item_activated = Signal(items.NodeItem)
-    """An node item has been activated (clicked)"""
-
-    node_item_hovered = Signal(items.NodeItem)
-    """An node item has been hovered"""
-
+    #: A new link item has been added to the scene
     link_item_added = Signal(items.LinkItem)
-    """A new link item has been added to the scene"""
 
+    #: Link item has been removed
     link_item_removed = Signal(items.LinkItem)
-    """Link item has been removed"""
 
-    link_item_hovered = Signal(items.LinkItem)
-    """Link item has been hovered"""
-
+    #: Annotation item has been added
     annotation_added = Signal(items.annotationitem.Annotation)
-    """Annotation item has been added"""
 
+    #: Annotation item has been removed
     annotation_removed = Signal(items.annotationitem.Annotation)
-    """Annotation item has been removed"""
+
+    #: The position of a node has changed
+    node_item_position_changed = Signal(items.NodeItem, QPointF)
+
+    #: An node item has been double clicked
+    node_item_double_clicked = Signal(items.NodeItem)
+
+    #: An node item has been activated (clicked)
+    node_item_activated = Signal(items.NodeItem)
+
+    #: An node item has been hovered
+    node_item_hovered = Signal(items.NodeItem)
+
+    #: Link item has been hovered
+    link_item_hovered = Signal(items.LinkItem)
 
     def __init__(self, *args, **kwargs):
         QGraphicsScene.__init__(self, *args, **kwargs)

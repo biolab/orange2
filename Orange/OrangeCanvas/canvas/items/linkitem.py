@@ -6,7 +6,7 @@ Link Item
 from PyQt4.QtGui import (
     QGraphicsItem, QGraphicsEllipseItem, QGraphicsPathItem, QGraphicsObject,
     QGraphicsTextItem, QGraphicsDropShadowEffect, QPen, QBrush, QColor,
-    QPainterPath, QFont, QTransform
+    QPainterPath, QTransform
 )
 
 from PyQt4.QtCore import Qt, QPointF, QEvent
@@ -106,7 +106,8 @@ class LinkAnchorIndicator(QGraphicsEllipseItem):
 
 
 class LinkItem(QGraphicsObject):
-    """A Link in the canvas.
+    """
+    A Link in the canvas.
     """
 
     Z_VALUE = 0
@@ -143,12 +144,13 @@ class LinkItem(QGraphicsObject):
         self.hover = False
 
     def setSourceItem(self, item, anchor=None):
-        """Set the source `item` (:class:`CanvasNodeItem`). Use `anchor`
-        (:class:`AnchorPoint) as the curve start point (if `None` a new
+        """
+        Set the source `item` (:class:`NodeItem`). Use `anchor`
+        (:class:`AnchorPoint`) as the curve start point (if ``None`` a new
         output anchor will be created).
 
-        Setting item to `None` and a valid anchor is a valid operation
-        (for instance while mouse dragging one and of the link).
+        Setting item to ``None`` and a valid anchor is a valid operation
+        (for instance while mouse dragging one end of the link).
 
         """
         if item is not None and anchor is not None:
@@ -192,12 +194,14 @@ class LinkItem(QGraphicsObject):
         self.__updateCurve()
 
     def setSinkItem(self, item, anchor=None):
-        """Set the sink `item` (:class:`CanvasNodeItem`). Use `anchor`
-        (:class:`AnchorPoint) as the curve end point (if `None` a new
+        """
+        Set the sink `item` (:class:`NodeItem`). Use `anchor`
+        (:class:`AnchorPoint`) as the curve end point (if ``None`` a new
         input anchor will be created).
 
-        Setting item to `None` and a valid anchor is a valid operation
+        Setting item to ``None`` and a valid anchor is a valid operation
         (for instance while mouse dragging one and of the link).
+
         """
         if item is not None and anchor is not None:
             if anchor not in item.inputAnchors():
@@ -241,7 +245,7 @@ class LinkItem(QGraphicsObject):
 
     def setFont(self, font):
         """
-        Set the channel names font.
+        Set the font for the channel names text.
         """
         if font != self.font():
             self.linkTextItem.setFont(font)
@@ -249,27 +253,42 @@ class LinkItem(QGraphicsObject):
 
     def font(self):
         """
-        Return the channel names font.
+        Return the font for the channel names text.
         """
         return self.linkTextItem.font()
 
     def setChannelNamesVisible(self, visible):
+        """
+        Set the visibility of the channel name text.
+        """
         self.linkTextItem.setVisible(visible)
 
     def setSourceName(self, name):
+        """
+        Set the name of the source (used in channel name text).
+        """
         if self.__sourceName != name:
             self.__sourceName = name
             self.__updateText()
 
     def sourceName(self):
+        """
+        Return the source name.
+        """
         return self.__sourceName
 
     def setSinkName(self, name):
+        """
+        Set the name of the sink (used in channel name text).
+        """
         if self.__sinkName != name:
             self.__sinkName = name
             self.__updateText()
 
     def sinkName(self):
+        """
+        Return the sink name.
+        """
         return self.__sinkName
 
     def _sinkPosChanged(self, *arg):
@@ -377,23 +396,46 @@ class LinkItem(QGraphicsObject):
         return self.curveItem.shape()
 
     def setEnabled(self, enabled):
+        """
+        Set link enabled state. When disabled the link is rendered with a
+        dashed line.
+
+        """
         QGraphicsObject.setEnabled(self, enabled)
 
     def setDynamicEnabled(self, enabled):
+        """
+        Set the link's dynamic enabled state.
+
+        If the link is `dynamic` it will be rendered in red/green color
+        respectively depending on the state of the dynamic enabled state.
+
+        """
         if self.__dynamicEnabled != enabled:
             self.__dynamicEnabled = enabled
             if self.__dynamic:
                 self.__updatePen()
 
     def isDynamicEnabled(self):
+        """
+        Is the link dynamic enabled.
+        """
         return self.__dynamicEnabled
 
     def setDynamic(self, dynamic):
+        """
+        Mark the link as dynamic (e.i. it responds to the
+        ``setDynamicEnabled``).
+
+        """
         if self.__dynamic != dynamic:
             self.__dynamic = dynamic
             self.__updatePen()
 
     def isDynamic(self):
+        """
+        Is the link dynamic.
+        """
         return self.__dynamic
 
     def __updatePen(self):

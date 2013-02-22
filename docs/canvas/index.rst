@@ -9,3 +9,4 @@ The Orange Canvas API reference
    gui
    scheme
    registry
+   canvas
