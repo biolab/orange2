@@ -1,5 +1,9 @@
 """
+===============
 Scheme Workflow
+===============
+
+The :class:`Scheme` class defines a DAG (Directed Acyclic Graph) workflow.
 
 """
 
@@ -31,29 +35,60 @@ log = logging.getLogger(__name__)
 
 
 class Scheme(QObject):
-    """An QObject representing the scheme widget workflow
-    with annotations, etc.
+    """
+    An :class:`QObject` subclass representing the scheme widget workflow
+    with annotations.
+
+    Parameters
+    ----------
+    parent : :class:`QObject`
+        A parent QObject item (default `None`).
+    title : str
+        The scheme title.
+    description : str
+        A longer description of the scheme.
+
+
+    Attributes
+    ----------
+    nodes : list of :class:`.SchemeNode`
+        A list of all the nodes in the scheme.
+
+    links : list of :class:`.SchemeLink`
+        A list of all links in the scheme.
+
+    annotations : list of :class:`BaseSchemeAnnotation`
+        A list of all the annotations in the scheme.
 
     """
 
+    # Signal emitted when a `node` is added to the scheme.
     node_added = Signal(SchemeNode)
+
+    # Signal emitted when a `node` is removed from the scheme.
     node_removed = Signal(SchemeNode)
 
+    # Signal emitted when a `link` is added to the scheme.
     link_added = Signal(SchemeLink)
+
+    # Signal emitted when a `link` is removed from the scheme.
     link_removed = Signal(SchemeLink)
 
-    topology_changed = Signal()
+    # Signal emitted when a `annotation` is added to the scheme.
+    annotation_added = Signal(BaseSchemeAnnotation)
+
+    # Signal emitted when a `annotation` is removed from the scheme.
+    annotation_removed = Signal(BaseSchemeAnnotation)
+
+    # Signal emitted when the title of scheme changes.
+    title_changed = Signal(unicode)
+
+    # Signal emitted when the description of scheme changes.
+    description_changed = Signal(unicode)
 
     node_state_changed = Signal()
     channel_state_changed = Signal()
-
-    annotation_added = Signal(BaseSchemeAnnotation)
-    annotation_removed = Signal(BaseSchemeAnnotation)
-
-    node_property_changed = Signal(SchemeNode, str, object)
-
-    title_changed = Signal(unicode)
-    description_changed = Signal(unicode)
+    topology_changed = Signal()
 
     def __init__(self, parent=None, title=None, description=None):
         QObject.__init__(self, parent)
@@ -70,43 +105,68 @@ class Scheme(QObject):
 
     @property
     def nodes(self):
+        """
+        A list of all nodes (:class:`.SchemeNode`) currently in the scheme.
+        """
         return list(self.__nodes)
 
     @property
     def links(self):
+        """
+        A list of all links (:class:`.SchemeLink`) currently in the scheme.
+        """
         return list(self.__links)
 
     @property
     def annotations(self):
+        """
+        A list of all annotations (:class:`.BaseSchemeAnnotation`) in the
+        scheme.
+
+        """
         return list(self.__annotations)
 
     def set_title(self, title):
+        """
+        Set the scheme title text.
+        """
         if self.__title != title:
             self.__title = title
             self.title_changed.emit(title)
 
     def title(self):
+        """
+        The title (human readable string) of the scheme.
+        """
         return self.__title
 
     title = Property(unicode, fget=title, fset=set_title)
 
     def set_description(self, description):
+        """
+        Set the scheme description text.
+        """
         if self.__description != description:
             self.__description = description
             self.description_changed.emit(description)
 
     def description(self):
+        """
+        Scheme description text.
+        """
         return self.__description
 
     description = Property(unicode, fget=description, fset=set_description)
 
     def add_node(self, node):
-        """Add a node to the scheme.
+        """
+        Add a node to the scheme. An error is raised if the node is
+        already in the scheme.
 
         Parameters
         ----------
-        node : `SchemeNode`
-            Node to add to the scheme.
+        node : :class:`.SchemeNode`
+            Node instance to add to the scheme.
 
         """
         check_arg(node not in self.__nodes,
@@ -119,11 +179,28 @@ class Scheme(QObject):
 
     def new_node(self, description, title=None, position=None,
                  properties=None):
-        """Create a new SchemeNode and add it to the scheme.
-        Same as:
+        """
+        Create a new :class:`.SchemeNode` and add it to the scheme.
+
+        Same as::
 
             scheme.add_node(SchemeNode(description, title, position,
                                        properties))
+
+        Parameters
+        ----------
+        description : :class:`WidgetDescription`
+            The new node's description.
+        title : str, optional
+            Optional new nodes title. By default `description.name` is used.
+        position : `(x, y)` tuple of floats, optional
+            Optional position in a 2D space.
+        properties : dict, optional
+            A dictionary of optional extra properties.
+
+        See also
+        --------
+        SchemeNode, Scheme.add_node
 
         """
         if isinstance(description, WidgetDescription):
@@ -137,8 +214,15 @@ class Scheme(QObject):
         return node
 
     def remove_node(self, node):
-        """Remove a `node` from the scheme. All links into and out of the node
-        are also removed.
+        """
+        Remove a `node` from the scheme. All links into and out of the
+        `node` are also removed. If the node in not in the scheme an error
+        is raised.
+
+        Parameters
+        ----------
+        node : :class:`.SchemeNode`
+            Node instance to remove.
 
         """
         check_arg(node in self.__nodes,
@@ -151,7 +235,8 @@ class Scheme(QObject):
         return node
 
     def __remove_node_links(self, node):
-        """Remove all links for node.
+        """
+        Remove all links for node.
         """
         links_in, links_out = [], []
         for link in self.__links:
@@ -165,7 +250,13 @@ class Scheme(QObject):
 
     def add_link(self, link):
         """
-        Add a link to the scheme.
+        Add a `link` to the scheme.
+
+        Parameters
+        ----------
+        link : :class:`.SchemeLink`
+            An initialized link instance to add to the scheme.
+
         """
         check_type(link, SchemeLink)
 
@@ -185,10 +276,27 @@ class Scheme(QObject):
         """
         Create a new SchemeLink and add it to the scheme.
 
-        Same as:
+        Same as::
 
             scheme.add_link(SchemeLink(source_node, source_channel,
-                                       sink_node, sink_channel)
+                                       sink_node, sink_channel))
+
+        Parameters
+        ----------
+        source_node : :class:`.SchemeNode`
+            Source node of the new link.
+        source_channel : :class:`OutputSignal`
+            Source channel of the new node. The instance must be from
+            `source_node.output_channels()`
+        sink_node : :class:`.SchemeNode`
+            Sink node of the new link.
+        sink_channel : :class:`InputSignal`
+            Sink channel of the new node. The instance must be from
+            `sink_node.input_channels()`
+
+        See also
+        --------
+        SchemeLink, Scheme.add_link
 
         """
         link = SchemeLink(source_node, source_channel,
@@ -197,7 +305,14 @@ class Scheme(QObject):
         return link
 
     def remove_link(self, link):
-        """Remove a link from the scheme.
+        """
+        Remove a link from the scheme.
+
+        Parameters
+        ----------
+        link : :class:`.SchemeLink`
+            Link instance to remove.
+
         """
         check_arg(link in self.__links,
                   "Link is not in the scheme.")
@@ -212,17 +327,18 @@ class Scheme(QObject):
 
     def check_connect(self, link):
         """
-        Check if the link can be added to the scheme.
+        Check if the `link` can be added to the scheme.
 
         Can raise:
-            - `TypeError` if link is not an instance of :class:`SchemeLink`.
-            - `SchemeCycleError` if the link would introduce a cycle
-            - `IncompatibleChannelTypeError` if the channel types are not
-               compatible
-            - `SinkChannelError` if a sink channel has a `Single` flag
-               specification and there is already connected.
-            - `DuplicatedLinkError` if a link duplicates an already present
-               link.
+            - :class:`TypeError` if `link` is not an instance of
+              :class:`.SchemeLink`
+            - :class:`SchemeCycleError` if the `link` would introduce a cycle
+            - :class:`IncompatibleChannelTypeError` if the channel types are
+              not compatible
+            - :class:`SinkChannelError` if a sink channel has a `Single` flag
+              specification and the channel is already connected.
+            - :class:`DuplicatedLinkError` if a `link` duplicates an already
+              present link.
 
         """
         check_type(link, SchemeLink)
@@ -257,7 +373,8 @@ class Scheme(QObject):
                     )
 
     def creates_cycle(self, link):
-        """Would the `link` if added to the scheme introduce a cycle.
+        """
+        Would the `link` if added to the scheme introduce a cycle.
         """
         check_type(link, SchemeLink)
         source_node, sink_node = link.source_node, link.sink_node
@@ -266,7 +383,8 @@ class Scheme(QObject):
         return sink_node in upstream
 
     def compatible_channels(self, link):
-        """Do the channels in link have compatible types.
+        """
+        Do the channels in `link` have compatible types.
         """
         check_type(link, SchemeLink)
         return compatible_channels(link.source_channel, link.sink_channel)
@@ -281,7 +399,8 @@ class Scheme(QObject):
             raise
 
     def upstream_nodes(self, start_node):
-        """Return a set of all nodes upstream from `start_node`.
+        """
+        Return a set of all nodes upstream from `start_node`.
         """
         visited = set()
         queue = deque([start_node])
@@ -297,7 +416,8 @@ class Scheme(QObject):
         return visited
 
     def downstream_nodes(self, start_node):
-        """Return a set of all nodes downstream from `start_node`.
+        """
+        Return a set of all nodes downstream from `start_node`.
         """
         visited = set()
         queue = deque([start_node])
@@ -313,29 +433,34 @@ class Scheme(QObject):
         return visited
 
     def is_ancestor(self, node, child):
-        """Return True if `node` is an ancestor node of `child` (is upstream
+        """
+        Return True if `node` is an ancestor node of `child` (is upstream
         of the child in the workflow). Both nodes must be in the scheme.
 
         """
         return child in self.downstream_nodes(node)
 
     def children(self, node):
-        """Return a set of all children of `node`.
+        """
+        Return a set of all children of `node`.
         """
         return set(link.sink_node for link in self.output_links(node))
 
     def parents(self, node):
-        """Return a set if all parents of `node`.
+        """
+        Return a set of all parents of `node`.
         """
         return set(link.source_node for link in self.input_links(node))
 
     def input_links(self, node):
-        """Return all input links connected to the `node`.
+        """
+        Return all input links connected to the `node` instance.
         """
         return self.find_links(sink_node=node)
 
     def output_links(self, node):
-        """Return all output links connected to the `node`.
+        """
+        Return all output links connected to the `node` instance.
         """
         return self.find_links(source_node=node)
 
@@ -354,9 +479,10 @@ class Scheme(QObject):
         return result
 
     def propose_links(self, source_node, sink_node):
-        """Return a list of ordered (`OutputSignal`, `InputSignal`, weight)
-        tuples that could be added to the scheme between `source_node` and
-        `sink_node`.
+        """
+        Return a list of ordered (:class:`OutputSignal`,
+        :class:`InputSignal`, weight) tuples that could be added to
+        the scheme between `source_node` and `sink_node`.
 
         .. note:: This can depend on the links already in the scheme.
 
@@ -397,7 +523,9 @@ class Scheme(QObject):
         return sorted(proposed_links, key=itemgetter(-1), reverse=True)
 
     def add_annotation(self, annotation):
-        """Add an annotation (`BaseSchemeAnnotation`) subclass to the scheme.
+        """
+        Add an annotation (:class:`BaseSchemeAnnotation` subclass) instance
+        to the scheme.
 
         """
         check_arg(annotation not in self.__annotations,
@@ -408,13 +536,17 @@ class Scheme(QObject):
         self.annotation_added.emit(annotation)
 
     def remove_annotation(self, annotation):
+        """
+        Remove the `annotation` instance from the scheme.
+        """
         check_arg(annotation in self.__annotations,
                   "Annotation is not in the scheme.")
         self.__annotations.remove(annotation)
         self.annotation_removed.emit(annotation)
 
     def save_to(self, stream, pretty=True):
-        """Save the scheme as an xml formated file to `stream`
+        """
+        Save the scheme as an xml formated file to `stream`
         """
         if isinstance(stream, basestring):
             stream = open(stream, "wb")
@@ -422,7 +554,8 @@ class Scheme(QObject):
         scheme_to_ows_stream(self, stream, pretty)
 
     def load_from(self, stream):
-        """Load the scheme from xml formated stream.
+        """
+        Load the scheme from xml formated stream.
         """
         if self.__nodes or self.__links or self.__annotations:
             # TODO: should we clear the scheme and load it.

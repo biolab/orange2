@@ -1,8 +1,8 @@
 """
 Scheme save/load routines.
+
 """
 import sys
-import shutil
 
 from xml.etree.ElementTree import TreeBuilder, Element, ElementTree, parse
 
@@ -29,7 +29,9 @@ class UnknownWidgetDefinition(Exception):
 
 def sniff_version(stream):
     """
-    Parse a scheme stream and return the scheme's version string.
+    Parse a scheme stream and return the scheme's serialization
+    version string.
+
     """
     doc = parse(stream)
     scheme_el = doc.getroot()
@@ -446,7 +448,7 @@ def scheme_to_ows_stream(scheme, stream, pretty=False):
 def indent(element, level=0, indent="\t"):
     """
     Indent an instance of a :class:`Element`. Based on
-    `http://effbot.org/zone/element-lib.htm#prettyprint`_).
+    (http://effbot.org/zone/element-lib.htm#prettyprint).
 
     """
     def empty(text):

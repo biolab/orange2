@@ -7,3 +7,4 @@ The Orange Canvas API reference
 .. toctree::
 
    gui
+   scheme
