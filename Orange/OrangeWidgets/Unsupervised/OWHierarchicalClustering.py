@@ -16,6 +16,7 @@ import numpy
 
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
+from PyQt4.QtSvg import QSvgGenerator
 
 from OWWidget import OWWidget, DomainContextHandler, ContextField
 from OWQCanvasFuncts import *
@@ -263,49 +264,6 @@ class OWHierarchicalClustering(OWWidget):
         self.matrix = None
         self.selectionList = []
         self.selected_clusters = []
-
-    def sendReport(self):
-        self.reportSettings(
-            "Settings",
-            [("Linkage", self.linkageMethods[self.Linkage]),
-             ("Annotation", self.labelCombo.currentText()),
-             self.PrintDepthCheck and ("Shown depth limited to",
-                                       self.PrintDepth),
-             self.SelectionMode and hasattr(self, "cutoff_height") and
-             ("Cutoff line at", self.cutoff_height)]
-        )
-
-        self.reportSection("Dendrogram")
-        header = self.headerView.scene()
-        graph = self.dendrogramView.scene()
-        footer = self.footerView.scene()
-        canvases = header, graph, footer
-
-        pixmap = QPixmap(max(c.width() for c in canvases),
-                         sum(c.height() for c in canvases))
-
-        painter = QPainter(pixmap)
-        painter.fillRect(pixmap.rect(), QBrush(QColor(255, 255, 255)))
-        header.render(painter,
-                      QRectF(0, 0, header.width(), header.height()),
-                      QRectF(0, 0, header.width(), header.height()))
-
-        graph.render(painter,
-                     QRectF(0, header.height(), graph.width(), graph.height()),
-                     QRectF(0, 0, graph.width(), graph.height()))
-
-        footer.render(painter,
-                      QRectF(0, header.height() + graph.height(),
-                             footer.width(), footer.height()),
-                      QRectF(0, 0, footer.width(), footer.height()))
-
-        painter.end()
-
-        def save_to(filename):
-            _, ext = os.path.splitext(filename)
-            pixmap.save(filename, ext[1:])
-
-        self.reportImage(save_to)
 
     def clear(self):
         """
@@ -650,9 +608,99 @@ class OWHierarchicalClustering(OWWidget):
                     for name in names]
             self.send("Structured Data Files", data)
 
+    def sendReport(self):
+        self.reportSettings(
+            "Settings",
+            [("Linkage", self.linkageMethods[self.Linkage]),
+             ("Annotation", self.labelCombo.currentText()),
+             self.PrintDepthCheck and ("Shown depth limited to",
+                                       self.PrintDepth),
+             self.SelectionMode and hasattr(self, "cutoff_height") and
+             ("Cutoff line at", self.cutoff_height)]
+        )
+
+        self.reportSection("Dendrogram")
+
+        header = self.headerView.scene()
+        graph = self.dendrogramView.scene()
+        footer = self.footerView.scene()
+        canvases = header, graph, footer
+
+        pixmap = QPixmap(max(c.width() for c in canvases),
+                         sum(c.height() for c in canvases))
+        pixmap.fill(Qt.white)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+        self.renderDendrogram(painter)
+        painter.end()
+
+        def save_to(filename):
+            _, ext = os.path.splitext(filename)
+            pixmap.save(filename, ext[1:])
+
+        self.reportImage(save_to)
+
     def saveGraph(self):
         sizeDlg = OWChooseImageSizeDlg(self.dendrogram, parent=self)
-        sizeDlg.exec_()
+        filename = sizeDlg.getFileName(
+            "graph",
+            "Portable Network Graphics (*.PNG);;"
+            "Windows Bitmap (*.BMP);;"
+            "Graphics Interchange Format (*.GIF);;"
+            "Scalable Vector Graphics (*.SVG)",
+            ".png"
+        )
+        _, ext = os.path.splitext(filename)
+        ext = ext.lower()
+
+        canvases = (self.headerView.scene(),
+                    self.dendrogramView.scene(),
+                    self.footerView.scene())
+        width = max([c.width() for c in canvases])
+        height = sum([c.height() for c in canvases])
+
+        size = QSize(width, height)
+
+        if ext == ".svg":
+            device = QSvgGenerator()
+            device.setTitle("Dendrogram Plot")
+            device.setFileName(filename)
+            device.setSize(size)
+            device.setViewBox(QRect(QPoint(0, 0), size))
+        else:
+            device = QPixmap(size)
+            device.fill(Qt.white)
+
+        painter = QPainter()
+        painter.begin(device)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        self.renderDendrogram(painter)
+        painter.end()
+
+        if ext != ".svg":
+            device.save(filename)
+
+    def renderDendrogram(self, painter):
+        """
+        Render the dendrogram onto the `painter`, including both axis.
+        """
+        header = self.headerView.scene()
+        graph = self.dendrogramView.scene()
+        footer = self.footerView.scene()
+
+        header.render(painter,
+                      QRectF(0, 0, header.width(), header.height()),
+                      QRectF(0, 0, header.width(), header.height()))
+
+        graph.render(painter,
+                     QRectF(0, header.height(), graph.width(), graph.height()),
+                     QRectF(0, 0, graph.width(), graph.height()))
+
+        footer.render(painter,
+                      QRectF(0, header.height() + graph.height(),
+                             footer.width(), footer.height()),
+                      QRectF(0, 0, footer.width(), footer.height()))
 
 
 class DendrogramView(QGraphicsView):
@@ -844,10 +892,12 @@ class DendrogramScene(QGraphicsScene):
         if self.widget:
             # Fix widget top and bottom margins.
             spacing = QFontMetrics(self.font()).lineSpacing()
-            left, top, right, bottom = self.widget.layout().getContentsMargins()
+            left, _, right, _ = self.widget.layout().getContentsMargins()
             self.widget.layout().setContentsMargins(left, spacing / 2.0, right,
                                                     spacing / 2.0)
-            self.grid_widget.resize(self.grid_widget.sizeHint(Qt.PreferredSize))
+            self.grid_widget.resize(
+                self.grid_widget.sizeHint(Qt.PreferredSize)
+            )
 
     def _update_scene_rect(self):
         items_rect = reduce(QRectF.united,
@@ -1017,7 +1067,8 @@ class ScaleScene(QGraphicsScene):
     def set_scale_bounds(self, start, end):
         self.scale_widget.setPos(start, 0)
         size_hint = self.scale_widget.sizeHint(Qt.PreferredSize)
-        self.scale_widget.resize(end - start, self.scale_widget.size().height())
+        self.scale_widget.resize(end - start,
+                                 self.scale_widget.size().height())
 
     def scene_rect_update(self, rect):
         scale_rect = self.scale_widget.sceneBoundingRect()
