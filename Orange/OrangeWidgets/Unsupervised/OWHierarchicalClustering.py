@@ -152,6 +152,8 @@ class OWHierarchicalClustering(OWWidget):
                        callback=self.on_width_changed,
                        disables=[sw])
 
+        sw.setEnabled(self.ManualHorSize)
+
         self.hSizeBox = hsb
         form.addRow(cw, sw)
         dendrogramBox.layout().addLayout(form)
