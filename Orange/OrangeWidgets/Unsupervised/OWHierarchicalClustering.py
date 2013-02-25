@@ -81,7 +81,6 @@ class OWHierarchicalClustering(OWWidget):
         self.loadSettings()
 
         self.inputMatrix = None
-        self.matrixSource = "Unknown"
         self.root_cluster = None
         self.selectedExamples = None
 
@@ -295,10 +294,9 @@ class OWHierarchicalClustering(OWWidget):
             self.classificationBox.setDisabled(True)
             return
 
-        self.matrixSource = "Unknown"
-        items = getattr(self.matrix, "items")
+        items = getattr(self.matrix, "items", None)
         if isinstance(items, Orange.data.Table):
-            # Example Table from Example Distance
+            # Data table (from Example Distance)
             domain = items.domain
             self.labels = ["None", "Default"] + \
                           [a.name for a in domain.attributes]
@@ -311,18 +309,18 @@ class OWHierarchicalClustering(OWWidget):
             self.labelInd.extend(domain.getmetas().keys())
             self.numMeta = len(domain.getmetas())
             self.metaLabels = domain.getmetas().values()
-            self.matrixSource = "Example Distance"
 
-        elif isinstance(items, list):
-            # a list of items (most probably strings)
-            self.labels = ["None", "Default", "Name", "Strain"]
-            self.Annotation = 0
-            self.matrixSource = "Data Distance"
-        else:
-            # From Attribute Distance
+        elif isinstance(items, Orange.core.VarList):
+            # Attribute list (for Attribute Distance)
             self.labels = ["None", "Attribute Name"]
             self.Annotation = 1
-            self.matrixSource = "Attribute Distance"
+        elif isinstance(items, list):
+            # a list of items (most probably strings)
+            self.labels = ["None", "Default"]
+            self.Annotation = 0
+        else:
+            self.labels = ["None", "Default"]
+            self.Annotation = 0
 
         self.labelCombo.clear()
         self.labelCombo.addItems(self.labels)
@@ -331,12 +329,12 @@ class OWHierarchicalClustering(OWWidget):
             self.Annotation = 0
 
         self.labelCombo.setCurrentIndex(self.Annotation)
-        if self.matrixSource == "Example Distance":
+        if isinstance(items, Orange.data.Table):
             self.classificationBox.setDisabled(False)
+            self.openContext("", items)
         else:
             self.classificationBox.setDisabled(True)
-        if self.matrixSource == "Example Distance":
-            self.openContext("", items)
+
         self.error(0)
 
         try:
@@ -347,7 +345,7 @@ class OWHierarchicalClustering(OWWidget):
 
     def update_labels(self):
         """
-        Change the labels in the scene.
+        Change (update) the labels in the scene.
         """
         if self.matrix is None:
             return
@@ -355,8 +353,10 @@ class OWHierarchicalClustering(OWWidget):
         items = getattr(self.matrix, "items", range(self.matrix.dim))
 
         if self.Annotation == 0:
+            # 'None' is selected
             labels = [""] * len(items)
         elif self.Annotation == 1:
+            # 'Default' or 'Name'
             try:
                 labels = [item.name for item in items]
                 if not any(labels):
@@ -365,6 +365,7 @@ class OWHierarchicalClustering(OWWidget):
                 labels = [str(item) for item in items]
 
         elif self.Annotation > 1 and isinstance(items, Orange.data.Table):
+            # feature or meta values
             attr = self.labelInd[min(self.Annotation - 2,
                                      len(self.labelInd) - 1)]
             labels = [str(ex[attr]) for ex in items]
@@ -602,13 +603,6 @@ class OWHierarchicalClustering(OWWidget):
                     self.centroids.append(ex)
 
             self.send("Centroids", self.centroids)
-
-        elif self.matrixSource == "Data Distance":
-            names = list(set([d.strain for d in self.selection]))
-            data = [(name,
-                     [filter(lambda a:a.strain == name, self.selection)])
-                    for name in names]
-            self.send("Structured Data Files", data)
 
     def sendReport(self):
         self.reportSettings(
