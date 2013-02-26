@@ -1,7 +1,13 @@
 """
-Quick widget selector menu for the canvas.
+==========
+Quick Menu
+==========
+
+A :class:`QuickMenu` widget provides lists of actions organized in tabs
+with a quick search functionality.
 
 """
+
 import sys
 import logging
 
@@ -37,6 +43,166 @@ from ..resources import icon_loader
 log = logging.getLogger(__name__)
 
 
+class MenuPage(ToolTree):
+    """
+    A menu page in a :class:`QuickMenu` widget.
+    """
+    def __init__(self, parent=None, title=None, icon=None, **kwargs):
+        ToolTree.__init__(self, parent, **kwargs)
+
+        if title is None:
+            title = ""
+
+        if icon is None:
+            icon = QIcon()
+
+        self.__title = title
+        self.__icon = icon
+
+        # Make sure the initial model is wrapped in a ItemDisableFilter.
+        self.setModel(self.model())
+
+    def setTitle(self, title):
+        """
+        Set the title of the page.
+        """
+        if self.__title != title:
+            self.__title = title
+            self.update()
+
+    def title(self):
+        """
+        Return the title of this page.
+        """
+        return self.__title
+
+    title_ = Property(unicode, fget=title, fset=setTitle)
+
+    def setIcon(self, icon):
+        """
+        Set icon for this menu page.
+        """
+        if self.__icon != icon:
+            self.__icon = icon
+            self.update()
+
+    def icon(self):
+        """
+        Return the icon of this manu page.
+        """
+        return self.__icon
+
+    icon_ = Property(QIcon, fget=icon, fset=setIcon)
+
+    def setFilterFunc(self, func):
+        proxyModel = self.view().model()
+        proxyModel.setFilterFunc(func)
+
+    def setModel(self, model):
+        proxyModel = ItemDisableFilter(self)
+        proxyModel.setSourceModel(model)
+        ToolTree.setModel(self, proxyModel)
+
+    def setRootIndex(self, index):
+        proxyModel = self.view().model()
+        mappedIndex = proxyModel.mapFromSource(index)
+        ToolTree.setRootIndex(self, mappedIndex)
+
+    def rootIndex(self):
+        proxyModel = self.view().model()
+        return proxyModel.mapToSource(ToolTree.rootIndex(self))
+
+
+class ItemDisableFilter(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        QSortFilterProxyModel.__init__(self, parent)
+
+        self.__filterFunc = None
+
+    def setFilterFunc(self, func):
+        if not (isinstance(func, Callable) or func is None):
+            raise ValueError("A callable object or None expected.")
+
+        if self.__filterFunc != func:
+            self.__filterFunc = func
+            # Mark the whole model as changed.
+            self.dataChanged.emit(self.index(0, 0),
+                                  self.index(self.rowCount(), 0))
+
+    def flags(self, index):
+        source = self.mapToSource(index)
+        flags = source.flags()
+
+        if self.__filterFunc is not None:
+            enabled = flags & Qt.ItemIsEnabled
+            if enabled and not self.__filterFunc(source):
+                flags ^= Qt.ItemIsEnabled
+
+        return flags
+
+
+class SuggestMenuPage(MenuPage):
+    def __init__(self, *args, **kwargs):
+        MenuPage.__init__(self, *args, **kwargs)
+
+    def setModel(self, model):
+        flat = FlattenedTreeItemModel(self)
+        flat.setSourceModel(model)
+        flat.setFlatteningMode(flat.InternalNodesDisabled)
+        flat.setFlatteningMode(flat.LeavesOnly)
+        proxy = SortFilterProxyModel(self)
+        proxy.setFilterCaseSensitivity(False)
+        proxy.setSourceModel(flat)
+        ToolTree.setModel(self, proxy)
+        self.ensureCurrent()
+
+    def setFilterFixedString(self, pattern):
+        proxy = self.view().model()
+        proxy.setFilterFixedString(pattern)
+        self.ensureCurrent()
+
+    def setFilterRegExp(self, pattern):
+        filter_proxy = self.view().model()
+        filter_proxy.setFilterRegExp(pattern)
+        self.ensureCurrent()
+
+    def setFilterWildCard(self, pattern):
+        filter_proxy = self.view().model()
+        filter_proxy.setFilterWildCard(pattern)
+        self.ensureCurrent()
+
+    def setFilterFunc(self, func):
+        filter_proxy = self.view().model()
+        filter_proxy.setFilterFunc(func)
+
+
+class SortFilterProxyModel(QSortFilterProxyModel):
+    def __init__(self, parent=None):
+        QSortFilterProxyModel.__init__(self, parent)
+
+        self.__filterFunc = None
+
+    def setFilterFunc(self, func):
+        if not (isinstance(func, Callable) or func is None):
+            raise ValueError("A callable object or None expected.")
+
+        if self.__filterFunc is not func:
+            self.__filterFunc = func
+            self.invalidateFilter()
+
+    def filterFunc(self):
+        return self.__filterFunc
+
+    def filterAcceptsRow(self, row, parent=QModelIndex()):
+        accepted = QSortFilterProxyModel.filterAcceptsRow(self, row, parent)
+        if accepted and self.__filterFunc is not None:
+            model = self.sourceModel()
+            index = model.index(row, self.filterKeyColumn(), parent)
+            return self.__filterFunc(index)
+        else:
+            return accepted
+
+
 class SearchWidget(LineEdit):
     def __init__(self, parent=None, **kwargs):
         LineEdit.__init__(self, parent, **kwargs)
@@ -49,12 +215,14 @@ class SearchWidget(LineEdit):
 
 
 class MenuStackWidget(QStackedWidget):
-    """Stack widget for the menu pages (ToolTree instances).
+    """
+    Stack widget for the menu pages.
     """
 
     def sizeHint(self):
-        """Size hint is the median size hint of the widgets contained
-        within.
+        """
+        Size hint is the maximum width and median height of the widgets
+        contained in the stack.
 
         """
         default_size = QSize(200, 400)
@@ -265,7 +433,8 @@ class TabBarWidget(QWidget):
 
 
 class PagedMenu(QWidget):
-    """Tabed container for `ToolTree` instances.
+    """
+    Tabbed container for :class:`MenuPage` instances.
     """
     triggered = Signal(QAction)
     hovered = Signal(QAction)
@@ -362,125 +531,6 @@ class PagedMenu(QWidget):
         """Return the tab button instance for index.
         """
         return self.__tab.button(index)
-
-
-class ItemDisableFilter(QSortFilterProxyModel):
-    def __init__(self, parent=None):
-        QSortFilterProxyModel.__init__(self, parent)
-
-        self.__filterFunc = None
-
-    def setFilterFunc(self, func):
-        if not (isinstance(func, Callable) or func is None):
-            raise ValueError("A callable object or None expected.")
-
-        if self.__filterFunc != func:
-            self.__filterFunc = func
-            # Mark the whole model as changed.
-            self.dataChanged.emit(self.index(0, 0),
-                                  self.index(self.rowCount(), 0))
-
-    def flags(self, index):
-        source = self.mapToSource(index)
-        flags = source.flags()
-
-        if self.__filterFunc is not None:
-            enabled = flags & Qt.ItemIsEnabled
-            if enabled and not self.__filterFunc(source):
-                flags ^= Qt.ItemIsEnabled
-
-        return flags
-
-
-class MenuPage(ToolTree):
-    def __init__(self, *args, **kwargs):
-        ToolTree.__init__(self, *args, **kwargs)
-
-        # Make sure the initial model is wrapped in a ItemDisableFilter.
-        self.setModel(self.model())
-
-    def setFilterFunc(self, func):
-        proxyModel = self.view().model()
-        proxyModel.setFilterFunc(func)
-
-    def setModel(self, model):
-        proxyModel = ItemDisableFilter(self)
-        proxyModel.setSourceModel(model)
-        ToolTree.setModel(self, proxyModel)
-
-    def setRootIndex(self, index):
-        proxyModel = self.view().model()
-        mappedIndex = proxyModel.mapFromSource(index)
-        ToolTree.setRootIndex(self, mappedIndex)
-
-    def rootIndex(self):
-        proxyModel = self.view().model()
-        return proxyModel.mapToSource(ToolTree.rootIndex(self))
-
-
-class SortFilterProxyModel(QSortFilterProxyModel):
-    def __init__(self, parent=None):
-        QSortFilterProxyModel.__init__(self, parent)
-
-        self.__filterFunc = None
-
-    def setFilterFunc(self, func):
-        if not (isinstance(func, Callable) or func is None):
-            raise ValueError("A callable object or None expected.")
-
-        if self.__filterFunc is not func:
-            self.__filterFunc = func
-            self.invalidateFilter()
-
-    def filterFunc(self):
-        return self.__filterFunc
-
-    def filterAcceptsRow(self, row, parent=QModelIndex()):
-        accepted = QSortFilterProxyModel.filterAcceptsRow(self, row, parent)
-        if accepted and self.__filterFunc is not None:
-            model = self.sourceModel()
-            index = model.index(row, self.filterKeyColumn(), parent)
-            return self.__filterFunc(index)
-        else:
-            return accepted
-
-
-class SuggestMenuPage(ToolTree):
-    def __init__(self, *args, **kwargs):
-        ToolTree.__init__(self, *args, **kwargs)
-
-        # Make sure the initial model is wrapped in a FlattenedTreeItemModel.
-        self.setModel(self.model())
-
-    def setModel(self, model):
-        flat = FlattenedTreeItemModel(self)
-        flat.setSourceModel(model)
-        flat.setFlatteningMode(flat.InternalNodesDisabled)
-        flat.setFlatteningMode(flat.LeavesOnly)
-        proxy = SortFilterProxyModel(self)
-        proxy.setFilterCaseSensitivity(False)
-        proxy.setSourceModel(flat)
-        ToolTree.setModel(self, proxy)
-        self.ensureCurrent()
-
-    def setFilterFixedString(self, pattern):
-        proxy = self.view().model()
-        proxy.setFilterFixedString(pattern)
-        self.ensureCurrent()
-
-    def setFilterRegExp(self, pattern):
-        filter_proxy = self.view().model()
-        filter_proxy.setFilterRegExp(pattern)
-        self.ensureCurrent()
-
-    def setFilterWildCard(self, pattern):
-        filter_proxy = self.view().model()
-        filter_proxy.setFilterWildCard(pattern)
-        self.ensureCurrent()
-
-    def setFilterFunc(self, func):
-        filter_proxy = self.view().model()
-        filter_proxy.setFilterFunc(func)
 
 
 class QuickMenu(FramelessWindow):

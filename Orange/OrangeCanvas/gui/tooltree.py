@@ -1,4 +1,8 @@
 """
+=========
+Tool Tree
+=========
+
 A ToolTree widget presenting the user with a set of actions
 organized in a tree structure.
 
@@ -8,11 +12,11 @@ import logging
 
 from PyQt4.QtGui import (
     QTreeView, QWidget, QVBoxLayout, QSizePolicy, QStandardItemModel,
-    QAbstractProxyModel, QStyledItemDelegate, QStyle, QAction, QIcon
+    QAbstractProxyModel, QStyledItemDelegate, QStyle, QAction
 )
 
 from PyQt4.QtCore import Qt, QEvent, QModelIndex
-from PyQt4.QtCore import pyqtSignal as Signal, pyqtProperty as Property
+from PyQt4.QtCore import pyqtSignal as Signal
 
 log = logging.getLogger(__name__)
 
@@ -20,24 +24,14 @@ log = logging.getLogger(__name__)
 class ToolTree(QWidget):
     """
     A ListView like presentation of a list of actions.
-
     """
     triggered = Signal(QAction)
     hovered = Signal(QAction)
 
-    def __init__(self, parent=None, title=None, icon=None, **kwargs):
+    def __init__(self, parent=None, **kwargs):
         QTreeView.__init__(self, parent, **kwargs)
         self.setSizePolicy(QSizePolicy.MinimumExpanding,
                            QSizePolicy.Expanding)
-
-        if title is None:
-            title = ""
-
-        if icon is None:
-            icon = QIcon()
-
-        self.__title = title
-        self.__icon = icon
 
         self.__model = QStandardItemModel()
         self.__flattened = False
@@ -71,38 +65,6 @@ class ToolTree(QWidget):
         layout.addWidget(view)
 
         self.setLayout(layout)
-
-    def setTitle(self, title):
-        """
-        Set the title
-        """
-        if self.__title != title:
-            self.__title = title
-            self.update()
-
-    def title(self):
-        """
-        Return the title of this tool tree.
-        """
-        return self.__title
-
-    title_ = Property(unicode, fget=title, fset=setTitle)
-
-    def setIcon(self, icon):
-        """
-        Set icon for this tool tree.
-        """
-        if self.__icon != icon:
-            self.__icon = icon
-            self.update()
-
-    def icon(self):
-        """
-        Return the icon of this tool tree.
-        """
-        return self.__icon
-
-    icon_ = Property(QIcon, fget=icon, fset=setIcon)
 
     def setFlattened(self, flatten):
         """
