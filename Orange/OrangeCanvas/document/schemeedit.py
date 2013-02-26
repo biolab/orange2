@@ -162,7 +162,7 @@ class SchemeEditWidget(QWidget):
                     checkable=True,
                     shortcut=QKeySequence.ZoomIn,
                     toolTip=self.tr("Zoom in the scheme."),
-                    toggled=self.toogleZoom,
+                    toggled=self.toggleZoom,
                     )
 
         self.__cleanUpAction = \
@@ -760,7 +760,7 @@ class SchemeEditWidget(QWidget):
             if item.flags() & QGraphicsItem.ItemIsSelectable:
                 item.setSelected(True)
 
-    def toogleZoom(self, zoom):
+    def toggleZoom(self, zoom):
         """
         Toggle view zoom. If `zoom` is True the scheme is displayed
         scaled to 150%.
