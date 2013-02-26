@@ -45,7 +45,10 @@ log = logging.getLogger(__name__)
 
 class MenuPage(ToolTree):
     """
-    A menu page in a :class:`QuickMenu` widget.
+    A menu page in a :class:`QuickMenu` widget, showing a list of actions.
+    Shown actions can be disabled by setting a filtering function using the
+    :ref:`setFilterFunc`.
+
     """
     def __init__(self, parent=None, title=None, icon=None, **kwargs):
         ToolTree.__init__(self, parent, **kwargs)
@@ -95,31 +98,55 @@ class MenuPage(ToolTree):
     icon_ = Property(QIcon, fget=icon, fset=setIcon)
 
     def setFilterFunc(self, func):
+        """
+        Set the filtering function. `func` should a function taking a single
+        :class:`QModelIndex` argument and returning True if the item at index
+        should be disabled and False otherwise. To disable filtering `func` can
+        be set to ``None``.
+
+        """
         proxyModel = self.view().model()
         proxyModel.setFilterFunc(func)
 
     def setModel(self, model):
+        """
+        Reimplemented from :ref:`ToolTree.setModel`.
+        """
         proxyModel = ItemDisableFilter(self)
         proxyModel.setSourceModel(model)
         ToolTree.setModel(self, proxyModel)
 
     def setRootIndex(self, index):
+        """
+        Reimplemented from :ref:`ToolTree.setRootIndex`
+        """
         proxyModel = self.view().model()
         mappedIndex = proxyModel.mapFromSource(index)
         ToolTree.setRootIndex(self, mappedIndex)
 
     def rootIndex(self):
+        """
+        Reimplemented from :ref:`ToolTree.rootIndex`
+        """
         proxyModel = self.view().model()
         return proxyModel.mapToSource(ToolTree.rootIndex(self))
 
 
 class ItemDisableFilter(QSortFilterProxyModel):
+    """
+    An filter proxy model used to disable selected items based on
+    a filtering function.
+
+    """
     def __init__(self, parent=None):
         QSortFilterProxyModel.__init__(self, parent)
 
         self.__filterFunc = None
 
     def setFilterFunc(self, func):
+        """
+        Set the filtering function.
+        """
         if not (isinstance(func, Callable) or func is None):
             raise ValueError("A callable object or None expected.")
 
@@ -130,6 +157,9 @@ class ItemDisableFilter(QSortFilterProxyModel):
                                   self.index(self.rowCount(), 0))
 
     def flags(self, index):
+        """
+        Reimplemented from :class:`QSortFilterProxyModel.flags`
+        """
         source = self.mapToSource(index)
         flags = source.flags()
 
@@ -142,10 +172,18 @@ class ItemDisableFilter(QSortFilterProxyModel):
 
 
 class SuggestMenuPage(MenuPage):
+    """
+    A MenuMage for the QuickMenu widget supporting item filtering
+    (searching).
+
+    """
     def __init__(self, *args, **kwargs):
         MenuPage.__init__(self, *args, **kwargs)
 
     def setModel(self, model):
+        """
+        Reimplmemented from :ref:`MenuPage.setModel`.
+        """
         flat = FlattenedTreeItemModel(self)
         flat.setSourceModel(model)
         flat.setFlatteningMode(flat.InternalNodesDisabled)
@@ -157,32 +195,56 @@ class SuggestMenuPage(MenuPage):
         self.ensureCurrent()
 
     def setFilterFixedString(self, pattern):
+        """
+        Set the fixed string filtering pattern. Only items which contain the
+        `pattern` string will be shown.
+
+        """
         proxy = self.view().model()
         proxy.setFilterFixedString(pattern)
         self.ensureCurrent()
 
     def setFilterRegExp(self, pattern):
+        """
+        Set the regular expression filtering pattern. Only items matching
+        the `pattern` expression will be shown.
+
+        """
         filter_proxy = self.view().model()
         filter_proxy.setFilterRegExp(pattern)
         self.ensureCurrent()
 
     def setFilterWildCard(self, pattern):
+        """
+        Set a wildcard filtering pattern.
+        """
         filter_proxy = self.view().model()
         filter_proxy.setFilterWildCard(pattern)
         self.ensureCurrent()
 
     def setFilterFunc(self, func):
+        """
+        Set a filtering function.
+        """
         filter_proxy = self.view().model()
         filter_proxy.setFilterFunc(func)
 
 
 class SortFilterProxyModel(QSortFilterProxyModel):
+    """
+    An filter proxy model used to filter items based on a filtering
+    function.
+
+    """
     def __init__(self, parent=None):
         QSortFilterProxyModel.__init__(self, parent)
 
         self.__filterFunc = None
 
     def setFilterFunc(self, func):
+        """
+        Set the filtering function.
+        """
         if not (isinstance(func, Callable) or func is None):
             raise ValueError("A callable object or None expected.")
 
@@ -299,9 +361,12 @@ _Tab = \
          "palette"])
 
 
-class TabBarWidget(QWidget):
-    """A tab bar widget using tool buttons as tabs.
+# TODO: ..application.canvastooldock.QuickCategoryToolbar is very similar,
+#       to TobBarWidget. Maybe common functionality could factored our.
 
+class TabBarWidget(QWidget):
+    """
+    A tab bar widget using tool buttons as tabs.
     """
     # TODO: A uniform size box layout.
 
@@ -324,17 +389,20 @@ class TabBarWidget(QWidget):
         )
 
     def count(self):
-        """Return the number of tabs in the widget.
+        """
+        Return the number of tabs in the widget.
         """
         return len(self.__tabs)
 
     def addTab(self, text, icon=None, toolTip=None):
-        """Add a tab and return it's index.
+        """
+        Add a new tab and return it's index.
         """
         return self.insertTab(self.count(), text, icon, toolTip)
 
-    def insertTab(self, index, text, icon, toolTip):
-        """Insert a tab at `index`
+    def insertTab(self, index, text, icon=None, toolTip=None):
+        """
+        Insert a tab at `index`
         """
         button = TabButton(self, objectName="tab-button")
         button.setSizePolicy(QSizePolicy.Expanding,
@@ -352,6 +420,9 @@ class TabBarWidget(QWidget):
         return index
 
     def removeTab(self, index):
+        """
+        Remove a tab at `index`.
+        """
         if index >= 0 and index < self.count():
             self.layout().takeItem(index)
             tab = self.__tabs.pop(index)
@@ -365,30 +436,37 @@ class TabBarWidget(QWidget):
                     self.setCurrentIndex(-1)
 
     def setTabIcon(self, index, icon):
-        """Set the `icon` for tab at `index`.
+        """
+        Set the `icon` for tab at `index`.
         """
         self.__tabs[index] = self.__tabs[index]._replace(icon=icon)
         self.__updateTab(index)
 
     def setTabToolTip(self, index, toolTip):
-        """Set `toolTip` for tab at `index`.
+        """
+        Set `toolTip` for tab at `index`.
         """
         self.__tabs[index] = self.__tabs[index]._replace(toolTip=toolTip)
         self.__updateTab(index)
 
     def setTabText(self, index, text):
-        """Set tab `text` for tab at `index`
+        """
+        Set tab `text` for tab at `index`
         """
         self.__tabs[index] = self.__tabs[index]._replace(text=text)
         self.__updateTab(index)
 
     def setTabPalette(self, index, palette):
-        """Set the tab button palette.
+        """
+        Set the tab button palette.
         """
         self.__tabs[index] = self.__tabs[index]._replace(palette=palette)
         self.__updateTab(index)
 
     def setCurrentIndex(self, index):
+        """
+        Set the current tab index.
+        """
         if self.__currentIndex != index:
             self.__currentIndex = index
 
@@ -397,18 +475,21 @@ class TabBarWidget(QWidget):
 
             self.currentChanged.emit(index)
 
-    def button(self, index):
-        """Return the `TabButton` instance for index.
-        """
-        return self.__tabs[index].button
-
     def currentIndex(self):
-        """Return the current index.
+        """
+        Return the current index.
         """
         return self.__currentIndex
 
+    def button(self, index):
+        """
+        Return the `TabButton` instance for index.
+        """
+        return self.__tabs[index].button
+
     def __updateTab(self, index):
-        """Update the tab button.
+        """
+        Update the tab button.
         """
         tab = self.__tabs[index]
         b = tab.button
@@ -463,12 +544,14 @@ class PagedMenu(QWidget):
         self.setLayout(layout)
 
     def addPage(self, page, title, icon=None, toolTip=None):
-        """Add a `page` to the menu and return its index.
+        """
+        Add a `page` to the menu and return its index.
         """
         return self.insertPage(self.count(), page, title, icon, toolTip)
 
     def insertPage(self, index, page, title, icon=None, toolTip=None):
-        """Insert `page` at `index`.
+        """
+        Insert `page` at `index`.
         """
         page.triggered.connect(self.triggered)
         page.hovered.connect(self.hovered)
@@ -478,12 +561,14 @@ class PagedMenu(QWidget):
         return index
 
     def page(self, index):
-        """Return the page at index.
+        """
+        Return the page at index.
         """
         return self.__stack.widget(index)
 
     def removePage(self, index):
-        """Remove the page at `index`.
+        """
+        Remove the page at `index`.
         """
         page = self.__stack.widget(index)
         page.triggered.disconnect(self.triggered)
@@ -493,12 +578,14 @@ class PagedMenu(QWidget):
         self.__tab.removeTab(index)
 
     def count(self):
-        """Return the number of pages.
+        """
+        Return the number of pages.
         """
         return self.__stack.count()
 
     def setCurrentIndex(self, index):
-        """Set the current page index.
+        """
+        Set the current page index.
         """
         if self.__currentIndex != index:
             self.__currentIndex = index
@@ -507,36 +594,42 @@ class PagedMenu(QWidget):
             self.currentChanged.emit(index)
 
     def currentIndex(self):
-        """Return the index of the current page.
+        """
+        Return the index of the current page.
         """
         return self.__currentIndex
 
     def setCurrentPage(self, page):
-        """Set `page` to be the current shown page.
+        """
+        Set `page` to be the current shown page.
         """
         index = self.__stack.indexOf(page)
         self.setCurrentIndex(index)
 
     def currentPage(self):
-        """Return the current page.
+        """
+        Return the current page.
         """
         return self.__stack.currentWidget()
 
     def indexOf(self, page):
-        """Return the index of `page`.
+        """
+        Return the index of `page`.
         """
         return self.__stack.indexOf(page)
 
     def tabButton(self, index):
-        """Return the tab button instance for index.
+        """
+        Return the tab button instance for index.
         """
         return self.__tab.button(index)
 
 
 class QuickMenu(FramelessWindow):
-    """A quick menu popup for the widgets.
+    """
+    A quick menu popup for the widgets.
 
-    The widgets are set using setModel which must be a
+    The widgets are set using :ref:`setModel` which must be a
     model as returned by QtWidgetRegistry.model()
 
     """
@@ -608,7 +701,8 @@ class QuickMenu(FramelessWindow):
         self.__grip.raise_()
 
     def setSizeGripEnabled(self, enabled):
-        """Enable the resizing of the menu with a size grip in a bottom
+        """
+        Enable the resizing of the menu with a size grip in a bottom
         right corner (enabled by default).
 
         """
@@ -621,12 +715,14 @@ class QuickMenu(FramelessWindow):
                 self.__grip.raise_()
 
     def sizeGripEnabled(self):
-        """Is the size grip enabled.
+        """
+        Is the size grip enabled.
         """
         return bool(self.__grip)
 
     def addPage(self, name, page):
-        """Add the page and return it's index.
+        """
+        Add the page and return it's index.
         """
         icon = page.icon()
 
@@ -647,6 +743,11 @@ class QuickMenu(FramelessWindow):
         return index
 
     def createPage(self, index):
+        """
+        Create a new page based on the contents of an index
+        (:class:`QModeIndex`) item.
+
+        """
         page = MenuPage(self)
         view = page.view()
         delegate = WidgetItemDelegate(view)
@@ -674,6 +775,9 @@ class QuickMenu(FramelessWindow):
         return page
 
     def setModel(self, model):
+        """
+        Set the model containing the actions.
+        """
         root = model.invisibleRootItem()
         for i in range(root.rowCount()):
             item = root.child(i)
@@ -690,7 +794,7 @@ class QuickMenu(FramelessWindow):
                 palette = button.palette()
                 button.setStyleSheet(
                     "TabButton {\n"
-                    "    qproperty-flat_: false;"
+                    "    qproperty-flat_: false;\n"
                     "    background-color: %s;\n"
                     "    border: none;\n"
                     "}\n"
@@ -704,13 +808,17 @@ class QuickMenu(FramelessWindow):
         self.__suggestPage.setModel(model)
 
     def setFilterFunc(self, func):
+        """
+        Set a filter function.
+        """
         if func != self.__filterFunc:
             self.__filterFunc = func
             for i in range(0, self.__pages.count()):
                 self.__pages.page(i).setFilterFunc(func)
 
     def popup(self, pos=None):
-        """Popup the menu at `pos` (in screen coordinates)..
+        """
+        Popup the menu at `pos` (in screen coordinates).
         """
         if pos is None:
             pos = QPoint()
@@ -778,13 +886,20 @@ class QuickMenu(FramelessWindow):
             self.__loop.exit()
 
     def setCurrentPage(self, page):
+        """
+        Set the current shown page to `page`.
+        """
         self.__pages.setCurrentPage(page)
 
     def setCurrentIndex(self, index):
+        """
+        Set the current page index.
+        """
         self.__pages.setCurrentIndex(index)
 
     def __onTriggered(self, action):
-        """Re-emit the action from the page.
+        """
+        Re-emit the action from the page.
         """
         self.__triggeredAction = action
 
@@ -797,6 +912,11 @@ class QuickMenu(FramelessWindow):
         self.__pages.setCurrentPage(self.__suggestPage)
 
     def triggerSearch(self):
+        """
+        Trigger action search. This changes to current page to the
+        'Suggest' page and sets the keyboard focus to the search line edit.
+
+        """
         self.__pages.setCurrentPage(self.__suggestPage)
         self.__search.setFocus(Qt.ShortcutFocusReason)
 
@@ -872,7 +992,8 @@ class ItemViewKeyNavigator(QObject):
         return QObject.eventFilter(self, obj, event)
 
     def moveCurrent(self, rows, columns=0):
-        """Move the current index by rows, columns.
+        """
+        Move the current index by rows, columns.
         """
         if self.__view is not None:
             view = self.__view
@@ -893,7 +1014,8 @@ class ItemViewKeyNavigator(QObject):
             # TODO: move by columns
 
     def activateCurrent(self):
-        """Activate the current index.
+        """
+        Activate the current index.
         """
         if self.__view is not None:
             curr = self.__view.currentIndex()
@@ -902,7 +1024,8 @@ class ItemViewKeyNavigator(QObject):
                 self.__view.activated.emit(curr)
 
     def ensureCurrent(self):
-        """Ensure the view has a current item if one is available.
+        """
+        Ensure the view has a current item if one is available.
         """
         if self.__view is not None:
             model = self.__view.model()
@@ -916,7 +1039,8 @@ class ItemViewKeyNavigator(QObject):
 
 
 class WindowSizeGrip(QSizeGrip):
-    """Automatically positioning SizeGrip.
+    """
+    Automatically positioning :class:`QSizeGrip`.
     """
     def __init__(self, parent):
         QSizeGrip.__init__(self, parent)
@@ -927,7 +1051,8 @@ class WindowSizeGrip(QSizeGrip):
         self.__updatePos()
 
     def setCorner(self, corner):
-        """Set the corner where the size grip should position itself.
+        """
+        Set the corner where the size grip should position itself.
         """
         if corner not in [Qt.TopLeftCorner, Qt.TopRightCorner,
                           Qt.BottomLeftCorner, Qt.BottomRightCorner]:
@@ -938,7 +1063,8 @@ class WindowSizeGrip(QSizeGrip):
             self.__updatePos()
 
     def corner(self):
-        """Return the corner where the size grip is positioned.
+        """
+        Return the corner where the size grip is positioned.
         """
         return self.__corner
 
