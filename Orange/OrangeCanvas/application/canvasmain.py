@@ -1547,7 +1547,15 @@ class CanvasMainWindow(QMainWindow):
         """
         log.info("Setting help to url: %r", url)
         if self.open_in_external_browser:
-            QDesktopServices.openUrl(QUrl(url))
+            url = QUrl(url)
+            if not QDesktopServices.openUrl(url):
+                # Try fixing some common problems.
+                url = QUrl.fromUserInput(url.toString())
+                # 'fromUserInput' includes possible fragment into the path
+                # (which prevents it to open local files) so we reparse it
+                # again.
+                url = QUrl(url.toString())
+                QDesktopServices.openUrl(url)
         else:
             self.help_view.load(QUrl(url))
             self.help_dock.show()
