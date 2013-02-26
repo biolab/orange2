@@ -1,7 +1,7 @@
 """
 <name>Data Table</name>
 <description>Shows data in a spreadsheet.</description>
-<icon>icons/DataTable.png</icon>
+<icon>icons/DataTable.svg</icon>
 <priority>100</priority>
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
