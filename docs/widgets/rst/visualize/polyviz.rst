@@ -5,7 +5,8 @@ Polyviz
 
 .. image:: ../icons/Polyviz.png
 
-Polyviz visualization with explorative data analysis and intelligent data visualization enhancements.
+Polyviz visualization with explorative data analysis and intelligent data
+visualization enhancements.
 
 Signals
 -------
@@ -31,10 +32,27 @@ Outputs:
 Description
 -----------
 
-Polyviz is a visualization technique similar to `Radviz <Radviz.htm>`_, but with a twist: instead of a single fixed attribute anchors, data points are now attracted to anchors with value-dependent positions. Consider the snapshot below, which shows a visualization of Iris data set using three of its attributes. The widget can show anchor lines when the pointer is over one of the data instances; the one shown in the snapshot has high value of petal width, and close to average value for the other two attributes. Notice that anchors (lines stemming from the data point) start in the points that are on attribute lines according to the value of that attribute. Since in this particular visualization we are showing three different attributes, the data instances are placed within the triangle.
+Polyviz is a visualization technique similar to :ref:`Radviz`, but with a
+twist: instead of a single fixed attribute anchors, data points are now
+attracted to anchors with value-dependent positions. Consider the snapshot
+below, which shows a visualization of Iris data set using three of its
+attributes. The widget can show anchor lines when the pointer is over one
+of the data instances; the one shown in the snapshot has high value of petal
+width, and close to average value for the other two attributes. Notice that
+anchors (lines stemming from the data point) start in the points that are on
+attribute lines according to the value of that attribute. Since in this
+particular visualization we are showing three different attributes, the data
+instances are placed within the triangle.
 
 .. image:: images/Polyviz-Iris.png
 
-Just like other point-based visualizations, Polyviz provides support for explorative data analysis and search for interesting visualizations. For further details on both, see the documentation on   `Scatterplot <Scatterplot.htm>`_ widget. See the documentation on `Radviz <Radviz.htm>`_ for details on various aspects controlled by the :obj:`Settings` tab. The utility of VizRank, an intelligent visualization technique, using `brown-selected.tab <http://orange.biolab.si/doc/datasets/brown-selected.tab>`_ data set is illustrated with a snapshot below.
+Just like other point-based visualizations, Polyviz provides support for
+explorative data analysis and search for interesting visualizations. For
+further details on both, see the documentation on :ref:`Scatter Plot` widget.
+See the documentation on :ref:`Radviz` for details on various aspects
+controlled by the :obj:`Settings` tab. The utility of VizRank, an intelligent
+visualization technique, using `brown-selected.tab
+<http://orange.biolab.si/doc/datasets/brown-selected.tab>`_ data set is
+illustrated with a snapshot below.
 
 .. image:: images/Polyviz-VizRank.png

@@ -23,4 +23,6 @@ Outputs:
 Description
 -----------
 
-This widget shows a regression tree. It is quite similar to the one for classification tree, so please see the documentation for `Classification Tree Graph <../Classify/ClassificationTreeGraph.htm>`_.
+This widget shows a regression tree. It is quite similar to the one for
+classification tree, so please see the documentation for
+:ref:`Classification Tree Graph`.

@@ -17,7 +17,8 @@ Inputs:
 
 Outputs:
    - Examples (ExampleTable)
-   - Attribute-valued data set associated with a classification tree node selected by the user.
+      Attribute-valued data set associated with a classification tree node
+      selected by the user.
 
 
 Description
@@ -35,6 +36,7 @@ for explorative data analysis.
    :alt: Classification Tree Graph
 
 General Tab
+-----------
 
 Several general parameters that affect the drawing size of the
 displayed tree may be set in the General tab. Here, user can set the
@@ -44,7 +46,7 @@ above) may be turned off, and user may instruct the widget to truncate
 the text labels to fit provided space.
 
 Tree Tab
-
+--------
 
 .. image:: images/ClassificationTreeGraph-TreeTab.png
    :alt: Classification Tree Graph - Tree Tab
@@ -63,9 +65,8 @@ traversing toward the bottom of the tree. Selection of :obj:`Parent
 node` makes the edge width correspond to proportion of instances in
 the nodes with respect to the instances in their parent node.
 
-
-
 Node Tab
+--------
 
 .. image:: images/ClassificationTreeGraph-NodeTab-S.png
    :alt: Classification Tree Graph
@@ -83,17 +84,22 @@ necessary be integers.
 The color of the node:
 
    - may be uniform (:obj:`Node Color` set to :obj:`Default`),
-   - correspond to number of instances in the node with respect to the number of instances in the root node (:obj:`Instances in node`),
-   - may report on the probability of the majority class (:obj:`Majority class probability`) where one would expect that the color intensity would be higher towards the leaves of the node,
-   - may report on probability of the target class (:obj:`Target class probability`), with more intense colors marking the nodes where instances of target class are more frequent, and
+   - correspond to number of instances in the node with respect to the number
+     of instances in the root node (:obj:`Instances in node`),
+   - may report on the probability of the majority class
+     (:obj:`Majority class probability`) where one would expect that the color
+     intensity would be higher towards the leaves of the node,
+   - may report on probability of the target class (:obj:`Target class
+     probability`), with more intense colors marking the nodes where instances
+     of target class are more frequent, and
    - may report on the distribution of instances with target class,
-
-where the intensity of node color corresponds to proportion of the
-target class instances in the node with respect to the target class
-instances in the root node (:obj:`Target class distribution`).
+     where the intensity of node color corresponds to proportion of the
+     target class instances in the node with respect to the target class
+     instances in the root node (:obj:`Target class distribution`).
 
 
 Navigation
+----------
 
 :obj:`Find Root` aligns the position of the window such that the
 root node is displayed in the center. If user selects the node

@@ -5,7 +5,7 @@ Mean Learner
 
 .. image:: ../../../../Orange/OrangeWidgets/icons/Unknown.png
    :alt: Mean Learner
-   
+
 Channels
 --------
 
@@ -15,10 +15,10 @@ Inputs:
 Outputs:
    - Learner
        	The Mean learning algorithm.
-       	
-   - Predictor 
+
+   - Predictor
         Trained regressor
-        
+
 Signal ``Predictor`` sends the regressor only if signal ``Data`` is present.
 
 
@@ -31,12 +31,11 @@ this value.
 
 .. image:: images/Mean.png
 	:alt: Mean widget interface
- 
+
 
 .. rst-class:: stamp-list
 
 	1. Learner/predictor name.
-	
-	2. ``Apply`` button sends the learner (and predictor if input 
+
+	2. ``Apply`` button sends the learner (and predictor if input
 	   signal ``Data`` is present).
-	      

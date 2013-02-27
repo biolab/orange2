@@ -17,9 +17,11 @@ Inputs:
 
 Outputs:
    - Matching Examples (ExampleTable)
-      Attribute-valued data set composed from instances from input data set that match user-defined condition.
+      Attribute-valued data set composed from instances from input data set
+      that match user-defined condition.
    - Non-Matching Examples (ExampleTable)
-      Data instances from input data set that do not match the user-defined condition.
+      Data instances from input data set that do not match the user-defined
+      condition.
 
 
 Description
