@@ -139,7 +139,7 @@ Classification models are objects, exposing every component of its structure. Fo
 
 .. literalinclude:: code/classification-models.py
 
-   The logistic regression part of the output is:
+The logistic regression part of the output is::
    
    class attribute = survived
    class values = <no, yes>
