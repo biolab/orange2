@@ -143,7 +143,7 @@ class OWSOM(OWWidget):
             self.send("Classifier", None)
             self.send("SOM", None)
             self.send("Learner", None)
-            self.send("odebook vectors", None)
+            self.send("Codebook vectors", None)
 
     def ApplySettings(self):
         topology = self.TopolMap[self.topology]
