@@ -9,6 +9,7 @@ import sys
 import os
 import code
 import keyword
+import itertools
 
 from PyQt4.QtGui import (
     QSyntaxHighlighter, QPlainTextEdit, QTextCharFormat, QTextCursor,
@@ -241,6 +242,59 @@ class PythonConsole(QPlainTextEdit, code.InteractiveConsole):
 
     def complete(self):
         pass
+
+    def _moveCursorToInputLine(self):
+        """
+        Move the cursor to the input line if not already there. If the cursor
+        if already in the input line (at position greater or equal to
+        `newPromptPos`) it is left unchanged, otherwise it is moved at the
+        end.
+
+        """
+        cursor = self.textCursor()
+        pos = cursor.position()
+        if pos < self.newPromptPos:
+            cursor.movePosition(QTextCursor.End)
+            self.setTextCursor(cursor)
+
+    def pasteCode(self, source):
+        """
+        Paste source code into the console.
+        """
+        self._moveCursorToInputLine()
+
+        for line in interleave(source.splitlines(), itertools.repeat("\n")):
+            if line != "\n":
+                self.insertPlainText(line)
+            else:
+                self.write("\n")
+                self.loop.next()
+
+    def insertFromMimeData(self, source):
+        """
+        Reimplemented from QPlainTextEdit.insertFromMimeData.
+        """
+        if source.hasText():
+            self.pasteCode(unicode(source.text()))
+            return
+
+
+def interleave(seq1, seq2):
+    """
+    Interleave elements of `seq2` between consecutive elements of `seq1`.
+
+        >>> list(interleave([1, 3, 5], [2, 4]))
+        [1, 2, 3, 4, 5]
+
+    """
+    iterator1, iterator2 = iter(seq1), iter(seq2)
+    leading = next(iterator1)
+    for element in iterator1:
+        yield leading
+        yield next(iterator2)
+        leading = element
+
+    yield leading
 
 
 class Script(object):
