@@ -79,13 +79,13 @@ python_include_dir = get_python_inc(plat_specific=1)
 include_dirs = [python_include_dir, numpy_include_dir, 'source/include']
 
 if sys.platform == 'darwin':
-    extra_compile_args = '-fPIC -fpermissive -fno-common -w -DDARWIN'.split()
+    extra_compile_args = '-fPIC -fno-common -w -DDARWIN'.split()
     extra_link_args = '-headerpad_max_install_names -undefined dynamic_lookup'.split()
 elif sys.platform == 'win32':
     extra_compile_args = ['-EHsc']
     extra_link_args = []
 elif sys.platform.startswith('linux'):
-    extra_compile_args = '-fPIC -fpermissive -w -DLINUX'.split()
+    extra_compile_args = '-fPIC -w -DLINUX'.split()
     extra_link_args = ['-Wl,-R$ORIGIN']
 else:
     extra_compile_args = []

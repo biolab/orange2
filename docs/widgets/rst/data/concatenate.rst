@@ -29,10 +29,10 @@ a sense that two sets of 10 and 5 examples yield a new set of 15 examples.
 .. image:: images/Concatenate.png
 
 In case one of the tables is connected to the widget as the primary table, the
-resulting table will contain these same attributes. If there is no primary table,
-the attributes can be either a union of all attributes that appear in the tables
-specified as "Additional Tables", or their intersection, that is, a list of attributes
-which appear in all the connected tables.
+resulting table will contain these same attributes. If there is no primary
+table, the attributes can be either a union of all attributes that appear in
+the tables specified as "Additional Tables", or their intersection, that is, a
+list of attributes which appear in all the connected tables.
 
 
 Example
