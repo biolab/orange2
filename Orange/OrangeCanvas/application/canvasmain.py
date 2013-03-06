@@ -913,7 +913,10 @@ class CanvasMainWindow(QMainWindow):
         return QDialog.Accepted
 
     def set_new_scheme(self, new_scheme):
-        """Set new_scheme as the current shown scheme.
+        """
+        Set new_scheme as the current shown scheme. The old scheme
+        will be deleted.
+
         """
         scheme_doc = self.current_document()
         old_scheme = scheme_doc.scheme()
@@ -925,6 +928,8 @@ class CanvasMainWindow(QMainWindow):
         scheme_doc.setScheme(new_scheme)
 
         old_scheme.save_widget_settings()
+        old_scheme.close_all_open_widgets()
+
         old_scheme.deleteLater()
 
     def ask_save_changes(self):
@@ -1446,6 +1451,7 @@ class CanvasMainWindow(QMainWindow):
 
         scheme = document.scheme()
         scheme.save_widget_settings()
+        scheme.close_all_open_widgets()
 
         # Set an empty scheme to clear the document
         document.setScheme(widgetsscheme.WidgetsScheme())
