@@ -544,6 +544,23 @@ class Scheme(QObject):
         self.__annotations.remove(annotation)
         self.annotation_removed.emit(annotation)
 
+    def clear(self):
+        """
+        Remove all nodes, links, and annotation items from the scheme.
+        """
+        def is_terminal(node):
+            return not bool(self.find_links(source_node=node))
+
+        while self.nodes:
+            terminal_nodes = filter(is_terminal, self.nodes)
+            for node in terminal_nodes:
+                self.remove_node(node)
+
+        for annotation in self.annotations:
+            self.remove_annotation(annotation)
+
+        assert(not (self.nodes or self.links or self.annotations))
+
     def save_to(self, stream, pretty=True):
         """
         Save the scheme as an xml formated file to `stream`
