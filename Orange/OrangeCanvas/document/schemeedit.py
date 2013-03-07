@@ -899,7 +899,7 @@ class SchemeEditWidget(QWidget):
                 return self.sceneMouseReleaseEvent(event)
             elif etype == QEvent.GraphicsSceneMouseDoubleClick:
                 return self.sceneMouseDoubleClickEvent(event)
-            elif etype == QEvent.KeyRelease:
+            elif etype == QEvent.KeyPress:
                 return self.sceneKeyPressEvent(event)
             elif etype == QEvent.KeyRelease:
                 return self.sceneKeyReleaseEvent(event)
