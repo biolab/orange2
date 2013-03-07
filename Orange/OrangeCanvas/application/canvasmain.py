@@ -20,6 +20,8 @@ from PyQt4.QtCore import (
     Qt, QEvent, QSize, QUrl, QTimer, QFile, QByteArray
 )
 
+from PyQt4.QtNetwork import QNetworkDiskCache
+
 from PyQt4.QtWebKit import QWebView
 
 from PyQt4.QtCore import pyqtProperty as Property
@@ -351,6 +353,12 @@ class CanvasMainWindow(QMainWindow):
                                         objectName="help-dock")
         self.help_dock.setAllowedAreas(Qt.NoDockWidgetArea)
         self.help_view = QWebView()
+        manager = self.help_view.page().networkAccessManager()
+        cache = QNetworkDiskCache()
+        cache.setCacheDirectory(
+            os.path.join(config.cache_dir(), "help", "help-view-cache")
+        )
+        manager.setCache(cache)
         self.help_dock.setWidget(self.help_view)
         self.help_dock.hide()
 
