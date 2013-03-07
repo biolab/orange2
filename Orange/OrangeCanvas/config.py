@@ -149,11 +149,11 @@ def cache_dir():
 
     """
     init()
-    datadir = QDesktopServices.storageLocation(QDesktopServices.DataLocation)
-    datadir = unicode(datadir)
-    if not os.path.exists(datadir):
-        os.makedirs(datadir)
-    return datadir
+    cachedir = QDesktopServices.storageLocation(QDesktopServices.CacheLocation)
+    cachedir = unicode(cachedir)
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
+    return cachedir
 
 
 def open_config():
