@@ -16,11 +16,6 @@ from OWGraph import *
 from PyQt4.Qwt5 import *
 from random import random
 
-try:
-    from OWDataFiles import DataFiles
-except:
-    class DataFiles(object):
-        pass
 
 class OWMDS(OWWidget):
     settingsList=["graph.PointSize", "graph.proportionGraphed", "graph.ColorAttr", "graph.SizeAttr",
@@ -37,7 +32,7 @@ class OWMDS(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Multi Dimensional Scaling"):
         OWWidget.__init__(self, parent, signalManager, name, wantGraph=True)
         self.inputs=[("Distances", orange.SymMatrix, self.cmatrix), ("Data Subset", ExampleTable, self.cselected)]
-        self.outputs=[("Data", ExampleTable), ("Structured Data Files", DataFiles)]
+        self.outputs=[("Data", ExampleTable)]
 
         self.StressFunc=3
         self.minStressDelta=5e-5
@@ -147,8 +142,6 @@ class OWMDS(OWWidget):
         self.graph.closestPairs = None
         if isinstance(data, orange.ExampleTable):
             self.setExampleTable(data)
-        elif isinstance(data, list):
-            self.setList(data)
         elif isinstance(data, orange.VarList):
             self.setVarList(data)
         if matrix:
@@ -253,35 +246,6 @@ class OWMDS(OWWidget):
                 self.graph.ColorAttr = len(self.colors[0]) - 1 # index 0 is Same color!
             elif data.domain.classVar.varType == orange.VarTypes.Continuous:
                 self.graph.SizeAttr = len(self.sizes[0]) - 1 # index 0 is Same color!
-
-    def setList(self, data):
-        self.colorCombo.clear()
-        self.sizeCombo.clear()
-        self.shapeCombo.clear()
-        self.nameCombo.clear()
-        for name in ["Same color", "strain"]:
-            self.colorCombo.addItem(name)
-        for name in ["No name", "name", "strain"]:
-            self.nameCombo.addItem(name)
-
-        self.colors=[[Qt.black]*3 for i in range(len(data))]
-        self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
-        self.sizes=[[5] for i in range(len(data))]
-        self.selectedInput=[False]*len(data)
-
-        if type(data[0]) in [str, unicode]:
-            self.names = [("", di, "", "") for di in data]
-        else:
-            self.names=[[""]*4 for i in range(len(data))]
-            try:
-                strains=list(set([d.strain for d in data]))
-                c=OWColorPalette.ColorPaletteHSV(len(strains))
-                for i, d in enumerate(data):
-                    self.colors[i][1]=c[strains.index(d.strain)]
-                    self.names[i][1]=" "+d.name
-                    self.names[i][2]=" "+d.strain
-            except Exception, val:
-                print val
 
     def setVarList(self, data):
         self.colorCombo.clear()
@@ -477,9 +441,6 @@ class OWMDS(OWWidget):
                 selectedInd+=[i]
         if type(self.data)==orange.ExampleTable:
             self.sendExampleTable(selectedInd)
-        elif type(self.data)==list:
-            self.sendList(selectedInd)
-
 
     def sendExampleTable(self, selectedInd):
         if self.selectionOptions==0:
@@ -500,38 +461,6 @@ class OWMDS(OWWidget):
                 selection[i][xAttr]=self.mds.points[selectedInd[i]][0]
                 selection[i][yAttr]=self.mds.points[selectedInd[i]][1]
             self.send("Data", selection)
-
-    def sendList(self, selectedInd):
-        if self.data and type(self.data[0]) == str:
-            xAttr=orange.FloatVariable("X")
-            yAttr=orange.FloatVariable("Y")
-            nameAttr=  orange.StringVariable("name")
-            if self.selectionOptions == 1:
-                domain = orange.Domain([xAttr, yAttr, nameAttr])
-                selection = orange.ExampleTable(domain)
-                for i in range(len(selectedInd)):
-                    selection.append(list(self.mds.points[selectedInd[i]]) + [self.data[i]])
-            else:
-                domain = orange.Domain([nameAttr])
-                if self.selectionOptions:
-                    domain.addmeta(orange.newmetaid(), xAttr)
-                    domain.addmeta(orange.newmetaid(), yAttr)
-                selection = orange.ExampleTable(domain)
-                for i in range(len(selectedInd)):
-                    selection.append([self.data[i]])
-                    if self.selectionOptions:
-                        selection[i][xAttr]=self.mds.points[selectedInd[i]][0]
-                        selection[i][yAttr]=self.mds.points[selectedInd[i]][1]
-            self.send("Data", selection)
-            return
-               
-        if not selectedInd:
-            self.send("Structured Data Files", None)
-        else:
-            datasets=[self.data[i] for i in selectedInd]
-            names=list(set([d.dirname for d in datasets]))
-            data=[(name, [d for d in filter(lambda a:a.strain==name, datasets)]) for name in names]
-            self.send("Structured Data Files",data)
 
     def updateStress(self):
         if not getattr(self, "mds", None):
