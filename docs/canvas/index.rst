@@ -10,3 +10,4 @@ The Orange Canvas API reference
    scheme
    registry
    canvas
+   document

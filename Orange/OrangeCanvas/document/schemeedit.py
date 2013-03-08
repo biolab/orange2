@@ -1,5 +1,8 @@
 """
-Scheme Edit widget.
+====================
+Scheme Editor Widget
+====================
+
 
 """
 
@@ -27,13 +30,14 @@ from PyQt4.QtCore import pyqtProperty as Property, pyqtSignal as Signal
 from ..registry.qt import whats_this_helper
 from ..gui.quickhelp import QuickHelpTipEvent
 from ..gui.utils import message_information, disabled
-from ..scheme import scheme
+from ..scheme import scheme, SchemeNode, SchemeLink, BaseSchemeAnnotation
 from ..canvas.scene import CanvasScene
 from ..canvas.view import CanvasView
 from ..canvas import items
 from . import interactions
 from . import commands
 from . import quickmenu
+
 
 log = logging.getLogger(__name__)
 
@@ -69,7 +73,7 @@ class GraphicsSceneFocusEventListener(QGraphicsObject):
 
 class SchemeEditWidget(QWidget):
     """
-    An editor for a :class:`Scheme` instance.
+    A widget for editing a :class:`~.scheme.Scheme` instance.
 
     """
     #: Undo command has become available/unavailable.
@@ -367,6 +371,13 @@ class SchemeEditWidget(QWidget):
     def toolbarActions(self):
         """
         Return a list of actions that can be inserted into a toolbar.
+        At the moment these are:
+
+            - 'Zoom' action
+            - 'Clean up' action (align to grid)
+            - 'New text annotation' action (with a size menu)
+            - 'New arrow annotation' action (with a color menu)
+
         """
         return [self.__zoomAction,
                 self.__cleanUpAction,
@@ -375,9 +386,7 @@ class SchemeEditWidget(QWidget):
 
     def menuBarActions(self):
         """
-        Return a list of actions that can be inserted into a QMenuBar.
-        These actions should have a menu (i.e. a 'File' action should
-        have a menu with "New", "Open", ...)
+        Return a list of actions that can be inserted into a `QMenuBar`.
 
         """
         return [self.__editMenu.menuAction(), self.__widgetMenu.menuAction()]
@@ -424,6 +433,15 @@ class SchemeEditWidget(QWidget):
     def setQuickMenuTriggers(self, triggers):
         """
         Set quick menu trigger flags.
+
+        Flags can be a bitwise `or` of:
+
+            - `SchemeEditWidget.NoTrigeres`
+            - `SchemeEditWidget.Clicked`
+            - `SchemeEditWidget.DoubleClicked`
+            - `SchemeEditWidget.SpaceKey`
+            - `SchemeEditWidget.AnyKey`
+
         """
         if self.__quickMenuTriggers != triggers:
             self.__quickMenuTriggers = triggers
@@ -477,8 +495,7 @@ class SchemeEditWidget(QWidget):
 
     def setScheme(self, scheme):
         """
-        Set the :class:`Scheme` instance to display/edit.
-
+        Set the :class:`~.scheme.Scheme` instance to display/edit.
         """
         if self.__scheme is not scheme:
             if self.__scheme:
@@ -569,7 +586,7 @@ class SchemeEditWidget(QWidget):
 
     def scheme(self):
         """
-        Return the :class:`Scheme` edited by the widget.
+        Return the :class:`~.scheme.Scheme` edited by the widget.
         """
         return self.__scheme
 
@@ -583,7 +600,7 @@ class SchemeEditWidget(QWidget):
 
     def view(self):
         """
-        Return the class:`QGraphicsView` instance used to display the
+        Return the :class:`QGraphicsView` instance used to display the
         current scene.
 
         """
@@ -601,7 +618,9 @@ class SchemeEditWidget(QWidget):
 
     def quickMenu(self):
         """
-        Return a quick menu instance for quick new node creation.
+        Return a :class:`~.quickmenu.QuickMenu` popup menu instance for
+        new node creation.
+
         """
         if self.__quickMenu is None:
             menu = quickmenu.QuickMenu(self)
@@ -628,15 +647,15 @@ class SchemeEditWidget(QWidget):
 
     def addNode(self, node):
         """
-        Add a new node (:class:`SchemeNode`) to the document.
+        Add a new node (:class:`.SchemeNode`) to the document.
         """
         command = commands.AddNodeCommand(self.__scheme, node)
         self.__undoStack.push(command)
 
     def createNewNode(self, description, title=None, position=None):
         """
-        Create a new :class:`SchemeNode` and add it to the document. The new
-        node is constructed using :ref:`newNodeHelper` method.
+        Create a new :class:`.SchemeNode` and add it to the document.
+        The new node is constructed using :ref:`newNodeHelper` method.
 
         """
         node = self.newNodeHelper(description, title, position)
@@ -646,8 +665,8 @@ class SchemeEditWidget(QWidget):
 
     def newNodeHelper(self, description, title=None, position=None):
         """
-        Return a new initialized :class:`SchemeNode`. If `title` and
-        `position` are not supplied they are initialized to sensible
+        Return a new initialized :class:`.SchemeNode`. If `title`
+        and `position` are not supplied they are initialized to sensible
         defaults.
 
         """
@@ -657,7 +676,7 @@ class SchemeEditWidget(QWidget):
         if position is None:
             position = self.nextPosition()
 
-        return scheme.SchemeNode(description, title=title, position=position)
+        return SchemeNode(description, title=title, position=position)
 
     def enumerateTitle(self, title):
         """
@@ -676,7 +695,7 @@ class SchemeEditWidget(QWidget):
 
     def nextPosition(self):
         """
-        Return the next default node position (x, y) tuple. This is
+        Return the next default node position as a (x, y) tuple. This is
         a position left of the last added node.
 
         """
@@ -690,42 +709,42 @@ class SchemeEditWidget(QWidget):
 
     def removeNode(self, node):
         """
-        Remove a `node` (:class:`SchemeNode`) from the scheme
+        Remove a `node` (:class:`.SchemeNode`) from the scheme
         """
         command = commands.RemoveNodeCommand(self.__scheme, node)
         self.__undoStack.push(command)
 
     def renameNode(self, node, title):
         """
-        Rename a `node` (:class:`SchemeNode`) to `title`.
+        Rename a `node` (:class:`.SchemeNode`) to `title`.
         """
         command = commands.RenameNodeCommand(self.__scheme, node, title)
         self.__undoStack.push(command)
 
     def addLink(self, link):
         """
-        Add a `link` (:class:`SchemeLink`) to the scheme.
+        Add a `link` (:class:`.SchemeLink`) to the scheme.
         """
         command = commands.AddLinkCommand(self.__scheme, link)
         self.__undoStack.push(command)
 
     def removeLink(self, link):
         """
-        Remove a link (:class:`SchemeLink`) from the scheme.
+        Remove a link (:class:`.SchemeLink`) from the scheme.
         """
         command = commands.RemoveLinkCommand(self.__scheme, link)
         self.__undoStack.push(command)
 
     def addAnnotation(self, annotation):
         """
-        Add `annotation` (:class:`BaseSchemeAnnotation`) to the scheme
+        Add `annotation` (:class:`.BaseSchemeAnnotation`) to the scheme
         """
         command = commands.AddAnnotationCommand(self.__scheme, annotation)
         self.__undoStack.push(command)
 
     def removeAnnotation(self, annotation):
         """
-        Remove `annotation` (:class:`BaseSchemeAnnotation`) from the scheme.
+        Remove `annotation` (:class:`.BaseSchemeAnnotation`) from the scheme.
         """
         command = commands.RemoveAnnotationCommand(self.__scheme, annotation)
         self.__undoStack.push(command)
@@ -804,7 +823,7 @@ class SchemeEditWidget(QWidget):
 
     def focusNode(self):
         """
-        Return the current focused :class:`SchemeNode` or ``None`` if no
+        Return the current focused :class:`.SchemeNode` or ``None`` if no
         node has focus.
 
         """
@@ -821,14 +840,14 @@ class SchemeEditWidget(QWidget):
 
     def selectedNodes(self):
         """
-        Return all selected :class:`SchemeNode` items.
+        Return all selected :class:`.SchemeNode` items.
         """
         return map(self.scene().node_for_item,
                    self.scene().selected_node_items())
 
     def selectedAnnotations(self):
         """
-        Return all selected :class:`SchemeAnnotation` items.
+        Return all selected :class:`.BaseSchemeAnnotation` items.
         """
         return map(self.scene().annotation_for_item,
                    self.scene().selected_annotation_items())
@@ -987,11 +1006,11 @@ class SchemeEditWidget(QWidget):
                 stack = self.undoStack()
                 stack.beginMacro(self.tr("Move"))
                 for scheme_item, (old, new) in self.__itemsMoving.items():
-                    if isinstance(scheme_item, scheme.SchemeNode):
+                    if isinstance(scheme_item, SchemeNode):
                         command = commands.MoveNodeCommand(
                             self.scheme(), scheme_item, old, new
                         )
-                    elif isinstance(scheme_item, scheme.BaseSchemeAnnotation):
+                    elif isinstance(scheme_item, BaseSchemeAnnotation):
                         command = commands.AnnotationGeometryChange(
                             self.scheme(), scheme_item, old, new
                         )
