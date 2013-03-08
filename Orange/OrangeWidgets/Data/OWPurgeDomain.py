@@ -1,7 +1,7 @@
 """
 <name>Purge Domain</name>
 <description>Removes redundant values and attributes, sorts values.</description>
-<icon>icons/PurgeDomain.png</icon>
+<icon>icons/PurgeDomain.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>1105</priority>
 """
