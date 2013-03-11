@@ -863,17 +863,17 @@ class CanvasMainWindow(QMainWindow):
         self.last_scheme_dir = dirname
 
         new_scheme = self.new_scheme_from(filename)
+        if new_scheme is not None:
+            self.set_new_scheme(new_scheme)
 
-        self.set_new_scheme(new_scheme)
+            scheme_doc_widget = self.current_document()
+            scheme_doc_widget.setPath(filename)
 
-        scheme_doc_widget = self.current_document()
-        scheme_doc_widget.setPath(filename)
-
-        self.add_recent_scheme(new_scheme.title, filename)
+            self.add_recent_scheme(new_scheme.title, filename)
 
     def new_scheme_from(self, filename):
         """Create and return a new :class:`widgetsscheme.WidgetsScheme`
-        from a saved `filename`.
+        from a saved `filename`. Return `None` if an error occurs.
 
         """
         new_scheme = widgetsscheme.WidgetsScheme()
@@ -884,16 +884,16 @@ class CanvasMainWindow(QMainWindow):
                          allow_pickle_data=True)
         except Exception:
             message_critical(
-                 self.tr("Could not load Orange Scheme file"),
+                 self.tr("Could not load an Orange Scheme file"),
                  title=self.tr("Error"),
                  informative_text=self.tr("An unexpected error occurred "
-                                          "while loading %r.") % filename,
+                                          "while loading '%s'.") % filename,
                  exc_info=True,
                  parent=self)
             return None
         if errors:
             message_warning(
-                self.tr("Errors occured while loading the scheme."),
+                self.tr("Errors occurred while loading the scheme."),
                 title=self.tr("Problem"),
                 informative_text=self.tr(
                      "There were problems loading some "
@@ -1157,8 +1157,8 @@ class CanvasMainWindow(QMainWindow):
             selected = model.item(index)
 
             new_scheme = self.new_scheme_from(unicode(selected.path()))
-
-            self.set_new_scheme(new_scheme)
+            if new_scheme is not None:
+                self.set_new_scheme(new_scheme)
 
         return status
 
