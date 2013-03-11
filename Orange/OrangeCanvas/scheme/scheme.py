@@ -561,14 +561,20 @@ class Scheme(QObject):
 
         assert(not (self.nodes or self.links or self.annotations))
 
-    def save_to(self, stream, pretty=True):
+    def save_to(self, stream, pretty=True, pickle_fallback=False):
         """
         Save the scheme as an xml formated file to `stream`
+
+        See also
+        --------
+        .scheme_to_ows_stream
+
         """
         if isinstance(stream, basestring):
             stream = open(stream, "wb")
 
-        scheme_to_ows_stream(self, stream, pretty)
+        scheme_to_ows_stream(self, stream, pretty,
+                             pickle_fallback=pickle_fallback)
 
     def load_from(self, stream):
         """

@@ -180,9 +180,9 @@ class WidgetsScheme(Scheme):
         log.debug("Scheme node properties sync (changed: %s)", changed)
         return changed
 
-    def save_to(self, stream):
+    def save_to(self, stream, pretty=True, pickle_fallback=False):
         self.sync_node_properties()
-        Scheme.save_to(self, stream)
+        Scheme.save_to(self, stream, pretty, pickle_fallback)
 
     def __on_help_request(self):
         """

@@ -880,7 +880,8 @@ class CanvasMainWindow(QMainWindow):
         errors = []
         try:
             parse_scheme(new_scheme, open(filename, "rb"),
-                         error_handler=errors.append)
+                         error_handler=errors.append,
+                         allow_pickle_data=True)
         except Exception:
             message_critical(
                  self.tr("Could not load Orange Scheme file"),
@@ -994,7 +995,9 @@ class CanvasMainWindow(QMainWindow):
         curr_scheme = document.scheme()
 
         if document.path() and self.check_can_save(document, document.path()):
-            curr_scheme.save_to(open(document.path(), "wb"))
+            curr_scheme.save_to(open(document.path(), "wb"),
+                                pretty=True, pickle_fallback=True)
+
             document.setModified(False)
             self.add_recent_scheme(curr_scheme.title, document.path())
             return QDialog.Accepted
@@ -1037,7 +1040,8 @@ class CanvasMainWindow(QMainWindow):
             self.last_scheme_dir = dirname
 
             try:
-                curr_scheme.save_to(open(filename, "wb"))
+                curr_scheme.save_to(open(filename, "wb"),
+                                    pretty=True, pickle_fallback=True)
             except Exception:
                 log.error("Error saving %r to %r", curr_scheme, filename,
                           exc_info=True)
