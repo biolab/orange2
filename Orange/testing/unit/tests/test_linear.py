@@ -4,12 +4,17 @@ import Orange
 from Orange.testing import testing
 from Orange.testing.testing import datasets_driven
 from Orange.classification.svm import LinearSVMLearner
+from Orange.data.preprocess import DomainContinuizer
 try:
     import unittest2 as unittest
 except:
     import unittest
 
 import numpy as np
+
+
+def clone(obj):
+    return cPickle.loads(cPickle.dumps(obj))
 
 
 def decision_values(classifier, instance):
@@ -75,7 +80,7 @@ def test_learner_on(self, dataset):
 @testing.test_on_data
 def test_learner_with_bias_on(self, dataset):
     learner = self.learner
-    learner_b = cPickle.loads(cPickle.dumps(learner))
+    learner_b = clone(learner)
     learner_b.bias = 1
     try:
         self.learner = learner_b
@@ -115,6 +120,22 @@ def missing_instances_test(self):
         classify_from_weights_test(self, classifier, data)
 
 
+def multinomial_test(self):
+    data = Orange.data.Table("lenses")
+    learner = clone(self.learner)
+    learner.multinomial_treatment = DomainContinuizer.NValues
+    classifier = learner(data)
+    self.assertEqual(len(classifier.domain), 7)
+
+    learner.multinomial_treatment = DomainContinuizer.FrequentIsBase
+    classifier = learner(data)
+    self.assertEqual(len(classifier.domain), 6)
+
+    learner.multinomial_treatment = DomainContinuizer.ReportError
+    with self.assertRaises(Orange.core.KernelException):
+        classifier = learner(data)
+
+
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
 class TestLinearSVMLearnerL2R_L2LOSS_DUAL(testing.LearnerTestCase):
     LEARNER = LinearSVMLearner(sover_type=LinearSVMLearner.L2R_L2LOSS_DUAL)
@@ -122,6 +143,7 @@ class TestLinearSVMLearnerL2R_L2LOSS_DUAL(testing.LearnerTestCase):
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
     test_missing_instances = missing_instances_test
+    test_multinomial = multinomial_test
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
@@ -131,6 +153,7 @@ class TestLinearSVMLearnerL2R_L2LOSS(testing.LearnerTestCase):
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
     test_missing_instances = missing_instances_test
+    test_multinomial = multinomial_test
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
@@ -140,6 +163,7 @@ class TestLinearSVMLearnerL2R_L1LOSS_DUAL(testing.LearnerTestCase):
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
     test_missing_instances = missing_instances_test
+    test_multinomial = multinomial_test
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
@@ -149,6 +173,7 @@ class TestLinearSVMLearnerL2R_L1LOSS(testing.LearnerTestCase):
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
     test_missing_instances = missing_instances_test
+    test_multinomial = multinomial_test
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
@@ -158,6 +183,7 @@ class TestLinearSVMLearnerL1R_L2LOSS(testing.LearnerTestCase):
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
     test_missing_instances = missing_instances_test
+    test_multinomial = multinomial_test
 
 
 @datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
@@ -167,6 +193,7 @@ class TestLinearSVMLearnerMCSVM_CSS(testing.LearnerTestCase):
     test_learner_on = test_learner_on
     test_learner_with_bias_on = test_learner_with_bias_on
     test_missing_instances = missing_instances_test
+    test_multinomial = multinomial_test
 
 
 if __name__ == "__main__":

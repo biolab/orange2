@@ -19,6 +19,7 @@ from Orange.core import LinearClassifier, \
                         SVMClassifierSparse as _SVMClassifierSparse
 
 from Orange.data import preprocess
+from Orange.data.preprocess import DomainContinuizer
 
 from Orange import feature as variable
 
@@ -804,7 +805,8 @@ class LinearSVMLearner(Orange.core.LinearLearner):
     __new__ = _orange__new__(base=Orange.core.LinearLearner)
 
     def __init__(self, solver_type=L2R_L2LOSS_DUAL, C=1.0, eps=0.01,
-                 bias=1.0, normalization=True, **kwargs):
+                 bias=1.0, normalization=True,
+                 multinomial_treatment=DomainContinuizer.NValues, **kwargs):
         """
         :param solver_type: One of the following class constants:
             ``L2R_L2LOSS_DUAL``, ``L2R_L2LOSS``,
@@ -832,10 +834,20 @@ class LinearSVMLearner(Orange.core.LinearLearner):
             to learning (default ``True``)
         :type normalization: bool
 
-        .. note:: If the training data contains discrete features they are
-            replaced by indicator columns one for each value of the feature
-            regardless of the value of `normalization`. This is different
-            then in :class:`SVMLearner` where this is done only if
+        :param multinomial_treatment: Defines how to handle multinomial
+            features for learning. It can be one of the
+            :class:`~.DomainContinuizer` `multinomial_treatment`
+            constants (default: `DomainContinuizer.NValues`).
+
+        :type multinomial_treatment: int
+
+        .. versionadded:: 2.6.1
+            Added `multinomial_treatment`
+
+        .. note:: By default if the training data contains discrete features
+            they are replaced by indicator columns one for each value of the
+            feature regardless of the value of `normalization`. This is
+            different then in :class:`SVMLearner` where this is done only if
             `normalization` is ``True``.
 
         Example
@@ -851,25 +863,27 @@ class LinearSVMLearner(Orange.core.LinearLearner):
         self.C = C
         self.bias = bias
         self.normalization = normalization
+        self.multinomial_treatment = multinomial_treatment
 
         for name, val in kwargs.items():
             setattr(self, name, val)
+
         if self.solver_type not in [self.L2R_L2LOSS_DUAL, self.L2R_L2LOSS,
                 self.L2R_L1LOSS_DUAL, self.L1R_L2LOSS]:
-            warnings.warn("""\
-Deprecated 'solver_type', use
-'Orange.classification.logreg.LibLinearLogRegLearner'
-to build a logistic regression model using LIBLINEAR.
-""",
-                DeprecationWarning)
+            warnings.warn(
+                " Deprecated 'solver_type', use "
+                "'Orange.classification.logreg.LibLinearLogRegLearner'"
+                "to build a logistic regression models using LIBLINEAR.",
+                DeprecationWarning
+            )
 
     def __call__(self, data, weight_id=None):
         if not isinstance(data.domain.class_var, variable.Discrete):
             raise TypeError("Can only learn a discrete class.")
 
         if data.domain.has_discrete_attributes(False) or self.normalization:
-            dc = Orange.data.continuization.DomainContinuizer()
-            dc.multinomial_treatment = dc.NValues
+            dc = DomainContinuizer()
+            dc.multinomial_treatment = self.multinomial_treatment
             dc.class_treatment = dc.Ignore
             dc.continuous_treatment = \
                     dc.NormalizeBySpan if self.normalization else dc.Leave
@@ -887,7 +901,9 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
     __new__ = _orange__new__(base=Orange.core.LinearLearner)
 
     def __init__(self, C=1.0, eps=0.01, bias=1.0,
-                 normalization=True, **kwargs):
+                 normalization=True,
+                 multinomial_treatment=DomainContinuizer.NValues,
+                 **kwargs):
         """\
         :param C: Regularization parameter (default 1.0)
         :type C: float
@@ -904,11 +920,22 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
             (default True)
         :type normalization: bool
 
+        :param multinomial_treatment: Defines how to handle multinomial
+            features for learning. It can be one of the
+            :class:`~.DomainContinuizer` `multinomial_treatment`
+            constants (default: `DomainContinuizer.NValues`).
+
+        :type multinomial_treatment: int
+
+        .. versionadded:: 2.6.1
+            Added `multinomial_treatment`
+
         """
         self.C = C
         self.eps = eps
         self.bias = bias
         self.normalization = normalization
+        self.multinomial_treatment = multinomial_treatment
         for name, val in kwargs.items():
             setattr(self, name, val)
 
@@ -919,8 +946,8 @@ class MultiClassSVMLearner(Orange.core.LinearLearner):
             raise TypeError("Can only learn a discrete class.")
 
         if data.domain.has_discrete_attributes(False) or self.normalization:
-            dc = Orange.data.continuization.DomainContinuizer()
-            dc.multinomial_treatment = dc.NValues
+            dc = DomainContinuizer()
+            dc.multinomial_treatment = self.multinomial_treatment
             dc.class_treatment = dc.Ignore
             dc.continuous_treatment = \
                     dc.NormalizeBySpan if self.normalization else dc.Leave

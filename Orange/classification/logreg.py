@@ -1,6 +1,7 @@
 import Orange
 from Orange.utils import deprecated_keywords, deprecated_members
 from Orange.data import preprocess
+from Orange.data.continuization import DomainContinuizer
 import decimal
 import math
 
@@ -1022,14 +1023,14 @@ def zprob(z):
 Logistic regression learner from LIBLINEAR
 """
 
-from Orange.data import preprocess
+
 class LibLinearLogRegLearner(Orange.core.LinearLearner):
     """A logistic regression learner from `LIBLINEAR`_.
-    
+
     Supports L2 regularized learning.
-    
+
     .. _`LIBLINEAR`: http://www.csie.ntu.edu.tw/~cjlin/liblinear/
-     
+
     """
 
     L2R_LR = Orange.core.LinearLearner.L2R_LR
@@ -1039,31 +1040,44 @@ class LibLinearLogRegLearner(Orange.core.LinearLearner):
     __new__ = Orange.utils._orange__new__(base=Orange.core.LinearLearner)
 
     def __init__(self, solver_type=L2R_LR, C=1.0, eps=0.01, normalization=True,
-            bias=-1.0, **kwargs):
+            bias=-1.0, multinomial_treatment=DomainContinuizer.NValues,
+            **kwargs):
         """
-        :param solver_type: One of the following class constants: 
+        :param solver_type: One of the following class constants:
             ``L2_LR``, ``L2_LR_DUAL``, ``L1R_LR``.
-        
-        :param C: Regularization parameter (default 1.0). Higher values of C mean 
-            less regularization (C is a coefficient for the loss function).
+
+        :param C: Regularization parameter (default 1.0). Higher values of
+            C mean less regularization (C is a coefficient for the loss
+            function).
         :type C: float
-        
+
         :param eps: Stopping criteria (default 0.01)
         :type eps: float
-        
+
         :param normalization: Normalize the input data prior to learning
             (default True)
         :type normalization: bool
 
         :param bias: If positive, use it as a bias (default -1).
         :type bias: float
-        
+
+        :param multinomial_treatment: Defines how to handle multinomial
+            features for learning. It can be one of the
+            :class:`~.DomainContinuizer` `multinomial_treatment`
+            constants (default: `DomainContinuizer.NValues`).
+
+        :type multinomial_treatment: int
+
+        .. versionadded:: 2.6.1
+            Added `multinomial_treatment`
+
         """
         self.solver_type = solver_type
         self.C = C
         self.eps = eps
         self.normalization = normalization
         self.bias = bias
+        self.multinomial_treatment = multinomial_treatment
 
         for name, value in kwargs.items():
             setattr(self, name, value)
@@ -1073,11 +1087,11 @@ class LibLinearLogRegLearner(Orange.core.LinearLearner):
             raise TypeError("Can only learn a discrete class.")
 
         if data.domain.has_discrete_attributes(False) or self.normalization:
-            dc = Orange.data.continuization.DomainContinuizer()
-            dc.multinomial_treatment = dc.NValues
+            dc = DomainContinuizer()
+            dc.multinomial_treatment = self.multinomial_treatment
             dc.class_treatment = dc.Ignore
             dc.continuous_treatment = \
                     dc.NormalizeByVariance if self.normalization else dc.Leave
-            c_domain = dc(data) 
+            c_domain = dc(data)
             data = data.translate(c_domain)
         return super(LibLinearLogRegLearner, self).__call__(data, weight_id)
