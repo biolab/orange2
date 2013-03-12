@@ -85,7 +85,10 @@ class SVMLearner(_SVMLearner):
     :type probability: bool
     :param shrinking: use shrinking heuristics
     :type shrinking: bool
-    :param normalization: normalize the input data prior to learning
+    :param normalization: normalize the input data prior to learning into
+        range [0..1] and replace discrete features with indicator columns
+        one for each value of the feature using
+        :class:`~Orange.data.continuization.DomainContinuizer` class
         (default ``True``)
     :type normalization: bool
     :param weight: a list of class weights
@@ -825,9 +828,15 @@ class LinearSVMLearner(Orange.core.LinearLearner):
 
         :type bias: float
 
-        :param normalization: Normalize the input data prior to learning
-            (default True)
+        :param normalization: Normalize the input data into range [0..1] prior
+            to learning (default ``True``)
         :type normalization: bool
+
+        .. note:: If the training data contains discrete features they are
+            replaced by indicator columns one for each value of the feature
+            regardless of the value of `normalization`. This is different
+            then in :class:`SVMLearner` where this is done only if
+            `normalization` is ``True``.
 
         Example
 

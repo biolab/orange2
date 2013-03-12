@@ -1,7 +1,7 @@
 """
 <name>PLS Regression</name>
 <description>Partial Least Squares Regression</name>
-<icon>icons/PLSRegression.png</icon>
+<icon>icons/PLSRegression.svg</icon>
 <priority>15</priority>
 <category>Regression</category>
 <keywords>linear, model, PCA</keywords>
