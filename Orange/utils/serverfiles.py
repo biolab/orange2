@@ -623,6 +623,7 @@ def _search(si, sstrings, caseSensitive=False, inTag=True, inTitle=True, inName=
         
     return found
 
+
 def search(sstrings, **kwargs):
     """Search for files in the local repository where all substrings in a list 
     are contained in at least one chosen field (tag, title, name). Return a 
@@ -631,15 +632,31 @@ def search(sstrings, **kwargs):
     si = _searchinfo()
     return _search(si, sstrings, **kwargs)
 
+
+def sizeformat(size):
+    """
+    >>> sizeformat(256)
+    256 bytes
+    >>> sizeformat(1024)
+    1.0 KB
+    >>> sizeformat(1.5 * 2 ** 20)
+    1.5 MB
+
+    """
+    for unit in ['bytes', 'KB', 'MB', 'GB', 'TB']:
+        if size < 1024.0:
+            if unit == "bytes":
+                return "%1.0f %s" % (size, unit)
+            else:
+                return "%3.1f %s" % (size, unit)
+        size /= 1024.0
+    return "%.1f PB" % size
+
+
 class DownloadProgress(ConsoleProgressBar):
     redirect = None
     lock = threading.RLock()
-    def sizeof_fmt(num):
-        for x in ['bytes','KB','MB','GB','TB']:
-            if num < 1024.0:
-                return "%3.1f %s" % (num, x) if x <> 'bytes' else "%1.0f %s" % (num, x)
-            num /= 1024.0
-            
+
     def __init__(self, filename, size):
         print "Downloading", filename
         ConsoleProgressBar.__init__(self, "progress:", 20)
@@ -648,46 +665,48 @@ class DownloadProgress(ConsoleProgressBar):
         self.speed = 0.0
 
     def sizeof_fmt(self, num):
-        for x in ['bytes','KB','MB','GB','TB']:
-            if num < 1024.0:
-                return "%3.1f %s" % (num, x) if x <> 'bytes' else "%1.0f %s" % (num, x)
-            num /= 1024.0
+        return sizeformat(num)
 
     def getstring(self):
-        speed = int(self.state * self.size / 100.0 / (time.time() - self.starttime))
+        elapsed = max(time.time() - self.starttime, 0.1)
+        speed = int(self.state * self.size / 100.0 / elapsed)
         eta = (100 - self.state) * self.size / 100.0 / speed
-        return ConsoleProgressBar.getstring(self) + "  %s  %12s/s  %3i:%02i ETA" % (self.sizeof_fmt(self.size), self.sizeof_fmt(speed), eta/60, eta%60)
-        
+        return ConsoleProgressBar.getstring(self) + \
+               "  %s  %12s/s  %3i:%02i ETA" % (self.sizeof_fmt(self.size),
+                                               self.sizeof_fmt(speed),
+                                               eta / 60, eta % 60)
+
     def __call__(self, *args, **kwargs):
         ret = ConsoleProgressBar.__call__(self, *args, **kwargs)
         if self.redirect:
             self.redirect(self.state)
         return ret
-    
+
     class RedirectContext(object):
         def __enter__(self):
             DownloadProgress.lock.acquire()
             return DownloadProgress
-        
+
         def __exit__(self, ex_type, value, tb):
             DownloadProgress.redirect = None
             DownloadProgress.lock.release()
             return False
-        
+
     @classmethod
     def setredirect(cls, redirect):
         cls.redirect = staticmethod(redirect)
         return cls.RedirectContext()
-    
+
     @classmethod
     def __enter__(cls):
         cls.lock.acquire()
         return cls
-    
+
     @classmethod
     def __exit__(cls, exc_type, exc_value, traceback):
         cls.lock.release()
         return False
+
 
 def consoleupdate(domains=None, searchstr="essential"):
     domains = domains or listdomains()
