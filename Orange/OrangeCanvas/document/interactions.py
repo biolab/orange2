@@ -816,7 +816,6 @@ class NewArrowAnnotation(UserInteraction):
                 p1, p2 = map(self.arrow_item.mapFromScene,
                              (self.down_pos, event.scenePos()))
                 self.arrow_item.setLine(QLineF(p1, p2))
-                self.arrow_item.adjustGeometry()
 
             event.accept()
             return True
@@ -834,7 +833,6 @@ class NewArrowAnnotation(UserInteraction):
 
                 p1, p2 = map(self.arrow_item.mapFromScene, (p1, p2))
                 self.arrow_item.setLine(QLineF(p1, p2))
-                self.arrow_item.adjustGeometry()
 
             self.end()
             return True
@@ -1132,7 +1130,6 @@ class ResizeArrowAnnotation(UserInteraction):
     def __on_lineEdited(self, line):
         p1, p2 = map(self.item.mapFromScene, (line.p1(), line.p2()))
         self.item.setLine(QLineF(p1, p2))
-        self.item.adjustGeometry()
 
     def __on_lineGeometryChanged(self):
         # Possible geometry change from out of our control, for instance

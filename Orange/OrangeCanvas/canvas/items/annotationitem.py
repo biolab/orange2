@@ -468,8 +468,31 @@ class ArrowAnnotation(Annotation):
         self.__arrowItem.setGraphicsEffect(self.__shadow)
         self.__shadow.setEnabled(True)
 
+        self.__autoAdjustGeometry = True
+
+    def setAutoAdjustGeometry(self, autoAdjust):
+        """
+        If set to `True` then the geometry will be adjusted whenever
+        the arrow is changed with `setLine`. Otherwise the geometry
+        of the item is only updated so the `line` lies within the
+        `geometry()` rect (i.e. it only grows). True by default
+
+        """
+        self.__autoAdjustGeometry = autoAdjust
+        if autoAdjust:
+            self.adjustGeometry()
+
+    def autoAdjustGeometry(self):
+        """
+        Should the geometry of the item be adjusted automatically when
+        `setLine` is called.
+
+        """
+        return self.__autoAdjustGeometry
+
     def setLine(self, line):
-        """Set the arrow base line (a `QLineF` in object coordinates).
+        """
+        Set the arrow base line (a `QLineF` in object coordinates).
         """
         if self.__line != line:
             self.__line = line
@@ -479,11 +502,18 @@ class ArrowAnnotation(Annotation):
 
             if geom.isNull() and not line.isNull():
                 geom = QRectF(0, 0, 1, 1)
-            line_rect = QRectF(line.p1(), line.p2()).normalized()
 
-            if not (geom.contains(line_rect)):
-                geom = geom.united(line_rect)
+            arrow_shape = arrow_path_concave(line, self.lineWidth())
+            arrow_rect = arrow_shape.boundingRect()
 
+            if not (geom.contains(arrow_rect)):
+                geom = geom.united(arrow_rect)
+
+            if self.__autoAdjustGeometry:
+                # Shrink the geometry if required.
+                geom = geom.intersected(arrow_rect)
+
+            # topLeft can move changing the local coordinates.
             diff = geom.topLeft()
             line = QLineF(line.p1() - diff, line.p2() - diff)
             self.__arrowItem.setLine(line)
@@ -494,34 +524,40 @@ class ArrowAnnotation(Annotation):
             self.setGeometry(geom)
 
     def line(self):
-        """Return the arrow base line.
+        """
+        Return the arrow base line (`QLineF` in object coordinates).
         """
         return QLineF(self.__line)
 
     def setColor(self, color):
-        """Set arrow brush color.
+        """
+        Set arrow brush color.
         """
         if self.__color != color:
             self.__color = QColor(color)
             self.__updateBrush()
 
     def color(self):
-        """Return the arrow brush color.
+        """
+        Return the arrow brush color.
         """
         return QColor(self.__color)
 
     def setLineWidth(self, lineWidth):
-        """Set the arrow line width.
+        """
+        Set the arrow line width.
         """
         self.__arrowItem.setLineWidth(lineWidth)
 
     def lineWidth(self):
-        """Return the arrow line width.
+        """
+        Return the arrow line width.
         """
         return self.__arrowItem.lineWidth()
 
     def adjustGeometry(self):
-        """Adjust the widget geometry to exactly fit the arrow inside
+        """
+        Adjust the widget geometry to exactly fit the arrow inside
         while preserving the arrow path scene geometry.
 
         """
@@ -555,7 +591,8 @@ class ArrowAnnotation(Annotation):
         return Annotation.itemChange(self, change, value)
 
     def __updateBrush(self):
-        """Update the arrow brush.
+        """
+        Update the arrow brush.
         """
         if self.isSelected():
             color = self.__color.darker(150)
