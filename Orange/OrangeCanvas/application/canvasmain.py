@@ -111,7 +111,7 @@ class DockableWindow(QDockWidget):
 
         # Fist show after floating
         self.__firstShow = True
-        # flags to use while floating
+        # Flags to use while floating
         self.__windowFlags = Qt.Window
         self.setWindowFlags(self.__windowFlags)
         self.topLevelChanged.connect(self.__on_topLevelChanged)
@@ -128,9 +128,10 @@ class DockableWindow(QDockWidget):
         """
         Set `windowFlags` to use while the widget is floating (undocked).
         """
-        self.__windowFlags = flags
-        if self.isFloating():
-            self.__fixWindowFlags()
+        if self.__windowFlags != flags:
+            self.__windowFlags = flags
+            if self.isFloating():
+                self.__fixWindowFlags()
 
     def floatingWindowFlags(self):
         """
