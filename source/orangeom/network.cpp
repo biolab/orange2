@@ -460,6 +460,7 @@ TNetworkHierarchyNode *TNetworkHierarchy::getNodeByVertex(int vertex)
 #include "externs.px"
 #include "orange_api.hpp"
 WRAPPER(GraphAsList);
+
 PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON (GraphAsList, "(nVertices, directed[, nEdgeTypes])")
 {
 	PyTRY
@@ -487,7 +488,7 @@ PyObject *Network_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_
 		else if (PyOrGraphAsList_Check(pygraph))
 		{
 			//cout << "2" << endl;
-   		TGraphAsList *graph = PyOrange_AsGraphAsList(pygraph).getUnwrappedPtr();
+			TGraphAsList *graph = dynamic_cast<TGraphAsList *>(PyOrange_AsOrange(pygraph).getUnwrappedPtr());
 			TNetwork *network = mlnew TNetwork(graph);
 			
 			// set graphs attribut items of type ExampleTable to subgraph
