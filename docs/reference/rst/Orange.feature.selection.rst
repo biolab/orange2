@@ -80,10 +80,9 @@ Below are few examples of utility of this class::
 The following script defines a new Naive Bayes classifier, that
 selects five best features from the data set before learning.
 The new classifier is wrapped-up in a special class (see
-<a href="../ofb/c_pythonlearner.htm">Building your own learner</a>
-lesson in <a href="../ofb/default.htm">Orange for Beginners</a>). The
-script compares this filtered learner with one that uses a complete
-set of features.
+:doc:`/tutorial/rst/python-learners` lesson in
+:doc:`/tutorial/rst/index`). Th script compares this filtered learner with
+one that uses a complete set of features.
 
 :download:`selection-bayes.py<code/selection-bayes.py>`
 
@@ -98,14 +97,14 @@ helps. This is the output that we get::
     with FSS     0.940
 
 We can do all of  he above by wrapping the learner using
-<code>FilteredLearner</code>, thus
+:class:`~Orange.feature.selection.FilteredLearner`, thus
 creating an object that is assembled from data filter and a base learner. When
 given a data table, this learner uses attribute filter to construct a new
 data set and base learner to construct a corresponding
 classifier. Attribute filters should be of the type like
-<code>orngFSS.FilterAboveThresh</code> or
-<code>orngFSS.FilterBestN</code> that can be initialized with the
-arguments and later presented with a data, returning new reduced data
+:class:`~Orange.feature.selection.FilterAboveThreshold` or
+:class:`~Orange.feature.selection.FilterBestN` that can be initialized with
+the arguments and later presented with a data, returning new reduced data
 set.
 
 The following code fragment replaces the bulk of code
@@ -118,21 +117,21 @@ used.
 .. literalinclude:: code/selection-filtered-learner.py
     :lines: 13-16
 
-Now, let's decide to retain three features (change the code in <a
-href="fss4.py">fss4.py</a> accordingly!), but observe how many times
+Now, let's decide to retain three features and observe how many times
 an attribute was used. Remember, 10-fold cross validation constructs
 ten instances for each classifier, and each time we run
-FilteredLearner a different set of features may be
-selected. <code>orngEval.CrossValidation</code> stores classifiers in
-<code>results</code> variable, and <code>FilteredLearner</code>
-returns a classifier that can tell which features it used (how
-convenient!), so the code to do all this is quite short.
+:class:`~.FilteredLearner` a different set of features may be
+selected. ``Orange.evaluation.testing.cross_validation`` stores classifiers in
+``results`` variable, and :class:`~.FilteredLearner`
+returns a classifier that can tell which features it used, so the code
+to do all this is quite short.
 
 .. literalinclude:: code/selection-filtered-learner.py
     :lines: 25-
 
-Running :download:`selection-filtered-learner.py <code/selection-filtered-learner.py>` with three features selected each
-time a learner is run gives the following result::
+Running :download:`selection-filtered-learner.py <code/selection-filtered-learner.py>`
+with three features selected each time a learner is run gives the
+following result::
 
     Learner      CA
     bayes        0.903
@@ -145,9 +144,6 @@ time a learner is run gives the following result::
     10 x physician-fee-freeze
      4 x crime
 
-Experiment yourself to see, if only one attribute is retained for
-classifier, which attribute was the one most frequently selected over
-all the ten cross-validation tests!
 
 ==========
 References
