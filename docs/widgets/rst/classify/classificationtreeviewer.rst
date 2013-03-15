@@ -23,7 +23,7 @@ Outputs:
       Examples from the selected tree node.
 
 
-Signal :code:`Classified Examples` sends data only if some tree node is
+Signal :obj:`Classified Examples` sends data only if some tree node is
 selected and contains some examples.
 
 Description

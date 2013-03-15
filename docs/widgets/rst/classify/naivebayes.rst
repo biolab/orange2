@@ -27,8 +27,8 @@ Outputs:
       Trained classifier (a subtype of Classifier)
 
 
-Signal :code:`Naive Bayesian Classifier` sends data only if the learning
-data (signal :code:`Examples` is present.
+Signal :obj:`Naive Bayesian Classifier` sends data only if the learning
+data (signal :obj:`Examples` is present.
 
 Description
 -----------

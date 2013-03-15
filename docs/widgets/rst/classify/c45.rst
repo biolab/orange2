@@ -32,7 +32,7 @@ Outputs:
       Induced tree in Orange's native format
 
 
-:code:`Classifier`, :code:`C45 Tree` and :code:`Classification Tree` are
+:obj:`Classifier`, :obj:`C45 Tree` and :obj:`Classification Tree` are
 available only if examples are present on the input. Which of the latter two
 output signals is active is determined by setting
 :obj:`Convert to orange tree structure` (see the description below).
@@ -64,10 +64,10 @@ Learner can be given a name under which it will appear in, say,
 
 The next block of options deals with splitting. C4.5 uses gain ratio by
 default; to override this, check :obj:`Use information gain instead of ratio`,
-which is equivalent to C4.5's command line option :code:`-g`. If you enable
-:obj:`subsetting` (equivalent to :code:`-s`), C4.5 will merge values of
+which is equivalent to C4.5's command line option ``-g``. If you enable
+:obj:`Subsetting` (equivalent to ``-s``), C4.5 will merge values of
 multivalued discrete attributes instead of creating one branch for each node.
-:obj:`Probabilistic threshold for continuous attributes` (:code:`-p`) makes
+:obj:`Probabilistic threshold for continuous attributes` (``-p``) makes
 C4.5 compute the lower and upper boundaries for values of continuous attributes
 for which the number of misclassified examples would be within one standard
 deviation from the base error.
@@ -82,10 +82,10 @@ enable, you can set the :obj:`Number of trials`, the
 :obj:`initial windows size` and :obj:`window increment`.
 
 The resulting classifier can be left in the original Quinlan's structure, as
-returned by his underlying code, or :obj:`converted to orange the structure`
+returned by his underlying code, or :obj:`Converted to orange the structure`
 that is used by Orange's tree induction algorithm. This setting decides which
-of the two signals that output the tree - :code:`C45 Classifier` or
-:code:`Tree Classifier` will be active. As Orange's structure is more general
+of the two signals that output the tree - :obj:`C45 Classifier` or
+:obj:`Tree Classifier` will be active. As Orange's structure is more general
 and can easily accommodate all the data that C4.5 tree needs for
 classification, we believe that the converted tree behave exactly the same as
 the original tree, so the results should not depend on this setting. You should

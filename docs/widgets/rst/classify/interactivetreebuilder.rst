@@ -33,7 +33,7 @@ Outputs:
       the widget
 
 
-Signal :code:`Examples` sends data only if some tree node is selected and
+Signal :obj:`Examples` sends data only if some tree node is selected and
 contains some examples.
 
 Description
@@ -55,20 +55,20 @@ Button :obj:`Split` splits the selected tree node according to the criterion
 above the button. For instance, if we pressed Split in the above widget,
 the animals that don't give milk and have no feathers (the pictures shows
 a tree for the zoo data set) would be split according to whether they are
-:code:`aquatic` or not. In case of continuous attributes, a cut off point
+*aquatic* or not. In case of continuous attributes, a cut off point
 needs to be specified as well.
 
 If Split is used on a node which is not a leaf, the criterion at that node
-is replaced. If we, for instance, selected the &lt;root&gt; node and pushed
-Split, the criterion :code:`milk` would be replaced with :code:`aquatic`
-and the nodes below (:code:`feathers`) are removed.
+is replaced. If we, for instance, selected the :obj:`<root>` node and pushed
+:obj:`Split`, the criterion *milk* would be replaced with *aquatic*
+and the nodes below (*feathers*) are removed.
 
 Button :obj:`Cut` cuts the tree at the selected node. If we pushed Cut
 in the situation in the picture, nothing would happen since the selected
-node (:code:`feathers=0`) is already a leaf. If we selected :code:`<root>`
+node (:obj:`feathers=0`) is already a leaf. If we selected :obj:`<root>`
 and pushed Cut, the entire tree would be cut off.
 
-Cut is especially useful in combination with :code:`Build` which builds
+Cut is especially useful in combination with :obj:`Build` which builds
 a subtree at the current node. So, if we push Build in the situation
 depicted above, a subtree would be built for the milkless featherless
 animals, leaving the rest of the tree (that is, the existing two nodes)

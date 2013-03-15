@@ -23,8 +23,8 @@ Outputs:
       Trained classifier (a subtype of Classifier)
 
 
-Signal :code:`Regression Tree` sends data only if the learning data (signal
-:code:`Examples`) is present.
+Signal :obj:`Regression Tree` sends data only if the learning data (signal
+:obj:`Examples`) is present.
 
 Description
 -----------
@@ -41,7 +41,7 @@ learners, for instance :ref:`Test Learners`.
 Learner can be given a name under which it will appear in, say,
 :ref:`Test Learners`. The default name is "Regression Tree".
 
-If :code:`Binarization` is checked, the values of multivalued attributes
+If :obj:`Binarization` is checked, the values of multivalued attributes
 are split into two groups (based on the statistics in the particular node)
 to yield a binary tree. Binarization gets rid of the usual measures' bias
 towards attributes with more values and is generally recommended.

@@ -31,7 +31,7 @@ quantitative derivative by a chosen continuous attribute or a qualitative
 derivative by one or more attributes.
 
 The widget is implemented to cache some data. After, for instance, computing
-the derivatives by :code:`x` and :code:`y` separately, the widget has already
+the derivatives by ``x`` and ``y`` separately, the widget has already
 stored all the data to produce the derivatives by both in a moment.
 
 .. image:: images/Pade.png

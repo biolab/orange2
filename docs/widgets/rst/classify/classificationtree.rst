@@ -27,8 +27,8 @@ Outputs:
       Trained classifier (a subtype of Classifier)
 
 
-Signal :code:`Classification Tree` sends data only if the learning data
-(signal :code:`Classified Examples` is present.
+Signal :obj:`Classification Tree` sends data only if the learning data
+(signal :obj:`Classified Examples`) is present.
 
 Description
 -----------
@@ -56,7 +56,7 @@ ReliefF. For the latter, it is possible to :obj:`Limit the number of reference
 examples` (more examples give more accuracy and less speed) and the
 :obj:`Number of neighbours` considered in the estimation.
 
-If :code:`Binarization` is checked, the values of multivalued attributes
+If :obj:`Binarization` is checked, the values of multivalued attributes
 are split into two groups (based on the statistics in the particular node)
 to yield a binary tree. Binarization gets rid of the usual measures'
 bias towards attributes with more values and is generally recommended.

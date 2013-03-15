@@ -138,10 +138,10 @@ except for the scaling.)
 The class probability is shown with the grey curve and corresponds to the scale on the
 right-hand side of the graph. In case of discrete classes, the target class can be any
 of the original classes, while for discretized attributes, it is one of the intervals
-(&lt;18545.33 in our case). :obj:`Show rug` adds small lines at the bottom
+(*< 18545.33* in our case). :obj:`Show rug` adds small lines at the bottom
 and the top of the graph, which represents histograms showing the number of examples in the
 target class (top) and the other classes (bottom). On the snapshot, the examples of the
-target class (&lt;18545.33) are concentrated at between 50 and 120, while the rarer examples
+target class (*< 18545.33*) are concentrated at between 50 and 120, while the rarer examples
 of other classes are spread between 100 and 200, with an outlier at 250. Plotting the rug
 can be slow if the number of examples is huge.
 

@@ -26,8 +26,8 @@ Outputs:
       Trained classifier (a subtype of Classifier)
 
 
-Signal :code:`KNN Classifier` sends data only if the learning data (signal
-:code:`Examples` is present.
+Signal :obj:`KNN Classifier` sends data only if the learning data (signal
+:obj:`Examples` is present.
 
 Description
 -----------
