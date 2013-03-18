@@ -1110,6 +1110,7 @@ class CanvasMainWindow(QMainWindow):
         index = dialog.currentIndex()
 
         dialog.deleteLater()
+        model.deleteLater()
 
         if status == QDialog.Accepted:
             doc = self.current_document()
@@ -1222,7 +1223,7 @@ class CanvasMainWindow(QMainWindow):
                     )
 
         bottom_row = [self.get_started_action, tutorials_action,
-                   self.documentation_action]
+                      self.documentation_action]
 
         self.new_action.triggered.connect(dialog.accept)
         top_row = [new_action, open_action, recent_action]
