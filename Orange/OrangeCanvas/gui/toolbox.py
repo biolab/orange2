@@ -229,6 +229,12 @@ class ToolBox(QFrame):
         if self.__exclusive != exclusive:
             self.__exclusive = exclusive
             self.__tabActionGroup.setExclusive(exclusive)
+            checked = self.__tabActionGroup.checkedAction()
+            # Trigger/toggle remaining open pages
+            if exclusive and checked is not None:
+                for page in self.__pages:
+                    if checked != page.action and page.action.isChecked():
+                        page.action.trigger()
 
     def exclusive(self):
         """
