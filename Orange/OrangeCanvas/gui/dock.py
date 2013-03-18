@@ -15,7 +15,7 @@ from PyQt4.QtGui import (
 
 from PyQt4.QtCore import Qt, QEvent
 
-from PyQt4.QtCore import pyqtProperty as Property
+from PyQt4.QtCore import pyqtProperty as Property, pyqtSignal as Signal
 
 from .stackedwidget import AnimatedStackedWidget
 from .utils import QWIDGETSIZE_MAX
@@ -30,10 +30,15 @@ class CollapsibleDockWidget(QDockWidget):
     to show when in each state can be set using the ``setExpandedWidget``
     and ``setCollapsedWidget``.
 
-    .. note:: Do use the base class ``QDockWidget.setWidget`` method to set
-              the contents.
+    .. note:: Do  not use the base class ``QDockWidget.setWidget`` method
+              to set the docks contents. Use set[Expanded|Collapsed]Widget
+              instead.
 
     """
+
+    #: Emitted when the dock widget's expanded state changes.
+    expandedChanged = Signal(bool)
+
     def __init__(self, *args, **kwargs):
         QDockWidget.__init__(self, *args, **kwargs)
 
@@ -97,9 +102,11 @@ class CollapsibleDockWidget(QDockWidget):
                 self.__stack.setCurrentWidget(self.__collapsedWidget)
             self.__fixIcon()
 
+            self.expandedChanged.emit(state)
+
     def expanded(self):
         """
-        Is the dock widget in expanded state. When `True` the
+        Is the dock widget in expanded state. If `True` the
         ``expandedWidget`` will be shown, and ``collapsedWidget`` otherwise.
 
         """
@@ -130,7 +137,7 @@ class CollapsibleDockWidget(QDockWidget):
             self.__stack.setCurrentWidget(widget)
             self.updateGeometry()
 
-    def expandedWidet(self):
+    def expandedWidget(self):
         """
         Return the widget previously set with ``setExpandedWidget``,
         or ``None`` if no widget has been set.
