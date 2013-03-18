@@ -335,6 +335,7 @@ class CanvasMainWindow(QMainWindow):
         self.dock_widget.setExpandedWidget(self.canvas_tool_dock)
         self.dock_widget.setCollapsedWidget(dock2)
         self.dock_widget.setExpanded(True)
+        self.dock_widget.expandedChanged.connect(self._on_tool_dock_expanded)
 
         self.addDockWidget(Qt.RightDockWidgetArea, self.dock_widget)
         self.dock_widget.dockLocationChanged.connect(
@@ -529,6 +530,15 @@ class CanvasMainWindow(QMainWindow):
                     icon=canvas_icons("Pause.svg")
                     )
 
+        self.toggle_tool_dock_expand = \
+            QAction(self.tr("Expand Tool Dock"), self,
+                    objectName="toggle-tool-dock-expand",
+                    checkable=True,
+                    checked=True,
+                    shortcut=QKeySequence(Qt.ControlModifier |
+                                          Qt.ShiftModifier | Qt.Key_D),
+                    triggered=self.set_tool_dock_expanded)
+
         # Gets assigned in setup_ui (the action is defined in CanvasToolDock)
         # TODO: This is bad (should be moved here).
         self.dock_help_action = None
@@ -596,12 +606,8 @@ class CanvasMainWindow(QMainWindow):
         self.toolbox_menu_group = \
             QActionGroup(self, objectName="toolbox-menu-group")
 
-        a1 = self.toolbox_menu.addAction(self.tr("Tool Box"))
-        a2 = self.toolbox_menu.addAction(self.tr("Tool List"))
-        self.toolbox_menu_group.addAction(a1)
-        self.toolbox_menu_group.addAction(a2)
+        self.view_menu.addAction(self.toggle_tool_dock_expand)
 
-        self.view_menu.addMenu(self.toolbox_menu)
         self.view_menu.addSeparator()
         self.view_menu.addAction(self.toogle_margins_action)
         menu_bar.addMenu(self.view_menu)
@@ -1447,6 +1453,19 @@ class CanvasMainWindow(QMainWindow):
 
         """
         self.__update_scheme_margins()
+
+    def set_tool_dock_expanded(self, expanded):
+        """
+        Set the dock widget expanded state.
+        """
+        self.dock_widget.setExpanded(expanded)
+
+    def _on_tool_dock_expanded(self, expanded):
+        """
+        'dock_widget' widget was expanded/collapsed.
+        """
+        if expanded != self.toggle_tool_dock_expand.isChecked():
+            self.toggle_tool_dock_expand.setChecked(expanded)
 
     def createPopupMenu(self):
         # Override the default context menu popup (we don't want the user to
