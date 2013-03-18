@@ -259,17 +259,9 @@ class UserSettingsDialog(QMainWindow):
                             "over the links.")
         )
 
-        cb_state = QCheckBox(
-            self.tr("Show link state"),
-            objectName="show-link-state",
-            toolTip=self.tr("Show link state")
-        )
-
         self.bind(cb_show, "checked", "schemeedit/show-channel-names")
-        self.bind(cb_state, "checked", "schemeedit/show-link-state")
 
         links.layout().addWidget(cb_show)
-        links.layout().addWidget(cb_state)
 
         form.addRow(self.tr("Links"), links)
 
@@ -327,17 +319,11 @@ class UserSettingsDialog(QMainWindow):
         toolbox.setLayout(QVBoxLayout())
         toolbox.layout().setContentsMargins(0, 0, 0, 0)
 
-        exclusive = QCheckBox(self.tr("Exclusive"),
-                              toolTip="Only one tab can be opened at a time.")
-
-        floatable = QCheckBox(self.tr("Floatable"),
-                              toolTip="Toolbox can be undocked.")
+        exclusive = QCheckBox(self.tr("Only one tab can be open at a time"))
 
         self.bind(exclusive, "checked", "mainwindow/toolbox-dock-exclusive")
-        self.bind(floatable, "checked", "mainwindow/toolbox-dock-floatable")
 
         toolbox.layout().addWidget(exclusive)
-        toolbox.layout().addWidget(floatable)
 
         form.addRow(self.tr("Tool box"), toolbox)
         tab.setLayout(form)
