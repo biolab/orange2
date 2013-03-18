@@ -299,11 +299,16 @@ PreviewDialog PreviewBrowser * {
 }
 
 PreviewDialog PreviewBrowser TextLabel#path-text {
-	font-size: 12px;
+    font-size: 12px;
 }
 
 PreviewDialog PreviewBrowser QLabel#path-label {
-	font-size: 12px;
+    font-size: 12px;
+}
+
+PreviewDialog DropShadowFrame {
+    qproperty-radius_: 10;
+    qproperty-color_: rgb(0, 0, 0, 100);
 }
 
 /* Welcome Screen Dialog
