@@ -115,6 +115,7 @@ class SchemeEditWidget(QWidget):
                                    SchemeEditWidget.DoubleClicked
         self.__emptyClickButtons = 0
         self.__channelNamesVisible = True
+        self.__nodeAnimationEnabled = True
         self.__possibleSelectionHandler = None
         self.__possibleMouseItemsMove = False
         self.__itemsMoving = {}
@@ -343,6 +344,7 @@ class SchemeEditWidget(QWidget):
 
         scene = CanvasScene()
         scene.set_channel_names_visible(self.__channelNamesVisible)
+        scene.set_node_animation_enabled(self.__nodeAnimationEnabled)
         scene.setFont(self.font())
 
         view = CanvasView(scene)
@@ -469,6 +471,20 @@ class SchemeEditWidget(QWidget):
         """
         return self.__channelNamesVisible
 
+    def setNodeAnimationEnabled(self, enabled):
+        """
+        Set the node item animation enabled state.
+        """
+        if self.__nodeAnimationEnabled != enabled:
+            self.__nodeAnimationEnabled = enabled
+            self.__scene.set_node_animation_enabled(enabled)
+
+    def nodeAnimationEnabled(self):
+        """
+        Return the node item animation enabled state.
+        """
+        return self.__nodeAnimationEnabled
+
     def undoStack(self):
         """
         Return the undo stack.
@@ -544,6 +560,10 @@ class SchemeEditWidget(QWidget):
             self.__scene = CanvasScene()
             self.__view.setScene(self.__scene)
             self.__scene.set_channel_names_visible(self.__channelNamesVisible)
+            self.__scene.set_node_animation_enabled(
+                self.__nodeAnimationEnabled
+            )
+
             self.__scene.setFont(self.font())
 
             self.__scene.installEventFilter(self)

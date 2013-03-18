@@ -1663,6 +1663,10 @@ class CanvasMainWindow(QMainWindow):
                                             type=bool)
         self.scheme_widget.setChannelNamesVisible(show_channel_names)
 
+        node_animations = settings.value("enable-node-animations",
+                                         defaultValue=False,
+                                         type=bool)
+        self.scheme_widget.setNodeAnimationEnabled(node_animations)
         settings.endGroup()
 
         settings.beginGroup("output")

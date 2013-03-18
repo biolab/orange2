@@ -49,6 +49,12 @@ class WidgetsScheme(Scheme):
         self.widget_for_node = {}
         self.node_for_widget = {}
         self.signal_manager = WidgetsSignalManager(self)
+        self.signal_manager.processingStarted[SchemeNode].connect(
+            self.__on_processing_started
+        )
+        self.signal_manager.processingFinished[SchemeNode].connect(
+            self.__on_processing_finished
+        )
 
     def add_node(self, node):
         """
@@ -63,7 +69,6 @@ class WidgetsScheme(Scheme):
         # case someone connected to node_added already expects
         # widget_for_node, etc. to be up to date.
         widget = self.create_widget_instance(node)
-
         Scheme.add_node(self, node)
 
         self.widgets.append(widget)
@@ -197,6 +202,12 @@ class WidgetsScheme(Scheme):
             url = "help://search?id={0}".format(node.description.id)
             event = QWhatsThisClickedEvent(url)
             QCoreApplication.sendEvent(self, event)
+
+    def __on_processing_started(self, node):
+        node.set_processing_state(1)
+
+    def __on_processing_finished(self, node):
+        node.set_processing_state(0)
 
 
 class WidgetsSignalManager(SignalManager):

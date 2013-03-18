@@ -233,6 +233,21 @@ class UserSettingsDialog(QMainWindow):
         form = QFormLayout()
         tab.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
+        nodes = QWidget(self, objectName="nodes")
+        nodes.setLayout(QVBoxLayout())
+        nodes.layout().setContentsMargins(0, 0, 0, 0)
+
+        cb_anim = QCheckBox(
+            self.tr("Enable node animations"),
+            objectName="enable-node-animations",
+            toolTip=self.tr("Enable shadow and ping animations for node "
+                            "items in the scheme.")
+        )
+        self.bind(cb_anim, "checked", "schemeedit/enable-node-animations")
+        nodes.layout().addWidget(cb_anim)
+
+        form.addRow(self.tr("Nodes"), nodes)
+
         links = QWidget(self, objectName="links")
         links.setLayout(QVBoxLayout())
         links.layout().setContentsMargins(0, 0, 0, 0)

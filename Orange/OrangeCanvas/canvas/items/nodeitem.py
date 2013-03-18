@@ -6,13 +6,13 @@ NodeItem
 from xml.sax.saxutils import escape
 
 from PyQt4.QtGui import (
-    QGraphicsItem, QGraphicsPathItem, QGraphicsObject,
-    QGraphicsTextItem, QGraphicsDropShadowEffect, QGraphicsView,
+    QGraphicsItem, QGraphicsObject, QGraphicsTextItem,
+    QGraphicsDropShadowEffect, QGraphicsView,
     QPen, QBrush, QColor, QPalette, QIcon, QStyle, QPainter,
     QPainterPath, QPainterPathStroker, QApplication
 )
 
-from PyQt4.QtCore import Qt, QPointF, QRectF, QSize, QTimer
+from PyQt4.QtCore import Qt, QPointF, QRectF, QSize, QTimer, QPropertyAnimation
 from PyQt4.QtCore import pyqtSignal as Signal
 from PyQt4.QtCore import pyqtProperty as Property
 
@@ -55,20 +55,27 @@ def default_palette():
                           QColor(NAMED_COLORS["orange"]))
 
 
+def animation_restart(animation):
+    if animation.state() == QPropertyAnimation.Running:
+        animation.pause()
+    animation.start()
+
+
 SHADOW_COLOR = "#9CACB4"
 FOCUS_OUTLINE_COLOR = "#609ED7"
 
 
-class NodeBodyItem(QGraphicsPathItem):
+class NodeBodyItem(GraphicsPathObject):
     """
     The central part (body) of the `NodeItem`.
     """
     def __init__(self, parent=None):
-        QGraphicsPathItem.__init__(self, parent)
+        GraphicsPathObject.__init__(self, parent)
         assert(isinstance(parent, NodeItem))
 
         self.__processingState = 0
         self.__progress = -1
+        self.__animationEnabled = False
         self.__isSelected = False
         self.__hasFocus = False
         self.__hover = False
@@ -84,13 +91,22 @@ class NodeBodyItem(QGraphicsPathItem):
         self.setPalette(default_palette())
 
         self.shadow = QGraphicsDropShadowEffect(
-            blurRadius=10,
+            blurRadius=3,
             color=QColor(SHADOW_COLOR),
             offset=QPointF(0, 0),
             )
 
         self.setGraphicsEffect(self.shadow)
-        self.shadow.setEnabled(False)
+        self.shadow.setEnabled(True)
+
+        self.__blurAnimation = QPropertyAnimation(self.shadow, "blurRadius",
+                                                  self)
+        self.__blurAnimation.setDuration(100)
+        self.__blurAnimation.finished.connect(self.__on_finished)
+
+        self.__pingAnimation = QPropertyAnimation(self, "scale", self)
+        self.__pingAnimation.setDuration(250)
+        self.__pingAnimation.setKeyValues([(0.0, 1.0), (0.5, 1.1), (1.0, 1.0)])
 
     # TODO: The body item should allow the setting of arbitrary painter
     # paths (for instance rounded rect, ...)
@@ -112,12 +128,21 @@ class NodeBodyItem(QGraphicsPathItem):
         self.palette = palette
         self.__updateBrush()
 
+    def setAnimationEnabled(self, enabled):
+        """
+        Set the node animation enabled.
+        """
+        if self.__animationEnabled != enabled:
+            self.__animationEnabled = enabled
+
     def setProcessingState(self, state):
         """
         Set the processing state of the node.
         """
-        self.__processingState = state
-        self.update()
+        if self.__processingState != state:
+            self.__processingState = state
+            if not state and self.__animationEnabled:
+                self.ping()
 
     def setProgress(self, progress):
         """
@@ -128,15 +153,21 @@ class NodeBodyItem(QGraphicsPathItem):
         self.__progress = progress
         self.update()
 
+    def ping(self):
+        """
+        Trigger a 'ping' animation.
+        """
+        animation_restart(self.__pingAnimation)
+
     def hoverEnterEvent(self, event):
         self.__hover = True
         self.__updateShadowState()
-        return QGraphicsPathItem.hoverEnterEvent(self, event)
+        return GraphicsPathObject.hoverEnterEvent(self, event)
 
     def hoverLeaveEvent(self, event):
         self.__hover = False
         self.__updateShadowState()
-        return QGraphicsPathItem.hoverLeaveEvent(self, event)
+        return GraphicsPathObject.hoverLeaveEvent(self, event)
 
     def paint(self, painter, option, widget):
         """
@@ -146,7 +177,7 @@ class NodeBodyItem(QGraphicsPathItem):
         if option.state & QStyle.State_Selected:
             # Prevent the default bounding rect selection indicator.
             option.state = option.state ^ QStyle.State_Selected
-        QGraphicsPathItem.paint(self, painter, option, widget)
+        GraphicsPathObject.paint(self, painter, option, widget)
 
         if self.__progress >= 0:
             # Draw the progress meter over the shape.
@@ -168,14 +199,29 @@ class NodeBodyItem(QGraphicsPathItem):
         else:
             self.setPen(QPen(Qt.NoPen))
 
+        radius = 3
         enabled = False
+
         if self.__isSelected:
-            self.shadow.setBlurRadius(7)
             enabled = True
-        elif self.__hover:
-            self.shadow.setBlurRadius(17)
+            radius = 7
+
+        if self.__hover:
+            radius = 17
             enabled = True
-        self.shadow.setEnabled(enabled)
+
+        if enabled and not self.shadow.isEnabled():
+            self.shadow.setEnabled(enabled)
+
+        if self.__animationEnabled:
+            if self.__blurAnimation.state() == QPropertyAnimation.Running:
+                self.__blurAnimation.pause()
+
+            self.__blurAnimation.setStartValue(self.shadow.blurRadius())
+            self.__blurAnimation.setEndValue(radius)
+            self.__blurAnimation.start()
+        else:
+            self.shadow.setBlurRadius(radius)
 
     def __updateBrush(self):
         palette = self.palette
@@ -214,6 +260,10 @@ class NodeBodyItem(QGraphicsPathItem):
         """
         self.__hasFocus = focus
         self.__updateShadowState()
+
+    def __on_finished(self):
+        if self.shadow.blurRadius() == 0:
+            self.shadow.setEnabled(False)
 
 
 class AnchorPoint(QGraphicsObject):
@@ -691,6 +741,7 @@ class NodeItem(QGraphicsObject):
         self.__info = None
 
         self.__anchorLayout = None
+        self.__animationEnabled = False
 
         self.setZValue(self.Z_VALUE)
         self.setupGraphics()
@@ -726,6 +777,7 @@ class NodeItem(QGraphicsObject):
 
         self.shapeItem = NodeBodyItem(self)
         self.shapeItem.setShapeRect(shape_rect)
+        self.shapeItem.setAnimationEnabled(self.__animationEnabled)
 
         # Rect for widget's 'ears'.
         anchor_rect = QRectF(-31, -31, 62, 62)
@@ -854,6 +906,20 @@ class NodeItem(QGraphicsObject):
         """
         return self.captionTextItem.font()
 
+    def setAnimationEnabled(self, enabled):
+        """
+        Set the node animation enabled state.
+        """
+        if self.__animationEnabled != enabled:
+            self.__animationEnabled = enabled
+            self.shapeItem.setAnimationEnabled(enabled)
+
+    def animationEnabled(self):
+        """
+        Are node animations enabled.
+        """
+        return self.__animationEnabled
+
     def setProcessingState(self, state):
         """
         Set the node processing state i.e. the node is processing
@@ -866,6 +932,8 @@ class NodeItem(QGraphicsObject):
             if not state:
                 # Clear the progress meter.
                 self.setProgress(-1)
+                if self.__animationEnabled:
+                    self.shapeItem.ping()
 
     def processingState(self):
         """

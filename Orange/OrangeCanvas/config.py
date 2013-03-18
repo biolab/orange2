@@ -79,6 +79,9 @@ spec = \
      ("schemeedit/show-link-state", bool, True,
       "Show link state hints."),
 
+     ("schemeedit/enable-node-animations", bool, True,
+      "Enable node animations."),
+
      ("schemeedit/freeze-on-load", bool, False,
       "Freeze signal propagation when loading a scheme."),
 

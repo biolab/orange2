@@ -99,6 +99,7 @@ class CanvasScene(QGraphicsScene):
         self.addItem(self.__anchor_layout)
 
         self.__channel_names_visible = True
+        self.__node_animation_enabled = True
 
         self.user_interaction_handler = None
 
@@ -216,6 +217,13 @@ class CanvasScene(QGraphicsScene):
     def channel_names_visible(self):
         return self.__channel_names_visible
 
+    def set_node_animation_enabled(self, enabled):
+        if self.__node_animation_enabled != enabled:
+            self.__node_animation_enabled = enabled
+
+            for node in self.__node_items:
+                node.setAnimationEnabled(enabled)
+
     def add_node_item(self, item):
         """Add a :class:`NodeItem` instance to the scene.
         """
@@ -300,6 +308,7 @@ class CanvasScene(QGraphicsScene):
         if category_desc is not None:
             item.setWidgetCategory(category_desc)
 
+        item.setAnimationEnabled(self.__node_animation_enabled)
         return item
 
     def remove_node_item(self, item):
