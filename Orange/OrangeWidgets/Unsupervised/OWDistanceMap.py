@@ -14,7 +14,6 @@ from ColorPalette import *
 from OWDlgs import OWChooseImageSizeDlg
 import OWColorPalette
 import OWToolbars
-#from OWHierarchicalClustering import recursion_limit
 
 #####################################################################
 # parameters that determine the canvas layout
@@ -305,7 +304,10 @@ class OWDistanceMap(OWWidget):
         return j
 
     def sendOutput(self):
-        if len(self.matrix.items)<1:
+        items = getattr(self.matrix, "items", None)
+        if items is None or (not isinstance(items, orange.ExampleTable) and
+                             not all(isinstance(item, orange.Variable)
+                                     for item in items)):
             return
 
         selectedIndices = []
@@ -336,14 +338,13 @@ class OWDistanceMap(OWWidget):
                     selectedIndices += [i]
 
             items = self.matrix.items
-            if issubclass(orange.EnumVariable, type(items[0])):
+            if all(isinstance(item, orange.Variable) for item in items):
                 selected = orange.VarList()
                 for i in selectedIndices:
                     selected.append(items[i])
                 self.send("Features", selected)
 
-
-            if isinstance(items[0], orange.Example):
+            if all(isinstance(item, orange.Example) for item in items):
                 ex = [items[x] for x in selectedIndices]
                 selected = orange.ExampleTable(items[0].domain, ex)
                 self.send("Data", selected)
@@ -532,7 +533,19 @@ class OWDistanceMap(OWWidget):
         self.annotationText = []
         if self.ShowLabels==1 and self.Merge<=1:
             # show labels, no merging (one item per line)
-            items = self.matrix.items
+            items = getattr(self.matrix, "items", range(self.matrix.dim))
+            if isinstance(items, orange.ExampleTable):
+                if any(ex.name for ex in items):
+                    # Use instance names if present
+                    items = [ex.name for ex in items]
+                else:
+                    items = map(str, items)
+            elif isinstance(items, orange.VarList) or \
+                    all(isinstance(item, orange.Variable) for item in items):
+                items = [var.name for var in items]
+            else:
+                items = map(str, items)
+
             if len(self.distanceMap.elementIndices)==0:
                 tmp = [i for i in range(0, len(items))]
             else:
@@ -545,16 +558,9 @@ class OWDistanceMap(OWWidget):
                 
             maxHeight = 0
             maxWidth = 0
-            exampleTableHasNames = type(items) == orange.ExampleTable and any(ex.name for ex in items)
+
             for i in range(0, len(indices)):
                 text = items[indices[i]]
-                
-                if type(text) not in [str, unicode]:
-                    if exampleTableHasNames or isinstance(text, orange.Variable): 
-                        text = text.name
-                    else:
-                        text = repr(text)
-                        
                 if text != "":
                     tmpText = QCustomGraphicsText(text, self.scene, -90.0, font=fontcols)
                     tmpText.show()
@@ -715,17 +721,23 @@ class OWDistanceMap(OWWidget):
 
             if self.ShowBalloon == 1:
 
+                items = getattr(self.matrix, "items", range(self.matrix.dim))
+
                 i = self.getItemFromPos(col)
                 j = self.getItemFromPos(row)
-                
+
                 head = str(self.matrix[i, j])
 
-                if (self.ShowItemsInBalloon == 1):
-                    namei, namej = self.matrix.items[i], self.matrix.items[j]
-                    if type(namei) not in [str, unicode]:
+                if self.ShowItemsInBalloon == 1:
+                    namei, namej = items[i], items[j]
+                    if isinstance(namei, (orange.Example, orange.Variable)):
                         namei = namei.name
-                    if type(namej) not in [str, unicode]:
+                    else:
+                        namei = str(namei)
+                    if isinstance(namej, (orange.Example, orange.Variable)):
                         namej = namej.name
+                    else:
+                        namej = str(namej)
                     if namei or namej:
                         body = namei + "\n" + namej
                     else:
@@ -793,7 +805,7 @@ class OWDistanceMap(OWWidget):
 
     def sortRandom(self):
         import random
-        self.order = range(len(self.matrix.items))
+        self.order = range(self.matrix.dim)
         random.shuffle(self.order)
         self.rootCluster = None
 
