@@ -81,7 +81,9 @@ learner is stored in its attribute :obj:`color`
 (:obj:`learner.color`). Who sets it and how? This we discuss in
 the following subsection.
 
-<h2>Colors in Orange Widgets</h2>
+************************
+Colors in Orange Widgets
+************************
 
 Uniform assignment of colors across different widget is an
 important issue. When we plot the same data in different widgets, we
@@ -146,7 +148,7 @@ graph (the user just selected a learner)::
                 self.graph.replot()
             l.isSelected = i in self.selectedLearners
 
-The complete code of this widget is available `here <OWLearningCurve_plot.py>`_.
+The complete code of this widget is available :download:`here <OWLearningCurve_plot.py>`.
 This is almost like a typical
 widget that is include in a standard Orange distribution, with a
 typical size just under 300 lines. Just some final cosmetics is needed

@@ -109,7 +109,7 @@ have some fun and write a widget. We will start with a very simple
 one, that will receive a data set on the input and will output a data
 set with 10% of the data instances. Not to mess with other widgets, we
 will create a Test directory within OrangeWidgets directory, and write
-the widget in a file called `OWDataSamplerA <OWDataSamplerA.py>`: OW for Orange Widget,
+the widget in a file called `OWDataSamplerA.py`: OW for Orange Widget,
 DataSampler since this is what widget will be doing, and A since we
 prototype a number of this widgets in our tutorial.
 
@@ -222,11 +222,12 @@ implementation, we took care of empty input data set by appropriately
 setting the GUI of a widget and sending an empty token to the
 output channel.
 
-Although our widget is now ready to test, for a final touch, let's
-design an icon for our widget. As specified in the widget header, we
-will call it `DataSamplerA.png <DataSamplerA.png>`_ and will
-put it in icons subdirectory of OrangeWidgets directory (together with
-all other icons of other widgets).
+..
+   Although our widget is now ready to test, for a final touch, let's
+   design an icon for our widget. As specified in the widget header, we
+   will call it :download:`DataSamplerA.png <DataSamplerA.png>` and will
+   put it in icons subdirectory of OrangeWidgets directory (together with
+   all other icons of other widgets).
 
 For a test, we now open Orange Canvas. There should be a new pane in a
 widget toolbox called Test (this is the name of the directory we have

@@ -19,11 +19,12 @@ reports on the estimated time of completion of the task:
 Class :obj:`OWWidget`, the mother class of all
 widgets, has for this purpose a set of functions, which include:
 
-<xmp class="code">
-progressBarInit()
-progressBarSet(value)
-progressBarFinished()
-</xmp>
+.. method:: progressBarInit()
+
+.. method:: progressBarSet(value)
+
+.. method:: progressBarFinished()
+
 
 where value is any number between 0 and 100. Sometimes, like it is
 the case for our widgets, we know about the number of iterations involved in

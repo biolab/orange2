@@ -2,7 +2,7 @@
 Context-Dependent Settings
 ##########################
 
-You have already learned about :obj:`storing widget settings <settings>`.
+You have already learned about :doc:`storing widget settings <settings>`.
 But there's more: some settings are context
 dependent. Open Orange Canvas and observe the scatter plot - feed it
 some data, select two attributes for x- and y-axis, select some
@@ -30,7 +30,7 @@ somehow store the user's selection.
 
 Here's the widget's :obj:`__init__` function.
 
-Part of `OWAttributeSampler.py <OWAttributeSampler.py>`_::
+Part of :download:`OWAttributeSampler.py <OWAttributeSampler.py>`::
 
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'AttributeSampler')
@@ -65,7 +65,7 @@ into :obj:`classAttribute`.
 When the widget gets the data, a function :obj:`dataset` is
 called.
 
-Part of `OWAttributeSampler.py <OWAttributeSampler.py>`_::
+Part of :download:`OWAttributeSampler.py`::
 
     def dataset(self, data):
         self.classAttrCombo.clear()
@@ -167,8 +167,6 @@ The default flag is :obj:`DomainContextHandler.Required`, and there are other sh
             ContextField("attributeList", DomainContextHandler.SelectedRequiredList,
                          selected="selectedAttributes")])}
 
-(More about these shortcuts in the `technical information about settings <settings-technical.htm>`).
-
 Why the dictionary and the empty string as the key? A widget can
 have multiple contexts, depending, usually, on multiple input
 signals. These contexts can be named, but the default name is empty
@@ -187,7 +185,7 @@ automatically - you have to add the calls of the appropriate context
 changing functions yourself. Here's what you have to do with the
 function :obj:`dataset`
 
-Part of `OWAttributeSampler.py <OWAttributeSampler.py>`::
+Part of :download:`OWAttributeSampler.py`::
 
     def dataset(self, data):
         self.closeContext()
@@ -265,6 +263,3 @@ since the context handler doesn't need to know and care about
 When writing such callback functions make sure that the data you
 store is picklable and short enough, so you won't blow up the .ini
 files that store these settings.
-
-For more information about context handling, see the `technical information about
-settings <settings-technical.htm>`_.

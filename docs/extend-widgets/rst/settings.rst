@@ -153,9 +153,10 @@ now is::
         if self.commitOnChange:
             self.commit()
 
-You can now also inspect the `complete code <OWDataSamplerB.py>`_ of this
-widget. To distinguish it with a widget we have developed in the
-previous section, we have designed a special `icon <DataSamplerB.png>`_ for it. If you wish to test is
+You can now also inspect the :download:`complete code <OWDataSamplerB.py>`
+of this widget. To distinguish it with a widget we have developed in the
+previous section, we have designed a special
+:download:`icon <DataSamplerB.png>` for it. If you wish to test is
 widget in the Orange Canvas, put its code in the Test directory we
 have created for the previous widget, update the Canvas registry, and
 try it out using a schema with a File and Data Table widget.
@@ -174,15 +175,14 @@ saves the value of the corresponding attributes. For a check box there
 should be a corresponding widget's attribute recording the check box's
 state so that when the user changes a check box, the attribute changes
 and vice-versa. Although you can create such a link manually, you
-should always use the module <a href="owgui.htm">OWGUI</a> instead;
+should always use the module :doc:`OWGUI <owgui.rst>` instead;
 for instance, for a check box, use :obj:`OWGUI.checkBox` and not
 simply the Qt's :obj:`QCheckBox`.
 
 The settings fall into two groups. Some of them do not depend on
 the data, while other are context-dependent. For the first to be saved
 properly, you only need to list them in the :obj:`settingsList`
-in the widget definition, as already described <a
-href="settings.htm">elsewhere</a>.
+in the widget definition, as already described :doc:`elsewhere <settings.rst>`
 
 **************************
 Context dependent settings
@@ -285,7 +285,7 @@ default (the one set by :obj:`self.initAttrValues`) will be used
 for the color since the attribute D is missing in the new data. Now
 comes the third data set, which only has attributes A, D and E. The
 context now can't be reused since the attribute used for the
-<em>required</em> :obj:`attrY` (the y axis) is missing.
+*required* :obj:`attrY` (the y axis) is missing.
 
 OK, now it is time to be a bit formal. As said,
 :obj:`contextHandlers` is a dictionary and the values in it need
@@ -346,10 +346,9 @@ element is not a string but a list of strings. We have seen this trick
 in the scatter plot, too.
 
 But the tuples are actually a shortcut for instances of
-:obj:`ContextField`. When you say :obj:`"attrX"` this is
-actually :obj:`ContextField("attrX",
-DomainContextHandler.Required)` (you should appreciate the
-shortcurt, right?). But see this monster from widget "Select
+:obj:`ContextField`. When you say :obj:`"attrX"` this is actually
+:obj:`ContextField("attrX", DomainContextHandler.Required)` (you should
+appreciate the shortcurt, right?). But see this monster from widget "Select
 Attributes" (file OWDataDomain.py)::
 
     contextHandlers = {"": DomainContextHandler("",
@@ -365,13 +364,40 @@ Attributes" (file OWDataDomain.py)::
     ])}
 
 
-:obj:`ContextField`'s constructor gets the name and flags and a list of arguments that are written directly into the object instance. To follow the example, recall what Select Attributes looks like: it allows you to select a subset of attributes, the class attribute and the meta attributes that you want to use; the attributes in the corresponding three list boxes are stored in the widget's variables :obj:`chosenAttributes`, :obj:`classAttribute` and :obj:`metaAttributes` respectively. When the user selects some attributes in any of these boxes, the selection is stored in :obj:`selectedChosen`, :obj:`selectedClass` and <cose>selectedMeta</cose>. The remaining attributes - those that are not in any of these three list boxes - are in the leftover listbox on the left-hand side of the widget, and the content of the box is stored in the widget's variable :obj:`inputAttributes`.
+:obj:`ContextField`'s constructor gets the name and flags and a list of
+arguments that are written directly into the object instance. To follow the
+example, recall what Select Attributes looks like: it allows you to select a
+subset of attributes, the class attribute and the meta attributes that you
+want to use; the attributes in the corresponding three list boxes are stored
+in the widget's variables :obj:`chosenAttributes`, :obj:`classAttribute`
+and :obj:`metaAttributes` respectively. When the user selects some attributes
+in any of these boxes, the selection is stored in :obj:`selectedChosen`,
+:obj:`selectedClass` and :obj:`selectedMeta`. The remaining attributes
+- those that are not in any of these three list boxes - are in the leftover
+listbox on the left-hand side of the widget, and the content of the box is
+stored in the widget's variable :obj:`inputAttributes`.
 
-The above definition tells that the context needs to store the contents of the three list boxes by specifying the corresponding variables; the list of attributes is given as the name of the field and the list of selected attributes is in the optional named attribute :obj:`selected`. By :obj:`reservoir` we told the context handler that the attributes are taken from :obj:`inputAttributes`. So, when a context is retrieved, all the attributes that are not in any of the three list boxes are put into :obj:`inputAttributes`.
+The above definition tells that the context needs to store the contents of
+the three list boxes by specifying the corresponding variables; the list of
+attributes is given as the name of the field and the list of selected
+attributes is in the optional named attribute :obj:`selected`. By
+:obj:`reservoir` we told the context handler that the attributes are taken
+from :obj:`inputAttributes`. So, when a context is retrieved, all the
+attributes that are not in any of the three list boxes are put into
+:obj:`inputAttributes`.
 
-Why the mess? Couldn't we just store :obj:`inputAttributes` as the fourth list box? Imagine that the user first loads the data with attributes A, B, C, D, E and F, puts A, B, C in chosen and D in class. E and F are left in :obj:`inputAttributes`. Now she loads another data which has attributes A, B, C, D, E, and G. The contexts should match (the new data has all the attributes we need), but :obj:`inputAttributes` should now contain E and G, not E and F, since F doesn't exist any more, while G needs to be made available.
+Why the mess? Couldn't we just store :obj:`inputAttributes` as the fourth
+list box? Imagine that the user first loads the data with attributes A, B,
+C, D, E and F, puts A, B, C in chosen and D in class. E and F are left in
+:obj:`inputAttributes`. Now she loads another data which has attributes A,
+B, C, D, E, and G. The contexts should match (the new data has all the
+attributes we need), but :obj:`inputAttributes` should now contain E and
+G, not E and F, since F doesn't exist any more, while G needs to be made
+available.
 
-You can use :obj:`ContextField` (instead of tuples and strings) for declaring any fields, but you will usually need them only for lists or, maybe, some complicated future controls.
+You can use :obj:`ContextField` (instead of tuples and strings) for
+declaring any fields, but you will usually need them only for lists or,
+maybe, some complicated future controls.
 
 
 *****************************
