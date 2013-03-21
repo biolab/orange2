@@ -1,5 +1,7 @@
 """
-WidgetRegistry Base
+===============
+Widget Registry
+===============
 
 """
 
@@ -20,9 +22,6 @@ class WidgetRegistry(object):
     """
     A container for widget and category descriptions.
 
-    This class is most often used with WidgetDiscovery class but can
-    be used separately.
-
     >>> reg = WidgetRegistry()
     >>> file_desc = WidgetDescription.from_module(
     ...     "Orange.OrangeWidgets.Data.OWFile"
@@ -37,14 +36,20 @@ class WidgetRegistry(object):
     other : :class:`WidgetRegistry`, optional
         If supplied the registry is initialized with the contents of `other`.
 
+    See also
+    --------
+    WidgetDiscovery
+
     """
 
     def __init__(self, other=None):
         # A list of (category, widgets_list) tuples ordered by priority.
         self.registry = []
+
         # tuples from 'registry' indexed by name
         self._categories_dict = {}
-        # WidgetDscriptions by qualified name
+
+        # WidgetDecriptions by qualified name
         self._widgets_dict = {}
 
         if other is not None:
@@ -59,14 +64,14 @@ class WidgetRegistry(object):
     def categories(self):
         """
         Return a list all top level :class:`CategoryDescription` instances
-        ordered by priority.
+        ordered by `priority`.
 
         """
         return [c for c, _ in self.registry]
 
     def category(self, name):
         """
-        Find a :class:`CategoryDescription` by its `name`.
+        Find and return a :class:`CategoryDescription` by its `name`.
 
         .. note:: Categories are identified by `name` attribute in contrast
                   with widgets which are identified by `qualified_name`.
@@ -81,7 +86,7 @@ class WidgetRegistry(object):
 
     def has_category(self, name):
         """
-        Does a category with `name` exist in this registry.
+        Return ``True`` if a category with `name` exist in this registry.
 
         Parameters
         ----------
@@ -129,16 +134,14 @@ class WidgetRegistry(object):
         qualified_name : str
             Widget description qualified name
 
-        See also
-        --------
-        WidgetDescription
-
         """
         return self._widgets_dict[qualified_name]
 
     def has_widget(self, qualified_name):
         """
-        Does the widget with `qualified_name` exist in this registry.
+        Return ``True`` if the widget with `qualified_name` exists in
+        this registry.
+
         """
         return qualified_name in self._widgets_dict
 

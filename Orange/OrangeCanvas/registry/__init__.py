@@ -1,4 +1,8 @@
 """
+========
+Registry
+========
+
 The registry module implements discovery and description of the widgets
 that are available/installed. The :class:`WidgetRegistry` is a repository
 of :class:`WidgetDescription` and :class:`CategoryDescription` instances

@@ -52,7 +52,8 @@ Dynamic = 64
 
 
 class InputSignal(object):
-    """Description of an input channel.
+    """
+    Description of an input channel.
 
     Parameters
     ----------
@@ -115,7 +116,8 @@ def input_channel_from_args(args):
 
 
 class OutputSignal(object):
-    """Description of an output channel.
+    """
+    Description of an output channel.
 
     Parameters
     ----------
@@ -181,7 +183,8 @@ def output_channel_from_args(args):
 
 
 class WidgetDescription(object):
-    """Description of a widget.
+    """
+    Description of a widget.
 
     Parameters
     ----------
@@ -206,9 +209,9 @@ class WidgetDescription(object):
         A package name where the widget is implemented.
     project_name : str, optional
         The distribution name that provides the widget.
-    inputs : list of `InputSignal`, optional
+    inputs : list of :class:`InputSignal`, optional
         A list of input channels provided by the widget.
-    outputs : list of `OutputSignal`, optional
+    outputs : list of :class:`OutputSignal`, optional
         A list of output channels provided by the widget.
     help : str, optional
         URL or an Resource template of a detailed widget help page.
@@ -284,7 +287,8 @@ class WidgetDescription(object):
 
     @classmethod
     def from_file(cls, filename, import_name=None):
-        """Widget description from old style (2.5 version) widget
+        """
+        Widget description from old style (2.5 version) widget
         descriptions.
 
         """
@@ -354,7 +358,8 @@ class WidgetDescription(object):
 
     @classmethod
     def from_module(cls, module):
-        """Get the widget description from a module.
+        """
+        Get the widget description from a module.
 
         The module is inspected for global variables (upper case versions of
         `WidgetDescription.__init__` parameters).
@@ -448,28 +453,29 @@ class WidgetDescription(object):
 
 
 class CategoryDescription(object):
-    """Description of a widget category.
+    """
+    Description of a widget category.
 
     Parameters
     ----------
 
     name : str
         A human readable name.
-    version : str
-        Version string (optional).
-    description : str
-        A short description of the category, suitable for a tool
-        tip (optional).
-    long_description : str
+    version : str, optional
+        Version string.
+    description : str, optional
+        A short description of the category, suitable for a tool tip.
+    long_description : str, optional
         A longer description.
-    qualified_name : str
+    qualified_name : str,
         Qualified name
     project_name : str
         A project name providing the category.
     priority : int
         Priority (order in the GUI).
     icon : str
-        An icon filename
+        An icon filename (a resource name retrievable using `pkg_resources`
+        relative to `qualified_name`).
     background : str
         An background color for widgets in this category.
 
@@ -511,7 +517,8 @@ class CategoryDescription(object):
 
     @classmethod
     def from_package(cls, package):
-        """Get the CategoryDescription from a package.
+        """
+        Get the CategoryDescription from a package.
 
         Parameters
         ----------
