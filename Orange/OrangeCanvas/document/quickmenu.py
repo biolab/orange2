@@ -47,7 +47,7 @@ class MenuPage(ToolTree):
     """
     A menu page in a :class:`QuickMenu` widget, showing a list of actions.
     Shown actions can be disabled by setting a filtering function using the
-    :ref:`setFilterFunc`.
+    :func:`setFilterFunc`.
 
     """
     def __init__(self, parent=None, title=None, icon=None, **kwargs):
@@ -79,7 +79,8 @@ class MenuPage(ToolTree):
         """
         return self.__title
 
-    title_ = Property(unicode, fget=title, fset=setTitle)
+    title_ = Property(unicode, fget=title, fset=setTitle,
+                      doc="Title of the page.")
 
     def setIcon(self, icon):
         """
@@ -95,7 +96,8 @@ class MenuPage(ToolTree):
         """
         return self.__icon
 
-    icon_ = Property(QIcon, fget=icon, fset=setIcon)
+    icon_ = Property(QIcon, fget=icon, fset=setIcon,
+                     doc="Page icon")
 
     def setFilterFunc(self, func):
         """
@@ -110,7 +112,7 @@ class MenuPage(ToolTree):
 
     def setModel(self, model):
         """
-        Reimplemented from :ref:`ToolTree.setModel`.
+        Reimplemented from :func:`ToolTree.setModel`.
         """
         proxyModel = ItemDisableFilter(self)
         proxyModel.setSourceModel(model)
@@ -118,7 +120,7 @@ class MenuPage(ToolTree):
 
     def setRootIndex(self, index):
         """
-        Reimplemented from :ref:`ToolTree.setRootIndex`
+        Reimplemented from :func:`ToolTree.setRootIndex`
         """
         proxyModel = self.view().model()
         mappedIndex = proxyModel.mapFromSource(index)
@@ -126,7 +128,7 @@ class MenuPage(ToolTree):
 
     def rootIndex(self):
         """
-        Reimplemented from :ref:`ToolTree.rootIndex`
+        Reimplemented from :func:`ToolTree.rootIndex`
         """
         proxyModel = self.view().model()
         return proxyModel.mapToSource(ToolTree.rootIndex(self))
@@ -629,12 +631,15 @@ class QuickMenu(FramelessWindow):
     """
     A quick menu popup for the widgets.
 
-    The widgets are set using :ref:`setModel` which must be a
-    model as returned by QtWidgetRegistry.model()
+    The widgets are set using :func:`QuickMenu.setModel` which must be a
+    model as returned by :func:`QtWidgetRegistry.model`
 
     """
 
+    #: An action has been triggered in the menu.
     triggered = Signal(QAction)
+
+    #: An action has been hovered in the menu
     hovered = Signal(QAction)
 
     def __init__(self, parent=None, **kwargs):
@@ -722,7 +727,9 @@ class QuickMenu(FramelessWindow):
 
     def addPage(self, name, page):
         """
-        Add the page and return it's index.
+        Add the `page` (:class:`MenuPage`) with `name` and return it's index.
+        The `page.icon()` will be used as the icon in the tab bar.
+
         """
         icon = page.icon()
 
@@ -731,13 +738,12 @@ class QuickMenu(FramelessWindow):
             tip = page.toolTip()
 
         index = self.__pages.addPage(page, name, icon, tip)
-        # TODO: get the background.
 
         # Route the page's signals
         page.triggered.connect(self.__onTriggered)
         page.hovered.connect(self.hovered)
 
-        # Install event filter to process key presses.
+        # Install event filter to intercept key presses.
         page.view().installEventFilter(self)
 
         return index
@@ -867,6 +873,12 @@ class QuickMenu(FramelessWindow):
         self.show()
 
     def exec_(self, pos=None):
+        """
+        Execute the menu at position `pos` (in global screen coordinates).
+        Return the triggered :class:`QAction` or `None` if no action was
+        triggered.
+
+        """
         self.popup(pos)
         self.setFocus(Qt.PopupFocusReason)
 
@@ -881,6 +893,9 @@ class QuickMenu(FramelessWindow):
         return action
 
     def hideEvent(self, event):
+        """
+        Reimplemented from :class:`QWidget`
+        """
         FramelessWindow.hideEvent(self, event)
         if self.__loop:
             self.__loop.exit()
@@ -961,15 +976,26 @@ class WidgetItemDelegate(QStyledItemDelegate):
 
 
 class ItemViewKeyNavigator(QObject):
+    """
+    A event filter class listening to key press events and responding
+    by moving 'currentItem` on a :class:`QListView`.
+
+    """
     def __init__(self, parent=None):
         QObject.__init__(self, parent)
         self.__view = None
 
     def setView(self, view):
+        """
+        Set the QListView.
+        """
         if self.__view != view:
             self.__view = view
 
     def view(self):
+        """
+        Return the view
+        """
         return self.__view
 
     def eventFilter(self, obj, event):
@@ -1020,7 +1046,10 @@ class ItemViewKeyNavigator(QObject):
         if self.__view is not None:
             curr = self.__view.currentIndex()
             if curr.isValid():
-                # TODO: Does this work
+                # TODO: Does this work? We are emitting signals that are
+                # defined by a different class. This might break some things.
+                # Should we just send the keyPress events to the view, and let
+                # it handle them.
                 self.__view.activated.emit(curr)
 
     def ensureCurrent(self):
@@ -1041,6 +1070,9 @@ class ItemViewKeyNavigator(QObject):
 class WindowSizeGrip(QSizeGrip):
     """
     Automatically positioning :class:`QSizeGrip`.
+    The widget automatically maintains its position in the window
+    corner during resize events.
+
     """
     def __init__(self, parent):
         QSizeGrip.__init__(self, parent)
@@ -1052,7 +1084,9 @@ class WindowSizeGrip(QSizeGrip):
 
     def setCorner(self, corner):
         """
-        Set the corner where the size grip should position itself.
+        Set the corner (:class:`Qt.Corner`) where the size grip should
+        position itself.
+
         """
         if corner not in [Qt.TopLeftCorner, Qt.TopRightCorner,
                           Qt.BottomLeftCorner, Qt.BottomRightCorner]:

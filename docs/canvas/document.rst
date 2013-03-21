@@ -8,3 +8,4 @@ Document (``document``)
 .. toctree::
 
    document.schemeedit
+   document.quickmenu
