@@ -122,7 +122,7 @@ If it's continuous, only one item is created with a color gradient.
 Running this example
 ********************
 
-You can find the full code for the example `here <owplot_example.py>`_.
+You can find the full code for the example :download:`here <owplot_example.py>`.
 This particular example has a timer, so that :obj:`set_data` is called every
 five seconds, and attributes are chosen at random each time, athough always 
 from the same data set. 

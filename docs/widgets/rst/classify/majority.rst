@@ -27,8 +27,8 @@ Outputs:
       The classifier
 
 
-Signal :code:`Classifier` sends data only if the learning data (signal
-:code:`Examples`) is present.
+Signal :obj:`Classifier` sends data only if the learning data (signal
+:obj:`Examples`) is present.
 
 Description
 -----------

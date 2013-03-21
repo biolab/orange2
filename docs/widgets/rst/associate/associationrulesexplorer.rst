@@ -47,7 +47,7 @@ we would need to open the corresponding branch.
 Each leaf of the tree corresponds to one particular ordering of the
 left-hand side conditions in a particular rule. Turned around, this
 means that each rule appears in many places in the tree. As the completely
-open tree below shows, the rule :code:`age=adult & sex=male -> status=crew`
+open tree below shows, the rule "age=adult & sex=male -> status=crew"
 appears in two places (the seventh and the eleventh row).
 
 On the left-hand side of the widget, we can choose the measures we want

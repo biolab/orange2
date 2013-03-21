@@ -68,7 +68,7 @@ exaggerate the accuracy of the computation; many decimals may only be
 useful when the computed numbers are really small.
 
 The widget outputs two example tables. The one, whose corresponding signal
-is named :code:`ExampleTable Attributes` looks pretty much like the one
+is named :obj:`ExampleTable Attributes` looks pretty much like the one
 shown in the Rank widget, except that the second column is split into two
 columns, one giving the attribute type (D for discrete and C for continuous),
 and the other giving the number of distinct values if the attribute is
@@ -109,19 +109,19 @@ a bit more complicated schema.
 
 The examples in the file are put through ref:`Data Sampler` which split the
 data set into two subsets: one, containing 70% of examples (signal
-:code:`Classified Examples`) will be used for training a
+:obj:`Classified Examples`) will be used for training a
 :ref:`Naive Bayes <Naive Bayes>` classifier, and the other 30% (signal
-:code:`Remaining Classified Examples`) for testing. Attribute subset selection
+:obj:`Remaining Classified Examples`) for testing. Attribute subset selection
 based on information gain was performed on the training set only, and five most
 informative attributes were selected for learning. A data set with all other
-attributes removed (signal :code:`Reduced Example Table`) is fed into
+attributes removed (signal :obj:`Reduced Example Table`) is fed into
 :ref:`Test Learners`. Test Learners widgets also gets the
-:code:`Remaining Classified Examples` to use them as test examples (don't
-forget to set :code:`Test on Test Data` in that widget!).
+:obj:`Remaining Classified Examples` to use them as test examples (don't
+forget to set :obj:`Test on Test Data` in that widget!).
 
 To verify how the subset selection affects the classifier's performance, we
 added another :ref:`Test Learners`, but connected it to the
-:code:`Data Sampler` so that the two subsets emitted by the latter are used
+:ref:`Data Sampler` so that the two subsets emitted by the latter are used
 for training and testing without any feature subset selection.
 
 Running this schema on the heart disease data set shows quite a considerable

@@ -27,8 +27,8 @@ Outputs:
       Trained classifier (a subtype of Classifier)
 
 
-Signal :code:`Logistic Regression Classifier` sends data only if the learning
-data (signal :code:`Examples` is present.
+Signal :obj:`Logistic Regression Classifier` sends data only if the learning
+data (signal :obj:`Examples` is present.
 
 Description
 -----------

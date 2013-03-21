@@ -95,7 +95,7 @@ expect that the color we used in a consistent way; for instance data
 instances of one class should be plotted in scatter plot and parallel
 axis plot using the same color. Developers are thus advised to use
 :obj:`ColorPaletteHSV`, which is provided as a method within
-:obj:`OWWidget` class. :obj:`ColorPaletteHSV` takes an
+:mod:`OWWidget` module. :obj:`ColorPaletteHSV` takes an
 integer as an attribute, and returns a list of corresponding number of
 colors. In our learning curve widget, we use it within a function that
 sets the list box with learners::
@@ -120,7 +120,9 @@ returned by :obj:`ColorPixmap` function defined in
 defined in the initialization of the widget using::
 
     self.cbox = OWGUI.widgetBox(self.controlArea, "Learners")
-    self.llb = OWGUI.listBox(self.cbox, self, "selectedLearners", selectionMode=QListWidget.MultiSelection, callback=self.learnerSelectionChanged)
+    self.llb = OWGUI.listBox(self.cbox, self, "selectedLearners",
+                             selectionMode=QListWidget.MultiSelection,
+                             callback=self.learnerSelectionChanged)
 
     self.llb.setMinimumHeight(50)
     self.blockSelectionChanges = 0
@@ -141,7 +143,8 @@ deselected the corresponding item in the list box) or added to the
 graph (the user just selected a learner)::
 
     def learnerSelectionChanged(self):
-        if self.blockSelectionChanges: return
+        if self.blockSelectionChanges:
+            return
         for (i,lt) in enumerate(self.learners):
             l = lt[1]
             if l.isSelected != (i in self.selectedLearners):
@@ -152,7 +155,7 @@ graph (the user just selected a learner)::
                 self.graph.replot()
             l.isSelected = i in self.selectedLearners
 
-The complete code of this widget is available `here <OWLearningCurveC.py>`_. 
+The complete code of this widget is available :download:`here <OWLearningCurveC.py>`. 
 This is almost like a typical
 widget that is include in a standard Orange distribution, with a
 typical size just under 300 lines. Just some final cosmetics is needed

@@ -187,6 +187,7 @@ class OWMDS(OWWidget):
         self.controlArea.setMinimumWidth(250)
 
         OWGUI.rubber(mds)
+        OWGUI.rubber(graph)
 
         infoBox = OWGUI.widgetBox(mds, "Info")
         self.infoA = OWGUI.widgetLabel(infoBox, "Avg. stress:")
@@ -208,7 +209,7 @@ class OWMDS(OWWidget):
         self.origMatrix = matrix
         self.data = data = None
         if matrix:
-            self.data = data = getattr(matrix, "items")
+            self.data = data = getattr(matrix, "items", range(matrix.dim))
             matrix.matrixType = orange.SymMatrix.Symmetric
 
         self.graph.ColorAttr = 0
@@ -221,6 +222,8 @@ class OWMDS(OWWidget):
             self.setExampleTable(data)
         elif isinstance(data, orange.VarList):
             self.setVarList(data)
+        elif data is not None:
+            self.setList(data)
 
         if matrix:
             self.mds = orngMDS.MDS(matrix)
@@ -374,6 +377,22 @@ class OWMDS(OWWidget):
                 self.names[i][1] = " " + str(d.name)
         except Exception, val:
             print val
+
+    def setList(self, data):
+        self.colorCombo.clear()
+        self.sizeCombo.clear()
+        self.shapeCombo.clear()
+        self.nameCombo.clear()
+
+        for name in ["No name", "Item string"]:
+            self.nameCombo.addItem(name)
+
+        self.colors = [[Qt.black] for i in range(len(data))]
+        self.shapes = [[QwtSymbol.Ellipse] for i in range(len(data))]
+        self.sizes = [[5] for i in range(len(data))]
+        self.selectedInput = [False] * len(data)
+
+        self.names = [("", str(item)) for item in data]
 
     def updateStressBySize(self, noRepaint=False):
         self.sizeCombo.setDisabled(self.graph.stressBySize)

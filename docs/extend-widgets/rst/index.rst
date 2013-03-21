@@ -17,9 +17,6 @@ does most of the GUI-related boring stuff.
    plots
    contextsettings
 
-`Code and icons <code.zip>`_ from the tutorial. To learn where to put Python
-files and icons, read :doc:`Getting Started <basics>`.
-
 
 *********
 Reference

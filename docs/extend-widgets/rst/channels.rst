@@ -50,7 +50,7 @@ Now back to channels and tokens. Input and output channels for our
 widget are defined by::
 
     self.inputs = [("Data", ExampleTable, self.dataset),
-               ("Learner", orange.Learner, self.learner, Multiple)]
+                   ("Learner", orange.Learner, self.learner, Multiple + Default)]
 
 Notice that everything is pretty much the same as it was with
 widgets from previous lessons, the only difference being
@@ -62,10 +62,13 @@ If it would be unspecified then by default value of
 widget can receive the input only from one widget and is not the default input
 channel for its type (more on default channels later).
 
+.. note:: :obj:`Default` flag here is used for illustration. Since *Learner*
+          channel is the only channel for a :class:`orange.Learner` type
+          it is also the default.
+
 How does the widget know from which widget did the token come from?
 In Orange, tokens are sent around with an id of a widget that is
-sending the token (essentially, with a pointer to the corresponding
-widget object), and having a multi-input channel only tells Orange to
+sending the token, and having a multi-input channel only tells Orange to
 send a token together with sending widget id, the two arguments with
 which the receiving function is called. For our :obj:`Learner`
 channel the receiving function is :obj:`learner`, and this looks
@@ -145,12 +148,12 @@ scoring functions from stats. I rather like
 the easy by which new scoring functions are added to the widget, since
 all that is needed is the augmenting the list ::
 
-    self.scoring = [("Classification Accuracy", orngStat.CA),\
-                ("AUC", orngStat.AUC), \
-                ("BrierScore", orngStat.BrierScore),\
-                ("Information Score", orngStat.IS),\
-                ("Sensitivity", orngStat.sens), \
-                ("Specificity", orngStat.spec)]
+    self.scoring = [("Classification Accuracy", orngStat.CA),
+                    ("AUC", orngStat.AUC),
+                    ("BrierScore", orngStat.BrierScore),
+                    ("Information Score", orngStat.IS),
+                    ("Sensitivity", orngStat.sens),
+                    ("Specificity", orngStat.spec)]
 
 which is defined in the initialization part of the widget. The
 other useful trick in this widget is that evaluation (k-fold cross
@@ -159,7 +162,8 @@ evaluation parameters, and scores are then derived from class
 probability estimates as obtained from the evaluation procedure. Which
 essentially means that switching from one to another scoring function
 (and displaying the result in the table) takes only a split of a
-second. To see the rest of the widget, check out `its code <OWLearningCurveA.py>`_.
+second. To see the rest of the widget, check out
+:download:`its code <OWLearningCurveA.py>`.
 
 *****************************
 Using Several Output Channels
@@ -175,7 +179,7 @@ is::
 
     self.outputs = [("Sampled Data", ExampleTable), ("Other Data", ExampleTable)]
 
-We used this in the third incarnation of `data sampler widget <OWDataSamplerC.py>`_,
+We used this in the third incarnation of :download:`data sampler widget <OWDataSamplerC.py>`,
 with essentially the only other change in the code in the :obj:`selection` and
 :obj:`commit` functions::
 
@@ -220,16 +224,16 @@ training data set channel will be the default one.
 
 When enlisting the input channel of the same type, the non-default
 channels have a special flag in the channel specification list. So for
-our new `learning curve <OWLearningCurveB.py>`_ widget, the
+our new :download:`learning curve <OWLearningCurveB.py>` widget, the
 channel specification is::
 
     self.inputs = [("Train Data", ExampleTable, self.trainset, Default),
-               ("Test Data", ExampleTable, self.testset),
-               ("Learner", orange.Learner, self.learner, Multiple)]
+                   ("Test Data", ExampleTable, self.testset),
+                   ("Learner", orange.Learner, self.learner, Multiple)]
 
 That is, the :obj:`Train Data` channel is a single-token
 channel which is a default one (third parameter). Note that the flags can
-be added (or OR-d) together so :obj:`Default + Multi` is a valid flag.
+be added (or OR-d) together so :obj:`Default + Multiple` is a valid flag.
 To test how this works, connect a file widget to a learning curve widget and
 - nothing will really happen:
 

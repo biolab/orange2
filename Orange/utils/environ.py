@@ -205,7 +205,8 @@ def _configure_env(defaults=None):
             defaults[opt] = os.environ[opt]
     
     parser = ConfigParser.SafeConfigParser(defaults)
-    global_cfg = os.path.join(defaults["install_dir"], "orangerc.cfg")
+    global_cfg = os.path.join(defaults["install_dir"], "orng", "orangerc.cfg")
+
     if not parser.read([global_cfg]):
         pass
 #        import warnings
