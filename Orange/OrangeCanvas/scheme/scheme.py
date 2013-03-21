@@ -29,7 +29,7 @@ from .errors import (
 
 from .readwrite import scheme_to_ows_stream, parse_scheme
 
-from ..registry import WidgetDescription
+from ..registry import WidgetDescription, InputSignal, OutputSignal
 
 log = logging.getLogger(__name__)
 
@@ -200,7 +200,7 @@ class Scheme(QObject):
 
         See also
         --------
-        SchemeNode, Scheme.add_node
+        .SchemeNode, Scheme.add_node
 
         """
         if isinstance(description, WidgetDescription):
@@ -274,29 +274,25 @@ class Scheme(QObject):
     def new_link(self, source_node, source_channel,
                  sink_node, sink_channel):
         """
-        Create a new SchemeLink and add it to the scheme.
-
-        Same as::
-
-            scheme.add_link(SchemeLink(source_node, source_channel,
-                                       sink_node, sink_channel))
+        Create a new :class:`.SchemeLink` from arguments and add it to
+        the scheme. The new link is returned.
 
         Parameters
         ----------
         source_node : :class:`.SchemeNode`
             Source node of the new link.
-        source_channel : :class:`OutputSignal`
+        source_channel : :class:`.OutputSignal`
             Source channel of the new node. The instance must be from
-            `source_node.output_channels()`
+            ``source_node.output_channels()``
         sink_node : :class:`.SchemeNode`
             Sink node of the new link.
-        sink_channel : :class:`InputSignal`
+        sink_channel : :class:`.InputSignal`
             Sink channel of the new node. The instance must be from
-            `sink_node.input_channels()`
+            ``sink_node.input_channels()``
 
         See also
         --------
-        SchemeLink, Scheme.add_link
+        .SchemeLink, Scheme.add_link
 
         """
         link = SchemeLink(source_node, source_channel,
@@ -327,17 +323,18 @@ class Scheme(QObject):
 
     def check_connect(self, link):
         """
-        Check if the `link` can be added to the scheme.
+        Check if the `link` can be added to the scheme and raise an
+        appropriate exception.
 
         Can raise:
             - :class:`TypeError` if `link` is not an instance of
               :class:`.SchemeLink`
-            - :class:`SchemeCycleError` if the `link` would introduce a cycle
-            - :class:`IncompatibleChannelTypeError` if the channel types are
+            - :class:`.SchemeCycleError` if the `link` would introduce a cycle
+            - :class:`.IncompatibleChannelTypeError` if the channel types are
               not compatible
-            - :class:`SinkChannelError` if a sink channel has a `Single` flag
+            - :class:`.SinkChannelError` if a sink channel has a `Single` flag
               specification and the channel is already connected.
-            - :class:`DuplicatedLinkError` if a `link` duplicates an already
+            - :class:`.DuplicatedLinkError` if a `link` duplicates an already
               present link.
 
         """
@@ -374,7 +371,12 @@ class Scheme(QObject):
 
     def creates_cycle(self, link):
         """
-        Would the `link` if added to the scheme introduce a cycle.
+        Return `True` if `link` would introduce a cycle in the scheme.
+
+        Parameters
+        ----------
+        link : :class:`.SchemeLink`
+
         """
         check_type(link, SchemeLink)
         source_node, sink_node = link.source_node, link.sink_node
@@ -384,23 +386,42 @@ class Scheme(QObject):
 
     def compatible_channels(self, link):
         """
-        Do the channels in `link` have compatible types.
+        Return `True` if the channels in `link` have compatible types.
+
+        Parameters
+        ----------
+        link : :class:`.SchemeLink`
+
         """
         check_type(link, SchemeLink)
         return compatible_channels(link.source_channel, link.sink_channel)
 
     def can_connect(self, link):
+        """
+        Return `True` if `link` can be added to the scheme.
+
+        See also
+        --------
+        Scheme.check_connect
+
+        """
+        check_type(link, SchemeLink)
         try:
             self.check_connect(link)
             return True
-        except (SchemeCycleError, IncompatibleChannelTypeError):
+        except (SchemeCycleError, IncompatibleChannelTypeError,
+                SinkChannelError, DuplicatedLinkError):
             return False
-        except Exception:
-            raise
 
     def upstream_nodes(self, start_node):
         """
-        Return a set of all nodes upstream from `start_node`.
+        Return a set of all nodes upstream from `start_node` (i.e.
+        all ancestor nodes).
+
+        Parameters
+        ----------
+        start_node : :class:`.SchemeNode`
+
         """
         visited = set()
         queue = deque([start_node])
@@ -418,6 +439,11 @@ class Scheme(QObject):
     def downstream_nodes(self, start_node):
         """
         Return a set of all nodes downstream from `start_node`.
+
+        Parameters
+        ----------
+        start_node : :class:`.SchemeNode`
+
         """
         visited = set()
         queue = deque([start_node])
@@ -437,6 +463,11 @@ class Scheme(QObject):
         Return True if `node` is an ancestor node of `child` (is upstream
         of the child in the workflow). Both nodes must be in the scheme.
 
+        Parameters
+        ----------
+        node : :class:`.SchemeNode`
+        child : :class:`.SchemeNode`
+
         """
         return child in self.downstream_nodes(node)
 
@@ -454,13 +485,17 @@ class Scheme(QObject):
 
     def input_links(self, node):
         """
-        Return all input links connected to the `node` instance.
+        Return a list of all input links (:class:`.SchemeLink`) connected
+        to the `node` instance.
+
         """
         return self.find_links(sink_node=node)
 
     def output_links(self, node):
         """
-        Return all output links connected to the `node` instance.
+        Return a list of all output links (:class:`.SchemeLink`) connected
+        to the `node` instance.
+
         """
         return self.find_links(source_node=node)
 

@@ -79,7 +79,7 @@ class SchemeNode(QObject):
         raise ValueError("%r is not a valid output channel name for %r." % \
                          (name, self.description.name))
 
-    # The title of the node has changed
+    #: The title of the node has changed
     title_changed = Signal(unicode)
 
     def set_title(self, title):
@@ -92,13 +92,13 @@ class SchemeNode(QObject):
 
     def title(self):
         """
-        Return the node title.
+        The node title.
         """
         return self.__title
 
     title = Property(unicode, fset=set_title, fget=title)
 
-    # Position of the node in the scheme has changed
+    #: Position of the node in the scheme has changed
     position_changed = Signal(tuple)
 
     def set_position(self, pos):
@@ -117,7 +117,7 @@ class SchemeNode(QObject):
 
     position = Property(tuple, fset=set_position, fget=position)
 
-    # Node's progress value has changed.
+    #: Node's progress value has changed.
     progress_changed = Signal(float)
 
     def set_progress(self, value):
@@ -130,13 +130,13 @@ class SchemeNode(QObject):
 
     def progress(self):
         """
-        Return the current progress value. -1 if progress is not set.
+        The current progress value. -1 if progress is not set.
         """
         return self.__progress
 
     progress = Property(float, fset=set_progress, fget=progress)
 
-    # Node's processing state has changed.
+    #: Node's processing state has changed.
     processing_state_changed = Signal(int)
 
     def set_processing_state(self, state):
@@ -149,9 +149,7 @@ class SchemeNode(QObject):
 
     def processing_state(self):
         """
-        Return the node processing state, 0 for not processing, 1 the
-        node is busy.
-
+        The node processing state, 0 for not processing, 1 the node is busy.
         """
         return self.__processing_state
 

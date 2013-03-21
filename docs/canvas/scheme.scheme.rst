@@ -42,3 +42,19 @@ Scheme (``scheme``)
    .. autoattribute:: annotation_removed(annotation)
 
       Signal emitted when a `annotation` is removed from the scheme.
+
+
+.. autoclass:: SchemeCycleError
+   :show-inheritance:
+
+
+.. autoclass:: IncompatibleChannelTypeError
+   :show-inheritance:
+
+
+.. autoclass:: SinkChannelError
+   :show-inheritance:
+
+
+.. autoclass:: DuplicatedLinkError
+   :show-inheritance:

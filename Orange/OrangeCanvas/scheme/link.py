@@ -70,7 +70,10 @@ class SchemeLink(QObject):
 
     """
 
+    #: The link enabled state has changed
     enabled_changed = Signal(bool)
+
+    #: The link dynamic enabled state has changed.
     dynamic_enabled_changed = Signal(bool)
 
     def __init__(self, source_node, source_channel,
