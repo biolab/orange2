@@ -38,7 +38,8 @@ definition of the tabbed pane, and initialization of the graph is::
     tab.layout().addWidget(self.graph)
     self.setGraphGrid()
 
-:obj:`OWGrap` is a convenience subclass of QwtPlot and is imported from OWGraph module. For the graph, we use :obj:`setAxisAutoScale` to
+:obj:`OWGrap` is a convenience subclass of QwtPlot and is imported from
+OWGraph module. For the graph, we use :obj:`setAxisAutoScale` to
 request that the axis are automatically set in regard to the data that
 is plotted in the graph. We plot the graph in using the following
 code::

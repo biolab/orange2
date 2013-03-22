@@ -236,18 +236,39 @@ that handles the data signal. This is how it looks in the scatter plot
 
 In general, the function should go like this.
 
-* Do any clean-up you need, but without clearing any of the settings that need to be saved. Scatter plot needs none.
-* Call :obj:`self.closeContext`; this ensures that all the context dependent settings (e.g. attribute names from the list boxes) are remembered.
-* Get the data (or whatever you do) and set the controls to some defaults as if there were no context retrieving mechanism. Scatter plot does it by calling :obj:`initAttrValues()` which assigns the first two attributes to the x and y axis and the class attribute to the color. At this phase, you shouldn't call any functions that depend on the settings, such as drawing the graph.
-* Call :obj:`self.openContext` (more about the arguments later). This will search for a suitable context and assign the controls new values if one is found. If there is no saved context that can be used, a new context is created and filled with the default values that were assigned at the previous point.
-* Finally, adjust the widget according to the retrieved controls. Scatter plot now plots the graph by calling :obj:`updateGraph`.
+* Do any clean-up you need, but without clearing any of the settings that need
+  to be saved. Scatter plot needs none.
+* Call :obj:`self.closeContext()`; this ensures that all the context dependent
+  settings (e.g. attribute names from the list boxes) are remembered.
+* Get the data (or whatever you do) and set the controls to some defaults as
+  if there were no context retrieving mechanism. Scatter plot does it by
+  calling :obj:`initAttrValues()` which assigns the first two attributes to
+  the x and y axis and the class attribute to the color. At this phase, you
+  shouldn't call any functions that depend on the settings, such as drawing
+  the graph.
+* Call :obj:`self.openContext` (more about the arguments later). This will
+  search for a suitable context and assign the controls new values if one is
+  found. If there is no saved context that can be used, a new context is
+  created and filled with the default values that were assigned at the previous
+  point.
+* Finally, adjust the widget according to the retrieved controls. Scatter plot
+  now plots the graph by calling :obj:`updateGraph`.
 
 
-:obj:`closeContext` has an argument, the name of the context. If omitted (like above), the default name (:obj:`""`) is used. When opening the context, we give the name and some arguments on which the context depends. In case of :obj:`DomainContextHandler`, which scatter plot uses, we can give it a domain or any object that has a field :obj:`domain` containing a domain. Whether a saved context can be reused is judged upon the presence of attributes in the domain.
+:obj:`closeContext` has an argument, the name of the context. If omitted
+(like above), the default name (:obj:`""`) is used. When opening the context,
+we give the name and some arguments on which the context depends. In case of
+:obj:`DomainContextHandler`, which scatter plot uses, we can give it a domain
+or any object that has a field :obj:`domain` containing a domain. Whether a
+saved context can be reused is judged upon the presence of attributes in the
+domain.
 
-If the widget is constructed appropriately (that is, if it strictly uses OWGUI controls instead of the Qt's), no other administration is needed to switch the context.
+If the widget is constructed appropriately (that is, if it strictly uses OWGUI
+controls instead of the Qt's), no other administration is needed to switch the
+context.
 
-Except for declaring the context settings, that is. Scatter plot has this just below the :obj:`settingsList`::
+Except for declaring the context settings, that is. Scatter plot has this just
+below the :obj:`settingsList`::
 
     contextHandlers = {"": DomainContextHandler("",
       [("attrX", DomainContextHandler.Required),
@@ -256,18 +277,24 @@ Except for declaring the context settings, that is. Scatter plot has this just b
        ("attrShape", DomainContextHandler.Optional),
        ("attrSize", DomainContextHandler.Optional)])}
 
-:obj:`contextHandlers` is a dictionary whose keys are contexts' names. Each widget can have multiple contexts; for an unrealistic example, consider a scatter plot which gets two data sets and uses one attribute from the first for the x axis, and an attribute from the other for y. Since we won't see this often, the default name for a context is an empty string.
+:obj:`contextHandlers` is a dictionary whose keys are contexts' names. Each
+widget can have multiple contexts; for an unrealistic example, consider a
+scatter plot which gets two data sets and uses one attribute from the first
+for the x axis, and an attribute from the other for y. Since we won't see this
+often, the default name for a context is an empty string.
 
-The values in the dictionary are context handlers. Scatter plot declares that it has a DomainContextHandler with name "" (sorry for the repetition) with attributes "attrX", "attrY", "attrLabel", "attrShape" and "attrSize". The first two are required, while the other three are optional.
+The values in the dictionary are context handlers. Scatter plot declares that
+it has a DomainContextHandler with name "" (sorry for the repetition) with
+attributes "attrX", "attrY", "attrLabel", "attrShape" and "attrSize". The
+first two are required, while the other three are optional.
 
 *********************************
 Using :obj:`DomainContextHandler`
 *********************************
 
-What we said above is not exactly
-true. :obj:`DomainContextHandler.Required` is the default flag,
-so :obj:`("attrX", DomainContextHandler.Required)` can be
-replaced by simply :obj:`"attrX"`. And the latter three have the
+What we said above is not exactly true. :obj:`DomainContextHandler.Required`
+is the default flag, so :obj:`("attrX", DomainContextHandler.Required)` can
+be replaced by simply :obj:`"attrX"`. And the latter three have the
 same flags, so they can be grouped into :obj:`(["attrLabel",
 "attrShape", "attrSize"], DomainContextHandler.Optional)`. So
 what scatter plot really says is ::
@@ -276,7 +303,7 @@ what scatter plot really says is ::
        "attrX", "attrY",
        (["attrLabel", "attrShape", "attrSize"], DomainContextHandler.Optional)])}
 
-What do "optional" and "required" mean? Say that you used the
+What do ``Optional`` and ``Required`` mean? Say that you used the
 scatter plot on the data with attributes A, B, C and D; A and B are
 used for the x and y axis and D defined the colors of examples. Now
 you load a new data with attributes A, B, E, and F. The same context
@@ -294,28 +321,45 @@ to be context handlers derived from the abstract class
 upon its constructor, so the above applies only to the usual
 :obj:`DomainContextHandler`.
 
-DomainContextHandler's constructor has the following arguments
+:class:`DomainContextHandler`'s constructor has the following arguments
 
-contextName
-The name of the context; it should consist of letters and digits (it is used as a prt of a variable name). In case the widget has multiple contexts, they should have unique names. In most cases there will be only one context, so you can leave it empty.
+`contextName`
+   The name of the context; it should consist of letters and digits (it is
+   used as a part of a variable name). In case the widget has multiple
+   contexts, they should have unique names. In most cases there will be only
+   one context, so you can leave it empty.
 
-fields
-The names of the attributes to be saved and the corresponding flags. They are described in more details below.
+`fields`
+   The names of the attributes to be saved and the corresponding flags. They
+   are described in more details below.
 
-cloneIfImperfect
-states that when the context doesn't match perfectly, that is, unless the domain is exactly the same as the domain from which the context was originally created, :obj:`openContext` shouldn't reuse a context but create a copy of the best matching context instead. Default is :obj:`True`.
+`cloneIfImperfect`
+   States that when the context doesn't match perfectly, that is, unless the
+   domain is exactly the same as the domain from which the context was
+   originally created, :obj:`openContext` shouldn't reuse a context but create
+   a copy of the best matching context instead. Default is :obj:`True`.
 
-loadImperfect
-tells whether the contexts that do not match perfectly (see above) should be used or not. Default is :obj:`True`.
+`loadImperfect`
+   tells whether the contexts that do not match perfectly (see above) should
+   be used or not. Default is :obj:`True`.
 
-findImperfect
-tells whether imperfect contexts match at all or not (this flag is somewhat confused with :obj:`loadImperfect`, but it may come useful some day. Default is :obj:`True` again.
+`findImperfect`
+   Tells whether imperfect contexts match at all or not (this flag is
+   somewhat confused with :obj:`loadImperfect`, but it may come useful some
+   day). Default is :obj:`True` again.
 
-syncWithGlobal
-tells whether instances of this widget should have a shared list of contexts (default). The alternative is that each keeps its own list; each individual list is merged with the global when the widget is deleted from the canvas (or when the canvas is closed). This setting only applies to canvas, while in saved applications widgets always have separate settings lists.
+`syncWithGlobal`
+   Tells whether instances of this widget should have a shared list of
+   contexts (default). The alternative is that each keeps its own list;
+   each individual list is merged with the global when the widget is deleted
+   from the canvas (or when the canvas is closed). This setting only applies
+   to canvas, while in saved applications widgets always have separate settings
+   lists.
 
-maxAttributesToPickle
-To keep the size of the context file small, settings for domains exceeding a certain number of attributes are not pickled. Default is 100, but you can increase (or decrease this) if you need to.
+`maxAttributesToPickle`
+   To keep the size of the context file small, settings for domains exceeding
+   a certain number of attributes are not pickled. Default is 100, but you can
+   increase (or decrease this) if you need to.
 
 
 The truly interesting argument is :obj:`fields`. It roughly corresponds to the
@@ -325,9 +369,21 @@ saved. The elements of :obj:`fields` can be strings, tuples and/or instances of
 latter). When given as tuples, they should consist of two elements, the field
 name (just like in :obj:`settingsList`) and a flag. Here are the possible flags:
 
-* :obj:`DomainContextHandler.Optional`, :obj:`DomainContextHandler.SelectedRequired` and :obj:`DomainContextHandler.Required` state whether the attribute is optional or required, as explained above. Default is :obj:`Required`. :obj:`DomainContextHandler.SelectedRequired` is applicable only if the control is a list box, where it means that the attributes that are selected are required while the other attributes from the list are not.
-* :obj:`DomainContextHandler.NotAttribute` the setting is not an attribute name. You can essentially make a check box context dependent, but we very strongly dissuade from this since it can really confuse the user if some check boxes change with the data while most do not.
-* :obj:`DomainContextHandler.List` tells that the attribute corresponds to a list box.
+* :obj:`DomainContextHandler.Optional`,
+  :obj:`DomainContextHandler.SelectedRequired` and
+  :obj:`DomainContextHandler.Required` state whether the attribute is optional
+  or required, as explained above. Default is :obj:`Required`.
+  :obj:`DomainContextHandler.SelectedRequired` is applicable only if the
+  control is a list box, where it means that the attributes that are selected
+  are required while the other attributes from the list are not.
+
+* :obj:`DomainContextHandler.NotAttribute` the setting is not an attribute
+  name. You can essentially make a check box context dependent, but we very
+  strongly dissuade from this since it can really confuse the user if some
+  check boxes change with the data while most do not.
+
+* :obj:`DomainContextHandler.List` tells that the attribute corresponds to a
+  list box.
 
 
 Flags can be combined, so to specify a list in which all attributes
@@ -347,91 +403,120 @@ in the scatter plot, too.
 
 But the tuples are actually a shortcut for instances of
 :obj:`ContextField`. When you say :obj:`"attrX"` this is actually
-:obj:`ContextField("attrX", DomainContextHandler.Required)` (you should
-appreciate the shortcurt, right?). But see this monster from widget "Select
-Attributes" (file OWDataDomain.py)::
+:obj:`ContextField("attrX", DomainContextHandler.Required)`
 
-    contextHandlers = {"": DomainContextHandler("",
-        [ContextField("chosenAttributes",
-                       DomainContextHandler.RequiredList,
-                       selected="selectedChosen", reservoir="inputAttributes"),
-         ContextField("classAttribute",
-                       DomainContextHandler.RequiredList,
-                       selected="selectedClass", reservoir="inputAttributes"),
-         ContextField("metaAttributes",
-                       DomainContextHandler.RequiredList,
-                       selected="selectedMeta", reservoir="inputAttributes")
-    ])}
+..
+   But see this monster from widget "Select Attributes" (file OWDataDomain.py)::
+
+       contextHandlers = {"": DomainContextHandler("",
+           [ContextField("chosenAttributes",
+                          DomainContextHandler.RequiredList,
+                          selected="selectedChosen", reservoir="inputAttributes"),
+            ContextField("classAttribute",
+                          DomainContextHandler.RequiredList,
+                          selected="selectedClass", reservoir="inputAttributes"),
+            ContextField("metaAttributes",
+                          DomainContextHandler.RequiredList,
+                          selected="selectedMeta", reservoir="inputAttributes")
+       ])}
 
 
-:obj:`ContextField`'s constructor gets the name and flags and a list of
-arguments that are written directly into the object instance. To follow the
-example, recall what Select Attributes looks like: it allows you to select a
-subset of attributes, the class attribute and the meta attributes that you
-want to use; the attributes in the corresponding three list boxes are stored
-in the widget's variables :obj:`chosenAttributes`, :obj:`classAttribute`
-and :obj:`metaAttributes` respectively. When the user selects some attributes
-in any of these boxes, the selection is stored in :obj:`selectedChosen`,
-:obj:`selectedClass` and :obj:`selectedMeta`. The remaining attributes
-- those that are not in any of these three list boxes - are in the leftover
-listbox on the left-hand side of the widget, and the content of the box is
-stored in the widget's variable :obj:`inputAttributes`.
+   :obj:`ContextField`'s constructor gets the name and flags and a list of
+   arguments that are written directly into the object instance. To follow the
+   example, recall what Select Attributes looks like: it allows you to select a
+   subset of attributes, the class attribute and the meta attributes that you
+   want to use; the attributes in the corresponding three list boxes are stored
+   in the widget's variables :obj:`chosenAttributes`, :obj:`classAttribute`
+   and :obj:`metaAttributes` respectively. When the user selects some attributes
+   in any of these boxes, the selection is stored in :obj:`selectedChosen`,
+   :obj:`selectedClass` and :obj:`selectedMeta`. The remaining attributes
+   - those that are not in any of these three list boxes - are in the leftover
+   listbox on the left-hand side of the widget, and the content of the box is
+   stored in the widget's variable :obj:`inputAttributes`.
 
-The above definition tells that the context needs to store the contents of
-the three list boxes by specifying the corresponding variables; the list of
-attributes is given as the name of the field and the list of selected
-attributes is in the optional named attribute :obj:`selected`. By
-:obj:`reservoir` we told the context handler that the attributes are taken
-from :obj:`inputAttributes`. So, when a context is retrieved, all the
-attributes that are not in any of the three list boxes are put into
-:obj:`inputAttributes`.
+   The above definition tells that the context needs to store the contents of
+   the three list boxes by specifying the corresponding variables; the list of
+   attributes is given as the name of the field and the list of selected
+   attributes is in the optional named attribute :obj:`selected`. By
+   :obj:`reservoir` we told the context handler that the attributes are taken
+   from :obj:`inputAttributes`. So, when a context is retrieved, all the
+   attributes that are not in any of the three list boxes are put into
+   :obj:`inputAttributes`.
 
-Why the mess? Couldn't we just store :obj:`inputAttributes` as the fourth
-list box? Imagine that the user first loads the data with attributes A, B,
-C, D, E and F, puts A, B, C in chosen and D in class. E and F are left in
-:obj:`inputAttributes`. Now she loads another data which has attributes A,
-B, C, D, E, and G. The contexts should match (the new data has all the
-attributes we need), but :obj:`inputAttributes` should now contain E and
-G, not E and F, since F doesn't exist any more, while G needs to be made
-available.
+   Why the mess? Couldn't we just store :obj:`inputAttributes` as the fourth
+   list box? Imagine that the user first loads the data with attributes A, B,
+   C, D, E and F, puts A, B, C in chosen and D in class. E and F are left in
+   :obj:`inputAttributes`. Now she loads another data which has attributes A,
+   B, C, D, E, and G. The contexts should match (the new data has all the
+   attributes we need), but :obj:`inputAttributes` should now contain E and
+   G, not E and F, since F doesn't exist any more, while G needs to be made
+   available.
 
-You can use :obj:`ContextField` (instead of tuples and strings) for
-declaring any fields, but you will usually need them only for lists or,
-maybe, some complicated future controls.
+   You can use :obj:`ContextField` (instead of tuples and strings) for
+   declaring any fields, but you will usually need them only for lists or,
+   maybe, some complicated future controls.
 
 
 *****************************
 Defining New Context Handlers
 *****************************
 
-Avoid it if you can. If you can't, here's the list of the methods you may need to implement. You may want to copy as much from the :obj:`DomainContextHandler` as you can.
+Avoid it if you can. If you can't, here's the list of the methods you may need
+to implement. You may want to copy as much from the :obj:`DomainContextHandler`
+as you can.
 
 
-__init__
-Has the same arguments as the :obj:`DomainContextHandler`'s, except for the :obj:`fields`.
+:obj:`__init__`
+   Has the same arguments as the :obj:`DomainContextHandler`'s, except for the
+   :obj:`fields`.
 
-newContext
-Creates and returns a new context. In :obj:`ContextHandler` is returns an instance of :obj:`Context`; you probably won't need to change this.
+:obj:`newContext()`
+   Creates and returns a new context. In :obj:`ContextHandler` it returns an
+   instance of :obj:`Context`; you probably won't need to change this.
 
-openContext
-The method is given a widget and some additional arguments based on which the contexts are compared. In case of :obj:`DomainContextHandler` this is a domain. There can be one or more such arguments. Note that the method :obj:`openContext` which we talked about above is a method of :obj:`OWBaseWidget`, while here we describe a method of context handlers. Actually, :obj:`OWBaseWidget(self, contextName, *args)` calls the context handler's, passing it's :obj:`self` and :obj:`*args`.
+:obj:`openContext(widget, *args)`
+   The method is given a widget and some additional arguments based on which
+   the contexts are compared. In case of :obj:`DomainContextHandler` this is
+   a domain. There can be one or more such arguments. Note that the method
+   :obj:`openContext` which we talked about above is a method of
+   :obj:`OWBaseWidget`, while here we describe a method of context handlers.
+   Actually, :obj:`OWBaseWidget.openContext(self,contextName, *args)` calls
+   the context handler's, passing it's :obj:`self` and :obj:`*args`.
 
-It needs to find a matching context and copy its settings to the widget or construct a new context and copy the settings from the widget. Also, when an old context is reused, it should be moved to the beginning of the list. :obj:`ContextHandler` already defines this method, which should usually suffice. :obj:`DomainContextHandler` adds very little to it.
+   It needs to find a matching context and copy its settings to the widget or
+   construct a new context and copy the settings from the widget. Also, when an
+   old context is reused, it should be moved to the beginning of the list.
+   :obj:`ContextHandler` already defines this method, which should usually
+   suffice. :obj:`DomainContextHandler` adds very little to it.
 
-closeContext
-Copies the settings from the widget by calling :obj:`settingsFromWidget`. You probably won't need to overwrite it.
+:obj:`closeContext`
+   Copies the settings from the widget by calling :obj:`settingsFromWidget`.
+   You probably won't need to overwrite it.
 
-match
-The method is called by :obj:`openContext` to find a matching context. Given an existing context and the arguments that were given to :obj:`openContext` (for instance, a domain), it should decide whether the context matches or not. If it returns 2, it is a perfect match (e.g. domains are the same). If it returns 0, the context is not applicable (e.g. some of the required attributes are missing). In case it returns a number between 0 and 1 (excluding 0), the higher the number the better the match. :obj:`openContext` will use the best matching context (or the perfect one, if found).
+:obj:`match`
+   The method is called by :obj:`openContext` to find a matching context.
+   Given an existing context and the arguments that were given to
+   :obj:`openContext` (for instance, a domain), it should decide whether the
+   context matches or not. If it returns 2, it is a perfect match (e.g.
+   domains are the same). If it returns 0, the context is not applicable
+   (e.g. some of the required attributes are missing). In case it returns a
+   number between 0 and 1 (excluding 0), the higher the number the better the
+   match. :obj:`openContext` will use the best matching context (or the
+   perfect one, if found).
 
-settingsToWidget/settingsFromWidget
-Copy the settings to and from the widget.
+:obj:`settingsToWidget` / :obj:`settingsFromWidget`
+   Copy the settings to and from the widget.
 
-fastSave
-This function is called by the widget's :obj:`__setattr__` each time any widget's variable is changed to immediately synchronize the context with the state of the widget. The method is really needed only when :obj:`syncWithGlobal` is set. When the context is closed, :obj:`closeContext` will save the settings anyway.
+:obj:`fastSave`
+   This function is called by the widget's :obj:`__setattr__` each time any
+   widget's variable is changed to immediately synchronize the context with
+   the state of the widget. The method is really needed only when
+   :obj:`syncWithGlobal` is set. When the context is closed,
+   :obj:`closeContext` will save the settings anyway.
 
-cloneContext
-Given an existing context, it prepares and returns a copy. The method is optional; :obj:`copy.deepcopy` can be used instead.
+:obj:`cloneContext`
+   Given an existing context, it prepares and returns a copy. The method is
+   optional; :obj:`copy.deepcopy` can be used instead.
 
 
 ***************************
@@ -439,9 +524,8 @@ Saving and loading settings
 ***************************
 
 Settings can be saved in two different places. Orange Canvas save
-settings in .ini files in directory
-Orange/OrangeWidgets/widgetSettings. Each widget type has its separate
-file; for instance, the scatter plot's settings are saved in
+settings in .ini files in its application data directory. Each widget type has
+a separate file; for instance, the scatter plot's settings are saved in
 :obj:`ScatterPlot.ini`. Saved schemas and applications save
 settings in .sav files; the .sav file is placed in the same directory
 as the schema or application, has the same name (except for the
@@ -450,9 +534,8 @@ schema/application.
 
 Saving and loading is done automatically by canvas or the
 application. In a very rare case you need it to run these operations
-manually, the functions involved are :obj:`loadSettings(self, file =
-None)`, :obj:`saveSettings(self, file = None)`,
-:obj:`loadSettingsStr(self, str)`,
+manually, the functions involved are :obj:`loadSettings(self, file=None)`,
+:obj:`saveSettings(self, file=None)`, :obj:`loadSettingsStr(self, str)`,
 :obj:`saveSettingsStr(self)`. The first two load and save from
 the file; if not given, the default name (widget's name +
 :obj:`.ini`) is used. They are called by the canvas, never by a
