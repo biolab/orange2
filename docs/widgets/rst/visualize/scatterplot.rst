@@ -67,7 +67,7 @@ Intelligent Data Visualization
 If a data set has many attributes, it is impossible to manually scan through
 all the pairs of attributes to find interesting scatterplots. Intelligent data
 visualizations techniques are about finding such visualizations automatically.
-Orange's Scatterplot includes one such tool called VizRank ([Leban2006]_), that
+Orange's Scatterplot includes one such tool called VizRank ([1]_), that
 can be in current implementation used only with classification data sets, that
 is, data sets where instances are labeled with a discrete class. The task of
 optimization is to find those scatterplot projections, where instances with
@@ -97,7 +97,7 @@ may be stopped anytime. Search through modification of top-rated projections
 VizRank's options are quite elaborate, and if you are not the expert in machine
 learning it would be best to leave them at their defaults. The options are
 grouped according to the different aspects of the methods as described in
-[Leban2006]_. The projections are evaluated through testing a selected
+[1]_. The projections are evaluated through testing a selected
 classifier (:obj:`Projection evaluation method` default is k-nearest neighbor
 classification) using some standard evaluation technique
 (:obj:`Testing method`). For very large data set use sampling to speed-up the
@@ -201,6 +201,6 @@ filled symbols).
 References
 ----------
 
-.. [Leban2006] Leban G, Zupan B, Vidmar G, Bratko I. VizRank: Data
+.. [1] Leban G, Zupan B, Vidmar G, Bratko I. VizRank: Data
    Visualization Guided by Machine Learning. Data Mining and Knowledge
    Discovery 13(2): 119-136, 2006.

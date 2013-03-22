@@ -175,14 +175,14 @@ saves the value of the corresponding attributes. For a check box there
 should be a corresponding widget's attribute recording the check box's
 state so that when the user changes a check box, the attribute changes
 and vice-versa. Although you can create such a link manually, you
-should always use the module :doc:`OWGUI <owgui.rst>` instead;
+should always use the module :doc:`OWGUI <owgui>` instead;
 for instance, for a check box, use :obj:`OWGUI.checkBox` and not
 simply the Qt's :obj:`QCheckBox`.
 
 The settings fall into two groups. Some of them do not depend on
 the data, while other are context-dependent. For the first to be saved
 properly, you only need to list them in the :obj:`settingsList`
-in the widget definition, as already described :doc:`elsewhere <settings.rst>`
+in the widget definition, as already described :doc:`elsewhere <settings>`
 
 **************************
 Context dependent settings

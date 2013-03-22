@@ -43,11 +43,11 @@ for a start, a projection of a **zoo.tab** data set (animal species and their
 features) shown below. Notice that it is breast-feeding (milk) and hair that
 nicely characterizes mamals from the other organisms, and that laying eggs is
 something that birds do. This specific visualization was obtained using FreeViz
-([Demsar2007]_), while the widget also implements an interface to supervised
-principal component analysis ([Koren2003]_), partial least squares (for a nice
-introduction, see [Boulesteix2007]_), and RadViz visualization and
+([1]_), while the widget also implements an interface to supervised
+principal component analysis ([2]_), partial least squares (for a nice
+introduction, see [3]_), and RadViz visualization and
 associated intelligent data visualization technique called VizRank 
-([Leban2006]_)
+([4]_)
 
 .. image:: images/LinearProjection-Zoo.png
    :alt: Lienar Projection on zoo data set
@@ -76,7 +76,7 @@ arbitrary or even manually (:obj:`Set anchor positions`). The later also works
 at any stage of optimization, and we recommend to play with this option in
 order to understand how a change of one anchor affects the positions of the
 data points. Controls in :obj:`Forces` box are used to set the parameters that
-define the type of the forces between the data points (see [Demsar2007]_).
+define the type of the forces between the data points (see [1]_).
 In any linear projection, projections of unit vector that are very short
 compared to the others indicate that their associated attribute is not very
 informative for particular classification task. Those vectors, that is, their
@@ -92,7 +92,7 @@ results - because of different optimization methods and differences in their
 bias - may be quite different.
 
 The fourth projection search technique that can be accessed from this widget
-is VizRank search algorithm with RadViz visualization ([Leban2006]_). This is
+is VizRank search algorithm with RadViz visualization ([4]_). This is
 essentially the same visualization and projection search method as implemented
 in :ref:`Radviz`.
 
@@ -106,19 +106,19 @@ widget.
 References
 ----------
 
-.. [Demsar2007] Demsar J, Leban G, Zupan B. FreeViz-An intelligent multivariate
+.. [1] Demsar J, Leban G, Zupan B. FreeViz-An intelligent multivariate
    visualization approach to explorative analysis of biomedical data. J Biomed
    Inform 40(6):661-71, 2007.
 
-.. [Koren2003] Koren Y, Carmel L. Visualization of labeled data using linear
+.. [2] Koren Y, Carmel L. Visualization of labeled data using linear
    transformations, in: Proceedings of IEEE Information Visualization 2003
    (InfoVis'03), 2003. `PDF <http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=3DDF0DB68D8AB9949820A19B0344C1F3?doi=10.1.1.13.8657&rep=rep1&type=pdf>`_
 
-.. [Boulesteix2007] Boulesteix A-L, Strimmer K (2006) Partial least squares:
+.. [3] Boulesteix A-L, Strimmer K (2006) Partial least squares:
    a versatile tool for the analysis of high-dimensional genomic data,
    Briefings in Bioinformatics 8(1): 32-44. 
    `Abstract <http://bib.oxfordjournals.org/cgi/content/abstract/8/1/32>`_
 
-.. [Leban2006] Leban, G., B. Zupan, et al. (2006). "VizRank: Data Visualization
+.. [4] Leban, G., B. Zupan, et al. (2006). "VizRank: Data Visualization
    Guided by Machine Learning." Data Mining and Knowledge Discovery 13(2):
    119-136.
