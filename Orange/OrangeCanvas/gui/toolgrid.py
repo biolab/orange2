@@ -109,8 +109,8 @@ class ToolGrid(QFrame):
     """
     A widget containing a grid of actions/buttons.
 
-    Actions can be added using standard :ref:`QWidget.addAction(QAction)`
-    and :ref:`QWidget.insertAction(int, QAction)` methods.
+    Actions can be added using standard :func:`QWidget.addAction(QAction)`
+    and :func:`QWidget.insertAction(int, QAction)` methods.
 
     Parameters
     ----------

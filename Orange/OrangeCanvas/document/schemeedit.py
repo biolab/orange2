@@ -675,7 +675,7 @@ class SchemeEditWidget(QWidget):
     def createNewNode(self, description, title=None, position=None):
         """
         Create a new :class:`.SchemeNode` and add it to the document.
-        The new node is constructed using :ref:`newNodeHelper` method.
+        The new node is constructed using :func:`newNodeHelper` method.
 
         """
         node = self.newNodeHelper(description, title, position)
