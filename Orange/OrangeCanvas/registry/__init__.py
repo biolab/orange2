@@ -39,6 +39,10 @@ NAMED_COLORS = \
      }
 
 
+# default color when the category does not provide it
+DEFAULT_COLOR = "light-yellow"
+
+
 from .description import (
     WidgetDescription, CategoryDescription,
     InputSignal, OutputSignal

@@ -20,7 +20,7 @@ from .base import WidgetRegistry
 
 from ..resources import icon_loader
 
-from . import cache, NAMED_COLORS
+from . import cache, NAMED_COLORS, DEFAULT_COLOR
 
 
 class QtWidgetDiscovery(QObject, WidgetDiscovery):
@@ -218,7 +218,7 @@ class QtWidgetRegistry(QObject, WidgetRegistry):
         if desc.background:
             background = desc.background
         else:
-            background = "light-yellow"
+            background = DEFAULT_COLOR
 
         background = NAMED_COLORS.get(background, background)
 
@@ -253,6 +253,8 @@ class QtWidgetRegistry(QObject, WidgetRegistry):
             background = desc.background
         elif category.background:
             background = category.background
+        else:
+            background = DEFAULT_COLOR
 
         if background is not None:
             background = NAMED_COLORS.get(background, background)

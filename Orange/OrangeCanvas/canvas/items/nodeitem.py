@@ -51,8 +51,8 @@ def default_palette():
     """
     Create and return a default palette for a node.
     """
-    return create_palette(QColor(NAMED_COLORS["light-orange"]),
-                          QColor(NAMED_COLORS["orange"]))
+    return create_palette(QColor(NAMED_COLORS["light-yellow"]),
+                          QColor(NAMED_COLORS["yellow"]))
 
 
 def animation_restart(animation):
