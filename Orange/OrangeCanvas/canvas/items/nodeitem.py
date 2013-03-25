@@ -1,5 +1,7 @@
 """
-NodeItem
+=========
+Node Item
+=========
 
 """
 
@@ -271,9 +273,10 @@ class AnchorPoint(QGraphicsObject):
     A anchor indicator on the :class:`NodeAnchorItem`.
     """
 
-    # Signal emitted when the item's scene position changes.
+    #: Signal emitted when the item's scene position changes.
     scenePositionChanged = Signal(QPointF)
 
+    #: Signal emitted when the item's `anchorDirection` changes.
     anchorDirectionChanged = Signal(QPointF)
 
     def __init__(self, *args):
@@ -691,16 +694,17 @@ class NodeItem(QGraphicsObject):
     An widget node item in the canvas.
     """
 
-    # Scene position of the node has changed.
+    #: Signal emitted when the scene position of the node has changed.
     positionChanged = Signal()
 
-    # Geometry of the channel anchors changed
+    #: Signal emitted when the geometry of the channel anchors changes.
     anchorGeometryChanged = Signal()
 
-    # The item has been activated (by a mouse double click or a keyboard).
+    #: Signal emitted when the item has been activated (by a mouse double
+    #: click or a keyboard)
     activated = Signal()
 
-    # The item is under the mouse.
+    #: The item is under the mouse.
     hovered = Signal()
 
     #: Span of the anchor in degrees
@@ -851,7 +855,7 @@ class NodeItem(QGraphicsObject):
 
     def setIcon(self, icon):
         """
-        Set the node item's icon.
+        Set the node item's icon (:class:`QIcon`).
         """
         if isinstance(icon, QIcon):
             self.icon_item = GraphicsIconItem(self.shapeItem, icon=icon,
@@ -992,7 +996,7 @@ class NodeItem(QGraphicsObject):
 
     def newInputAnchor(self):
         """
-        Create and return a new input anchor point.
+        Create and return a new input :class:`AnchorPoint`.
         """
         if not (self.widget_description and self.widget_description.inputs):
             raise ValueError("Widget has no inputs.")
@@ -1018,7 +1022,7 @@ class NodeItem(QGraphicsObject):
 
     def newOutputAnchor(self):
         """
-        Create a new output anchor indicator.
+        Create and return a new output :class:`AnchorPoint`.
         """
         if not (self.widget_description and self.widget_description.outputs):
             raise ValueError("Widget has no outputs.")
@@ -1044,13 +1048,13 @@ class NodeItem(QGraphicsObject):
 
     def inputAnchors(self):
         """
-        Return a list of input anchor points.
+        Return a list of all input anchor points.
         """
         return self.inputAnchorItem.anchorPoints()
 
     def outputAnchors(self):
         """
-        Return a list of output anchor points.
+        Return a list of all output anchor points.
         """
         return self.outputAnchorItem.anchorPoints()
 
