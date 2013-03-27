@@ -89,7 +89,7 @@ fi
 
 ## Daily bundle build from hg (for now always until versioning is established).
 if [[ true || $NEW_ORANGE || $NEW_BIOINFORMATICS || $NEW_TEXT || $FORCE ]]; then
-	./bundle-daily-build-hg.sh $NEW_BUNDLE_ADDONS &> $WORK_DIR/bundle-daily-build.log
+	./bundle-daily-build-hg.sh "$WORK_DIR" "$PUBLISH_DIR" $NEW_BUNDLE_ADDONS &> $WORK_DIR/bundle-daily-build.log
 	EXIT_VALUE=$?
 fi
 
