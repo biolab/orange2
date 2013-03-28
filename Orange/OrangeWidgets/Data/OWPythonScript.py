@@ -343,7 +343,7 @@ class ScriptItemDelegate(QStyledItemDelegate):
 class OWPythonScript(OWWidget):
 
     settingsList = ["codeFile", "libraryListSource", "currentScriptIndex",
-                    "splitterState"]
+                    "splitterState", "auto_execute"]
 
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Python Script')
