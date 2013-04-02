@@ -26,6 +26,9 @@ Data
     * - |Impute_icon| :ref:`Impute`
       - |Outliers_icon| :ref:`Outliers`
       - |EditDomain_icon| :ref:`Edit Domain`
+    * - |PythonScript_icon| :ref:`Python Script`
+      -
+      -
 
 .. |File_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/File_48.png
 	:align: middle
@@ -116,6 +119,13 @@ Data
    :alt: Edit Domain
    :width: 48
    :height: 48
+
+.. |PythonScript_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/PythonScript_48.png
+   :align: middle
+   :alt: Edit Domain
+   :width: 48
+   :height: 48
+
 
 Visualize
 ---------
