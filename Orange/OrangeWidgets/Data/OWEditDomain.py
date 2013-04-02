@@ -156,8 +156,8 @@ class VariableEditor(QWidget):
         self.labels_model = DictItemsModel()
         self.labels_edit.setModel(self.labels_model)
 
-        self.labels_edit.selectionModel().selectionChanged.connect(\
-                                    self.on_label_selection_changed)
+        self.labels_edit.selectionModel().selectionChanged.connect(
+            self.on_label_selection_changed)
 
         # Necessary signals to know when the labels change
         self.labels_model.dataChanged.connect(self.on_labels_changed)
@@ -460,8 +460,9 @@ class OWEditDomain(OWWidget):
         self.data = data
         if data is not None:
             input_domain = data.domain
-            all_vars = list(input_domain.variables) + \
-                       input_domain.getmetas().values()
+            all_vars = (list(input_domain.variables) +
+                        list(input_domain.class_vars) +
+                        input_domain.getmetas().values())
 
             self.openContext("", data)
 
@@ -637,20 +638,26 @@ class OWEditDomain(OWWidget):
         """
         new_data = None
         if self.data is not None:
-            new_vars = list(self.domain_model)
-            variables = new_vars[: len(self.input_domain.variables)]
+            n_vars = len(self.input_domain.variables)
+            n_class_vars = len(self.input_domain.class_vars)
+            all_new_vars = list(self.domain_model)
+            variables = all_new_vars[: n_vars]
             class_var = None
             if self.input_domain.class_var:
                 class_var = variables[-1]
-                variables = variables[:-1]
+                attributes = variables[:-1]
+            else:
+                attributes = variables
 
-            new_metas = new_vars[len(self.input_domain.variables):]
-            new_domain = Orange.data.Domain(variables, class_var)
+            class_vars = all_new_vars[n_vars: n_vars + n_class_vars]
+            new_metas = all_new_vars[n_vars + n_class_vars:]
+            new_domain = Orange.data.Domain(attributes, class_var,
+                                            class_vars=class_vars)
 
             # Assumes getmetas().items() order has not changed.
             # TODO: store metaids in set_data method
             for (mid, _), new in zip(self.input_domain.getmetas().items(),
-                                       new_metas):
+                                     new_metas):
                 new_domain.addmeta(mid, new)
 
             new_data = Orange.data.Table(new_domain, self.data)
