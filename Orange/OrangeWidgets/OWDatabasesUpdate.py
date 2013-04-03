@@ -5,9 +5,9 @@ import sys
 
 from datetime import datetime
 
-import orngServerFiles
-import orngEnviron
+import Orange
 
+from Orange.utils import serverfiles, environ
 from Orange.utils.serverfiles import sizeformat as sizeof_fmt
 
 from OWWidget import *
@@ -17,7 +17,7 @@ import OWGUIEx
 
 
 class ItemProgressBar(QProgressBar):
-    """Progress Bar with and advance() slot.
+    """Progress Bar with and `advance()` slot.
     """
     @pyqtSignature("advance()")
     def advance(self):
@@ -45,7 +45,7 @@ class ProgressBarRedirect(QObject):
         else:
             QTimer.singleShot(10, self.advance)
 
-_icons_dir = os.path.join(orngEnviron.canvasDir, "icons")
+_icons_dir = os.path.join(environ.canvas_install_dir, "icons")
 
 
 def icon(name):
@@ -53,6 +53,9 @@ def icon(name):
 
 
 class UpdateOptionsWidget(QWidget):
+    """
+    A Widget with download/update/remove options.
+    """
     def __init__(self, updateCallback, removeCallback, state, *args):
         QWidget.__init__(self, *args)
         self.updateCallback = updateCallback
@@ -101,6 +104,8 @@ class UpdateOptionsWidget(QWidget):
             self.updateButton.setToolTip("")
             self.updateButton.setEnabled(False)
             self.removeButton.setEnabled(True)
+        else:
+            raise ValueError("Invalid state %r" % state)
 
 
 class UpdateTreeWidgetItem(QTreeWidgetItem):
@@ -111,16 +116,20 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
 
     def __init__(self, master, treeWidget, domain, filename, infoLocal,
                  infoServer, *args):
+        dateServer = dateLocal = None
+        if infoServer:
+            dateServer = datetime.strptime(
+                infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S"
+            )
+        if infoLocal:
+            dateLocal = datetime.strptime(
+                infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S"
+            )
         if not infoLocal:
             self.state = 2
         elif not infoServer:
             self.state = 3
         else:
-            dateServer = datetime.strptime(
-                infoServer["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S"
-            )
-            dateLocal = datetime.strptime(
-                infoLocal["datetime"].split(".")[0], "%Y-%m-%d %H:%M:%S")
             self.state = 0 if dateLocal >= dateServer else 1
 
         title = infoServer["title"] if infoServer else (infoLocal["title"])
@@ -137,6 +146,10 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
             state += dateServer.strftime(" (%Y, %b, %d)")
 
         QTreeWidgetItem.__init__(self, treeWidget, ["", title, size])
+        if dateServer is not None:
+            self.setData(3, Qt.DisplayRole,
+                         dateServer.date().isoformat())
+
         self.updateWidget = UpdateOptionsWidget(
             self.StartDownload, self.Remove, self.state, treeWidget
         )
@@ -159,8 +172,8 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         tooltip = "State: %s\nTags: %s" % (state[self.state],
                                            ", ".join(self.tags))
         if self.state != 2:
-            tooltip += "\nFile: %s" % \
-                        orngServerFiles.localpath(self.domain, self.filename)
+            tooltip += ("\nFile: %s" %
+                        serverfiles.localpath(self.domain, self.filename))
         for i in range(1, 5):
             self.setToolTip(i, tooltip)
 
@@ -168,7 +181,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.updateWidget.removeButton.setEnabled(False)
         self.updateWidget.updateButton.setEnabled(False)
         self.setData(2, Qt.DisplayRole, QVariant(""))
-        serverFiles = orngServerFiles.ServerFiles(
+        serverFiles = serverfiles.ServerFiles(
             access_code=self.master.accessCode if self.master.accessCode
             else None
         )
@@ -202,7 +215,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.treeWidget().setItemWidget(self, 2, pb)
         pb.show()
 
-        self.task.apply_async(orngServerFiles.download,
+        self.task.apply_async(serverfiles.download,
                               args=(self.domain, self.filename, serverFiles),
                               kwargs=dict(callback=self.task.emitAdvance))
 
@@ -230,7 +243,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
             master_pb.in_progress -= 1
 
     def Remove(self):
-        orngServerFiles.remove(self.domain, self.filename)
+        serverfiles.remove(self.domain, self.filename)
         self.state = 2
         self.updateWidget.SetState(self.state)
         self.master.UpdateInfoLabel()
@@ -276,7 +289,7 @@ class OWDatabasesUpdate(OWWidget):
         self.accessCode = accessCode
         self.showAll = showAll
         self.domains = domains
-        self.serverFiles = orngServerFiles.ServerFiles()
+        self.serverFiles = serverfiles.ServerFiles()
         box = OWGUI.widgetBox(self.mainArea, orientation="horizontal")
 
         self.lineEditFilter = \
@@ -290,7 +303,8 @@ class OWDatabasesUpdate(OWWidget):
 
         box = OWGUI.widgetBox(self.mainArea, "Files")
         self.filesView = QTreeWidget(self)
-        self.filesView.setHeaderLabels(["Options", "Title", "Size"])
+        self.filesView.setHeaderLabels(["Options", "Title", "Size",
+                                        "Last Updated"])
         self.filesView.setRootIsDecorated(False)
         self.filesView.setSelectionMode(QAbstractItemView.NoSelection)
         self.filesView.setSortingEnabled(True)
@@ -335,7 +349,7 @@ class OWDatabasesUpdate(OWWidget):
         QTimer.singleShot(50, self.RetrieveFilesList)
 
     def RetrieveFilesList(self):
-        self.serverFiles = orngServerFiles.ServerFiles(access_code=self.accessCode)
+        self.serverFiles = serverfiles.ServerFiles(access_code=self.accessCode)
         self.pb = ProgressBar(self, 3)
         self.async_retrieve = createTask(retrieveFilesList,
                                          (self.serverFiles, self.domains,
@@ -347,8 +361,8 @@ class OWDatabasesUpdate(OWWidget):
 
     def SetFilesList(self, serverInfo):
         self.setEnabled(True)
-        domains = serverInfo.keys() or orngServerFiles.listdomains()
-        localInfo = dict([(dom, orngServerFiles.allinfo(dom))
+        domains = serverInfo.keys() or serverfiles.listdomains()
+        localInfo = dict([(dom, serverfiles.allinfo(dom))
                           for dom in domains])
         items = []
 
@@ -374,9 +388,11 @@ class OWDatabasesUpdate(OWWidget):
         for item in items:
             self.updateItems.append(UpdateTreeWidgetItem(self, *item))
         self.pb.advance()
-        self.filesView.resizeColumnToContents(0)
-        self.filesView.resizeColumnToContents(1)
-        self.filesView.resizeColumnToContents(2)
+        for column in range(4):
+            whint = self.filesView.sizeHintForColumn(column)
+            width = min(whint, 400)
+            self.filesView.setColumnWidth(column, width)
+
         self.lineEditFilter.setItems([hint for hint in sorted(self.allTags)
                                       if not hint.startswith("#")])
         self.SearchUpdate()
