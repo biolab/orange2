@@ -304,11 +304,12 @@ class ServerFiles(object):
         lastchunkreport= 0.0001
 
         readb = 0
-        while 1:
+        # in case size == 0 skip the loop
+        while size > 0:
             buf = fdown.read(chunksize)
             readb += len(buf)
 
-            while float(readb)/size > lastchunkreport+0.01:
+            while float(readb) / size > lastchunkreport+0.01:
                 #print float(readb)/size, lastchunkreport + 0.01, float(readb)/size - lastchunkreport 
                 lastchunkreport += 0.01
                 if callback:
@@ -669,7 +670,7 @@ class DownloadProgress(ConsoleProgressBar):
 
     def getstring(self):
         elapsed = max(time.time() - self.starttime, 0.1)
-        speed = int(self.state * self.size / 100.0 / elapsed)
+        speed = max(int(self.state * self.size / 100.0 / elapsed), 1)
         eta = (100 - self.state) * self.size / 100.0 / speed
         return ConsoleProgressBar.getstring(self) + \
                "  %s  %12s/s  %3i:%02i ETA" % (self.sizeof_fmt(self.size),
