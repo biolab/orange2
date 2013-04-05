@@ -536,7 +536,7 @@ class CanvasMainWindow(QMainWindow):
                     checkable=True,
                     checked=True,
                     shortcut=QKeySequence(Qt.ControlModifier |
-                                          Qt.ShiftModifier | Qt.Key_D),
+                                          (Qt.ShiftModifier | Qt.Key_D)),
                     triggered=self.set_tool_dock_expanded)
 
         # Gets assigned in setup_ui (the action is defined in CanvasToolDock)
