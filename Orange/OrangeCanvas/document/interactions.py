@@ -31,6 +31,7 @@ from ..canvas import items
 from ..canvas.items import controlpoints
 from ..gui.quickhelp import QuickHelpTipEvent
 from . import commands
+from .editlinksdialog import EditLinksDialog
 
 log = logging.getLogger(__name__)
 
@@ -795,8 +796,6 @@ class EditNodeLinksAction(UserInteraction):
         an empty list will disable all initial links).
 
         """
-        from ..canvas.editlinksdialog import EditLinksDialog
-
         log.info("Constructing a Link Editor dialog.")
 
         parent = self.scene.views()[0]
