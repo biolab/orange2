@@ -11,7 +11,7 @@ defaults write com.apple.desktopservices DSDontWriteNetworkStores true
 
 /Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }
 
-/Users/ailabc/bundle-daily-build-hg.sh /private/tmp &> /private/tmp/bundle-daily-build-hg.log
+/Users/ailabc/bundle-daily-build-hg.sh /private/tmp /Volumes/download &> /private/tmp/bundle-daily-build-hg.log
 EXIT_VALUE=$?
 
 /Users/ailabc/mount-dirs.sh || { echo "Mounting failed." ; exit 1 ; }

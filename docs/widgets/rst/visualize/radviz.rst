@@ -32,7 +32,7 @@ Outputs:
 Description
 -----------
 
-Radviz ([Hoffman1997]_) is a neat non-linear multi-dimensional visualization
+Radviz ([1]_) is a neat non-linear multi-dimensional visualization
 technique that can display data on three or more attributes in a 2-dimensional
 projection. The visualized attributes are presented as anchor points equally
 spaced around the perimeter of a unit circle. Data instances are shown as
@@ -46,7 +46,7 @@ instances that are close to a set of feature anchors have higher values for
 these features than for the others.
 
 The snapshot shown below shows a Radviz widget with a visualization of the
-data set from functional genomics ([Brown2000]_). In this particular
+data set from functional genomics ([2]_). In this particular
 visualization the data instances are colored according to the corresponding
 class, and the visualization space is colored according to the computed class
 probability. Notice that the particular visualization very nicely separates
@@ -63,8 +63,8 @@ better. The resulting display is shown below. From it, it should be clear that
 high values of "spo5 11" attribute (and for some data instances high values of
 "spo mid") is quite characteristic for instance of class Ribo, which at the
 same time have comparable lower value of other attributes. High values of
-heat 20 and diau f are characteristic for Resp class. See [Leban2006]_ and
-[Mramor2007]_ for further illustrations of utility of Radviz in analysis of
+heat 20 and diau f are characteristic for Resp class. See [3]_ and
+[5]_ for further illustrations of utility of Radviz in analysis of
 this and similar data set from functional genomics. Other options in the
 :obj:`Settings` tab are quite standard. The :obj:`Point size` controls the size
 of the points that mark the data instnace. :obj:`Jittering Options` are
@@ -85,8 +85,8 @@ pointer gets over the data instance.
 .. image:: images/Radviz-Brown-Springs.png
 
 Just like all point-based visualizations, this widget includes tools for
-intelligent data visualization (VizRank and FreeViz, see [Leban2006]_) and
-[Demsar2007]_) and interface for explorative data analysis - selection of data
+intelligent data visualization (VizRank and FreeViz, see [3]_) and
+[4]_) and interface for explorative data analysis - selection of data
 points in visualization. Just like in :ref:`Scatter Plot` widget, intelligent
 visualization can be used to find a set of attributes that would result in an
 interesting visualization. For now, this works only with class-labeled data
@@ -102,21 +102,21 @@ functions (selection of data instances and zooming).
 References
 ----------
 
-.. [Hoffman1997] Hoffman,P.E. et al. (1997) DNA visual and analytic data mining.
+.. [1] Hoffman,P.E. et al. (1997) DNA visual and analytic data mining.
    In the Proceedings of the IEEE Visualization. Phoenix, AZ, pp. 437-441.
 
-.. [Brown2000] Brown, M. P., W. N. Grundy, et al. (2000).
+.. [2] Brown, M. P., W. N. Grundy, et al. (2000).
    "Knowledge-based analysis of microarray gene expression data by using
    support vector machines." Proc Natl Acad Sci U S A 97(1): 262-7.
 
-.. [Leban2006] Leban, G., B. Zupan, et al. (2006). "VizRank: Data Visualization
+.. [3] Leban, G., B. Zupan, et al. (2006). "VizRank: Data Visualization
    Guided by Machine Learning." Data Mining and Knowledge Discovery 13(2):
    119-136.
 
-.. [Demsar2007] Demsar J, Leban G, Zupan B. FreeViz-An intelligent multivariate
+.. [4] Demsar J, Leban G, Zupan B. FreeViz-An intelligent multivariate
    visualization approach to explorative analysis of biomedical data. J Biomed
    Inform 40(6):661-71, 2007.
 
-.. [Mramor2007] Mramor M, Leban G, Demsar J, Zupan B. Visualization-based
+.. [5] Mramor M, Leban G, Demsar J, Zupan B. Visualization-based
    cancer microarray data classification analysis. Bioinformatics 23(16):
    2147-2154, 2007.

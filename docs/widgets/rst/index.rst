@@ -25,6 +25,9 @@ Data
       - |Cont_icon| :ref:`Continuize`
     * - |Impute_icon| :ref:`Impute`
       - |Outliers_icon| :ref:`Outliers`
+      - |EditDomain_icon| :ref:`Edit Domain`
+    * - |PythonScript_icon| :ref:`Python Script`
+      -
       -
 
 .. |File_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/File_48.png
@@ -110,6 +113,18 @@ Data
 	:alt: Merge Data
 	:width: 48
 	:height: 48
+
+.. |EditDomain_icon| image:: ../../../Orange/OrangeWidgets/icons/Unknown.png
+   :align: middle
+   :alt: Edit Domain
+   :width: 48
+   :height: 48
+
+.. |PythonScript_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/PythonScript_48.png
+   :align: middle
+   :alt: Edit Domain
+   :width: 48
+   :height: 48
 
 
 Visualize
@@ -600,6 +615,7 @@ Index:
    data/continuize.rst
    data/impute.rst
    data/outliers.rst
+   data/editdomain.rst
 
    visualize/distributions.rst
    visualize/scatterplot.rst

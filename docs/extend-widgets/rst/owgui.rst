@@ -33,10 +33,16 @@ presented here will only be described in cases where they have a different meani
 
 `value` (required)
    String with the name of the master's attribute that synchronizes with the
-   state of the control (and vice-versa - when this attribute is changed, the control changes as well). This attribute should usually be also included the master's :obj:`settingsList`, so that it is automatically saved and retrieved.
+   state of the control (and vice-versa - when this attribute is changed, the
+   control changes as well). This attribute should usually be also included
+   the master's :obj:`settingsList`, so that it is automatically saved and
+   retrieved.
 
 `box` (default: None)
-   Indicates if there should be a box that is drawn around the control. If `box` is ``None``, no box is drawn; if it is a string, it is also used as box's name. If `box` is any other true value (such as ``True`` :), an unlabeled box is drawn.
+   Indicates if there should be a box that is drawn around the control.
+   If `box` is ``None``, no box is drawn; if it is a string, it is also used
+   as box's name. If `box` is any other true value (such as ``True`` :),
+   an unlabeled box is drawn.
 
 `callback` (default: None)
    A function to be called when the state of the control is changed. Can
@@ -50,7 +56,8 @@ presented here will only be described in cases where they have a different meani
       of :func:`listBox` function.
 
 `tooltip` (default: None)
-   A string that is displayed in a tooltip that appears when mouse is over the control.
+   A string that is displayed in a tooltip that appears when mouse is over the
+   control.
 
 `label` (default: None)
    A string that is displayed as control's label.
@@ -59,13 +66,20 @@ presented here will only be described in cases where they have a different meani
    Sets the label's width. This is useful for aligning the controls.
 
 `orientation` (default: "vertical")
-   When label is used, determines the relative placement of the label and the control. Label can be above the control, "vertical", or in the same line with control, "horizontal". Instead of "vertical" and "horizontal" you can also use ``True`` and ``False`` or 1 and 0, respectively. (Remember this as "vertical" being the usual order of controls in the widgets, so vertical is "true".)
+   When label is used, determines the relative placement of the label and the
+   control. Label can be above the control, "vertical", or in the same line
+   with control, "horizontal". Instead of "vertical" and "horizontal" you can
+   also use ``True`` and ``False`` or 1 and 0, respectively. (Remember this
+   as "vertical" being the usual order of controls in the widgets, so vertical
+   is "true".)
 
 `disabled` (default: False)
    Tells whether the control be disabled upon the initialization.
 
 `addSpace` (default: False)
-   If true, a space of 8 pixels is added after the widget by calling :func:`separator`. `addSpace` can also be an integer specifying the height of the added space.
+   If true, a space of 8 pixels is added after the widget by calling
+   :func:`separator`. `addSpace` can also be an integer specifying the height
+   of the added space.
 
 
 ********
@@ -74,8 +88,12 @@ Controls
 
 This section describes the OWGUI wrappers for controls like check boxes, buttons
 and similar. All the important Qt's controls can be constructed through this
-functions. You should always use them instead of calling Qt directly, not only
-because they are convenient, but also because they set up a lot of things that happen in behind.
+functions.
+
+..
+   You should always use them instead of calling Qt directly, not only
+   because they are convenient, but also because they set up a lot of things
+   that happen in behind.
 
 
 Check Box
@@ -87,7 +105,12 @@ and synchronization with the designated widget's attribute.
 .. function:: checkBox(widget, master, value, label[, box, tooltip, callback, disabled, labelWidth, disables])
 
    `disables` (default: [])
-      If the check box needs to disable some other controls they can be given in list  `disables`, e.g. ``disables=[someOtherCheckBox, someLineEdit]``. If the other control should be disabled when the checkbox is checked, do it like this: ``disables=[someOtherCheckBox, (-1, someLineEdit)]`` - now `someOtherCheckBox` will be enabled when this check box is checked, while `someLineEdit` will be enabled when the check box is unchecked.
+      If the check box needs to disable some other controls they can be given
+      in list  `disables`, e.g. ``disables=[someOtherCheckBox, someLineEdit]``.
+      If the other control should be disabled when the checkbox is checked, do
+      it like this: ``disables=[someOtherCheckBox, (-1, someLineEdit)]`` - now
+      `someOtherCheckBox` will be enabled when this check box is checked,
+      while `someLineEdit` will be enabled when the check box is unchecked.
 
    `labelWidth` (default: None)
       `labelWidth` can be used to align this widget with others.
@@ -101,7 +124,7 @@ Edit box, a wrapper around QLineEdit.
 .. function:: lineEdit(widget, master, value[, label, labelWidth, orientation, box, tooltip, callback, valueType, validator, controlWidth])
 
    `valueType` (default: str)
-      A type into which the value is cast.
+      A type into which the `value` is cast.
 
    `validator` (default: None)
       A standard Qt validator that can be associated with the control.
@@ -151,26 +174,43 @@ A wrapper around QComboBox.
 .. function:: comboBox(widget, master, value[, box, label, labelWidth, orientation, items, tooltip, callback, sendSelectedValue, valueType, control2attributeDict, emptyString])
 
    `items` (default: [])
-      A list of combo box's items. Unlike most OWGUI, `items` have one Orange-specific quirk: its element can be either a string, in which case it is used as a label, or a tuple, where the first element is a label name and the last is the attribute type which is used to create an icon. Most attribute lists in Orange Widgets are constructed this way.
+      A list of combo box's items. Unlike most OWGUI, `items` have one
+      Orange-specific quirk: its element can be either a string, in which
+      case it is used as a label, or a tuple, where the first element is a
+      label name and the last is the attribute type which is used to create
+      an icon. Most attribute lists in Orange Widgets are constructed this way.
 
    `sendSelectedValue` (default: 0)
-      If false, attribute `value` will be assigned the index of the selected item. Otherwise, it is assigned the currently selected item's label.
+      If false, attribute `value` will be assigned the index of the selected
+      item. Otherwise, it is assigned the currently selected item's label.
 
    `control2attributeDict` (default: {})
-      A dictionary for translating the item's label into `value`. It is used only is `sendSelectedValue` is true, and even then a label is translated only if an item with such a key is found in the dictionary; otherwise, label is written to `value` as it is. 
+      A dictionary for translating the item's label into `value`. It is used
+      only is `sendSelectedValue` is true, and even then a label is translated
+      only if an item with such a key is found in the dictionary; otherwise,
+      label is written to `value` as it is.
 
    `emptyString` (default: "")
-      Tells which combo box's item corresponds to an empty `value`. This is typically used when combo box's labels are attribute names and an item "(none)", which allows user to select no attribute. If we give ``emptyString="(none)"``, `value` will be an empty string when the user selects "(none)". This is equivalent to specifying ``control2attributeDict={"(none)": ""}`` (and is actually implemented like that), but far more convenient.
+      Tells which combo box's item corresponds to an empty `value`. This is
+      typically used when combo box's labels are attribute names and an item
+      "(none)", which allows user to select no attribute. If we give
+      ``emptyString="(none)"``, `value` will be an empty string when the user
+      selects "(none)". This is equivalent to specifying
+      ``control2attributeDict={"(none)": ""}`` (and is actually implemented
+      like that), but far more convenient.
 
    `valueType` (default: str or unicode)
-      A function through which the currently selected item's label is converted prior to looking into `control2attributeDict`. Needed to convert Qt's QString.
+      A function through which the currently selected item's label is 
+      converted prior to looking into `control2attributeDict`. Needed to
+      convert Qt's QString.
 
 
 List Box
 ********
 
 This control, which might be the most complicated control in OWGUI, is a
-sophisticated wrapper around QListBox. It's complexity arises from synchronization.
+sophisticated wrapper around QListBox. It's complexity arises from
+synchronization.
 
 
 .. function:: listBox(widget, master, value, labels[, box, tooltip, callback, selectionMode])
@@ -179,15 +219,36 @@ sophisticated wrapper around QListBox. It's complexity arises from synchronizati
       The name of master's attribute containing indices of all selected values.
 
    `labels` (required)
-      The name of master's attribute containing the list box's labels. Similar to `items` in combo box, list `labels` have one Orange-specific quirk: its element can be either a string, in which case it is used as a label, or a tuple, where the first element is a label name and the second can be either an icon on an integer, representing the attribute type which is used to create an icon. Most attribute lists in Orange Widgets are constructed this way.
+      The name of master's attribute containing the list box's labels. Similar
+      to `items` in combo box, list `labels` have one Orange-specific quirk:
+      its element can be either a string, in which case it is used as a label
+      or a tuple, where the first element is a label name and the second can
+      be either an icon on an integer, representing the attribute type which
+      is used to create an icon. Most attribute lists in Orange Widgets are
+      constructed this way.
 
    `selectionMode` (default: QListWidget.SingleSelection)
-      Tells whether the user can select a single item (:obj:`QListWidget.SingleSelection`), multiple items (:obj:`QListWidget.MultiSelection`, :obj:`QListWidget.ExtendedSelection`) or nothing (:obj:`QListWidget.NoSelection`).
+      Tells whether the user can select a single item
+      (:obj:`QListWidget.SingleSelection`), multiple items
+      (:obj:`QListWidget.MultiSelection`, :obj:`QListWidget.ExtendedSelection`)
+      or nothing (:obj:`QListWidget.NoSelection`).
 
-   `value` is automatically cast to :obj:`OWGUI.ControlledList` (this is needed because the list should report any changes to the control, the list box; :obj:`OWGUI.ControlledList` is like an ordinary Python :obj:`list` except that it triggers synchronization with the list box at every change).
+   `value` is automatically cast to :obj:`OWGUI.ControlledList` (this is
+   needed because the list should report any changes to the control, the list
+   box; :obj:`OWGUI.ControlledList` is like an ordinary Python :obj:`list`
+   except that it triggers synchronization with the list box at every change).
 
-   `labels` is only partially synchronized with the list box: if a new list is assigning to `labels` attribute, the list will change. If elements of the existing list are changed or added, the list box won't budge. You should never change the list, but always assign a new list (or reassign the same after it's changed). If the labels are stored in ``self.listLabels`` and you write ``self.listLabels[1]="a new label"``, the list box won't change. To trigger the synchronization, you should continue by ``self.listLabels = self.listLabels``. This may seem awkward, but by our experience a list of selected items is seldom changed changed "per-item", so we were too lazy to write the annoyingly complex backward callbacks.
-
+   `labels` is only partially synchronized with the list box: if a new list
+   is assigning to `labels` attribute, the list will change. If elements of
+   the existing list are changed or added, the list box won't budge. You
+   should never change the list, but always assign a new list (or reassign
+   the same after it's changed). If the labels are stored in
+   ``self.listLabels`` and you write ``self.listLabels[1]="a new label"``,
+   the list box won't change. To trigger the synchronization, you should
+   continue by ``self.listLabels = self.listLabels``. This may seem awkward,
+   but by our experience a list of selected items is seldom changed changed
+   "per-item", so we were too lazy to write the annoyingly complex backward
+   callbacks.
 
 
 Spin
@@ -204,7 +265,8 @@ Spin control, a wrapper around QSpinBox.
 Slider
 ******
 
-A wrapper around QSlider that allows user setting a numerical value between the given bounds.
+A wrapper around QSlider that allows user setting a numerical value between
+the given bounds.
 
 .. function:: hSlider(widget, master, value[, box, minValue, maxValue, step, callback, labelFormat, ticks, divideFactor])
 
@@ -213,10 +275,13 @@ A wrapper around QSlider that allows user setting a numerical value between the 
       Minimal and maximal value for the spin control, and its step.
 
    `ticks` (default: 0)
-      If non-zero, it gives the interval between two ticks. The ticks will appear below the groove.
+      If non-zero, it gives the interval between two ticks. The ticks will
+      appear below the groove.
 
    `labelFormat` (default: " %d")
-      Defines the look of the label on the righthand side of the slider. It has to contain one format character (like %d in the default), but can contain other text as well.
+      Defines the look of the label on the righthand side of the slider. It
+      has to contain one format character (like %d in the default), but can
+      contain other text as well.
 
    `divideFactor` (default: 1.0)
       The value printed in the label is divided by `divideFactor`.
@@ -225,8 +290,8 @@ A wrapper around QSlider that allows user setting a numerical value between the 
 Check Box with Spin
 *******************
 
-Check box with spin, or, essentially, a wrapper around
-OWGUI.checkBox and OWGUI.spin.
+Check box with spin, or, essentially, a wrapper around OWGUI.checkBox and
+OWGUI.spin.
 
 .. function:: checkWithSpin(widget, master, label, min, max, checked, value[, posttext, step, tooltip, checkCallback, spinCallback, labelWidth])
 
@@ -249,11 +314,15 @@ OWGUI.checkBox and OWGUI.spin.
 Labels
 ******
 
-There are two functions for constructing labels. The first is a simple wrapper around QLabel which differs only in allowing to specify a fixed width without needing an extra line. Note that unlike most other OWGUI widgets, this one does not have the argument `master`.
+There are two functions for constructing labels. The first is a simple wrapper
+around QLabel which differs only in allowing to specify a fixed width without
+needing an extra line. Note that unlike most other OWGUI widgets, this one
+does not have the argument `master`.
 
 .. function:: widgetLabel(widget, label[, labelWidth])
 
-   The second is a label which can synchronize with values of master widget's attributes.
+   The second is a label which can synchronize with values of master widget's
+   attributes.
 
 .. function:: label(widget, master, label[, labelWidth])
 
@@ -325,12 +394,19 @@ Attribute Icons
 Send automatically / Send
 *************************
 
-Many widgets have a "Send" button (perhaps named "Apply", "Commit"...) accompanied with a check box "Send automatically", having the same effect as if the user pressed the button after each change. A well behaved widget cares to:
+Many widgets have a "Send" button (perhaps named "Apply", "Commit"...)
+accompanied with a check box "Send automatically", having the same effect as
+if the user pressed the button after each change. A well behaved widget cares
+to:
 
 * disable the button, when the check box is checked;
-* when the user checks the check box, the data needs to be send (or the changes applied), but only if there is any pending change which has not been (manually) sent yet.
+* when the user checks the check box, the data needs to be send (or the
+  changes applied), but only if there is any pending change which has not been
+  (manually) sent yet.
 
-Programming this into every widget is annoying and error-prone; at the time when the function described here was written, not many widgets actually did this properly.
+Programming this into every widget is annoying and error-prone; at the time
+when the function described here was written, not many widgets actually did
+this properly.
 
 .. function:: setStopper(master, sendButton, stopCheckbox, changedFlag, callback)
 
@@ -338,19 +414,23 @@ Programming this into every widget is annoying and error-prone; at the time when
       The button that will be disabled when the check box is checked.
 
    `stopCheckbox`
-      Check box that decides whether the changes are sent/commited/applied automatically.
+      Check box that decides whether the changes are sent/commited/applied
+      automatically.
 
    `changedFlag`
-      The name of the `master`'s attribute which tells whether there is a change which has not been sent/applied yet.
+      The name of the `master`'s attribute which tells whether there is a
+      change which has not been sent/applied yet.
 
    `callback`
-      The function that sends the data or applies the changes. This is typically the function which is also used as the `sendButton`'s callback.
+      The function that sends the data or applies the changes. This is
+      typically the function which is also used as the `sendButton`'s callback.
 
 
-:obj:`setStopper` is a trivial three lines long function which connects a few signals. Its true importance is in enforcing the correct procedure for implementing such button-check box combinations.
+:obj:`setStopper` is a trivial three lines long function which connects a few
+signals. Its true importance is in enforcing the correct procedure for
+implementing such button-check box combinations.
 
 ..
    Make sure to carefully observe and follow the example provided below.
 
    Missing, where did it go?
-

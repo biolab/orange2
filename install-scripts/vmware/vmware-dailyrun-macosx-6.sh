@@ -90,6 +90,6 @@ ssh ailabc@$IP_ADDRESS "/Users/ailabc/update-all-scripts.sh"
 # /etc/sudoers entry: ailabc ALL=NOPASSWD:/Users/ailabc/dailyrun-finkonly.sh
 # WARNING: This is generally insecure as an attacker could change dailyrun-finkonly.sh file and ...
 #          but we are using it in a VMware which is used only for this script, so ...
-ssh ailabc@$IP_ADDRESS "sudo /Users/ailabc/dailyrun-finkonly.sh"
+#ssh ailabc@$IP_ADDRESS "sudo /Users/ailabc/dailyrun-finkonly.sh"
 
 stop_vmware

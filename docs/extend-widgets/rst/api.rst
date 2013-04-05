@@ -17,7 +17,8 @@ Output Channels
 
 Following is an example that defines two output channels::
 
-    self.outputs = [("Sampled Data", orange.ExampleTable), ("Learner", orange.Learner)]
+    self.outputs = [("Sampled Data", orange.ExampleTable),
+                    ("Learner", orange.Learner)]
 
 :obj:`self.outputs` should thus be a list of tuples, within
 each the first element is a name of the channel, and the second the
@@ -61,7 +62,8 @@ the type (we would most often define it within the widget class
 defintion, hence :obj:`self` for the first attribute)::
 
     def receiveData(self, data):
-    # handle data in some way
+        # handle data in some way
+
 
 Any time our widget would receive a token, :obj:`receiveData`
 would be called. Notice there would be no way of knowing anything
@@ -75,7 +77,7 @@ Orange Canvas would inform all directly connected downstream widgets
 about deletion. Similar, when channels connecting two widgets are
 deleted, Orange Canvas would automatically send :obj:`None` to
 the receiving widget. Make sure your widget handles :obj:`None`
-tokens appropriately!`
+tokens appropriately!
 
 There are cases when widget would like to know about the origin of
 a token. Say, you would like to input several learners to the
@@ -92,7 +94,7 @@ specified) or a "Multiple" channel. For the above declared channel, the
 receiving function should include an extra argument for the ID, like::
 
    def learner(self, learnertoken, tokenid):
-   # handle learnertoken and tokeid in some way
+       # handle learnertoken and tokeid in some way
 
 Widgets such as :obj:`OWTestLearners` and alike use such
 schema.
@@ -101,11 +103,11 @@ Finally, we may have input channels of the same type. If a widget
 would declare input channels like::
 
     self.inputs = [("Data", orange.ExampleTable, self.maindata),
-               ("Additional Data", orange.ExampleTable, self.otherdata)]
+                   ("Additional Data", orange.ExampleTable, self.otherdata)]
 
 and we connect this widget in Orange Canvas to a sending widget
 that has a single orange.ExampleTable output channel, Canvas would
-bring up Set Channels dialog. There, a sending widget's channel could
+bring up *Set Channels* dialog. There, a sending widget's channel could
 be connected to both receiving channels. As we would often prefer to
 connect to a single (default) channel instead (still allowing user of
 Orange Canvas to set up a different schema manually), we set that channel
@@ -113,4 +115,4 @@ as the default. We do this by the using the fourth element in the channel
 definition list, like::
 
     self.inputs = [("Data", orange.ExampleTable, self.maindata, Default),
-               ("Additional Data", orange.ExampleTable, self.otherdata)]
+                   ("Additional Data", orange.ExampleTable, self.otherdata)]

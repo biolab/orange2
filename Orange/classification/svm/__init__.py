@@ -1192,11 +1192,11 @@ MeasureAttribute_SVMWeights = ScoreSVMWeights
 
 
 class RFE(object):
-
-    """Iterative feature elimination based on weights computed by
+    """
+    Iterative feature elimination based on weights computed by a
     linear SVM.
 
-    Example::
+    Example:
 
         >>> table = Orange.data.Table("promoters.tab")
         >>> svm_l = Orange.classification.svm.SVMLearner(
@@ -1211,8 +1211,13 @@ class RFE(object):
 
     def __init__(self, learner=None):
         """
-        :param learner: A linear svm learner for use with
-            :class:`ScoreSVMWeights`.
+        :param learner: A linear svm learner for use for scoring (this
+            learner is passed to :class:`ScoreSVMWeights`)
+
+        :type learner: :class:`LinearSVMLearner` or :class:`SVMLearner` with
+            linear kernel
+
+        .. seealso:: :class:`ScoreSVMWeights`
 
         """
         self.learner = learner

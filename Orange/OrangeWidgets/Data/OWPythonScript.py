@@ -343,17 +343,19 @@ class ScriptItemDelegate(QStyledItemDelegate):
 class OWPythonScript(OWWidget):
 
     settingsList = ["codeFile", "libraryListSource", "currentScriptIndex",
-                    "splitterState"]
+                    "splitterState", "auto_execute"]
 
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'Python Script')
 
-        self.inputs = [("in_data", Orange.data.Table, self.setExampleTable),
+        self.inputs = [("in_data", Orange.data.Table, self.setExampleTable,
+                        Default),
                        ("in_distance", Orange.misc.SymMatrix,
-                        self.setDistanceMatrix),
-                       ("in_learner", Orange.core.Learner, self.setLearner),
+                        self.setDistanceMatrix, Default),
+                       ("in_learner", Orange.core.Learner, self.setLearner,
+                        Default),
                        ("in_classifier", Orange.core.Classifier,
-                        self.setClassifier),
+                        self.setClassifier, Default),
                        ("in_object", object, self.setObject)]
 
         self.outputs = [("out_data", Orange.data.Table),
