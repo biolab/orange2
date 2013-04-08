@@ -448,7 +448,7 @@ class SchemeEditWidget(QWidget):
         if self.__quickMenuTriggers != triggers:
             self.__quickMenuTriggers = triggers
 
-    def quickMenuTriggres(self):
+    def quickMenuTriggers(self):
         """
         Return quick menu trigger flags.
         """
