@@ -406,7 +406,13 @@ class NewLinkAction(UserInteraction):
                     self.document.addNode(node)
 
             if node is not None:
-                self.connect_existing(node)
+                if self.direction == self.FROM_SOURCE:
+                    source_node = self.scene.node_for_item(self.source_item)
+                    sink_node = node
+                else:
+                    source_node = node
+                    sink_node = self.scene.node_for_item(self.sink_item)
+                self.connect_nodes(source_node, sink_node)
             else:
                 self.end()
 
@@ -460,19 +466,13 @@ class NewLinkAction(UserInteraction):
                                                          pos.y()))
             return node
 
-    def connect_existing(self, node):
+    def connect_nodes(self, source_node, sink_node):
         """
-        Connect anchor_item to `node`.
-        """
-        if self.direction == self.FROM_SOURCE:
-            source_item = self.source_item
-            source_node = self.scene.node_for_item(source_item)
-            sink_node = node
-        else:
-            source_node = node
-            sink_item = self.sink_item
-            sink_node = self.scene.node_for_item(sink_item)
+        Connect `source_node` to `sink_node`. If there are more then one
+        equally weighted and non conflicting links possible present a
+        detailed dialog for link editing.
 
+        """
         try:
             possible = self.scheme.propose_links(source_node, sink_node)
 
@@ -483,8 +483,11 @@ class NewLinkAction(UserInteraction):
                 raise NoPossibleLinksError
 
             source, sink, w = possible[0]
-            links_to_add = [(source, sink)]
 
+            # just a list of signal tuples for now, will be converted
+            # to SchemeLinks later
+            links_to_add = [(source, sink)]
+            links_to_remove = []
             show_link_dialog = False
 
             # Ambiguous new link request.
@@ -500,52 +503,51 @@ class NewLinkAction(UserInteraction):
                                                           sink_channel=sink):
                     show_link_dialog = True
 
-                if show_link_dialog:
-                    existing = self.scheme.find_links(source_node=source_node,
-                                                      sink_node=sink_node)
+            if show_link_dialog:
+                existing = self.scheme.find_links(source_node=source_node,
+                                                  sink_node=sink_node)
 
-                    if existing:
-                        # EditLinksDialog will populate the view with
-                        # existing links
-                        initial_links = None
-                    else:
-                        initial_links = [(source, sink)]
+                if existing:
+                    # edit_links will populate the view with existing links
+                    initial_links = None
+                else:
+                    initial_links = [(source, sink)]
 
-                    links_action = EditNodeLinksAction(
-                                    self.document, source_node, sink_node)
-                    try:
-                        links_action.edit_links(initial_links)
-                    except Exception:
-                        log.error("'EditNodeLinksAction' failed",
-                                  exc_info=True)
-                        raise
-                    # EditNodeLinksAction already commits the links on accepted
-                    links_to_add = []
-
-            for source, sink in links_to_add:
-                if sink.single:
-                    # Remove an existing link to the sink channel if present.
-                    existing_link = self.scheme.find_links(
-                        sink_node=sink_node, sink_channel=sink
+                try:
+                    _, links_to_add, links_to_remove = self.edit_links(
+                        source_node, sink_node, initial_links
                     )
+                except Exception:
+                    log.error("Failed to edit the links",
+                              exc_info=True)
+                    raise
+            else:
+                # links_to_add now needs to be a list of actual SchemeLinks
+                links_to_add = [scheme.SchemeLink(
+                                    source_node, source_channel,
+                                    sink_node, sink_channel)
+                                for source_channel, sink_channel
+                                in links_to_add]
 
-                    if existing_link:
-                        self.document.removeLink(existing_link[0])
+                links_to_add, links_to_remove = \
+                    add_links_plan(self.scheme, links_to_add)
 
-                # Check if the new link is a duplicate of an existing link
+            # Remove temp items before creating any new links
+            self.cleanup()
+
+            for link in links_to_remove:
+                self.document.removeLink(link)
+
+            for link in links_to_add:
+                # Check if the new requested link is a duplicate of an
+                # existing link
                 duplicate = self.scheme.find_links(
-                    source_node, source, sink_node, sink
+                    link.source_node, link.source_channel,
+                    link.sink_node, link.sink_channel
                 )
 
-                if duplicate:
-                    # Do nothing.
-                    continue
-
-                # Remove temp items before creating a new link
-                self.cleanup()
-
-                link = scheme.SchemeLink(source_node, source, sink_node, sink)
-                self.document.addLink(link)
+                if not duplicate:
+                    self.document.addLink(link)
 
         except scheme.IncompatibleChannelTypeError:
             log.info("Cannot connect: invalid channel types.")
@@ -563,6 +565,45 @@ class NewLinkAction(UserInteraction):
 
         if not self.isFinished():
             self.end()
+
+    def edit_links(self, source_node, sink_node, initial_links=None):
+        """
+        Show and execute the `EditLinksDialog`.
+        Optional `initial_links` list can provide a list of initial
+        `(source, sink)` channel tuples to show in the view, otherwise
+        the dialog is populated with existing links in the scheme (passing
+        an empty list will disable all initial links).
+
+        """
+        status, links_to_add, links_to_remove = \
+            edit_links(
+                self.scheme, source_node, sink_node, initial_links,
+                parent=self.document
+            )
+
+        if status == EditLinksDialog.Accepted:
+            links_to_add = [scheme.SchemeLink(
+                                source_node, source_channel,
+                                sink_node, sink_channel)
+                            for source_channel, sink_channel in links_to_add]
+
+            links_to_remove = [self.scheme.find_links(
+                                   source_node, source_channel,
+                                   sink_node, sink_channel)
+                               for source_channel, sink_channel
+                               in links_to_remove]
+
+            links_to_remove = reduce(list.__add__, links_to_remove, [])
+            conflicting = filter(None,
+                                 [conflicting_single_link(self.scheme, link)
+                                  for link in links_to_add])
+            for link in conflicting:
+                if link not in links_to_remove:
+                    links_to_remove.append(link)
+
+            return status, links_to_add, links_to_remove
+        else:
+            return status, [], []
 
     def end(self):
         self.cleanup()
@@ -595,6 +636,98 @@ class NewLinkAction(UserInteraction):
         if self.cursor_anchor_point and self.cursor_anchor_point.scene():
             self.scene.removeItem(self.cursor_anchor_point)
             self.cursor_anchor_point = None
+
+
+def edit_links(scheme, source_node, sink_node, initial_links=None,
+               parent=None):
+    """
+    Show and execute the `EditLinksDialog`.
+    Optional `initial_links` list can provide a list of initial
+    `(source, sink)` channel tuples to show in the view, otherwise
+    the dialog is populated with existing links in the scheme (passing
+    an empty list will disable all initial links).
+
+    """
+    log.info("Constructing a Link Editor dialog.")
+
+    dlg = EditLinksDialog(parent)
+
+    # all SchemeLinks between the two nodes.
+    links = scheme.find_links(source_node=source_node, sink_node=sink_node)
+    existing_links = [(link.source_channel, link.sink_channel)
+                      for link in links]
+
+    if initial_links is None:
+        initial_links = list(existing_links)
+
+    dlg.setNodes(source_node, sink_node)
+    dlg.setLinks(initial_links)
+
+    log.info("Executing a Link Editor Dialog.")
+    rval = dlg.exec_()
+
+    if rval == EditLinksDialog.Accepted:
+        edited_links = dlg.links()
+
+        # Differences
+        links_to_add = set(edited_links) - set(existing_links)
+        links_to_remove = set(existing_links) - set(edited_links)
+        return rval, list(links_to_add), list(links_to_remove)
+    else:
+        return rval, [], []
+
+
+def add_links_plan(scheme, links, force_replace=False):
+    """
+    Return a plan for adding a list of links to the scheme.
+    """
+    links_to_add = list(links)
+    links_to_remove = [conflicting_single_link(scheme, link)
+                       for link in links]
+    links_to_remove = filter(None, links_to_remove)
+
+    if not force_replace:
+        links_to_add, links_to_remove = remove_duplicates(links_to_add,
+                                                          links_to_remove)
+    return links_to_add, links_to_remove
+
+
+def conflicting_single_link(scheme, link):
+    """
+    Find and return an existing link in `scheme` connected to the same
+    input channel as `link` if the channel has the 'single' flag.
+    If no such channel exists (or sink channel is not 'single')
+    return `None`.
+
+    """
+
+    if link.sink_channel.single:
+        existing = scheme.find_links(
+            sink_node=link.sink_node,
+            sink_channel=link.sink_channel
+        )
+
+        if existing:
+            assert len(existing) == 1
+            return existing[0]
+    return None
+
+
+def remove_duplicates(links_to_add, links_to_remove):
+    def link_key(link):
+        return (link.source_node, link.source_channel,
+                link.sink_node, link.sink_channel)
+
+    add_keys = map(link_key, links_to_add)
+    remove_keys = map(link_key, links_to_remove)
+    duplicate_keys = set(add_keys).intersection(remove_keys)
+
+    def not_duplicate(link):
+        return link_key(link) not in duplicate_keys
+
+    links_to_add = filter(not_duplicate, links_to_add)
+    links_to_remove = filter(not_duplicate, links_to_remove)
+    return links_to_add, links_to_remove
 
 
 class NewNodeAction(UserInteraction):
@@ -770,7 +903,8 @@ class RectangleSelectionAction(UserInteraction):
 
 class EditNodeLinksAction(UserInteraction):
     """
-    Edit multiple links between two NodeItems using a :class:`EditLinksDialog`
+    Edit multiple links between two :class:`SchemeNode` instances using
+    a :class:`EditLinksDialog`
 
     Parameters
     ----------
@@ -798,8 +932,7 @@ class EditNodeLinksAction(UserInteraction):
         """
         log.info("Constructing a Link Editor dialog.")
 
-        parent = self.scene.views()[0]
-        dlg = EditLinksDialog(parent)
+        dlg = EditLinksDialog(self.document)
 
         links = self.scheme.find_links(source_node=self.source_node,
                                        sink_node=self.sink_node)
