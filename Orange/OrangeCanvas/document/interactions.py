@@ -16,7 +16,8 @@ All interactions are subclasses of :class:`UserInteraction`.
 import logging
 
 from PyQt4.QtGui import (
-    QApplication, QGraphicsRectItem, QPen, QBrush, QColor, QFontMetrics
+    QApplication, QGraphicsRectItem, QPen, QBrush, QColor, QFontMetrics,
+    QUndoCommand
 )
 
 from PyQt4.QtCore import (
@@ -194,6 +195,10 @@ class NoPossibleLinksError(ValueError):
     pass
 
 
+class UserCanceledError(ValueError):
+    pass
+
+
 def reversed_arguments(func):
     """
     Return a function with reversed argument order.
@@ -231,6 +236,8 @@ class NewLinkAction(UserInteraction):
         self.tmp_anchor_point = None
         # An `AnchorPoint` following the mouse cursor
         self.cursor_anchor_point = None
+        # An QUndoCommand
+        self.macro = None
 
     def remove_tmp_anchor(self):
         """
@@ -386,11 +393,11 @@ class NewLinkAction(UserInteraction):
             item = self.target_node_item_at(event.scenePos())
             node = None
             stack = self.document.undoStack()
-            stack.beginMacro("Add link")
+
+            self.macro = QUndoCommand(self.tr("Add link"))
 
             if item:
-                # If the release was over a widget item
-                # then connect them
+                # If the release was over a node item then connect them
                 node = self.scene.node_for_item(item)
             else:
                 # Release on an empty canvas part
@@ -403,7 +410,8 @@ class NewLinkAction(UserInteraction):
                     node = None
 
                 if node is not None:
-                    self.document.addNode(node)
+                    commands.AddNodeCommand(self.scheme, node,
+                                            parent=self.macro)
 
             if node is not None:
                 if self.direction == self.FROM_SOURCE:
@@ -413,10 +421,14 @@ class NewLinkAction(UserInteraction):
                     source_node = node
                     sink_node = self.scene.node_for_item(self.sink_item)
                 self.connect_nodes(source_node, sink_node)
-            else:
-                self.end()
 
-            stack.endMacro()
+                if not self.isCanceled() or not self.isFinished() and \
+                        self.macro is not None:
+                    # Push (commit) the add link/node action on the stack.
+                    stack.push(self.macro)
+
+            self.end()
+
         else:
             self.end()
             return False
@@ -514,13 +526,15 @@ class NewLinkAction(UserInteraction):
                     initial_links = [(source, sink)]
 
                 try:
-                    _, links_to_add, links_to_remove = self.edit_links(
+                    rstatus, links_to_add, links_to_remove = self.edit_links(
                         source_node, sink_node, initial_links
                     )
                 except Exception:
                     log.error("Failed to edit the links",
                               exc_info=True)
                     raise
+                if rstatus == EditLinksDialog.Rejected:
+                    raise UserCanceledError
             else:
                 # links_to_add now needs to be a list of actual SchemeLinks
                 links_to_add = [scheme.SchemeLink(
@@ -536,7 +550,8 @@ class NewLinkAction(UserInteraction):
             self.cleanup()
 
             for link in links_to_remove:
-                self.document.removeLink(link)
+                commands.RemoveLinkCommand(self.scheme, link,
+                                           parent=self.macro)
 
             for link in links_to_add:
                 # Check if the new requested link is a duplicate of an
@@ -547,7 +562,8 @@ class NewLinkAction(UserInteraction):
                 )
 
                 if not duplicate:
-                    self.document.addLink(link)
+                    commands.AddLinkCommand(self.scheme, link,
+                                            parent=self.macro)
 
         except scheme.IncompatibleChannelTypeError:
             log.info("Cannot connect: invalid channel types.")
@@ -558,13 +574,13 @@ class NewLinkAction(UserInteraction):
         except NoPossibleLinksError:
             log.info("Cannot connect: no possible links.")
             self.cancel()
+        except UserCanceledError:
+            log.info("User canceled a new link action.")
+            self.cancel(UserInteraction.UserCancelReason)
         except Exception:
             log.error("An error occurred during the creation of a new link.",
                       exc_info=True)
             self.cancel()
-
-        if not self.isFinished():
-            self.end()
 
     def edit_links(self, source_node, sink_node, initial_links=None):
         """
@@ -608,6 +624,7 @@ class NewLinkAction(UserInteraction):
     def end(self):
         self.cleanup()
         # Remove the help tip set in mousePressEvent
+        self.macro = None
         helpevent = QuickHelpTipEvent("", "")
         QCoreApplication.postEvent(self.document, helpevent)
         UserInteraction.end(self)
