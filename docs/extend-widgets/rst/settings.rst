@@ -174,15 +174,17 @@ Orange doesn't really save the state of the controls but instead
 saves the value of the corresponding attributes. For a check box there
 should be a corresponding widget's attribute recording the check box's
 state so that when the user changes a check box, the attribute changes
-and vice-versa. Although you can create such a link manually, you
-should always use the module :doc:`OWGUI <owgui>` instead;
-for instance, for a check box, use :obj:`OWGUI.checkBox` and not
-simply the Qt's :obj:`QCheckBox`.
+and vice-versa. You can create such a link manually, or you can use
+the :doc:`OWGUI <owgui>` module instead; for instance, for a check
+box, use :func:`OWGUI.checkBox`.
 
 The settings fall into two groups. Some of them do not depend on
 the data, while other are context-dependent. For the first to be saved
 properly, you only need to list them in the :obj:`settingsList`
-in the widget definition, as already described :doc:`elsewhere <settings>`
+in the widget definition, as already described.
+
+
+.. module:: OWContexts
 
 **************************
 Context dependent settings
@@ -203,20 +205,22 @@ is applicable and matches best currently used data set.
 
 Saving, loading and matching contexts is taken care of by context
 handlers. Currently, there are only two classes of context handlers
-implemented. The first one is the abstract :obj:`ContextHandler`
-and the second one is :obj:`DomainContextHandler` in which the
+implemented. The first one is the abstract :class:`ContextHandler`
+and the second one is :class:`DomainContextHandler` in which the
 context is defined by the data set domain and where the settings
 contain attribute names. The latter should cover most of your needs,
 while for more complicated widgets you will need to derive a new
 classes from it. There may even be some cases in which the context is
 not defined by the domain, in which case the
-:obj:`ContextHandler` will be used as a base for your new
+:class:`ContextHandler` will be used as a base for your new
 handler.
 
 Contexts need to be declared, opened and closed. Opening and
 closing usually takes place (in the opposite order) in the function
 that handles the data signal. This is how it looks in the scatter plot
-(the code is somewhat simplified for clarity). ::
+(the code is somewhat simplified for clarity).
+
+::
 
     def cdata(self, data, clearResults = 1):
         self.closeContext()
@@ -268,7 +272,7 @@ controls instead of the Qt's), no other administration is needed to switch the
 context.
 
 Except for declaring the context settings, that is. Scatter plot has this just
-below the :obj:`settingsList`::
+below the :obj:`settingsList` ::
 
     contextHandlers = {"": DomainContextHandler("",
       [("attrX", DomainContextHandler.Required),
@@ -297,7 +301,7 @@ is the default flag, so :obj:`("attrX", DomainContextHandler.Required)` can
 be replaced by simply :obj:`"attrX"`. And the latter three have the
 same flags, so they can be grouped into :obj:`(["attrLabel",
 "attrShape", "attrSize"], DomainContextHandler.Optional)`. So
-what scatter plot really says is ::
+what scatter plot really says is::
 
     contextHandlers = {"": DomainContextHandler("", [
        "attrX", "attrY",

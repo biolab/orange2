@@ -1,3 +1,5 @@
+.. module:: OWGUI
+
 #####################################
 OWGUI: Library of Common GUI Controls
 #####################################

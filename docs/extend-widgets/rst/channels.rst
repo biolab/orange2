@@ -1,7 +1,7 @@
 ###################
 Channels and Tokens
 ###################
- 
+
 Our data sampler widget was, regarding the channels, rather simple
 and linear: the widget was designed to receive the token from one
 widget, and send an output token to another widget. Just like in an
@@ -54,11 +54,11 @@ widget are defined by::
 
 Notice that everything is pretty much the same as it was with
 widgets from previous lessons, the only difference being
-:obj:`Multiple + Default` as the last value in the list that defines
-the :obj:`Learner` channel. This :obj:`Multiple + Default` says
+``Multiple + Default`` as the last value in the list that defines
+the :obj:`Learner` channel. This ``Multiple + Default`` says
 that this is a multi-input channel and is the default input for its type.
 If it would be unspecified then by default value of
-:obj:`Single + NonDefault` would be used. That would mean that the
+``Single + NonDefault`` would be used. That would mean that the
 widget can receive the input only from one widget and is not the default input
 channel for its type (more on default channels later).
 
@@ -146,7 +146,7 @@ the rest of the widget does some simple GUI management, and calls
 learning curve routines from testing and performance
 scoring functions from stats. I rather like
 the easy by which new scoring functions are added to the widget, since
-all that is needed is the augmenting the list ::
+all that is needed is the augmenting the list::
 
     self.scoring = [("Classification Accuracy", orngStat.CA),
                     ("AUC", orngStat.AUC),
@@ -233,7 +233,7 @@ channel specification is::
 
 That is, the :obj:`Train Data` channel is a single-token
 channel which is a default one (third parameter). Note that the flags can
-be added (or OR-d) together so :obj:`Default + Multiple` is a valid flag.
+be added (or OR-d) together so ``Default + Multiple`` is a valid flag.
 To test how this works, connect a file widget to a learning curve widget and
 - nothing will really happen:
 

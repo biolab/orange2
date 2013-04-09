@@ -55,15 +55,22 @@ code::
 This is simple. We store the curve returned from :obj:`addCurve` with a
 learner, and use a trick allowed in Orange that we can simply store
 this as a new attribute to the learning object. By default, Orange
-would give a warning of the type ::
+would give a warning of the type::
 
     c:\Python23\Lib\site-packages\orange\OrangeWidgets\Test\OWLearningCurveC.py:269:
      AttributeWarning: 'curve' is not a builtin attribute of 'kNNLearner'
       setattr(learner, "curve", curve)
 
-but we surpress such warnings with a line ::
+but we surpress such warnings with a line::
 
     warnings.filterwarnings("ignore", ".*builtin attribute.*", orange.AttributeWarning)
+
+
+.. warning::
+
+   This is a very bad design. Please do **not** store widget data in the
+   input objects.
+
 
 in the initialization part of the widget. In this way, each learner
 also stores the current scores, which is a list of numbers to be
@@ -156,7 +163,7 @@ graph (the user just selected a learner)::
                 self.graph.replot()
             l.isSelected = i in self.selectedLearners
 
-The complete code of this widget is available :download:`here <OWLearningCurveC.py>`. 
+The complete code of this widget is available :download:`here <OWLearningCurveC.py>`.
 This is almost like a typical
 widget that is include in a standard Orange distribution, with a
 typical size just under 300 lines. Just some final cosmetics is needed

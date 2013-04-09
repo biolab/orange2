@@ -157,7 +157,7 @@ header in our Data Sampler widget should look something like::
             self.infob = OWGUI.widgetLabel(box, '')
             self.resize(100,50)
 
-In initialization, the widget calls the :obj:`init` function
+In initialization, the widget calls the :obj:`__init__` function
 of a base class, passing the name 'SampleData' which will,
 essentially, be used for nothing else than a stem of a file for saving
 the parameters of the widgets (we will regress on these somehow
@@ -181,7 +181,7 @@ will happen, the first line will report on "no data yet", and second
 line will be empty. By (another) design principles, in an interface
 Orange widgets are most often split to control and main area. Control
 area appears on the left and should include any controls for settings
-or options that your widget will use. Main are would most often
+or options that your widget will use. Main area would most often
 include a graph, table or some drawing that will be based on the
 inputs to the widget and current options/setting in the control
 area. OWWidget make these two areas available through its attributes
@@ -224,7 +224,7 @@ interface reporting on the number of sampled instances. Finally, the
 sampled data is sent as a token to the output channel with a name
 "Sampled Data".
 
-Notice that the token can be empty (:obj:`dataset==None`),
+Notice that the token can be empty (``dataset is None``),
 resulting from either the sending widget to which we have connected
 intentionally emptying the channel, or when the link between the two
 widgets is removed. In any case, it is important that we always write
