@@ -106,6 +106,11 @@ class LineEdit(QLineEdit):
 
         slot = _ActionSlot(position, action, button, False)
         self.__actions[position - 1] = slot
+
+        if not self.testAttribute(Qt.WA_Resized):
+            # Need some sensible height to do the layout.
+            self.adjustSize()
+
         self.__layoutActions()
 
     def actionAt(self, position):
