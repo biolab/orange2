@@ -61,7 +61,8 @@ class GraphicsTextEdit(QGraphicsTextItem):
         """
         return unicode(self.__placeholderText)
 
-    placeholderText_ = Property(unicode, placeholderText, setPlaceholderText)
+    placeholderText_ = Property(unicode, placeholderText, setPlaceholderText,
+                                doc="Placeholder text")
 
     def paint(self, painter, option, widget=None):
         QGraphicsTextItem.paint(self, painter, option, widget)
@@ -72,6 +73,7 @@ class GraphicsTextEdit(QGraphicsTextItem):
                 not (self.hasFocus() and \
                      self.textInteractionFlags() & Qt.TextEditable):
             brect = self.boundingRect()
+            painter.setFont(self.font())
             metrics = painter.fontMetrics()
             text = metrics.elidedText(self.__placeholderText, Qt.ElideRight,
                                       brect.width())

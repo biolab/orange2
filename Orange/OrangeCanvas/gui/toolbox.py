@@ -61,9 +61,9 @@ class ToolBoxTabButton(QToolButton):
 
     def setNativeStyling(self, state):
         """
-        Render tab buttons as native :class:`QToolButtons`.
-        If set to `False` (default) the button is pained using a
-        custom routine.
+        Render tab buttons as native (or css styled) :class:`QToolButtons`.
+        If set to `False` (default) the button is pained using a custom
+        paint routine.
 
         """
         self.__nativeStyling = state
@@ -230,6 +230,14 @@ class ToolBox(QFrame):
             self.__exclusive = exclusive
             self.__tabActionGroup.setExclusive(exclusive)
             checked = self.__tabActionGroup.checkedAction()
+            if checked is None:
+                # The action group can be out of sync with the actions state
+                # when switching between exclusive states.
+                actions_checked = [page.action for page in self.__pages
+                                   if page.action.isChecked()]
+                if actions_checked:
+                    checked = actions_checked[0]
+
             # Trigger/toggle remaining open pages
             if exclusive and checked is not None:
                 for page in self.__pages:

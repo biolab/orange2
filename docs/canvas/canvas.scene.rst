@@ -45,3 +45,6 @@ Canvas Scene (``scene``)
    .. autoattribute:: node_item_hovered(NodeItem)
 
    .. autoattribute:: link_item_hovered(LinkItem)
+
+
+.. autofunction:: grab_svg

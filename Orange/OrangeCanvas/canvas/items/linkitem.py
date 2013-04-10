@@ -1,5 +1,7 @@
 """
+=========
 Link Item
+=========
 
 """
 
@@ -15,11 +17,14 @@ from .nodeitem import SHADOW_COLOR
 
 
 class LinkCurveItem(QGraphicsPathItem):
-    """Link curve item. The main component of `LinkItem`.
+    """
+    Link curve item. The main component of a :class:`LinkItem`.
     """
     def __init__(self, parent):
         QGraphicsPathItem.__init__(self, parent)
-        assert(isinstance(parent, LinkItem))
+        if not isinstance(parent, LinkItem):
+            raise TypeError("'LinkItem' expected")
+
         self.setAcceptedMouseButtons(Qt.NoButton)
         self.__canvasLink = parent
         self.setAcceptHoverEvents(True)
@@ -38,8 +43,8 @@ class LinkCurveItem(QGraphicsPathItem):
         self.__hover = False
 
     def linkItem(self):
-        """Return the :class:`LinkItem` instance this curve belongs to.
-
+        """
+        Return the :class:`LinkItem` instance this curve belongs to.
         """
         return self.__canvasLink
 
@@ -82,8 +87,9 @@ class LinkCurveItem(QGraphicsPathItem):
 
 
 class LinkAnchorIndicator(QGraphicsEllipseItem):
-    """A visual indicator of the link anchor point at both ends
-    of the `LinkItem`.
+    """
+    A visual indicator of the link anchor point at both ends
+    of the :class:`LinkItem`.
 
     """
     def __init__(self, *args):
@@ -107,11 +113,20 @@ class LinkAnchorIndicator(QGraphicsEllipseItem):
 
 class LinkItem(QGraphicsObject):
     """
-    A Link in the canvas.
+    A Link item in the canvas that connects two :class:`.NodeItem`\s in the
+    canvas.
+
+    The link curve connects two `Anchor` items (see :func:`setSourceItem`
+    and :func:`setSinkItem`). Once the anchors are set the curve
+    automatically adjusts its end points whenever the anchors move.
+
+    An optional source/sink text item can be displayed above the curve's
+    central point (:func:`setSourceName`, :func:`setSinkName`)
+
     """
 
+    #: Z value of the item
     Z_VALUE = 0
-    """Z value of the item"""
 
     def __init__(self, *args):
         QGraphicsObject.__init__(self, *args)
@@ -145,9 +160,9 @@ class LinkItem(QGraphicsObject):
 
     def setSourceItem(self, item, anchor=None):
         """
-        Set the source `item` (:class:`NodeItem`). Use `anchor`
-        (:class:`AnchorPoint`) as the curve start point (if ``None`` a new
-        output anchor will be created).
+        Set the source `item` (:class:`.NodeItem`). Use `anchor`
+        (:class:`.AnchorPoint`) as the curve start point (if ``None`` a new
+        output anchor will be created using ``item.newOutputAnchor()``).
 
         Setting item to ``None`` and a valid anchor is a valid operation
         (for instance while mouse dragging one end of the link).
@@ -195,9 +210,9 @@ class LinkItem(QGraphicsObject):
 
     def setSinkItem(self, item, anchor=None):
         """
-        Set the sink `item` (:class:`NodeItem`). Use `anchor`
-        (:class:`AnchorPoint`) as the curve end point (if ``None`` a new
-        input anchor will be created).
+        Set the sink `item` (:class:`.NodeItem`). Use `anchor`
+        (:class:`.AnchorPoint`) as the curve end point (if ``None`` a new
+        input anchor will be created using ``item.newInputAnchor()``).
 
         Setting item to ``None`` and a valid anchor is a valid operation
         (for instance while mouse dragging one and of the link).
@@ -245,7 +260,7 @@ class LinkItem(QGraphicsObject):
 
     def setFont(self, font):
         """
-        Set the font for the channel names text.
+        Set the font for the channel names text item.
         """
         if font != self.font():
             self.linkTextItem.setFont(font)
@@ -397,6 +412,8 @@ class LinkItem(QGraphicsObject):
 
     def setEnabled(self, enabled):
         """
+        Reimplemented from :class:`QGraphicsObject`
+
         Set link enabled state. When disabled the link is rendered with a
         dashed line.
 
@@ -424,8 +441,8 @@ class LinkItem(QGraphicsObject):
 
     def setDynamic(self, dynamic):
         """
-        Mark the link as dynamic (e.i. it responds to the
-        ``setDynamicEnabled``).
+        Mark the link as dynamic (i.e. it responds to
+        :func:`setDynamicEnabled`).
 
         """
         if self.__dynamic != dynamic:
