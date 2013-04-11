@@ -1333,7 +1333,14 @@ class CanvasMainWindow(QMainWindow):
     def quit(self):
         """Quit the application.
         """
-        self.close()
+        if QApplication.activePopupWidget():
+            # On OSX the actions in the global menu bar are triggered
+            # even if an popup widget is running it's own event loop
+            # (in exec_)
+            log.debug("Ignoring a quit shortcut during an active "
+                      "popup dialog.")
+        else:
+            self.close()
 
     def select_all(self):
         self.current_document().selectAll()
