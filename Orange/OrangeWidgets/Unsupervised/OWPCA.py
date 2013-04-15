@@ -109,6 +109,7 @@ class ScreePlot(OWPlot):
         cutoff = curve_data[0][0]
         return x1 < cutoff and cutoff < x2
 
+
 class CutoffCurve(OWCurve):
     def __init__(self, *args, **kwargs):
         OWCurve.__init__(self, *args, **kwargs)
@@ -296,9 +297,10 @@ class OWPCA(OWWidget):
         return pca
 
     def apply(self):
-        """Apply PCA on input data, caching the full projection,
-        then updating the selected components.
-        
+        """
+        Apply PCA on input data, caching the full projection and
+        updating the selected components.
+
         """
         pca = self.construct_pca_all_comp()
         self.projector_full = projector = pca(self.data)
@@ -346,6 +348,9 @@ class OWPCA(OWWidget):
                                          variances=variances,
                                          variance_sum=variance_sum)
         projected_data = projector(self.data)
+
+        append_metas(projected_data, self.data)
+
         eigenvectors = self.eigenvectors_as_table(components)
 
         self.currently_selected = self.number_of_selected_components()
@@ -445,6 +450,29 @@ class OWPCA(OWWidget):
 
             self.reportSection("Scree Plot")
             self.reportImage(self.scree_plot.save_to_file_direct)
+
+
+def append_metas(dest, source):
+    """
+    Append all meta attributes from the `source` table to `dest` table.
+    The tables must be of the same length.
+
+    :param dest:
+        An data table into which the meta values will be copied.
+    :type dest: :class:`Orange.data.Table`
+
+    :param source:
+        A data table with the meta attributes/values to be copied into `dest`.
+    :type source: :class:`Orange.data.Table`
+
+    """
+    if len(dest) != len(source):
+        raise ValueError("'dest' and 'source' must have the same length.")
+
+    dest.domain.add_metas(source.domain.get_metas())
+    for dest_inst, source_inst in zip(dest, source):
+        for meta_id, val in source_inst.get_metas().items():
+            dest_inst[meta_id] = val
 
 
 if __name__ == "__main__":
