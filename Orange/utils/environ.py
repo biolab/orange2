@@ -91,29 +91,32 @@ The following variables are exposed as top level module members
       
 """
 
-import os, sys
+import os
+import sys
+
 import ConfigParser
 import pkg_resources
 from pkg_resources import working_set
 
+
 def _path_fix():
-    """ Fix some common problems with $(PATH) and sys.path
+    """Fix some common problems with $(PATH) and sys.path
     """
     if os.name == "nt":
         ## Move any miktex paths containing Qt's dll to the end of the %PATH%
         paths = os.environ["PATH"].split(";")
-        paths.sort(lambda x,y: -1 if "PyQt4" in x else (1 if "miktex" in y and \
-                        os.path.exists(os.path.join(y, "QtCore4.dll")) else 0))
+        paths = sorted(paths, key=lambda path: 1 if "miktex" in path else 0)
         os.environ["PATH"] = ";".join(paths)
-        
+
     if sys.platform == "darwin":
         ## PyQt4 installed from fink is installed in %{FINK_ROOT}lib/qt4-mac/lib/python${PYVERSION}/site-packages"
-        posible_fink_pyqt4_path = os.path.join(sys.prefix, 
-                "lib/qt4-mac/lib/python" + sys.version[:3] + "/site-packages")
+        posible_fink_pyqt4_path = os.path.join(
+            sys.prefix, "lib/qt4-mac/lib/python" + sys.version[:3] + "/site-packages")
         if os.path.exists(posible_fink_pyqt4_path):
             sys.path.append(posible_fink_pyqt4_path)
-            
+
 _path_fix()
+
 
 def _get_default_env():
     """ Return a dictionary with default Orange environment."""
