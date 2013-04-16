@@ -6,57 +6,98 @@ Render (``render``)
 .. index:: utils
 .. index::
    single: utils; render
+
 """
 
 from __future__ import with_statement
 
+import os
 import sys
-import numpy
 import math
-import os.path
+import warnings
+import StringIO
+import gc
+import copy
+import binascii
+
+from functools import wraps
+from contextlib import contextmanager
+
+import numpy
 
 from Orange.utils.environ import install_dir
 
-class GeneratorContextManager(object):
-   def __init__(self, gen):
-       self.gen = gen
-   def __enter__(self):
-       try:
-           return self.gen.next()
-       except StopIteration:
-           raise RuntimeError("generator didn't yield")
-   def __exit__(self, type, value, traceback):
-       if type is None:
-           try:
-               self.gen.next()
-           except StopIteration:
-               return
-           else:
-               raise RuntimeError("generator didn't stop")
-       else:
-           try:
-               self.gen.throw(type, value, traceback)
-               raise RuntimeError("generator didn't stop after throw()")
-           except StopIteration:
-               return True
-           except:
-               # only re-raise if it's *not* the exception that was
-               # passed to throw(), because __exit__() must not raise
-               # an exception unless __exit__() itself failed.  But
-               # throw() has to raise the exception to signal
-               # propagation, so this fixes the impedance mismatch 
-               # between the throw() protocol and the __exit__()
-               # protocol.
-               #
-               if sys.exc_info()[1] is not value:
-                   raise
 
-def contextmanager(func):
-    def helper(*args, **kwds):
-        return GeneratorContextManager(func(*args, **kwds))
-    return helper
+def _pil_safe_import(module):
 
-from functools import wraps
+    pil, module = module.split(".", 1)
+    if pil != "PIL":
+        raise ValueError("Expected a module name inside PIL namespace.")
+
+    if module in sys.modules:
+        # 'module' is already imported in the global namespace
+        pil_mod = sys.modules.get("PIL." + module)
+        if pil_mod is None:
+            # The PIL package was not yet imported.
+            try:
+                # Make sure "PIL" is in sys.modules
+                import PIL
+            except ImportError:
+                # PIL was installed as an egg (it's broken,
+                # PIL package can not be imported)
+                return None
+            # Insert 'module' into the PIL namespace
+            sys.modules["PIL." + module] = sys.modules[module]
+
+        return sys.modules["PIL." + module]
+
+    try:
+        mod = __import__("PIL." + module, fromlist=[module])
+    except ImportError:
+        mod = None
+
+    if mod is not None:
+        sys.modules[module] = mod
+
+    return mod
+
+# scipy and matplotlib both import modules from PIL but depending
+# on the installed version might use different conventions, i.e.
+#
+# >>> import Image
+# >>> from PIL import Image
+#
+# This can crash the python interpreter with a:
+# AccessInit: hash collision: 3 for both 1 and 1
+#
+# (This is a known common problem with PIL imports and is triggered
+# in libImaging/Access.c:add_item)
+#
+# So we preempt the imports and use a hack where we manually insert
+# modules from PIL namespace into global namespace or vice versa
+#
+# PIL is imported by (as currently imported from Orange):
+#    - 'scipy.utils.pilutils' (PIL.Image and PIL.ImageFilter)
+#    - 'matplotlib.backend_bases' (PIL.Image)
+#    - 'matplotlib.image' (PIL.Image)
+#
+# Based on grep 'import _imaging PIL/*.py the following modules
+# import C extensions:
+#    - Image (_imaging)
+#    - ImageCms (_imagingcms)
+#    - ImageDraw (_imagingagg)
+#    - ImageFont (_imagingft)
+#    - ImageGL (_imaginggl)
+#    - ImageMath (_imagingmath)
+#    - ImageTk (_imagingtk)
+#    - GifImagePlugin (_imaging_gif)
+#
+# However only '_imaging' seems to cause the crash.
+
+
+_pil_safe_import("PIL._imaging")
+
+
 def with_state(func):
     @wraps(func)
     def wrap(self, *args, **kwargs):
@@ -65,14 +106,15 @@ def with_state(func):
         return r
     return wrap
 
+
 def with_gc_disabled(func):
-    import gc
     def disabler():
         gc.disable()
         try:
             yield
         finally:
             gc.enable()
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         with contextmanager(disabler)():
@@ -83,7 +125,7 @@ def with_gc_disabled(func):
 class ColorPalette(object):
     def __init__(self, colors, gamma=None, overflow=(255, 255, 255), underflow=(255, 255, 255), unknown=(0, 0, 0)):
         self.colors = colors
-        self.gamma_func = lambda x, gamma:((math.exp(gamma * math.log(2 * x - 1)) if x > 0.5 else -math.exp(gamma * math.log(-2 * x + 1)) if x != 0.5 else 0.0) + 1) / 2.0
+        self.gamma_func = lambda x, gamma: ((math.exp(gamma * math.log(2 * x - 1)) if x > 0.5 else -math.exp(gamma * math.log(-2 * x + 1)) if x != 0.5 else 0.0) + 1) / 2.0
         self.gamma = gamma
         self.overflow = overflow
         self.underflow = underflow
@@ -99,10 +141,10 @@ class ColorPalette(object):
         elif val > 1.0:
             return self.overflow
         elif index == len(self.colors) - 1:
-            return tuple(self.colors[-1][i] for i in range(3)) # self.colors[-1].green(), self.colors[-1].blue())
+            return tuple(self.colors[-1][i] for i in range(3))  # self.colors[-1].green(), self.colors[-1].blue())
         else:
-            red1, green1, blue1 = [self.colors[index][i] for i in range(3)] #, self.colors[index].green(), self.colors[index].blue()
-            red2, green2, blue2 = [self.colors[index + 1][i] for i in range(3)] #, self.colors[index + 1].green(), self.colors[index + 1].blue()
+            red1, green1, blue1 = [self.colors[index][i] for i in range(3)]  # , self.colors[index].green(), self.colors[index].blue()
+            red2, green2, blue2 = [self.colors[index + 1][i] for i in range(3)]  # , self.colors[index + 1].green(), self.colors[index + 1].blue()
             x = val * (len(self.colors) - 1) - index
             if gamma is not None:
                 x = self.gamma_func(x, gamma)
@@ -111,12 +153,14 @@ class ColorPalette(object):
     def __call__(self, val, gamma=None):
         return self.get_rgb(val, gamma)
 
+
 def as_open_file(file, mode="rb"):
     if isinstance(file, basestring):
         file = open(file, mode)
-    else: # assuming it is file like with proper mode, could check for write, read
+    else:  # assuming it is file like with proper mode, could check for write, read
         pass
     return file
+
 
 class Renderer(object):
     render_state_attributes = ["font", "stroke_color", "fill_color", "render_hints", "transform", "gradient", "text_alignment"]
@@ -187,7 +231,6 @@ class Renderer(object):
         self.render_state["render_hints"].update(hints)
 
     def save_render_state(self):
-        import copy
         self.render_state_stack.append(copy.deepcopy(self.render_state))
 
     def restore_render_state(self):
@@ -236,7 +279,7 @@ class Renderer(object):
         raise NotImplementedError
 
     def string_size_hint(self, text, **kwargs):
-        raise NotImpemented
+        raise NotImplemented
 
     @contextmanager
     def state(self, **kwargs):
@@ -257,8 +300,9 @@ class Renderer(object):
     def close(self, file):
         pass
 
+
 class EPSRenderer(Renderer):
-    EPS_DRAW_RECT = """/draw_rect 
+    EPS_DRAW_RECT = """/draw_rect
 {/h exch def /w exch def
  /y exch def /x exch def
  newpath
@@ -298,23 +342,23 @@ mypattern setcolor
   neg
   0 rmoveto
   show } def
-  
+
 /right_align_show
 { dup stringwidth pop
   neg
   0 rmoveto
   show } def
 """
+
     def __init__(self, width, height):
         Renderer.__init__(self, width, height)
-        from StringIO import StringIO
-        self._eps = StringIO()
+        self._eps = StringIO.StringIO()
         self._eps.write("%%!PS-Adobe-3.0 EPSF-3.0\n%%%%BoundingBox: 0 0 %i %i\n" % (width, height))
         self._eps.write(self.EPS_SHOW_FUNCTIONS)
         self._eps.write("%f %f translate\n" % (0, self.height))
         self.set_font(*self.render_state["font"])
         self._inline_func = dict(stroke_color=lambda color: "%f %f %f setrgbcolor" % tuple(255.0 / c for c in color),
-                                 fill_color=lambda color:"%f %f %f setrgbcolor" % tuple(255.0 / c for c in color),
+                                 fill_color=lambda color: "%f %f %f setrgbcolor" % tuple(255.0 / c for c in color),
                                  stroke_width=lambda w: "%f setlinewidth" % w)
 
     def set_font(self, family, size):
@@ -329,7 +373,6 @@ mypattern setcolor
         Renderer.set_gradient(self, gradient)
         (x1, y1, x2, y2), samples = gradient
         binary = "".join([chr(int(c)) for p, s in samples for c in s])
-        import binascii
         self._eps.write(self.EPS_SET_GRADIENT % (x1, y1, x2, y2, len(samples), binascii.hexlify(binary)))
 
     def set_stroke_color(self, color):
@@ -343,7 +386,7 @@ mypattern setcolor
     def set_render_hints(self, hints):
         Renderer.set_render_hints(self, hints)
         if hints.get("linecap", None):
-            map = {"butt":0, "round":1, "rect":2}
+            map = {"butt": 0, "round": 1, "rect": 2}
             self._eps.write("%i setlinecap\n" % (map.get(hints.get("linecap"), 0)))
 
     @with_state
@@ -352,7 +395,7 @@ mypattern setcolor
 
     @with_state
     def draw_rect(self, x, y, w, h, **kwargs):
-        self._eps.write("newpath\n%(x)f %(y)f moveto %(w)f 0 rlineto\n0 %(h)f rlineto %(w)f neg 0 rlineto\nclosepath\n" % dict(x=x, y= -y, w=w, h= -h))
+        self._eps.write("newpath\n%(x)f %(y)f moveto %(w)f 0 rlineto\n0 %(h)f rlineto %(w)f neg 0 rlineto\nclosepath\n" % dict(x=x, y=-y, w=w, h=-h))
         self._eps.write("gsave\n")
         if self.gradient():
             self.set_gradient(self.gradient())
@@ -408,20 +451,21 @@ mypattern setcolor
         file.write(self._eps.getvalue())
 
     def string_size_hint(self, text, **kwargs):
-        import warnings
         warnings.warn("EpsRenderer class does not suport exact string width estimation", stacklevel=2)
         return len(text) * self.font()[1]
 
+
 def _int_color(color):
     """ Transform the color tuple (with floats) to tuple with ints
-    (needed by PIL) 
+    (needed by PIL)
     """
     return tuple(map(int, color))
+
 
 class PILRenderer(Renderer):
     def __init__(self, width, height):
         Renderer.__init__(self, width, height)
-        import Image, ImageDraw, ImageFont
+        from PIL import Image, ImageDraw, ImageFont
         self._pil_image = Image.new("RGB", (int(width), int(height)), (255, 255, 255))
         self._draw = ImageDraw.Draw(self._pil_image, "RGB")
         self._pil_font = ImageFont.load_default()
@@ -432,7 +476,7 @@ class PILRenderer(Renderer):
 
     def set_font(self, family, size):
         Renderer.set_font(self, family, size)
-        import ImageFont
+        from PIL import ImageFont
         try:
             font_file = os.path.join(install_dir, "utils", family + ".ttf")
             if os.path.exists(font_file):
@@ -440,7 +484,6 @@ class PILRenderer(Renderer):
             else:
                 self._pil_font = ImageFont.truetype(family + ".ttf", int(size))
         except Exception:
-            import warnings
             warnings.warn("Could not load %s.ttf font!" % family, stacklevel=2)
             try:
                 self._pil_font = ImageFont.truetype("cour.ttf", int(size))
@@ -459,7 +502,7 @@ class PILRenderer(Renderer):
     def draw_rect(self, x, y, w, h, **kwargs):
         x1, y1 = self._transform(x, y)
         x2, y2 = self._transform(x + w, y + h)
-        self._draw.rectangle((x1, y1, x2 , y2), fill=_int_color(self.fill_color()),
+        self._draw.rectangle((x1, y1, x2, y2), fill=_int_color(self.fill_color()),
                              outline=_int_color(self.stroke_color()))
 
     @with_state
@@ -488,10 +531,10 @@ class SVGRenderer(Renderer):
     %s
 </svg>
 """
+
     def __init__(self, width, height):
         Renderer.__init__(self, width, height)
         self.transform_count_stack = [0]
-        import StringIO
         self._svg = StringIO.StringIO()
         self._defs = StringIO.StringIO()
         self._gradients = {}
@@ -516,10 +559,7 @@ class SVGRenderer(Renderer):
             return 'fill="rgb(%i %i %i)"' % self.fill_color()
 
     def get_stroke(self):
-#        if self.render_state["gradient"]:
-#            return ""
-#        else:
-            return 'stroke="rgb(%i, %i, %i)"' % self.stroke_color() + ' stroke-width="%f"' % self.stroke_width()
+        return 'stroke="rgb(%i, %i, %i)"' % self.stroke_color() + ' stroke-width="%f"' % self.stroke_width()
 
     def get_text_alignment(self):
         return 'text-anchor="%s"' % (["start", "end", "middle"][self.text_alignment()])
@@ -530,9 +570,6 @@ class SVGRenderer(Renderer):
     @with_state
     def draw_line(self, sx, sy, ex, ey):
         self._svg.write('<line x1="%f" y1="%f" x2="%f" y2="%f" %s %s/>\n' % ((sx, sy, ex, ey) + (self.get_stroke(), self.get_linecap())))
-
-#    @with_state
-#    def draw_lines(self):
 
     @with_state
     def draw_rect(self, x, y, w, h):
@@ -579,7 +616,7 @@ class SVGRenderer(Renderer):
         file = as_open_file(file, "wb")
         file.write(self.SVG_HEADER % (self.height, self.width, self._defs.getvalue(), self._svg.getvalue()))
 
+
 class CairoRenderer(Renderer):
     def __init__(self, width, height):
         Renderer.__init__(self, width, height)
-
