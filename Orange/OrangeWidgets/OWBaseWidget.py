@@ -459,20 +459,28 @@ class OWBaseWidget(QDialog):
                         settings[contextHandler.localContextName] = contexts
 ###
                 settings[contextHandler.localContextName+"Version"] = (contextStructureVersion, contextHandler.contextDataVersion)
-            
+
         return settings
 
+    def getDefaultSettingsFilename(self):
+        fs_encoding = sys.getfilesystemencoding()
+        basename = self.captionTitle + ".ini"
+        filename = os.path.join(
+            self.widgetSettingsDir,  # is assumed to be a str in FS encoding
+            basename.encode(fs_encoding))
+        return filename
 
     def getSettingsFile(self, file):
-        if file==None:
-            file = os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")
+        if file is None:
+            file = self.getDefaultSettingsFilename()
+
             if not os.path.exists(file):
                 try:
                     f = open(file, "wb")
                     cPickle.dump({}, f)
                     f.close()
                 except IOError:
-                    return 
+                    return
         if isinstance(file, basestring):
             if os.path.exists(file):
                 return open(file, "r")
@@ -522,8 +530,9 @@ class OWBaseWidget(QDialog):
     def saveSettings(self, file = None):
         settings = self.getSettings(globalContexts=True)
         if settings:
-            if file==None:
-                file = os.path.join(self.widgetSettingsDir, self.captionTitle + ".ini")
+            if file is None:
+                file = self.getDefaultSettingsFilename()
+
             if isinstance(file, basestring):
                 file = open(file, "w")
             cPickle.dump(settings, file)
