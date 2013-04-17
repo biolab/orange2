@@ -17,7 +17,7 @@ ConstantClassifier = core.DefaultClassifier
 class PyLearner(object):
     def __new__(cls, data=None, **kwds):
         learner = object.__new__(cls)
-        if data:
+        if data is not None:
             learner.__init__(**kwds) # force init
             return learner(data)
         else:

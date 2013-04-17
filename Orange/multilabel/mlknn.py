@@ -134,7 +134,7 @@ class MLkNNLearner(_multiknn.MultikNNLearner):
         self = _multiknn.MultikNNLearner.__new__(cls, k, **argkw)
         self.smooth = smooth
         
-        if instances:
+        if instances is not None:
             self.__init__(**argkw)
             return self.__call__(instances,weight_id)
         else:

@@ -75,7 +75,7 @@ class LabelPowersetLearner(_multibase.MultiLabelLearner):
     def __new__(cls, instances = None, base_learner = None, weight_id = 0, **argkw):
         self = _multibase.MultiLabelLearner.__new__(cls, **argkw)
         
-        if instances:
+        if instances is not None:
             self.__init__(**argkw)
             return self.__call__(instances, base_learner, weight_id)
         else:

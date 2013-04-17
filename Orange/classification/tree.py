@@ -1519,7 +1519,7 @@ class C45Learner(Orange.classification.Learner):
 
     def __new__(cls, instances=None, weightID=0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **cls._rename_dict(argkw))
-        if instances:
+        if instances is not None:
             self.__init__(**argkw)
             return self.__call__(instances, weightID)
         else:
@@ -1863,7 +1863,7 @@ class TreeLearner(Orange.core.Learner):
     """
     def __new__(cls, data=None, weightID=0, **argkw):
         self = Orange.core.Learner.__new__(cls, **argkw)
-        if data:
+        if data is not None:
             self.__init__(**argkw)
             return self.__call__(data, weightID)
         else:

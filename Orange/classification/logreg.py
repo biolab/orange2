@@ -105,7 +105,7 @@ class LogRegLearner(Orange.classification.Learner):
     @deprecated_keywords({"weightID": "weight_id"})
     def __new__(cls, data=None, weight_id=0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
-        if data:
+        if data is not None:
             self.__init__(**argkw)
             return self.__call__(data, weight_id)
         else:
@@ -182,7 +182,7 @@ LogRegLearner = deprecated_members({"removeSingular": "remove_singular",
 class UnivariateLogRegLearner(Orange.classification.Learner):
     def __new__(cls, data=None, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
-        if data:
+        if data is not None:
             self.__init__(**argkw)
             return self.__call__(data)
         else:
@@ -220,7 +220,7 @@ class UnivariateLogRegClassifier(Orange.classification.Classifier):
 class LogRegLearnerGetPriors(object):
     def __new__(cls, data=None, weight_id=0, **argkw):
         self = object.__new__(cls)
-        if data:
+        if data is not None:
             self.__init__(**argkw)
             return self.__call__(data, weight_id)
         else:
@@ -892,7 +892,7 @@ StepWiseFSS = deprecated_members({"addCrit": "add_crit",
 class StepWiseFSSFilter(object):
     def __new__(cls, data=None, **argkw):
         self = object.__new__(cls)
-        if data:
+        if data is not None:
             self.__init__(**argkw)
             return self.__call__(data)
         else:

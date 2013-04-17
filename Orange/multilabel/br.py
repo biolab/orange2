@@ -66,7 +66,7 @@ class BinaryRelevanceLearner(_multibase.MultiLabelLearner):
         else:
             self.base_learner = _BayesLearner
         
-        if instances:
+        if instances is not None:
             self.__init__(**argkw)
             return self.__call__(instances, weight_id)
         else:

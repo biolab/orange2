@@ -94,7 +94,7 @@ class TuneParameters(Orange.classification.Learner):
     @deprecated_keywords({"examples": "data", "weightID": "weight_id"})
     def __new__(cls, data=None, weight_id=0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
-        if data:
+        if data is not None:
             for name, value in argkw.items():
                 setattr(self, name, value)
             self.__init__(**argkw)
@@ -345,7 +345,7 @@ class ThresholdLearner(Orange.classification.Learner):
     @deprecated_keywords({"examples": "data", "weightID": "weight_id"})
     def __new__(cls, data=None, weight_id=0, **kwds):
         self = Orange.classification.Learner.__new__(cls, **kwds)
-        if data:
+        if data is not None:
             self.__init__(**kwargs)
             return self.__call__(data, weight_id)
         else:
@@ -442,7 +442,7 @@ class ThresholdLearner_fixed(Orange.classification.Learner):
     @deprecated_keywords({"examples": "data", "weightID": "weight_id"})
     def __new__(cls, data=None, weight_id=0, **kwds):
         self = Orange.classification.Learner.__new__(cls, **kwds)
-        if data:
+        if data is not None:
             self.__init__(**kwds)
             return self.__call__(data, weight_id)
         else:

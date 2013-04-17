@@ -30,7 +30,7 @@ class PearsonR(DistanceConstructor):
     def __new__(cls, data=None, **argkw):
         self = DistanceConstructor.__new__(cls, **argkw)
         self.__dict__.update(argkw)
-        if data:
+        if data is not None:
             return self.__call__(data)
         else:
             return self
@@ -76,7 +76,7 @@ class SpearmanR(DistanceConstructor):
     def __new__(cls, data=None, **argkw):
         self = DistanceConstructor.__new__(cls, **argkw)
         self.__dict__.update(argkw)
-        if data:
+        if data is not None:
             return self.__call__(data)
         else:
             return self
@@ -120,7 +120,7 @@ class Mahalanobis(DistanceConstructor):
     def __new__(cls, data=None, **argkw):
         self = DistanceConstructor.__new__(cls, **argkw)
         self.__dict__.update(argkw)
-        if data:
+        if data is not None:
             return self.__call__(data)
         else:
             return self

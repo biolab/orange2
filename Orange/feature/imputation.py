@@ -17,11 +17,11 @@ from orange import\
 import Orange.misc
 
 class ImputeLearner(orange.Learner):
-    def __new__(cls, data = None, weight_id = 0, **keyw):
+    def __new__(cls, data=None, weight_id=0, **keyw):
         self = orange.Learner.__new__(cls, **keyw)
         self.dont_impute_classifier = False
         self.__dict__.update(keyw)
-        if data:
+        if data is not None:
             return self.__call__(data, weight_id)
         else:
             return self

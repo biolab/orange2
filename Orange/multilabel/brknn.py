@@ -84,7 +84,7 @@ class BRkNNLearner(_multiknn.MultikNNLearner):
             raise ValueError, "Invalid ext value: should be None, 'a' or 'b'."
         self.ext = ext
         
-        if instances:
+        if instances is not None:
             self.instances = instances
             self.__init__(**argkw)
             return self.__call__(instances,weight_id)

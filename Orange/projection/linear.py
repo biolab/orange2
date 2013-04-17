@@ -1148,7 +1148,7 @@ class FreeVizLearner(classification.Learner):
 
     def __new__(cls, freeviz=None, instances=None, weight_id=0, **argkw):
         self = classification.Learner.__new__(cls, **argkw)
-        if instances:
+        if instances is not None:
             self.__init__(freeviz, **argkw)
             return self.__call__(instances, weight_id)
         else:
@@ -1175,7 +1175,7 @@ class S2NHeuristicLearner(classification.Learner):
 
     def __new__(cls, freeviz=None, instances=None, weight_id=0, **argkw):
         self = classification.Learner.__new__(cls, **argkw)
-        if instances:
+        if instances is not None:
             self.__init__(freeviz, **argkw)
             return self.__call__(instances, weight_id)
         else:
@@ -1311,7 +1311,7 @@ class PCA(object):
     def __new__(cls, dataset=None, **kwds):
         optimizer = object.__new__(cls)
 
-        if dataset:
+        if dataset is not None:
             optimizer.__init__(**kwds)
             return optimizer(dataset)
         else:
@@ -1608,7 +1608,7 @@ class Fda(object):
 
     def __new__(cls, dataset=None):
         self = object.__new__(cls)
-        if dataset:
+        if dataset is not None:
             self.__init__()
             return self.__call__(dataset)
         else:

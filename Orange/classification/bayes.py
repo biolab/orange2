@@ -44,9 +44,9 @@ class NaiveLearner(Orange.classification.Learner):
         :class:`~Orange.statistics.estimate.Loess`.
     """
     
-    def __new__(cls, data = None, weight_id = 0, **argkw):
+    def __new__(cls, data=None, weight_id=0, **argkw):
         self = Orange.classification.Learner.__new__(cls, **argkw)
-        if data:
+        if data is not None:
             self.__init__(**argkw)
             return self.__call__(data, weight_id)
         else:
