@@ -28,10 +28,10 @@ if [ ! -e $REPOS_DIR ]; then
 	mkdir $REPOS_DIR
 fi
 
-#Python interpreter in the bundle
+# Python interpreter in the bundle
 PYTHON=${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/python
 
-#easy_install script in the bundle
+# easy_install script in the bundle
 EASY_INSTALL=${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/easy_install
 
 #Python version
@@ -83,6 +83,10 @@ echo "+++++++++++++++++++"
 echo "Installing suds library"
 echo "+++++++++++++++++++++++"
 ./bundle-inject-pypi.sh suds-0.4 http://pypi.python.org/packages/source/s/suds/suds-0.4.tar.gz $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+
+echo "Instaling slumber library"
+echo "+++++++++++++++++++++++++"
+$EASY_INSTALL slumber
 
 echo "Removing unnecessary files."
 find $TMP_BUNDLE_DIR \( -name '*~' -or -name '*.bak' -or -name '*.pyc' -or -name '*.pyo' -or -name '*.pyd' \) -exec rm -rf {} ';'
