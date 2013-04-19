@@ -10,6 +10,8 @@ import logging.handlers
 
 import __builtin__
 
+from collections import deque
+
 import orange
 from Orange.utils import debugging
 
@@ -616,7 +618,9 @@ class SignalManager(object):
 
         skipWidgets = self.getBlockedWidgets() # Widgets that are blocking
         
-        
+        self.addEvent("Blocked widgets %s." %
+                      [w.captionTitle for w in skipWidgets],
+                      eventVerbosity=2)
         # start propagating
         self.signalProcessingInProgress = 1
         
@@ -679,50 +683,48 @@ class SignalManager(object):
 
         # there is no link...
         return 0
-    
 
     def widgetDescendants(self, widget):
-        """ Return all widget descendants of `widget`
+        """ Return all widget descendants of `widget`.
+
+        .. note::
+            Includes only widgets which are reachable by *enabled* links.
+
         """
-        queue = [widget]
-        queue_set = set(queue)
-        
-        index = self.widgets.index(widget)
-        for i in range(index, len(self.widgets)):
-            widget = self.widgets[i]
-            if widget not in queue:
-                continue
-            linked = [link.widgetTo for link in self.links.get(widget, []) if link.enabled]
+        queue = deque([widget])
+        descendants = set()
+
+        while queue:
+            w = queue.popleft()
+            linked = [link.widgetTo for link in self.links.get(widget, [])
+                      if link.enabled]
             for w in linked:
-                if w not in queue_set:
-                    queue.append(widget)
-                    queue_set.add(widget)
-        return queue
-    
-    
+                if w not in descendants:
+                    queue.append(w)
+                    descendants.add(w)
+
+        return list(descendants)
+
     def isWidgetBlocked(self, widget):
         """ Is this widget or any of its up-stream connected widgets blocked.
         """
         if widget.isBlocking():
             return True
         else:
-            widgets = [link.widgetFrom for link in self.getLinks(None, widget, None, None)]
-            if widgets:
-                return any(self.isWidgetBlocked(w) for w in widgets)
-            else:
-                return False
-            
-            
+            widgets = [link.widgetFrom
+                       for link in self.getLinks(None, widget, None, None)
+                       if link.enabled]
+            return any(self.isWidgetBlocked(w) for w in widgets)
+
     def getBlockedWidgets(self):
         """ Return a set of all widgets that are blocked.
         """
         blocked = set()
         for w in self.widgets:
             if w not in blocked and w.isBlocking():
-                blocked.update(self.widgetDescendants(w))
+                blocked.update(set([w]).union(set(self.widgetDescendants(w))))
         return blocked
-    
-                
+
     def freeze(self, widget=None):
         """ Return a context manager that freezes the signal processing
         """
