@@ -214,22 +214,43 @@ class WidgetsSignalManager(SignalManager):
     def __init__(self, scheme):
         SignalManager.__init__(self, scheme)
 
+        scheme.installEventFilter(self)
         # We keep a mapping from node->widget after the node/widget has been
         # removed from the scheme until we also process all the outgoing signal
         # updates. The reason is the old OWBaseWidget's MULTI channel protocol
         # where the actual source widget instance is passed to the signal
-        # handler, and in the delaeyd update the mapping in `scheme()` is no
+        # handler, and in the delayed update the mapping in `scheme()` is no
         # longer available.
         self._widget_backup = {}
-
+        self._widgets_to_delete = set()
+        self._active_node = None
         self.freezing = 0
+
+        self.__scheme_deleted = False
+        scheme.destroyed.connect(self.__on_scheme_destroyed)
 
     def on_node_removed(self, node):
         widget = self.scheme().widget_for_node[node]
+
+        assert not self.scheme().find_links(sink_node=node), \
+            "Node removed but still has input links"
+
+        signals = self.compress_signals(self.pending_input_signals(node))
+        if not all(signal.value is None for signal in signals):
+            log.error("Non 'None' signals pending for a removed node %r",
+                         node.title)
+
         SignalManager.on_node_removed(self, node)
 
+        if self.runtime_state() == SignalManager.Processing and \
+                node is self._active_node or self.is_blocking(node):
+            # Delay the widget delete until it finishes.
+            # Keep a reference to the widget and install a filter.
+            self._widgets_to_delete.add(widget)
+            widget.installEventFilter(self)
+
         # Store the node->widget mapping for possible delayed signal id.
-        # It will be removes in `process_queued` when all signals
+        # It will be removed in `process_queued` when all signals
         # originating from this widget are delivered.
         self._widget_backup[node] = widget
 
@@ -258,8 +279,20 @@ class WidgetsSignalManager(SignalManager):
         to OWBaseWidget instance.
 
         """
-        widget = self.scheme().widget_for_node[node]
+        if node in self.scheme().widget_for_node:
+            widget = self.scheme().widget_for_node[node]
+        else:
+            widget = self._widget_backup[node]
+
+        self._active_node = node
         self.process_signals_for_widget(node, widget, signals)
+        self._active_node = None
+
+        if widget in self._widgets_to_delete:
+            # If this node/widget was removed during the
+            # 'process_signals_for_widget'
+            self._widgets_to_delete.remove(widget)
+            widget.deleteLater()
 
     def compress_signals(self, signals):
         return compress_signals(signals)
@@ -353,7 +386,7 @@ class WidgetsSignalManager(SignalManager):
             app.processEvents()
 
         if widget.processingHandler:
-            widget.processingHandler(self, 0)
+            widget.processingHandler(widget, 0)
 
     def scheduleSignalProcessing(self, widget=None):
         """
@@ -479,12 +512,45 @@ class WidgetsSignalManager(SignalManager):
                 event.setAccepted(False)
                 return False
 
+            if self.__scheme_deleted:
+                log.debug("Scheme has been/is being deleted. No more "
+                          "signals will be delivered to any nodes.")
+                event.setAccepted(True)
+                return True
+        # Retain a reference to the scheme until the 'process_queued' finishes
+        # in SignalManager.event.
+        scheme = self.scheme()
         return SignalManager.event(self, event)
+
+    def eventFilter(self, receiver, event):
+        if receiver is self.scheme() and event.type() == QEvent.DeferredDelete:
+            if self.runtime_state() == SignalManager.Processing:
+                log.debug("Deferring a 'DeferredDelete' event for the Scheme "
+                          "instance until SignalManager exits the current "
+                          "update loop.")
+                event.setAccepted(False)
+                self.processingFinished.connect(self.scheme().deleteLater)
+                self.__scheme_deleted = True
+                return True
+        elif receiver in self._widgets_to_delete and \
+                event.type() == QEvent.DeferredDelete:
+            if self._widget_backup.get(self._active_node, None) is receiver:
+                # The widget is still being updated. We need to keep it alive,
+                # it will be deleted in `send_to_node`.
+                log.debug("Deferring a DeferredDelete until widget exits "
+                          "the 'process_signals_for_widget'.")
+                event.setAccepted(False)
+                return True
+
+        return SignalManager.eventFilter(self, receiver, event)
+
+    def __on_scheme_destroyed(self, obj):
+        self.__scheme_deleted = True
 
 
 class SignalLink(object):
     """
-    Back compatiblity with old orngSignalManager, do not use.
+    Back compatibility with old orngSignalManager, do not use.
     """
     def __init__(self, widgetFrom, outputSignal, widgetTo, inputSignal,
                  enabled=True, dynamic=False):

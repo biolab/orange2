@@ -170,7 +170,8 @@ class SignalManager(QObject):
         # references in process_node
         # NOTE: This does not remove output signals this node. In particular
         # the final 'None' values might be left on the queue.
-        log.info("Node %r removed. Removing pending signals.")
+        log.info("Node %r removed. Removing pending signals.",
+                 node.title)
         self.remove_pending_signals(node)
 
         del self._node_outputs[node]
