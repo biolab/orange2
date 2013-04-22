@@ -553,8 +553,11 @@ class SchemeEditWidget(QWidget):
                 self.__onSelectionChanged
             )
 
-            self.__scene.clear()
             self.__scene.removeEventFilter(self)
+
+            # Clear all items from the scene
+            self.__scene.clear_scene()
+
             self.__scene.deleteLater()
 
             self.__scene = CanvasScene()

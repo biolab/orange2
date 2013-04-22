@@ -126,6 +126,38 @@ class CanvasScene(QGraphicsScene):
         """
         Clear (reset) the scene.
         """
+        if self.scheme is not None:
+            self.scheme.node_added.disconnect(self.add_node)
+            self.scheme.node_removed.disconnect(self.remove_node)
+
+            self.scheme.link_added.disconnect(self.add_link)
+            self.scheme.link_removed.disconnect(self.remove_link)
+
+            self.scheme.annotation_added.disconnect(self.add_annotation)
+            self.scheme.annotation_removed.disconnect(self.remove_annotation)
+
+            self.scheme.node_state_changed.disconnect(
+                self.on_widget_state_change
+            )
+            self.scheme.channel_state_changed.disconnect(
+                self.on_link_state_change
+            )
+
+            # Remove all items to make sure all signals from scheme items
+            # to canvas items are disconnected.
+
+            for annot in self.scheme.annotations:
+                if annot in self.__item_for_annotation:
+                    self.remove_annotation(annot)
+
+            for link in self.scheme.links:
+                if link in self.__item_for_link:
+                    self.remove_link(link)
+
+            for node in self.scheme.nodes:
+                if node in self.__item_for_node:
+                    self.remove_node(node)
+
         self.scheme = None
         self.__node_items = []
         self.__item_for_node = {}
@@ -154,22 +186,6 @@ class CanvasScene(QGraphicsScene):
         """
         if self.scheme is not None:
             # Clear the old scheme
-            self.scheme.node_added.disconnect(self.add_node)
-            self.scheme.node_removed.disconnect(self.remove_node)
-
-            self.scheme.link_added.disconnect(self.add_link)
-            self.scheme.link_removed.disconnect(self.remove_link)
-
-            self.scheme.annotation_added.disconnect(self.add_annotation)
-            self.scheme.annotation_removed.disconnect(self.remove_annotation)
-
-            self.scheme.node_state_changed.disconnect(
-                self.on_widget_state_change
-            )
-            self.scheme.channel_state_changed.disconnect(
-                self.on_link_state_change
-            )
-
             self.clear_scene()
 
         log.info("Setting scheme '%s' on '%s'" % (scheme, self))
@@ -489,6 +505,12 @@ class CanvasScene(QGraphicsScene):
         """
         item = self.__item_for_link.pop(scheme_link)
         scheme_link.enabled_changed.disconnect(item.setEnabled)
+
+        if scheme_link.is_dynamic():
+            scheme_link.dynamic_enabled_changed.disconnect(
+                item.setDynamicEnabled
+            )
+
         self.remove_link_item(item)
 
     def link_items(self):
