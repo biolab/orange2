@@ -430,13 +430,13 @@ class SignalManager(QObject):
     def event(self, event):
         if event.type() == QEvent.UpdateRequest:
             if not self.__state == SignalManager.Running:
-                log.debug("Received UpdateRequest event while not "
+                log.debug("Received 'UpdateRequest' event while not "
                           "in 'Running' state")
                 event.setAccepted(False)
                 return False
 
             if self.__runtime_state == SignalManager.Processing:
-                log.debug("received UpdateRequest event while in "
+                log.debug("Received 'UpdateRequest' event while in "
                           "'process_queued'")
                 # This happens if someone calls QCoreApplication.processEvents
                 # from the signal handlers.
@@ -444,16 +444,20 @@ class SignalManager(QObject):
                 event.accept()
                 return True
 
-            log.debug("UpdateRequest event, queued signals: %i",
+            log.info("'UpdateRequest' event, queued signals: %i",
                       len(self._input_queue))
             if self._input_queue:
-                self.process_queued()
+                self.process_queued(max_nodes=1)
             event.accept()
 
             if self.__reschedule:
-                log.debug("Rescheduling UpdateRequest event")
+                log.debug("Rescheduling 'UpdateRequest' event")
                 self._update()
                 self.__reschedule = False
+            elif self.node_update_front():
+                log.debug("More nodes are eligible for an update. "
+                          "Scheduling another update.")
+                self._update()
 
             return True
 
