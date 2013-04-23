@@ -222,7 +222,7 @@ class CanvasMainWindow(QMainWindow):
         w.layout().setContentsMargins(20, 0, 10, 0)
 
         self.scheme_widget = SchemeEditWidget()
-        self.scheme_widget.setScheme(widgetsscheme.WidgetsScheme())
+        self.scheme_widget.setScheme(widgetsscheme.WidgetsScheme(parent=self))
 
         w.layout().addWidget(self.scheme_widget)
 
@@ -809,7 +809,7 @@ class CanvasMainWindow(QMainWindow):
             if self.ask_save_changes() == QDialog.Rejected:
                 return QDialog.Rejected
 
-        new_scheme = widgetsscheme.WidgetsScheme()
+        new_scheme = widgetsscheme.WidgetsScheme(parent=self)
 
         settings = QSettings()
         show = settings.value("schemeinfo/show-at-new-scheme", True,
@@ -883,7 +883,7 @@ class CanvasMainWindow(QMainWindow):
         from a saved `filename`. Return `None` if an error occurs.
 
         """
-        new_scheme = widgetsscheme.WidgetsScheme()
+        new_scheme = widgetsscheme.WidgetsScheme(parent=self)
         errors = []
         try:
             parse_scheme(new_scheme, open(filename, "rb"),
@@ -939,13 +939,13 @@ class CanvasMainWindow(QMainWindow):
 
         manager = new_scheme.signal_manager
         if self.freeze_action.isChecked():
-            manager.freeze().push()
+            manager.pause()
 
         scheme_doc.setScheme(new_scheme)
 
         old_scheme.save_widget_settings()
         old_scheme.close_all_open_widgets()
-
+        old_scheme.signal_manager.stop()
         old_scheme.deleteLater()
 
     def ask_save_changes(self):
@@ -1320,10 +1320,11 @@ class CanvasMainWindow(QMainWindow):
 
     def set_signal_freeze(self, freeze):
         scheme = self.current_document().scheme()
+        manager = scheme.signal_manager
         if freeze:
-            scheme.signal_manager.freeze().push()
+            manager.pause()
         else:
-            scheme.signal_manager.freeze().pop()
+            manager.resume()
 
     def remove_selected(self):
         """Remove current scheme selection.
@@ -1333,7 +1334,14 @@ class CanvasMainWindow(QMainWindow):
     def quit(self):
         """Quit the application.
         """
-        self.close()
+        if QApplication.activePopupWidget():
+            # On OSX the actions in the global menu bar are triggered
+            # even if an popup widget is running it's own event loop
+            # (in exec_)
+            log.debug("Ignoring a quit shortcut during an active "
+                      "popup dialog.")
+        else:
+            self.close()
 
     def select_all(self):
         self.current_document().selectAll()
@@ -1482,13 +1490,14 @@ class CanvasMainWindow(QMainWindow):
                 event.ignore()
                 return
 
+        # Set an empty scheme to clear the document
+        document.setScheme(widgetsscheme.WidgetsScheme())
+
         scheme = document.scheme()
         scheme.save_widget_settings()
         scheme.close_all_open_widgets()
-
-        # Set an empty scheme to clear the document
-        document.setScheme(widgetsscheme.WidgetsScheme())
-        document.deleteLater()
+        scheme.signal_manager.stop()
+        scheme.deleteLater()
 
         config.save_config()
 

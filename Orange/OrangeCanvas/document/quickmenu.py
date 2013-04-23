@@ -20,7 +20,7 @@ from PyQt4.QtGui import (
     QButtonGroup, QStackedWidget, QHBoxLayout, QVBoxLayout, QSizePolicy,
     QStandardItemModel, QSortFilterProxyModel, QStyleOptionToolButton,
     QStylePainter, QStyle, QApplication, QStyledItemDelegate,
-    QStyleOptionViewItemV4, QSizeGrip
+    QStyleOptionViewItemV4, QSizeGrip, QKeySequence
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
@@ -947,6 +947,13 @@ class QuickMenu(FramelessWindow):
 
         FramelessWindow.keyPressEvent(self, event)
         event.accept()
+
+    def event(self, event):
+        if event.type() == QEvent.ShortcutOverride:
+            log.debug("Overriding shortcuts")
+            event.accept()
+            return True
+        return FramelessWindow.event(self, event)
 
     def eventFilter(self, obj, event):
         if isinstance(obj, QTreeView):
