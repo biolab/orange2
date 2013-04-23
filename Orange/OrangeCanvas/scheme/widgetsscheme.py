@@ -259,6 +259,11 @@ class WidgetsSignalManager(SignalManager):
         send method compatible with OWBaseWidget.
         """
         scheme = self.scheme()
+
+        if widget not in scheme.node_for_widget:
+            # The Node/Widget was already removed from the scheme
+            return
+
         node = scheme.node_for_widget[widget]
 
         try:
@@ -525,9 +530,9 @@ class WidgetsSignalManager(SignalManager):
     def eventFilter(self, receiver, event):
         if receiver is self.scheme() and event.type() == QEvent.DeferredDelete:
             if self.runtime_state() == SignalManager.Processing:
-                log.debug("Deferring a 'DeferredDelete' event for the Scheme "
-                          "instance until SignalManager exits the current "
-                          "update loop.")
+                log.info("Deferring a 'DeferredDelete' event for the Scheme "
+                         "instance until SignalManager exits the current "
+                         "update loop.")
                 event.setAccepted(False)
                 self.processingFinished.connect(self.scheme().deleteLater)
                 self.__scheme_deleted = True
@@ -537,8 +542,8 @@ class WidgetsSignalManager(SignalManager):
             if self._widget_backup.get(self._active_node, None) is receiver:
                 # The widget is still being updated. We need to keep it alive,
                 # it will be deleted in `send_to_node`.
-                log.debug("Deferring a DeferredDelete until widget exits "
-                          "the 'process_signals_for_widget'.")
+                log.info("Deferring a 'DeferredDelete' until widget exits "
+                         "the 'process_signals_for_widget'.")
                 event.setAccepted(False)
                 return True
 
