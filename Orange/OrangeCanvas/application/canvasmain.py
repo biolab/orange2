@@ -222,7 +222,7 @@ class CanvasMainWindow(QMainWindow):
         w.layout().setContentsMargins(20, 0, 10, 0)
 
         self.scheme_widget = SchemeEditWidget()
-        self.scheme_widget.setScheme(widgetsscheme.WidgetsScheme())
+        self.scheme_widget.setScheme(widgetsscheme.WidgetsScheme(parent=self))
 
         w.layout().addWidget(self.scheme_widget)
 
@@ -809,7 +809,7 @@ class CanvasMainWindow(QMainWindow):
             if self.ask_save_changes() == QDialog.Rejected:
                 return QDialog.Rejected
 
-        new_scheme = widgetsscheme.WidgetsScheme()
+        new_scheme = widgetsscheme.WidgetsScheme(parent=self)
 
         settings = QSettings()
         show = settings.value("schemeinfo/show-at-new-scheme", True,
@@ -883,7 +883,7 @@ class CanvasMainWindow(QMainWindow):
         from a saved `filename`. Return `None` if an error occurs.
 
         """
-        new_scheme = widgetsscheme.WidgetsScheme()
+        new_scheme = widgetsscheme.WidgetsScheme(parent=self)
         errors = []
         try:
             parse_scheme(new_scheme, open(filename, "rb"),
@@ -945,7 +945,7 @@ class CanvasMainWindow(QMainWindow):
 
         old_scheme.save_widget_settings()
         old_scheme.close_all_open_widgets()
-
+        old_scheme.signal_manager.stop()
         old_scheme.deleteLater()
 
     def ask_save_changes(self):
@@ -1489,13 +1489,14 @@ class CanvasMainWindow(QMainWindow):
                 event.ignore()
                 return
 
+        # Set an empty scheme to clear the document
+        document.setScheme(widgetsscheme.WidgetsScheme())
+
         scheme = document.scheme()
         scheme.save_widget_settings()
         scheme.close_all_open_widgets()
-
-        # Set an empty scheme to clear the document
-        document.setScheme(widgetsscheme.WidgetsScheme())
-        document.deleteLater()
+        scheme.signal_manager.stop()
+        scheme.deleteLater()
 
         config.save_config()
 
