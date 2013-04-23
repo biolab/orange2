@@ -556,6 +556,7 @@ class SchemeEditWidget(QWidget):
             self.__scene.removeEventFilter(self)
 
             # Clear all items from the scene
+            self.__scene.blockSignals(True)
             self.__scene.clear_scene()
 
             self.__scene.deleteLater()
