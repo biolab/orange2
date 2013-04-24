@@ -1,6 +1,6 @@
 '''
 <name>Linear Projection 3D</name>
-<icon>icons/LinearProjection.png</icon>
+<icon>icons/LinearProjection.svg</icon>
 <priority>2002</priority>
 '''
 

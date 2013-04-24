@@ -2,7 +2,7 @@
 <name>Linear Projection (Qt)</name>
 <description>Create a linear projection.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-<icon>icons/LinearProjection.png</icon>
+<icon>icons/LinearProjection.svg</icon>
 <priority>140</priority>
 """
 # LinProj.py

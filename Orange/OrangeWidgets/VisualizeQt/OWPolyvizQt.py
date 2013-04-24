@@ -2,7 +2,7 @@
 <name>Polyviz (Qt)</name>
 <description>Polyviz (multiattribute) visualization.</description>
 <contact>Gregor Leban (gregor.leban@fri.uni-lj.si)</contact>
-<icon>icons/Polyviz.png</icon>
+<icon>icons/Polyviz.svg</icon>
 <priority>160</priority>
 """
 # Polyviz.py
