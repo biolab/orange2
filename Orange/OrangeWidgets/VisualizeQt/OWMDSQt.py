@@ -1,7 +1,7 @@
 """
 <name>MDS Qt</name>
 <description>Multi dimensional scaling (Qt)</description>
-<icon>icons/MDS.png</icon>
+<icon>icons/MDS.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>2500</priority>
 """
@@ -17,8 +17,8 @@ import OWToolbars
 #from OWGraph import *
 #from PyQt4.Qwt5 import *
 
-from OrangeWidgets.plot.owplot import OWPlot, OWCurve
-from OrangeWidgets.plot.owpoint import OWPoint
+from plot.owplot import OWPlot, OWCurve
+from plot.owpoint import OWPoint
 
 from random import random
 

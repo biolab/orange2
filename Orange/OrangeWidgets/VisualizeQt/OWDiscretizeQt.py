@@ -1,7 +1,7 @@
 """
 <name>Discretize (Qt)</name>
 <description>Discretization of continuous attributes.</description>
-<icon>icons/Discretize.png</icon>
+<icon>icons/Discretize.svg</icon>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>2100</priority>
 """

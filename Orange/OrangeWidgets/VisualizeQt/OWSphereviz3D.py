@@ -1,6 +1,6 @@
 '''
 <name>Sphereviz 3D</name>
-<icon>icons/Radviz.png</icon>
+<icon>icons/Radviz.svg</icon>
 <priority>2000</priority>
 '''
 

@@ -1,6 +1,6 @@
 '''
 <name>Scatterplot 3D</name>
-<icon>icons/ScatterPlot.png</icon>
+<icon>icons/ScatterPlot.svg</icon>
 <priority>2001</priority>
 '''
 

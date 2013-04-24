@@ -61,7 +61,7 @@ spec = \
      ("mainwindow/show-scheme-shadow", bool, True,
       "Show shadow around the scheme view"),
 
-     ("mainwindow/toolbox-dock-exclusive", bool, False,
+     ("mainwindow/toolbox-dock-exclusive", bool, True,
       "Should the toolbox show only one expanded category at the time"),
 
      ("mainwindow/toolbox-dock-floatable", bool, False,
