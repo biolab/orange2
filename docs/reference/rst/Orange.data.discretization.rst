@@ -70,10 +70,10 @@ Data discretization classes
 
 .. autoclass:: DiscretizeTable(features=None, discretize_class=False, method=EqualFreq(n=3), clean=True)
 
-.. A chapter on `feature subset selection <../ofb/o_fss.htm>`_ in Orange
+.. A chapter on feature subset selection in Orange
    for Beginners tutorial shows the use of DiscretizedLearner. Other
    discretization classes from core Orange are listed in chapter on
-   `categorization <../ofb/o_categorization.htm>`_ of the same tutorial. -> should put in classification/wrappers
+   categorization of the same tutorial. -> should put in classification/wrappers
 
 .. [FayyadIrani1993] UM Fayyad and KB Irani. Multi-interval discretization of continuous valued
   attributes for classification learning. In Proc. 13th International Joint Conference on Artificial Intelligence, pages

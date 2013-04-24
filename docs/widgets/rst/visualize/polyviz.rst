@@ -51,8 +51,7 @@ explorative data analysis and search for interesting visualizations. For
 further details on both, see the documentation on :ref:`Scatter Plot` widget.
 See the documentation on :ref:`Radviz` for details on various aspects
 controlled by the :obj:`Settings` tab. The utility of VizRank, an intelligent
-visualization technique, using `brown-selected.tab
-<http://orange.biolab.si/doc/datasets/brown-selected.tab>`_ data set is
+visualization technique, using brown-selected.tab data set is
 illustrated with a snapshot below.
 
 .. image:: images/Polyviz-VizRank.png

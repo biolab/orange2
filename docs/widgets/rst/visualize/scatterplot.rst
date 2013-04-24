@@ -72,7 +72,7 @@ can be in current implementation used only with classification data sets, that
 is, data sets where instances are labeled with a discrete class. The task of
 optimization is to find those scatterplot projections, where instances with
 different class labels are well separated. For example, for a data set 
-`brown-selected.tab <http://orange.biolab.si/doc/datasets/brown-selected.tab>`_
+brown-selected.tab
 (comes with Orange installation) the two attributes that best separate
 instances of different class are displayed in the snapshot below, where we have
 also switched on the :obj:`Show Probabilities` option from Scatterplot's
@@ -147,8 +147,7 @@ times the two attributes appeared in the top-rated projections.
 List of best-rated projections may also be used for the search and analysis of
 outliers. The idea is that the outliers are those data instances, which are
 incorrectly classified in many of the top visualizations. For example, the
-class of the 33-rd instance in `brown-selected.tab
-<http://orange.biolab.si/doc/datasets/brown-selected.tab>`_ should be Resp,
+class of the 33-rd instance in brown-selected.tab should be Resp,
 but this instance is quite often misclassified as Ribo. The snapshot below
 shows one particular visualization displaying why such misclassification
 occurs. Perhaps the most important part of the :obj:`Outlier Identification`
