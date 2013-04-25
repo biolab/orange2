@@ -10,6 +10,8 @@ from functools import partial
 
 import pkg_resources
 
+import Orange.utils.addons
+
 from PyQt4.QtGui import (
     QMainWindow, QWidget, QAction, QActionGroup, QMenu, QMenuBar, QDialog,
     QFileDialog, QMessageBox, QVBoxLayout, QSizePolicy, QColor, QKeySequence,
@@ -42,6 +44,8 @@ from .aboutdialog import AboutDialog
 from .schemeinfo import SchemeInfoDialog
 from .outputview import OutputView
 from .settings import UserSettingsDialog
+from .addons import AddOnManagerDialog
+
 from ..document.schemeedit import SchemeEditWidget
 
 from ..scheme import widgetsscheme
@@ -310,6 +314,12 @@ class CanvasMainWindow(QMainWindow):
                        [self.freeze_action,
                         self.dock_help_action]
 
+
+        def addOnRefreshCallback():
+            pass #TODO add new category
+
+        Orange.utils.addons.addon_refresh_callback.append(addOnRefreshCallback)
+
         # Tool bar in the collapsed dock state (has the same actions as
         # the tool bar in the CanvasToolDock
         actions_toolbar = QToolBar(orientation=Qt.Vertical)
@@ -501,6 +511,15 @@ class CanvasMainWindow(QMainWindow):
                     shortcut=QKeySequence.Preferences
                     )
 
+        self.canvas_addons_action = \
+            QAction(self.tr("&Add-ons..."), self,
+                    objectName="canvas-addons-action",
+                    toolTip=self.tr("Manage add-ons."),
+                    triggered=self.open_addons,
+                    menuRole=QAction.PreferencesRole
+                    )
+
+
         self.show_output_action = \
             QAction(self.tr("Show Output View"), self,
                     toolTip=self.tr("Show application output."),
@@ -622,6 +641,7 @@ class CanvasMainWindow(QMainWindow):
 #        self.options_menu.addAction("Attach Python Console")
         self.options_menu.addSeparator()
         self.options_menu.addAction(self.canvas_settings_action)
+        self.options_menu.addAction(self.canvas_addons_action)
 
         # Widget menu
         menu_bar.addMenu(self.widget_menu)
@@ -1367,6 +1387,29 @@ class CanvasMainWindow(QMainWindow):
         status = dlg.exec_()
         if status == 0:
             self.__update_from_settings()
+
+    def open_addons(self):
+
+        def getlr():
+            settings = QSettings()
+            settings.beginGroup("addons")
+            lastRefresh = settings.value("addons-last-refresh",
+                          defaultValue=0, type=int)
+            settings.endGroup()
+            return lastRefresh
+        
+        def setlr(v):
+            settings = QSettings()
+            settings.beginGroup("addons")
+            lastRefresh = settings.setValue("addons-last-refresh", int(v))
+            settings.endGroup()
+            
+        dlg = AddOnManagerDialog(self, self)
+        dlg.loadtimefn = getlr
+        dlg.savetimefn = setlr
+        dlg.show()
+        dlg.reloadQ()
+        status = dlg.exec_()
 
     def show_output_view(self):
         """Show a window with application output.

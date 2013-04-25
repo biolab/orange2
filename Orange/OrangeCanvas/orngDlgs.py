@@ -10,8 +10,10 @@ from contextlib import closing
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from orngCanvasItems import MyCanvasText
+import time
 
 import OWGUI
+import Orange.utils.addons
 
 has_pip = True
 try:
@@ -741,6 +743,8 @@ class AddOnManagerDialog(QDialog):
         self.topLayout.setSpacing(0)
         self.resize(600,500)
         self.layout().setSizeConstraint(QLayout.SetMinimumSize)
+        self.savetimefn = None
+        self.loadtimefn = None
         
         mainBox = OWGUI.widgetBox(self, orientation="vertical", sizePolicy=QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         
@@ -764,8 +768,6 @@ class AddOnManagerDialog(QDialog):
         repos.layout().addWidget(lst)
         QObject.connect(lst, SIGNAL("itemChanged(QListWidgetItem *)"), self.cbToggled)
         QObject.connect(lst, SIGNAL("currentItemChanged(QListWidgetItem *, QListWidgetItem *)"), self.currentItemChanged)
-
-        import Orange.utils.addons
 
         # Bottom info pane
         
@@ -843,7 +845,6 @@ class AddOnManagerDialog(QDialog):
     
     def accept(self):
         self.to_upgrade.difference_update(self.to_remove())
-        import Orange.utils.addons
         add, remove, upgrade = self.to_install(), self.to_remove(), self.to_upgrade
         if len(add) + len(remove) + len(upgrade) > 0:
             summary = AddOnManagerSummary(add, remove, upgrade, self)
@@ -937,17 +938,32 @@ class AddOnManagerDialog(QDialog):
 
     def reloadRepo(self):
         # Reload add-on list.
-        import Orange.utils.addons
         try:
             self.busy("Reloading add-on repository ...")
             self.repaint()
             Orange.utils.addons.refresh_available_addons(progress_callback = self.pcb)
+            if self.savetimefn:
+                self.savetimefn(int(time.time()))
         except Exception, e:
             QMessageBox.critical(self, "Error", "Could not reload repository: %s." % e)
         finally:
             self.busy(False)
         # Finally, refresh the tree on GUI.
         self.refreshView()
+
+    def reloadQ(self):
+        #ask the user if he would like to reload the repository
+        lastRefresh = 0
+        if self.loadtimefn:
+            lastRefresh = self.loadtimefn()
+        t = time.time()
+        if t - lastRefresh > 7*24*3600 or Orange.utils.addons.addons_corrupted:
+            if Orange.utils.addons.addons_corrupted or \
+               QMessageBox.question(self, "Refresh",
+                                    "List of available add-ons has not been refreshed for more than a week. Do you want to download the list now?",
+                                     QMessageBox.Yes | QMessageBox.Default,
+                                     QMessageBox.No | QMessageBox.Escape) == QMessageBox.Yes:
+                self.reloadRepo()
             
     def upgradeCandidates(self):
         result = []
