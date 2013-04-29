@@ -1,5 +1,5 @@
 recursive-include Orange/testing *
-recursive-include Orange/doc *
+recursive-include Orange/datasets *
 
 recursive-include Orange/OrangeWidgets *.png *.svg *.gs *.vs *.obj *.html
 recursive-include Orange/OrangeCanvas *.png *.svg *.qss *.pyw *.txt
