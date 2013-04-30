@@ -412,7 +412,6 @@ class SchemaView(QGraphicsView):
         for widget in self.doc.widgets:
             if widget.instance == widgetInstance:
                 widget.setProgressBarValue(value)
-                qApp.processEvents()        # allow processing of other events
                 return
 
     def processingHandler(self, widgetInstance, value):

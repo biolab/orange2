@@ -201,6 +201,7 @@ class OWBaseWidget(QDialog):
 
         self.asyncCalls = []
         self.asyncBlock = False
+        self.__progressBarValue = -1
 
     # uncomment this when you need to see which events occured
     """
@@ -744,7 +745,14 @@ class OWBaseWidget(QDialog):
             self.progressBarHandler(self, 0)
         self.processingStateChanged.emit(1)
 
-    def progressBarSet(self, value):
+    def progressBarSet(self, value, processEventsFlags=QEventLoop.AllEvents):
+        """
+        Set the current progress bar to `value`. This method will also call
+        `qApp.processEvents` with the `processEventsFlags` unless the
+        processEventsFlags equals ``None``.
+
+        """
+        old = self.__progressBarValue
         if value > 0:
             self.__progressBarValue = value
             usedTime = max(1, time.time() - self.startTime)
@@ -763,18 +771,24 @@ class OWBaseWidget(QDialog):
         if self.progressBarHandler:
             self.progressBarHandler(self, value)
 
-        self.progressBarValueChanged.emit(value)
+        if old != value:
+            self.progressBarValueChanged.emit(value)
 
-        qApp.processEvents()
+        if processEventsFlags is not None:
+            qApp.processEvents(processEventsFlags)
 
     def progressBarValue(self):
         return self.__progressBarValue
 
-    progressBarValue = pyqtProperty(float, fset=progressBarSet,
-                                    fget=progressBarValue)
+    progressBarValue = pyqtProperty(
+        float,
+        fset=lambda self, val:
+            self.progressBarSet(val, processEventsFlags=None),
+        fget=progressBarValue
+    )
 
-    def progressBarAdvance(self, value):
-        self.progressBarSet(self.progressBarValue + value)
+    def progressBarAdvance(self, value, processEventsFlags=QEventLoop.AllEvents):
+        self.progressBarSet(self.progressBarValue + value, processEventsFlags)
 
     def progressBarFinished(self):
         self.setWindowTitle(self.captionTitle)
