@@ -4,14 +4,16 @@ import os
 import sys
 
 from datetime import datetime
+from functools import partial
 
-import Orange
+from PyQt4.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 from Orange.utils import serverfiles, environ
 from Orange.utils.serverfiles import sizeformat as sizeof_fmt
 
 from OWWidget import *
-from OWConcurrent import *
+
+from OWConcurrent import Task, ThreadExecutor, methodinvoke
 
 import OWGUIEx
 
@@ -23,27 +25,6 @@ class ItemProgressBar(QProgressBar):
     def advance(self):
         self.setValue(self.value() + 1)
 
-
-class ProgressBarRedirect(QObject):
-    def __init__(self, parent, redirect):
-        QObject.__init__(self, parent)
-        self.redirect = redirect
-        self._delay = False
-
-    @pyqtSignature("advance()")
-    def advance(self):
-        # delay OWBaseWidget.progressBarSet call, because it calls
-        # qApp.processEvents which can result in 'event queue climbing'
-        # and max. recursion error if GUI thread gets another advance
-        # signal before it finishes with this one
-        if not self._delay:
-            try:
-                self._delay = True
-                self.redirect.advance()
-            finally:
-                self._delay = False
-        else:
-            QTimer.singleShot(10, self.advance)
 
 _icons_dir = os.path.join(environ.canvas_install_dir, "icons")
 
@@ -162,6 +143,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.specialTags = specialTags
         self.domain = domain
         self.filename = filename
+        self.task = None
         self.UpdateToolTip()
 
     def UpdateToolTip(self):
@@ -181,74 +163,10 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
     def StartDownload(self):
         self.updateWidget.removeButton.setEnabled(False)
         self.updateWidget.updateButton.setEnabled(False)
-        self.setData(2, Qt.DisplayRole, QVariant(""))
-        serverFiles = serverfiles.ServerFiles(
-            access_code=self.master.accessCode if self.master.accessCode
-            else None
-        )
-
-        pb = ItemProgressBar(self.treeWidget())
-        pb.setRange(0, 100)
-        pb.setTextVisible(False)
-
-        self.task = AsyncCall(threadPool=QThreadPool.globalInstance())
-
-        if not getattr(self.master, "_sum_progressBar", None):
-            self.master._sum_progressBar = OWGUI.ProgressBar(self.master, 0)
-            self.master._sum_progressBar.in_progress = 0
-        master_pb = self.master._sum_progressBar
-        master_pb.iter += 100
-        master_pb.in_progress += 1
-        self._progressBarRedirect = \
-            ProgressBarRedirect(QThread.currentThread(), master_pb)
-        QObject.connect(self.task,
-                        SIGNAL("advance()"),
-                        pb.advance,
-                        Qt.QueuedConnection)
-        QObject.connect(self.task,
-                        SIGNAL("advance()"),
-                        self._progressBarRedirect.advance,
-                        Qt.QueuedConnection)
-        QObject.connect(self.task,
-                        SIGNAL("finished(QString)"),
-                        self.EndDownload,
-                        Qt.QueuedConnection)
-        self.treeWidget().setItemWidget(self, 2, pb)
-        pb.show()
-
-        self.task.apply_async(serverfiles.download,
-                              args=(self.domain, self.filename, serverFiles),
-                              kwargs=dict(callback=self.task.emitAdvance))
-
-    def EndDownload(self, exitCode=0):
-        self.treeWidget().removeItemWidget(self, 2)
-        if str(exitCode) == "Ok":
-            self.state = 0
-            self.updateWidget.SetState(self.state)
-            self.setData(2, Qt.DisplayRole,
-                         QVariant(sizeof_fmt(float(self.size))))
-            self.master.UpdateInfoLabel()
-            self.UpdateToolTip()
-        else:
-            self.updateWidget.SetState(1)
-            self.setData(2, Qt.DisplayRole,
-                         QVariant("Error occurred while downloading:" +
-                                  str(exitCode)))
-
-        master_pb = self.master._sum_progressBar
-
-        if master_pb and master_pb.in_progress == 1:
-            master_pb.finish()
-            self.master._sum_progressBar = None
-        elif master_pb:
-            master_pb.in_progress -= 1
+        self.master.SubmitDownloadTask(self.domain, self.filename)
 
     def Remove(self):
-        serverfiles.remove(self.domain, self.filename)
-        self.state = 2
-        self.updateWidget.SetState(self.state)
-        self.master.UpdateInfoLabel()
-        self.UpdateToolTip()
+        self.master.SubmitRemoveTask(self.domain, self.filename)
 
     def __contains__(self, item):
         return any(item.lower() in tag.lower()
@@ -322,6 +240,8 @@ class OWDatabasesUpdate(OWWidget):
         OWGUI.button(box, self, "Download filtered",
                      callback=self.DownloadFiltered,
                      tooltip="Download all filtered files shown")
+        OWGUI.button(box, self, "Cancel", callback=self.Cancel,
+                     tooltip="Cancel scheduled downloads/updates.")
         OWGUI.rubber(box)
         OWGUI.lineEdit(box, self, "accessCode", "Access Code",
                        orientation="horizontal",
@@ -347,16 +267,31 @@ class OWDatabasesUpdate(OWWidget):
 
         self.resize(800, 600)
 
-        QTimer.singleShot(50, self.RetrieveFilesList)
+        self.progress = ProgressState(self, maximum=3)
+        self.progress.valueChanged.connect(self._updateProgress)
+        self.progress.rangeChanged.connect(self._updateProgress)
+        self.executor = ThreadExecutor(
+            threadPool=QThreadPool(maxThreadCount=2)
+        )
+
+        task = Task(self, function=self.RetrieveFilesList)
+        task.exceptionReady.connect(self.HandleError)
+        task.start()
+
+        self._tasks = []
 
     def RetrieveFilesList(self):
+        self.progress.setRange(0, 3)
         self.serverFiles = serverfiles.ServerFiles(access_code=self.accessCode)
-        self.pb = ProgressBar(self, 3)
-        self.async_retrieve = createTask(retrieveFilesList,
-                                         (self.serverFiles, self.domains,
-                                          self.pb.advance),
-                                         onResult=self.SetFilesList,
-                                         onError=self.HandleError)
+
+        task = Task(function=partial(retrieveFilesList, self.serverFiles,
+                                     self.domains,
+                                     methodinvoke(self.progress, "advance")))
+
+        task.resultReady.connect(self.SetFilesList)
+        task.exceptionReady.connect(self.HandleError)
+
+        self.executor.submit(task)
 
         self.setEnabled(False)
 
@@ -388,7 +323,8 @@ class OWDatabasesUpdate(OWWidget):
 
         for item in items:
             self.updateItems.append(UpdateTreeWidgetItem(self, *item))
-        self.pb.advance()
+        self.progress.advance()
+
         for column in range(4):
             whint = self.filesView.sizeHintForColumn(column)
             width = min(whint, 400)
@@ -398,17 +334,18 @@ class OWDatabasesUpdate(OWWidget):
                                       if not hint.startswith("#")])
         self.SearchUpdate()
         self.UpdateInfoLabel()
-        self.pb.finish()
 
-    def HandleError(self, (exc_type, exc_value, tb)):
-        if exc_type >= IOError:
+        self.progress.setRange(0, 0)
+
+    def HandleError(self, exception):
+        if isinstance(exception, IOError):
             self.error(0,
                        "Could not connect to server! Press the Retry "
                        "button to try again.")
             self.SetFilesList({})
         else:
-            sys.excepthook(exc_type, exc_value, tb)
-            self.pb.finish()
+            sys.excepthook(type(exception), exception.args, None)
+            self.progress.setRange(0, 0)
             self.setEnabled(True)
 
     def UpdateInfoLabel(self):
@@ -448,6 +385,230 @@ class OWDatabasesUpdate(OWWidget):
             item.setHidden(hide)
             if not hide:
                 tags.update(item.tags)
+
+    def SubmitDownloadTask(self, domain, filename):
+        """
+        Submit the (domain, filename) to be downloaded/updated.
+        """
+        item = self._item(domain, filename)
+
+        if self.accessCode:
+            sf = serverfiles.ServerFiles(access_code=self.accessCode)
+        else:
+            sf = serverfiles.ServerFiles()
+
+        task = DownloadTask(domain, filename, sf)
+
+        future = self.executor.submit(task)
+
+#        watcher = FutureWatcher(future, parent=self)
+#        watcher.finished.connect(progress.finish)
+
+        self.progress.adjustRange(0, 100)
+
+        pb = ItemProgressBar(self.filesView)
+        pb.setRange(0, 100)
+        pb.setTextVisible(False)
+
+        task.advanced.connect(pb.advance)
+        task.advanced.connect(self.progress.advance)
+        task.finished.connect(pb.hide)
+        task.finished.connect(self.onDownloadFinished, Qt.QueuedConnection)
+        task.exception.connect(self.onDownloadError, Qt.QueuedConnection)
+
+        self.filesView.setItemWidget(item, 2, pb)
+
+        # Clear the text so it does not show behind the progress bar.
+        item.setData(2, Qt.DisplayRole, QVariant(""))
+        pb.show()
+
+        self._tasks.append(task)
+#        self._futures.append((future, watcher))
+
+    def EndDownloadTask(self, task):
+        future = task.future()
+        item = self._item(task.domain, task.filename)
+
+        self.filesView.removeItemWidget(item, 2)
+
+        if future.cancelled():
+            # Restore the previous state
+            item.updateWidget.SetState(item.state)
+            item.setData(2, Qt.DisplayRole,
+                         QVariant(sizeof_fmt(float(item.size))))
+
+        elif future.exception():
+            item.updateWidget.SetState(1)
+            item.setData(2, Qt.DisplayRole,
+                         QVariant("Error occurred while downloading:" +
+                                  str(future.exception())))
+#            item.setErrorText(str(exception))
+#            item.setState(UpdateTreeWidgetItem.Error)
+        else:
+            item.state = 0
+            item.updateWidget.SetState(item.state)
+            item.setData(2, Qt.DisplayRole,
+                         QVariant(sizeof_fmt(float(item.size))))
+            item.UpdateToolTip()
+            self.UpdateInfoLabel()
+
+#            item.setState(UpdateTreeWidgetItem.Updated)
+#            item.setInfo(serverfiles.info(task.domain, task.filename))
+
+    def SubmitRemoveTask(self, domain, filename):
+        serverfiles.remove(domain, filename)
+
+        item = self._item(domain, filename)
+        item.state = 2
+        item.updateWidget.SetState(item.state)
+
+        self.UpdateInfoLabel()
+        item.UpdateToolTip()
+
+    def Cancel(self):
+        """
+        Cancel all pending update/download tasks (that have not yet started).
+        """
+        print "Cancel"
+        for task in self._tasks:
+            print task, task.future().cancel()
+
+    def onDeleteWidget(self):
+        self.Cancel()
+        self.executor.shutdown(wait=False)
+        OWBaseWidget.onDeleteWidget(self)
+
+    def onDownloadFinished(self):
+        assert QThread.currentThread() is self.thread()
+        for task in list(self._tasks):
+            future = task.future()
+            if future.done():
+                self.EndDownloadTask(task)
+                self._tasks.remove(task)
+
+        if not self._tasks:
+            # Clear/reset the overall progress
+            self.progress.setRange(0, 0)
+
+        print "Download finished"
+
+    def onDownloadError(self, exc_info):
+        sys.excepthook(*exc_info)
+
+    def _item(self, domain, filename):
+        return [item for item in self.updateItems
+                if item.domain == domain and item.filename == filename].pop()
+
+    def _updateProgress(self, *args):
+        rmin, rmax = self.progress.range()
+        if rmin != rmax:
+            if self.progressBarValue <= 0:
+                self.progressBarInit()
+
+            self.progressBarSet(self.progress.ratioCompleted() * 100,
+                                processEventsFlags=None)
+        if rmin == rmax:
+            self.progressBarFinished()
+
+
+class ProgressState(QObject):
+    valueChanged = Signal(int)
+    rangeChanged = Signal(int, int)
+    textChanged = Signal(str)
+    started = Signal()
+    finished = Signal()
+
+    def __init__(self, parent=None, minimum=0, maximum=0, text="", value=0):
+        QObject.__init__(self, parent)
+
+        self._minimum = minimum
+        self._maximum = max(maximum, minimum)
+        self._text = text
+        self._value = value
+
+    @Slot(int, int)
+    def setRange(self, minimum, maximum):
+        maximum = max(maximum, minimum)
+
+        if self._minimum != minimum or self._maximum != maximum:
+            self._minimum = minimum
+            self._maximum = maximum
+            self.rangeChanged.emit(minimum, maximum)
+
+            # Adjust the value to fit in the range
+            newvalue = min(max(self._value, minimum), maximum)
+            if newvalue != self._value:
+                self.setValue(newvalue)
+
+    def range(self):
+        return self._minimum, self._maximum
+
+    @Slot(int)
+    def setValue(self, value):
+        if self._value != value and value >= self._minimum and \
+                value <= self._maximum:
+            self._value = value
+            self.valueChanged.emit(value)
+
+    def value(self):
+        return self._value
+
+    @Slot(str)
+    def setText(self, text):
+        if self._text != text:
+            self._text = text
+            self.textChanged.emit(text)
+
+    def text(self):
+        return self._text
+
+    @Slot()
+    @Slot(int)
+    def advance(self, value=1):
+        self.setValue(self._value + value)
+
+    def adjustRange(self, dmin, dmax):
+        self.setRange(self._minimum + dmin, self._maximum + dmax)
+
+    def ratioCompleted(self):
+        span = self._maximum - self._minimum
+        if span < 1e-3:
+            return 0.0
+
+        return min(max(float(self._value - self._minimum) / span, 0.0), 1.0)
+
+
+class DownloadTask(Task):
+    advanced = Signal()
+    exception = Signal(tuple)
+
+    def __init__(self, domain, filename, serverfiles, parent=None):
+        Task.__init__(self, parent)
+        self.filename = filename
+        self.domain = domain
+        self.serverfiles = serverfiles
+        self._interrupt = False
+
+    def interrupt(self):
+        """
+        Interrupt the download.
+        """
+        self._interrupt = True
+
+    def _advance(self):
+        self.advanced.emit()
+        if self._interrupt:
+            raise KeyboardInterrupt
+
+    def run(self):
+        print "Download task", QThread.currentThread()
+        try:
+            serverfiles.download(self.domain, self.filename, self.serverfiles,
+                                 callback=self._advance)
+        except Exception:
+            self.exception.emit(sys.exc_info())
+
+        print "Finished"
 
 
 if __name__ == "__main__":
