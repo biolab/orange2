@@ -198,8 +198,7 @@ class OWBaseWidget(QDialog):
         global widgetId
         widgetId += 1
         self.widgetId = widgetId
-        
-        self._private_thread_pools = {}
+
         self.asyncCalls = []
         self.asyncBlock = False
 
