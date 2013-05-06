@@ -759,7 +759,7 @@ class NewNodeAction(UserInteraction):
             self.create_new(event.screenPos())
             self.end()
 
-    def create_new(self, pos):
+    def create_new(self, pos, search_text=""):
         """
         Create a new widget with a `QuickMenu` at `pos` (in screen
         coordinates).
@@ -768,7 +768,7 @@ class NewNodeAction(UserInteraction):
         menu = self.document.quickMenu()
         menu.setFilterFunc(None)
 
-        action = menu.exec_(pos)
+        action = menu.exec_(pos, search_text)
         if action:
             item = action.property("item").toPyObject()
             desc = item.data(QtWidgetRegistry.WIDGET_DESC_ROLE).toPyObject()

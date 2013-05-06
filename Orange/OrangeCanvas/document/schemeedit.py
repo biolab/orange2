@@ -1119,6 +1119,7 @@ class SchemeEditWidget(QWidget):
             return False
 
         handler = None
+        searchText = ""
         if (event.key() == Qt.Key_Space and \
                 self.__quickMenuTriggers & SchemeEditWidget.SpaceKey):
             handler = interactions.NewNodeAction(self)
@@ -1126,6 +1127,8 @@ class SchemeEditWidget(QWidget):
         elif len(event.text()) and \
                 self.__quickMenuTriggers & SchemeEditWidget.AnyKey:
             handler = interactions.NewNodeAction(self)
+            searchText = unicode(event.text())
+
             # TODO: set the search text to event.text() and set focus on the
             # search line
 
@@ -1138,7 +1141,7 @@ class SchemeEditWidget(QWidget):
             with nested(disabled(self.__removeSelectedAction),
                         disabled(self.__undoAction),
                         disabled(self.__redoAction)):
-                handler.create_new(QCursor.pos())
+                handler.create_new(QCursor.pos(), searchText)
 
             event.accept()
             return True
