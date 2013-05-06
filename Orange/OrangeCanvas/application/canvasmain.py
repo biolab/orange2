@@ -943,9 +943,10 @@ class CanvasMainWindow(QMainWindow):
 
         scheme_doc.setScheme(new_scheme)
 
-        old_scheme.save_widget_settings()
-        old_scheme.close_all_open_widgets()
-        old_scheme.signal_manager.stop()
+        # Send a close event to the Scheme, it is responsible for
+        # closing/clearing all resources (widgets).
+        QApplication.sendEvent(old_scheme, QEvent(QEvent.Close))
+
         old_scheme.deleteLater()
 
     def ask_save_changes(self):
@@ -1490,14 +1491,14 @@ class CanvasMainWindow(QMainWindow):
                 event.ignore()
                 return
 
+        old_scheme = document.scheme()
+
         # Set an empty scheme to clear the document
         document.setScheme(widgetsscheme.WidgetsScheme())
 
-        scheme = document.scheme()
-        scheme.save_widget_settings()
-        scheme.close_all_open_widgets()
-        scheme.signal_manager.stop()
-        scheme.deleteLater()
+        QApplication.sendEvent(old_scheme, QEvent(QEvent.Close))
+
+        old_scheme.deleteLater()
 
         config.save_config()
 
