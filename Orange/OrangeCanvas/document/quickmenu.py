@@ -822,15 +822,16 @@ class QuickMenu(FramelessWindow):
             for i in range(0, self.__pages.count()):
                 self.__pages.page(i).setFilterFunc(func)
 
-    def popup(self, pos=None):
+    def popup(self, pos=None, searchText=""):
         """
-        Popup the menu at `pos` (in screen coordinates).
+        Popup the menu at `pos` (in screen coordinates). 'Search' text field
+        is initialized with `searchText` if provided.
         """
         if pos is None:
             pos = QPoint()
 
-        self.__search.setText("")
-        self.__suggestPage.setFilterFixedString("")
+        self.__search.setText(searchText)
+        self.__suggestPage.setFilterFixedString(searchText)
 
         self.ensurePolished()
 
@@ -872,14 +873,20 @@ class QuickMenu(FramelessWindow):
 
         self.show()
 
-    def exec_(self, pos=None):
+        if searchText:
+            self.setFocusProxy(self.__search)
+        else:
+            self.setFocusProxy(None)
+
+    def exec_(self, pos=None, searchText=""):
         """
         Execute the menu at position `pos` (in global screen coordinates).
         Return the triggered :class:`QAction` or `None` if no action was
-        triggered.
+        triggered. 'Search' text field is initialized with `searchText` if
+        provided.
 
         """
-        self.popup(pos)
+        self.popup(pos, searchText)
         self.setFocus(Qt.PopupFocusReason)
 
         self.__triggeredAction = None
