@@ -83,7 +83,8 @@ class WidgetsScheme(Scheme):
         del self.node_for_widget[widget]
 
         # Save settings to user global settings.
-        widget.saveSettings()
+        if not widget._settingsFromSchema:
+            widget.saveSettings()
 
         # Notify the widget it will be deleted.
         widget.onDeleteWidget()
@@ -164,7 +165,8 @@ class WidgetsScheme(Scheme):
         """
         for node in self.nodes:
             widget = self.widget_for_node[node]
-            widget.saveSettings()
+            if not widget._settingsFromSchema:
+                widget.saveSettings()
 
     def sync_node_properties(self):
         """Sync the widget settings/properties with the SchemeNode.properties.
