@@ -1666,11 +1666,11 @@ class CanvasMainWindow(QMainWindow):
         if dbl_click:
             triggers |= SchemeEditWidget.DoubleClicked
 
-        left_click = settings.value("trigger-on-left-click",
+        right_click = settings.value("trigger-on-right-click",
                                     defaultValue=False,
                                     type=bool)
-        if left_click:
-            triggers |= SchemeEditWidget.Clicked
+        if right_click:
+            triggers |= SchemeEditWidget.RightClicked
 
         space_press = settings.value("trigger-on-space-key",
                                      defaultValue=True,

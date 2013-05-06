@@ -99,7 +99,7 @@ class SchemeEditWidget(QWidget):
 
     # Quick Menu triggers
     (NoTriggers,
-     Clicked,
+     RightClicked,
      DoubleClicked,
      SpaceKey,
      AnyKey) = [0, 1, 2, 4, 8]
@@ -509,7 +509,7 @@ class SchemeEditWidget(QWidget):
         Flags can be a bitwise `or` of:
 
             - `SchemeEditWidget.NoTrigeres`
-            - `SchemeEditWidget.Clicked`
+            - `SchemeEditWidget.RightClicked`
             - `SchemeEditWidget.DoubleClicked`
             - `SchemeEditWidget.SpaceKey`
             - `SchemeEditWidget.AnyKey`
@@ -986,8 +986,10 @@ class SchemeEditWidget(QWidget):
             return handler.mousePressEvent(event)
 
         any_item = scene.item_at(pos)
+        if not any_item:
+            self.__emptyClickButtons |= event.button()
+
         if not any_item and event.button() == Qt.LeftButton:
-            self.__emptyClickButtons |= Qt.LeftButton
             # Create a RectangleSelectionAction but do not set in on the scene
             # just yet (instead wait for the mouse move event).
             handler = interactions.RectangleSelectionAction(self)
@@ -1022,11 +1024,16 @@ class SchemeEditWidget(QWidget):
             # on the scene
             handler = self.__possibleSelectionHandler
             self._setUserInteractionHandler(handler)
+            self.__possibleSelectionHandler = None
             return handler.mouseMoveEvent(event)
 
         return False
 
     def sceneMouseReleaseEvent(self, event):
+        scene = self.__scene
+        if scene.user_interaction_handler:
+            return False
+
         if event.button() == Qt.LeftButton and self.__possibleMouseItemsMove:
             self.__possibleMouseItemsMove = False
             self.__scene.node_item_position_changed.disconnect(
@@ -1059,21 +1066,8 @@ class SchemeEditWidget(QWidget):
 
                 self.__itemsMoving.clear()
                 return True
-
-        if self.__emptyClickButtons & Qt.LeftButton and \
-                event.button() & Qt.LeftButton:
-            self.__emptyClickButtons &= ~Qt.LeftButton
-
-            if self.__quickMenuTriggers & SchemeEditWidget.Clicked and \
-                    mouse_drag_distance(event, Qt.LeftButton) < 1:
-                action = interactions.NewNodeAction(self)
-
-                with nested(disabled(self.__undoAction),
-                            disabled(self.__redoAction)):
-                    action.create_new(event.screenPos())
-
-                event.accept()
-                return True
+        elif event.button() == Qt.LeftButton:
+            self.__possibleSelectionHandler = None
 
         return False
 
@@ -1424,6 +1418,16 @@ class SchemeEditWidget(QWidget):
             self.__linkEnableAction.setChecked(link.enabled)
             self.__contextMenuTarget = link
             self.__linkMenu.popup(globalPos)
+            return
+
+        item = self.scene().item_at(scenePos)
+        if not item and \
+                self.__quickMenuTriggers & SchemeEditWidget.RightClicked:
+            action = interactions.NewNodeAction(self)
+
+            with nested(disabled(self.__undoAction),
+                        disabled(self.__redoAction)):
+                action.create_new(globalPos)
             return
 
     def __onRenameAction(self):

@@ -273,8 +273,8 @@ class UserSettingsDialog(QMainWindow):
                         toolTip=self.tr("Open quick menu on a double click "
                                         "on an empty spot in the canvas"))
 
-        cb2 = QCheckBox(self.tr("On left click"),
-                        toolTip=self.tr("Open quick menu on a left click "
+        cb2 = QCheckBox(self.tr("On right click"),
+                        toolTip=self.tr("Open quick menu on a right click "
                                         "on an empty spot in the canvas"))
 
         cb3 = QCheckBox(self.tr("On space key press"),
@@ -286,7 +286,7 @@ class UserSettingsDialog(QMainWindow):
                                         "is hovering over the canvas."))
 
         self.bind(cb1, "checked", "quickmenu/trigger-on-double-click")
-        self.bind(cb2, "checked", "quickmenu/trigger-on-left-click")
+        self.bind(cb2, "checked", "quickmenu/trigger-on-right-click")
         self.bind(cb3, "checked", "quickmenu/trigger-on-space-key")
         self.bind(cb4, "checked", "quickmenu/trigger-on-any-key")
 

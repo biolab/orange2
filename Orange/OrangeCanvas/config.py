@@ -88,8 +88,8 @@ spec = \
      ("quickmenu/trigger-on-double-click", bool, True,
       "Show quick menu on double click."),
 
-     ("quickmenu/trigger-on-left-click", bool, False,
-      "Show quick menu on left click."),
+     ("quickmenu/trigger-on-right-click", bool, True,
+      "Show quick menu on right click."),
 
      ("quickmenu/trigger-on-space-key", bool, True,
       "Show quick menu on space key press."),
