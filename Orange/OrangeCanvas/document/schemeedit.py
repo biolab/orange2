@@ -343,9 +343,7 @@ class SchemeEditWidget(QWidget):
         layout.setSpacing(0)
 
         scene = CanvasScene()
-        scene.set_channel_names_visible(self.__channelNamesVisible)
-        scene.set_node_animation_enabled(self.__nodeAnimationEnabled)
-        scene.setFont(self.font())
+        self.__setupScene(scene)
 
         view = CanvasView(scene)
         view.setFrameStyle(CanvasView.NoFrame)
@@ -358,17 +356,89 @@ class SchemeEditWidget(QWidget):
         self.__view = view
         self.__scene = scene
 
-        self.__focusListener = GraphicsSceneFocusEventListener()
-        self.__focusListener.itemFocusedIn.connect(self.__onItemFocusedIn)
-        self.__focusListener.itemFocusedOut.connect(self.__onItemFocusedOut)
-        self.__scene.addItem(self.__focusListener)
+        layout.addWidget(view)
+        self.setLayout(layout)
 
-        self.__scene.selectionChanged.connect(
+    def __setupScene(self, scene):
+        """
+        Set up a :class:`CanvasScene` instance for use by the editor.
+
+        .. note:: If an existing scene is in use it must be teared down using
+            __teardownScene
+
+        """
+        scene.set_channel_names_visible(self.__channelNamesVisible)
+        scene.set_node_animation_enabled(
+            self.__nodeAnimationEnabled
+        )
+
+        scene.setFont(self.font())
+
+        scene.installEventFilter(self)
+
+        scene.set_registry(self.__registry)
+
+        # Focus listener
+        self.__focusListener = GraphicsSceneFocusEventListener()
+        self.__focusListener.itemFocusedIn.connect(
+            self.__onItemFocusedIn
+        )
+        self.__focusListener.itemFocusedOut.connect(
+            self.__onItemFocusedOut
+        )
+        scene.addItem(self.__focusListener)
+
+        scene.selectionChanged.connect(
             self.__onSelectionChanged
         )
 
-        layout.addWidget(view)
-        self.setLayout(layout)
+        scene.node_item_activated.connect(
+            self.__onNodeActivate
+        )
+
+        scene.annotation_added.connect(
+            self.__onAnnotationAdded
+        )
+
+        scene.annotation_removed.connect(
+            self.__onAnnotationRemoved
+        )
+
+        self.__annotationGeomChanged = QSignalMapper(self)
+
+    def __teardownScene(self, scene):
+        """
+        Tear down an instance of :class:`CanvasScene` that was used by the
+        editor.
+
+        """
+        # Clear the current item selection in the scene so edit action
+        # states are updated accordingly.
+        scene.clearSelection()
+
+        # Clear focus from any item.
+        scene.setFocusItem(None)
+
+        # Clear the annotation mapper
+        self.__annotationGeomChanged.deleteLater()
+        self.__annotationGeomChanged = None
+
+        self.__focusListener.itemFocusedIn.disconnect(
+            self.__onItemFocusedIn
+        )
+        self.__focusListener.itemFocusedOut.disconnect(
+            self.__onItemFocusedOut
+        )
+
+        scene.selectionChanged.disconnect(
+            self.__onSelectionChanged
+        )
+
+        scene.removeEventFilter(self)
+
+        # Clear all items from the scene
+        scene.blockSignals(True)
+        scene.clear_scene()
 
     def toolbarActions(self):
         """
@@ -533,72 +603,15 @@ class SchemeEditWidget(QWidget):
             else:
                 self.__cleanSettings = []
 
-            # Clear the current item selection in the scene so edit action
-            # states are updated accordingly.
-            self.__scene.clearSelection()
-
-            self.__annotationGeomChanged.deleteLater()
-            self.__annotationGeomChanged = QSignalMapper(self)
+            self.__teardownScene(self.__scene)
+            self.__scene.deleteLater()
 
             self.__undoStack.clear()
 
-            self.__focusListener.itemFocusedIn.disconnect(
-                self.__onItemFocusedIn
-            )
-            self.__focusListener.itemFocusedOut.disconnect(
-                self.__onItemFocusedOut
-            )
-
-            self.__scene.selectionChanged.disconnect(
-                self.__onSelectionChanged
-            )
-
-            self.__scene.removeEventFilter(self)
-
-            # Clear all items from the scene
-            self.__scene.blockSignals(True)
-            self.__scene.clear_scene()
-
-            self.__scene.deleteLater()
-
             self.__scene = CanvasScene()
+            self.__setupScene(self.__scene)
+
             self.__view.setScene(self.__scene)
-            self.__scene.set_channel_names_visible(self.__channelNamesVisible)
-            self.__scene.set_node_animation_enabled(
-                self.__nodeAnimationEnabled
-            )
-
-            self.__scene.setFont(self.font())
-
-            self.__scene.installEventFilter(self)
-
-            self.__scene.set_registry(self.__registry)
-
-            # Focus listener
-            self.__focusListener = GraphicsSceneFocusEventListener()
-            self.__focusListener.itemFocusedIn.connect(
-                self.__onItemFocusedIn
-            )
-            self.__focusListener.itemFocusedOut.connect(
-                self.__onItemFocusedOut
-            )
-            self.__scene.addItem(self.__focusListener)
-
-            self.__scene.selectionChanged.connect(
-                self.__onSelectionChanged
-            )
-
-            self.__scene.node_item_activated.connect(
-                self.__onNodeActivate
-            )
-
-            self.__scene.annotation_added.connect(
-                self.__onAnnotationAdded
-            )
-
-            self.__scene.annotation_removed.connect(
-                self.__onAnnotationRemoved
-            )
 
             self.__scene.set_scheme(scheme)
 
