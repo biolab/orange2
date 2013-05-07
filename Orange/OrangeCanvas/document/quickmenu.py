@@ -20,7 +20,7 @@ from PyQt4.QtGui import (
     QButtonGroup, QStackedWidget, QHBoxLayout, QVBoxLayout, QSizePolicy,
     QStandardItemModel, QSortFilterProxyModel, QStyleOptionToolButton,
     QStylePainter, QStyle, QApplication, QStyledItemDelegate,
-    QStyleOptionViewItemV4, QSizeGrip, QKeySequence
+    QStyleOptionViewItemV4, QSizeGrip
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
@@ -34,6 +34,8 @@ from PyQt4.QtCore import (
 from ..gui.framelesswindow import FramelessWindow
 from ..gui.lineedit import LineEdit
 from ..gui.tooltree import ToolTree, FlattenedTreeItemModel
+from ..gui.toolgrid import ToolButtonEventListener
+from ..gui.toolbox import create_tab_gradient
 from ..gui.utils import StyledWidget_paintEvent
 
 from ..registry.qt import QtWidgetRegistry
@@ -41,6 +43,20 @@ from ..registry.qt import QtWidgetRegistry
 from ..resources import icon_loader
 
 log = logging.getLogger(__name__)
+
+
+class _MenuItemDelegate(QStyledItemDelegate):
+    def __init__(self, parent=None):
+        QStyledItemDelegate.__init__(self, parent)
+
+    def sizeHint(self, option, index):
+        option = QStyleOptionViewItemV4(option)
+        self.initStyleOption(option, index)
+        size = QStyledItemDelegate.sizeHint(self, option, index)
+
+        # TODO: get the default QMenu item height from the current style.
+        size.setHeight(max(size.height(), 25))
+        return size
 
 
 class MenuPage(ToolTree):
@@ -62,6 +78,7 @@ class MenuPage(ToolTree):
         self.__title = title
         self.__icon = icon
 
+        self.view().setItemDelegate(_MenuItemDelegate(self.view()))
         # Make sure the initial model is wrapped in a ItemDisableFilter.
         self.setModel(self.model())
 
@@ -340,17 +357,28 @@ class TabButton(QToolButton):
                      designable=True)
 
     def paintEvent(self, event):
+        opt = QStyleOptionToolButton()
+        self.initStyleOption(opt)
+        opt.features |= QStyleOptionToolButton.HasMenu
         if self.__flat:
             # Use default widget background/border styling.
             StyledWidget_paintEvent(self, event)
 
-            opt = QStyleOptionToolButton()
-            self.initStyleOption(opt)
             p = QStylePainter(self)
             p.drawControl(QStyle.CE_ToolButtonLabel, opt)
         else:
-            QToolButton.paintEvent(self, event)
+            p = QStylePainter(self)
+            p.drawComplexControl(QStyle.CC_ToolButton, opt)
 
+    def sizeHint(self):
+        opt = QStyleOptionToolButton()
+        self.initStyleOption(opt)
+        opt.features |= QStyleOptionToolButton.HasMenu
+        style = self.style()
+
+        hint = style.sizeFromContents(QStyle.CT_ToolButton, opt,
+                                      opt.iconSize, self)
+        return hint
 
 _Tab = \
     namedtuple(
@@ -363,9 +391,6 @@ _Tab = \
          "palette"])
 
 
-# TODO: ..application.canvastooldock.QuickCategoryToolbar is very similar,
-#       to TobBarWidget. Maybe common functionality could factored our.
-
 class TabBarWidget(QWidget):
     """
     A tab bar widget using tool buttons as tabs.
@@ -376,19 +401,50 @@ class TabBarWidget(QWidget):
 
     def __init__(self, parent=None, **kwargs):
         QWidget.__init__(self, parent, **kwargs)
-        layout = QHBoxLayout()
+        layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         self.setLayout(layout)
 
-        self.setSizePolicy(QSizePolicy.Expanding,
-                           QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Fixed,
+                           QSizePolicy.Expanding)
         self.__tabs = []
+
         self.__currentIndex = -1
+        self.__changeOnHover = False
+
+        self.__iconSize = QSize(26, 26)
+
         self.__group = QButtonGroup(self, exclusive=True)
         self.__group.buttonPressed[QAbstractButton].connect(
             self.__onButtonPressed
         )
+
+        self.__hoverListener = ToolButtonEventListener(self)
+
+    def setChangeOnHover(self, changeOnHover):
+        """
+        If set to ``True`` the tab widget will change the current index when
+        the mouse hovers over a tab button.
+
+        """
+        if self.__changeOnHover != changeOnHover:
+            self.__changeOnHover = changeOnHover
+
+            if changeOnHover:
+                self.__hoverListener.buttonEnter.connect(
+                    self.__onButtonEnter
+                )
+            else:
+                self.__hoverListener.buttonEnter.disconnect(
+                    self.__onButtonEnter
+                )
+
+    def changeOnHover(self):
+        """
+        Does the current tab index follow the mouse cursor.
+        """
+        return self.__changeOnHover
 
     def count(self):
         """
@@ -409,8 +465,12 @@ class TabBarWidget(QWidget):
         button = TabButton(self, objectName="tab-button")
         button.setSizePolicy(QSizePolicy.Expanding,
                              QSizePolicy.Expanding)
+        button.setIconSize(self.__iconSize)
 
         self.__group.addButton(button)
+
+        button.installEventFilter(self.__hoverListener)
+
         tab = _Tab(text, icon, toolTip, button, None, None)
         self.layout().insertWidget(index, button)
 
@@ -429,6 +489,9 @@ class TabBarWidget(QWidget):
             self.layout().takeItem(index)
             tab = self.__tabs.pop(index)
             self.__group.removeButton(tab.button)
+
+            tab.button.removeEventFilter(self.__hoverListener)
+
             tab.button.deleteLater()
 
             if self.currentIndex() == index:
@@ -489,6 +552,12 @@ class TabBarWidget(QWidget):
         """
         return self.__tabs[index].button
 
+    def setIconSize(self, size):
+        if self.__iconSize != size:
+            self.__iconSize = size
+            for tab in self.__tabs:
+                tab.button.setIconSize(self.__iconSize)
+
     def __updateTab(self, index):
         """
         Update the tab button.
@@ -514,6 +583,10 @@ class TabBarWidget(QWidget):
                 self.setCurrentIndex(i)
                 break
 
+    def __onButtonEnter(self, button):
+        if self.__changeOnHover:
+            button.click()
+
 
 class PagedMenu(QWidget):
     """
@@ -530,17 +603,17 @@ class PagedMenu(QWidget):
         self.__pages = []
         self.__currentIndex = -1
 
-        layout = QVBoxLayout()
+        layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
         self.__tab = TabBarWidget(self)
-        self.__tab.setFixedHeight(25)
         self.__tab.currentChanged.connect(self.setCurrentIndex)
+        self.__tab.setChangeOnHover(True)
 
         self.__stack = MenuStackWidget(self)
 
-        layout.addWidget(self.__tab)
+        layout.addWidget(self.__tab, alignment=Qt.AlignTop)
         layout.addWidget(self.__stack)
 
         self.setLayout(layout)
@@ -658,9 +731,17 @@ class QuickMenu(FramelessWindow):
         self.setLayout(QVBoxLayout(self))
         self.layout().setContentsMargins(6, 6, 6, 6)
 
+        self.__search = SearchWidget(self, objectName="search-line")
+
+        self.__search.setPlaceholderText(
+            self.tr("Search for widget or select from the list.")
+        )
+
+        self.layout().addWidget(self.__search)
+
         self.__frame = QFrame(self, objectName="menu-frame")
         layout = QVBoxLayout()
-        layout.setContentsMargins(1, 1, 1, 1)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
         self.__frame.setLayout(layout)
 
@@ -673,13 +754,6 @@ class QuickMenu(FramelessWindow):
 
         self.__frame.layout().addWidget(self.__pages)
 
-        self.__search = SearchWidget(self, objectName="search-line")
-
-        self.__search.setPlaceholderText(
-            self.tr("Search for widget or select from the list.")
-        )
-
-        self.layout().addWidget(self.__search)
         self.setSizePolicy(QSizePolicy.Fixed,
                            QSizePolicy.Expanding)
 
@@ -690,11 +764,17 @@ class QuickMenu(FramelessWindow):
         if sys.platform == "darwin":
             view = self.__suggestPage.view()
             view.verticalScrollBar().setAttribute(Qt.WA_MacMiniSize, True)
-            # Don't show the focus frame because it expands into the tab
-            # bar at the top.
+            # Don't show the focus frame because it expands into the tab bar.
             view.setAttribute(Qt.WA_MacShowFocusRect, False)
 
-        self.addPage(self.tr("Quick Search"), self.__suggestPage)
+        i = self.addPage(self.tr("Quick Search"), self.__suggestPage)
+        button = self.__pages.tabButton(i)
+        button.setObjectName("search-tab-button")
+        button.setStyleSheet(
+            "TabButton {\n"
+            "    qproperty-flat_: false;\n"
+            "    border: none;"
+            "}\n")
 
         self.__search.textEdited.connect(self.__on_textEdited)
 
@@ -755,9 +835,6 @@ class QuickMenu(FramelessWindow):
 
         """
         page = MenuPage(self)
-        view = page.view()
-        delegate = WidgetItemDelegate(view)
-        view.setItemDelegate(delegate)
 
         page.setModel(index.model())
         page.setRootIndex(index)
@@ -796,18 +873,19 @@ class QuickMenu(FramelessWindow):
 
             if brush.isValid():
                 brush = brush.toPyObject()
+                base_color = brush.color()
                 button = self.__pages.tabButton(i)
-                palette = button.palette()
                 button.setStyleSheet(
                     "TabButton {\n"
                     "    qproperty-flat_: false;\n"
-                    "    background-color: %s;\n"
+                    "    background: %s;\n"
                     "    border: none;\n"
+                    "    border-bottom: 1px solid palette(dark);\n"
                     "}\n"
                     "TabButton:checked {\n"
-                    "    border: 1px solid %s;\n"
-                    "}" % (brush.color().name(),
-                           palette.color(palette.Mid).name())
+                    "    background: %s\n"
+                    "}" % (create_css_gradient(base_color),
+                           create_css_gradient(base_color.darker(110)))
                 )
 
         self.__model = model
@@ -977,18 +1055,6 @@ class QuickMenu(FramelessWindow):
         return FramelessWindow.eventFilter(self, obj, event)
 
 
-class WidgetItemDelegate(QStyledItemDelegate):
-    def __init__(self, parent=None):
-        QStyledItemDelegate.__init__(self, parent)
-
-    def sizeHint(self, option, index):
-        option = QStyleOptionViewItemV4(option)
-        self.initStyleOption(option, index)
-        size = QStyledItemDelegate.sizeHint(self, option, index)
-        size.setHeight(max(size.height(), 25))
-        return size
-
-
 class ItemViewKeyNavigator(QObject):
     """
     A event filter class listening to key press events and responding
@@ -1153,3 +1219,16 @@ class WindowSizeGrip(QSizeGrip):
             y = window_size.height() - size.height()
 
         self.move(x, y)
+
+
+def create_css_gradient(base_color):
+    """
+    Create a Qt css linear gradient fragment based on the `base_color`.
+    """
+    grad = create_tab_gradient(base_color)
+    stops = grad.stops()
+    stops = "\n".join("    stop: {0:f} {1}".format(stop, color.name())
+                      for stop, color in stops)
+    return ("qlineargradient(\n"
+            "    x1: 0, y1: 0, x2: 0, y2: 1,\n"
+            "{0})").format(stops)

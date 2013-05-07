@@ -358,22 +358,44 @@ QuickMenu QFrame#menu-frame {
 }
 
 QuickMenu ToolTree QTreeView::item {
-    height: 25px;
-    border-top: 1px solid #e9eff2;
-    border-bottom: 1px solid #e9eff2;
+	height: 25px;
+	border-bottom: 1px solid #e9eff2;
 }
 
 QuickMenu QTreeView::item:hover {
-    background-color: lightblue;
-    color: white;
+	background: qlineargradient(
+		x1: 0, y1: 0, x2: 0, y2: 1,
+		stop: 0 #688EF6,
+		stop: 0.5 #4047f4,
+		stop: 1.0 #2D68F3
+	);
+	color: white;
 }
 
 QuickMenu QTreeView::item:selected {
-    background-color: blue;
-    color: white;
+	background-color: blue;
+	color: white;
 }
 
-/* Quick Menu search line edit 
+QuickMenu TabBarWidget QToolButton {
+	width: 33px;
+	height: 25px;
+	border-bottom: 1px solid palette(dark);
+	padding-right: 5px;
+}
+
+QuickMenu TabBarWidget QToolButton#search-tab-button {
+	background-color: #9CACB4;
+}
+
+QuickMenu TabBarWidget QToolButton:menu-indicator {
+	image: url(canvas_icons:/arrow-right.svg);
+	subcontrol-position: center right;
+	height: 8px;
+	width: 8px;
+}
+
+/* Quick Menu search line edit
  */
 
 QuickMenu QLineEdit {
