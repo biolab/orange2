@@ -9,6 +9,7 @@ Scheme Editor Widget
 import sys
 import logging
 import itertools
+import unicodedata
 
 from operator import attrgetter
 from contextlib import nested
@@ -1125,7 +1126,8 @@ class SchemeEditWidget(QWidget):
             handler = interactions.NewNodeAction(self)
 
         elif len(event.text()) and \
-                self.__quickMenuTriggers & SchemeEditWidget.AnyKey:
+                self.__quickMenuTriggers & SchemeEditWidget.AnyKey and \
+                is_printable(unicode(event.text())[0]):
             handler = interactions.NewNodeAction(self)
             searchText = unicode(event.text())
 
@@ -1572,3 +1574,14 @@ def set_enabled_all(objects, enable):
     """
     for obj in objects:
         obj.setEnabled(enable)
+
+
+# All control character categories.
+_control = set(["Cc", "Cf", "Cs", "Co", "Cn"])
+
+
+def is_printable(unichar):
+    """
+    Return True if the unicode character `unichar` is a printable character.
+    """
+    return unicodedata.category(unichar) not in _control
