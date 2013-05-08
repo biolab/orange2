@@ -150,6 +150,23 @@ class MenuPage(ToolTree):
         proxyModel = self.view().model()
         return proxyModel.mapToSource(ToolTree.rootIndex(self))
 
+    def sizeHint(self):
+        view = self.view()
+        hint = view.sizeHint()
+        model = view.model()
+
+        # This will not work for nested items (tree).
+        count = model.rowCount(view.rootIndex())
+
+        width = view.sizeHintForColumn(0)
+
+        if count:
+            height = view.sizeHintForRow(0)
+            height = height * count
+        else:
+            height = hint.height()
+        return QSize(max(width, hint.width()), max(height, hint.height()))
+
 
 class ItemDisableFilter(QSortFilterProxyModel):
     """
@@ -309,12 +326,9 @@ class MenuStackWidget(QStackedWidget):
         default_size = QSize(200, 400)
         widget_hints = [default_size]
         for i in range(self.count()):
-            w = self.widget(i)
-            if isinstance(w, ToolTree):
-                hint = self.__sizeHintForTreeView(w.view())
-            else:
-                hint = w.sizeHint()
+            hint = self.widget(i).sizeHint()
             widget_hints.append(hint)
+
         width = max([s.width() for s in widget_hints])
         # Take the median for the height
         height = numpy.median([s.height() for s in widget_hints])
