@@ -102,15 +102,31 @@ WidgetToolBox  ToolGrid QToolButton:pressed {
 }
 
 
+/* QuickCategoryToolbar popup menus */
 
-/*
- *QuickCategoryToolbar _QuickCategoryButton {
- *    qproperty-nativeStyling_: "true";
- *    background-color: palette(button);
- *    border: none;
- *    border-bottom: 1px solid palette(dark);
- *}
- */
+CategoryPopupMenu {
+	background-color: #E9EFF2;
+}
+
+CategoryPopupMenu ToolTree QTreeView::item {
+	height: 25px;
+	border-bottom: 1px solid #e9eff2;
+}
+
+CategoryPopupMenu QTreeView::item:hover {
+	background: qlineargradient(
+		x1: 0, y1: 0, x2: 0, y2: 1,
+		stop: 0 #688EF6,
+		stop: 0.5 #4047f4,
+		stop: 1.0 #2D68F3
+	);
+	color: white;
+}
+
+CategoryPopupMenu QTreeView::item:selected {
+	background-color: blue;
+	color: white;
+}
 
 
 /* Canvas Dock Header */

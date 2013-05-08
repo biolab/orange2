@@ -13,7 +13,8 @@ import pkg_resources
 from PyQt4.QtGui import (
     QMainWindow, QWidget, QAction, QActionGroup, QMenu, QMenuBar, QDialog,
     QFileDialog, QMessageBox, QVBoxLayout, QSizePolicy, QColor, QKeySequence,
-    QIcon, QToolBar, QToolButton, QDockWidget, QDesktopServices, QApplication
+    QIcon, QToolBar, QToolButton, QDockWidget, QDesktopServices, QApplication,
+    QCursor
 )
 
 from PyQt4.QtCore import (
@@ -37,7 +38,8 @@ from ..gui.utils import message_critical, message_question, \
 
 from ..help import HelpManager
 
-from .canvastooldock import CanvasToolDock, QuickCategoryToolbar
+from .canvastooldock import CanvasToolDock, QuickCategoryToolbar, \
+                            CategoryPopupMenu
 from .aboutdialog import AboutDialog
 from .schemeinfo import SchemeInfoDialog
 from .outputview import OutputView
@@ -748,21 +750,24 @@ class CanvasMainWindow(QMainWindow):
         """The quick category menu action triggered.
         """
         category = action.text()
-        for i in range(self.widgets_tool_box.count()):
-            cat_act = self.widgets_tool_box.tabAction(i)
-            if cat_act.text() == category:
-                if not cat_act.isChecked():
-                    # Trigger the action to expand the tool grid contained
-                    # within.
-                    cat_act.trigger()
+        if self.use_popover:
+            # Show a popup menu with the widgets in the category
+            m = CategoryPopupMenu(self.quick_category)
+            reg = self.widget_registry.model()
+            i = index(self.widget_registry.categories(), category,
+                      predicate=lambda name, cat: cat.name == name)
+            if i != -1:
+                m.setCategoryItem(reg.item(i))
+                action = m.exec_(QCursor.pos())
+                if action is not None:
+                    self.on_tool_box_widget_activated(action)
 
-            else:
-                if cat_act.isChecked():
-                    # Trigger the action to hide the tool grid contained
-                    # within.
-                    cat_act.trigger()
+        else:
+            for i in range(self.widgets_tool_box.count()):
+                cat_act = self.widgets_tool_box.tabAction(i)
+                cat_act.setChecked(cat_act.text() == category)
 
-        self.dock_widget.expand()
+            self.dock_widget.expand()
 
     def set_scheme_margins_enabled(self, enabled):
         """Enable/disable the margins around the scheme document.
@@ -1734,6 +1739,10 @@ class CanvasMainWindow(QMainWindow):
 
         self.open_in_external_browser = \
             settings.value("open-in-external-browser", defaultValue=False,
+                           type=bool)
+
+        self.use_popover = \
+            settings.value("toolbox-dock-use-popover-menu", defaultValue=True,
                            type=bool)
 
 

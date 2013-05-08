@@ -70,6 +70,10 @@ spec = \
      ("mainwindow/toolbox-dock-movable", bool, True,
       "Is the canvas toolbox movable (between left and right edge)"),
 
+     ("mainwindow/toolbox-dock-use-popover-menu", bool, True,
+      "Use a popover menu to select a widget when clicking on a category "
+      "button"),
+
      ("mainwindow/number-of-recent-schemes", int, 7,
       "Number of recent schemes to keep in history"),
 
