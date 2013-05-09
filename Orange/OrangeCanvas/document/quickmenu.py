@@ -627,7 +627,8 @@ class TabBarWidget(QWidget):
             button = self.__sloppyButton
             self.__sloppyButton = None
             if not button.isChecked():
-                button.setChecked(True)
+                index = [tab.button for tab in self.__tabs].index(button)
+                self.setCurrentIndex(index)
 
                 # Update the sloppy region from the current cursor position.
                 current = self.mapFromGlobal(QCursor.pos())
