@@ -359,6 +359,7 @@ class TabButton(QToolButton):
         self.setCheckable(True)
 
         self.__flat = True
+        self.__showMenuIndicator = False
 
     def setFlat(self, flat):
         if self.__flat != flat:
@@ -371,10 +372,23 @@ class TabButton(QToolButton):
     flat_ = Property(bool, fget=flat, fset=setFlat,
                      designable=True)
 
+    def setShownMenuIndicator(self, show):
+        if self.__showMenuIndicator != show:
+            self.__showMenuIndicator = show
+            self.update()
+
+    def showMenuIndicator(self):
+        return self.__showMenuIndicator
+
+    showMenuIndicator_ = Property(bool, fget=showMenuIndicator,
+                                  fset=setShownMenuIndicator,
+                                  designable=True)
+
     def paintEvent(self, event):
         opt = QStyleOptionToolButton()
         self.initStyleOption(opt)
-        opt.features |= QStyleOptionToolButton.HasMenu
+        if self.__showMenuIndicator and self.isChecked():
+            opt.features |= QStyleOptionToolButton.HasMenu
         if self.__flat:
             # Use default widget background/border styling.
             StyledWidget_paintEvent(self, event)
@@ -388,7 +402,8 @@ class TabButton(QToolButton):
     def sizeHint(self):
         opt = QStyleOptionToolButton()
         self.initStyleOption(opt)
-        opt.features |= QStyleOptionToolButton.HasMenu
+        if self.__showMenuIndicator and self.isChecked():
+            opt.features |= QStyleOptionToolButton.HasMenu
         style = self.style()
 
         hint = style.sizeFromContents(QStyle.CT_ToolButton, opt,
@@ -673,7 +688,7 @@ class PagedMenu(QWidget):
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setSpacing(6)
 
         self.__tab = TabBarWidget(self)
         self.__tab.currentChanged.connect(self.setCurrentIndex)
@@ -766,6 +781,23 @@ class PagedMenu(QWidget):
         Return the tab button instance for index.
         """
         return self.__tab.button(index)
+
+
+TAB_BUTTON_STYLE_TEMPLATE = """\
+TabButton {
+    qproperty-flat_: false;
+    background: %s;
+    border: none;
+    border-bottom: 1px solid palette(dark);
+}
+
+TabButton:checked {
+    background: %s;
+    border: none;
+    border-top: 1px solid #609ED7;
+    border-bottom: 1px solid #609ED7;
+}
+"""
 
 
 class QuickMenu(FramelessWindow):
@@ -944,16 +976,9 @@ class QuickMenu(FramelessWindow):
                 base_color = brush.color()
                 button = self.__pages.tabButton(i)
                 button.setStyleSheet(
-                    "TabButton {\n"
-                    "    qproperty-flat_: false;\n"
-                    "    background: %s;\n"
-                    "    border: none;\n"
-                    "    border-bottom: 1px solid palette(dark);\n"
-                    "}\n"
-                    "TabButton:checked {\n"
-                    "    background: %s\n"
-                    "}" % (create_css_gradient(base_color),
-                           create_css_gradient(base_color.darker(110)))
+                    TAB_BUTTON_STYLE_TEMPLATE %
+                    (create_css_gradient(base_color),
+                     create_css_gradient(base_color.darker(120)))
                 )
 
         self.__model = model
