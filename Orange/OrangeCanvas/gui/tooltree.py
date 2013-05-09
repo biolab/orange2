@@ -55,7 +55,7 @@ class ToolTree(QWidget):
         view.setItemDelegate(ToolTreeItemDelegate(self))
 
         view.activated.connect(self.__onActivated)
-        view.pressed.connect(self.__onPressed)
+        view.clicked.connect(self.__onActivated)
         view.entered.connect(self.__onEntered)
 
         view.installEventFilter(self)
@@ -143,9 +143,6 @@ class ToolTree(QWidget):
             if action is not None:
                 action.trigger()
                 self.triggered.emit(action)
-
-    def __onPressed(self, index):
-        self.__onActivated(index)
 
     def __onEntered(self, index):
         if index.isValid():

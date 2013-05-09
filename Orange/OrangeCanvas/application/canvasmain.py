@@ -15,7 +15,8 @@ import Orange.utils.addons
 from PyQt4.QtGui import (
     QMainWindow, QWidget, QAction, QActionGroup, QMenu, QMenuBar, QDialog,
     QFileDialog, QMessageBox, QVBoxLayout, QSizePolicy, QColor, QKeySequence,
-    QIcon, QToolBar, QToolButton, QDockWidget, QDesktopServices, QApplication
+    QIcon, QToolBar, QToolButton, QDockWidget, QDesktopServices, QApplication,
+    QCursor
 )
 
 from PyQt4.QtCore import (
@@ -39,7 +40,8 @@ from ..gui.utils import message_critical, message_question, \
 
 from ..help import HelpManager
 
-from .canvastooldock import CanvasToolDock, QuickCategoryToolbar
+from .canvastooldock import CanvasToolDock, QuickCategoryToolbar, \
+                            CategoryPopupMenu
 from .aboutdialog import AboutDialog
 from .schemeinfo import SchemeInfoDialog
 from .outputview import OutputView
@@ -768,21 +770,24 @@ class CanvasMainWindow(QMainWindow):
         """The quick category menu action triggered.
         """
         category = action.text()
-        for i in range(self.widgets_tool_box.count()):
-            cat_act = self.widgets_tool_box.tabAction(i)
-            if cat_act.text() == category:
-                if not cat_act.isChecked():
-                    # Trigger the action to expand the tool grid contained
-                    # within.
-                    cat_act.trigger()
+        if self.use_popover:
+            # Show a popup menu with the widgets in the category
+            m = CategoryPopupMenu(self.quick_category)
+            reg = self.widget_registry.model()
+            i = index(self.widget_registry.categories(), category,
+                      predicate=lambda name, cat: cat.name == name)
+            if i != -1:
+                m.setCategoryItem(reg.item(i))
+                action = m.exec_(QCursor.pos())
+                if action is not None:
+                    self.on_tool_box_widget_activated(action)
 
-            else:
-                if cat_act.isChecked():
-                    # Trigger the action to hide the tool grid contained
-                    # within.
-                    cat_act.trigger()
+        else:
+            for i in range(self.widgets_tool_box.count()):
+                cat_act = self.widgets_tool_box.tabAction(i)
+                cat_act.setChecked(cat_act.text() == category)
 
-        self.dock_widget.expand()
+            self.dock_widget.expand()
 
     def set_scheme_margins_enabled(self, enabled):
         """Enable/disable the margins around the scheme document.
@@ -963,9 +968,10 @@ class CanvasMainWindow(QMainWindow):
 
         scheme_doc.setScheme(new_scheme)
 
-        old_scheme.save_widget_settings()
-        old_scheme.close_all_open_widgets()
-        old_scheme.signal_manager.stop()
+        # Send a close event to the Scheme, it is responsible for
+        # closing/clearing all resources (widgets).
+        QApplication.sendEvent(old_scheme, QEvent(QEvent.Close))
+
         old_scheme.deleteLater()
 
     def ask_save_changes(self):
@@ -1533,14 +1539,14 @@ class CanvasMainWindow(QMainWindow):
                 event.ignore()
                 return
 
+        old_scheme = document.scheme()
+
         # Set an empty scheme to clear the document
         document.setScheme(widgetsscheme.WidgetsScheme())
 
-        scheme = document.scheme()
-        scheme.save_widget_settings()
-        scheme.close_all_open_widgets()
-        scheme.signal_manager.stop()
-        scheme.deleteLater()
+        QApplication.sendEvent(old_scheme, QEvent(QEvent.Close))
+
+        old_scheme.deleteLater()
 
         config.save_config()
 
@@ -1708,11 +1714,11 @@ class CanvasMainWindow(QMainWindow):
         if dbl_click:
             triggers |= SchemeEditWidget.DoubleClicked
 
-        left_click = settings.value("trigger-on-left-click",
+        right_click = settings.value("trigger-on-right-click",
                                     defaultValue=False,
                                     type=bool)
-        if left_click:
-            triggers |= SchemeEditWidget.Clicked
+        if right_click:
+            triggers |= SchemeEditWidget.RightClicked
 
         space_press = settings.value("trigger-on-space-key",
                                      defaultValue=True,
@@ -1776,6 +1782,10 @@ class CanvasMainWindow(QMainWindow):
 
         self.open_in_external_browser = \
             settings.value("open-in-external-browser", defaultValue=False,
+                           type=bool)
+
+        self.use_popover = \
+            settings.value("toolbox-dock-use-popover-menu", defaultValue=True,
                            type=bool)
 
 

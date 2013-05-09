@@ -9,6 +9,7 @@ Scheme Editor Widget
 import sys
 import logging
 import itertools
+import unicodedata
 
 from operator import attrgetter
 from contextlib import nested
@@ -99,7 +100,7 @@ class SchemeEditWidget(QWidget):
 
     # Quick Menu triggers
     (NoTriggers,
-     Clicked,
+     RightClicked,
      DoubleClicked,
      SpaceKey,
      AnyKey) = [0, 1, 2, 4, 8]
@@ -343,9 +344,7 @@ class SchemeEditWidget(QWidget):
         layout.setSpacing(0)
 
         scene = CanvasScene()
-        scene.set_channel_names_visible(self.__channelNamesVisible)
-        scene.set_node_animation_enabled(self.__nodeAnimationEnabled)
-        scene.setFont(self.font())
+        self.__setupScene(scene)
 
         view = CanvasView(scene)
         view.setFrameStyle(CanvasView.NoFrame)
@@ -358,17 +357,89 @@ class SchemeEditWidget(QWidget):
         self.__view = view
         self.__scene = scene
 
-        self.__focusListener = GraphicsSceneFocusEventListener()
-        self.__focusListener.itemFocusedIn.connect(self.__onItemFocusedIn)
-        self.__focusListener.itemFocusedOut.connect(self.__onItemFocusedOut)
-        self.__scene.addItem(self.__focusListener)
+        layout.addWidget(view)
+        self.setLayout(layout)
 
-        self.__scene.selectionChanged.connect(
+    def __setupScene(self, scene):
+        """
+        Set up a :class:`CanvasScene` instance for use by the editor.
+
+        .. note:: If an existing scene is in use it must be teared down using
+            __teardownScene
+
+        """
+        scene.set_channel_names_visible(self.__channelNamesVisible)
+        scene.set_node_animation_enabled(
+            self.__nodeAnimationEnabled
+        )
+
+        scene.setFont(self.font())
+
+        scene.installEventFilter(self)
+
+        scene.set_registry(self.__registry)
+
+        # Focus listener
+        self.__focusListener = GraphicsSceneFocusEventListener()
+        self.__focusListener.itemFocusedIn.connect(
+            self.__onItemFocusedIn
+        )
+        self.__focusListener.itemFocusedOut.connect(
+            self.__onItemFocusedOut
+        )
+        scene.addItem(self.__focusListener)
+
+        scene.selectionChanged.connect(
             self.__onSelectionChanged
         )
 
-        layout.addWidget(view)
-        self.setLayout(layout)
+        scene.node_item_activated.connect(
+            self.__onNodeActivate
+        )
+
+        scene.annotation_added.connect(
+            self.__onAnnotationAdded
+        )
+
+        scene.annotation_removed.connect(
+            self.__onAnnotationRemoved
+        )
+
+        self.__annotationGeomChanged = QSignalMapper(self)
+
+    def __teardownScene(self, scene):
+        """
+        Tear down an instance of :class:`CanvasScene` that was used by the
+        editor.
+
+        """
+        # Clear the current item selection in the scene so edit action
+        # states are updated accordingly.
+        scene.clearSelection()
+
+        # Clear focus from any item.
+        scene.setFocusItem(None)
+
+        # Clear the annotation mapper
+        self.__annotationGeomChanged.deleteLater()
+        self.__annotationGeomChanged = None
+
+        self.__focusListener.itemFocusedIn.disconnect(
+            self.__onItemFocusedIn
+        )
+        self.__focusListener.itemFocusedOut.disconnect(
+            self.__onItemFocusedOut
+        )
+
+        scene.selectionChanged.disconnect(
+            self.__onSelectionChanged
+        )
+
+        scene.removeEventFilter(self)
+
+        # Clear all items from the scene
+        scene.blockSignals(True)
+        scene.clear_scene()
 
     def toolbarActions(self):
         """
@@ -439,7 +510,7 @@ class SchemeEditWidget(QWidget):
         Flags can be a bitwise `or` of:
 
             - `SchemeEditWidget.NoTrigeres`
-            - `SchemeEditWidget.Clicked`
+            - `SchemeEditWidget.RightClicked`
             - `SchemeEditWidget.DoubleClicked`
             - `SchemeEditWidget.SpaceKey`
             - `SchemeEditWidget.AnyKey`
@@ -533,72 +604,15 @@ class SchemeEditWidget(QWidget):
             else:
                 self.__cleanSettings = []
 
-            # Clear the current item selection in the scene so edit action
-            # states are updated accordingly.
-            self.__scene.clearSelection()
-
-            self.__annotationGeomChanged.deleteLater()
-            self.__annotationGeomChanged = QSignalMapper(self)
+            self.__teardownScene(self.__scene)
+            self.__scene.deleteLater()
 
             self.__undoStack.clear()
 
-            self.__focusListener.itemFocusedIn.disconnect(
-                self.__onItemFocusedIn
-            )
-            self.__focusListener.itemFocusedOut.disconnect(
-                self.__onItemFocusedOut
-            )
-
-            self.__scene.selectionChanged.disconnect(
-                self.__onSelectionChanged
-            )
-
-            self.__scene.removeEventFilter(self)
-
-            # Clear all items from the scene
-            self.__scene.blockSignals(True)
-            self.__scene.clear_scene()
-
-            self.__scene.deleteLater()
-
             self.__scene = CanvasScene()
+            self.__setupScene(self.__scene)
+
             self.__view.setScene(self.__scene)
-            self.__scene.set_channel_names_visible(self.__channelNamesVisible)
-            self.__scene.set_node_animation_enabled(
-                self.__nodeAnimationEnabled
-            )
-
-            self.__scene.setFont(self.font())
-
-            self.__scene.installEventFilter(self)
-
-            self.__scene.set_registry(self.__registry)
-
-            # Focus listener
-            self.__focusListener = GraphicsSceneFocusEventListener()
-            self.__focusListener.itemFocusedIn.connect(
-                self.__onItemFocusedIn
-            )
-            self.__focusListener.itemFocusedOut.connect(
-                self.__onItemFocusedOut
-            )
-            self.__scene.addItem(self.__focusListener)
-
-            self.__scene.selectionChanged.connect(
-                self.__onSelectionChanged
-            )
-
-            self.__scene.node_item_activated.connect(
-                self.__onNodeActivate
-            )
-
-            self.__scene.annotation_added.connect(
-                self.__onAnnotationAdded
-            )
-
-            self.__scene.annotation_removed.connect(
-                self.__onAnnotationRemoved
-            )
 
             self.__scene.set_scheme(scheme)
 
@@ -973,8 +987,10 @@ class SchemeEditWidget(QWidget):
             return handler.mousePressEvent(event)
 
         any_item = scene.item_at(pos)
+        if not any_item:
+            self.__emptyClickButtons |= event.button()
+
         if not any_item and event.button() == Qt.LeftButton:
-            self.__emptyClickButtons |= Qt.LeftButton
             # Create a RectangleSelectionAction but do not set in on the scene
             # just yet (instead wait for the mouse move event).
             handler = interactions.RectangleSelectionAction(self)
@@ -1009,11 +1025,16 @@ class SchemeEditWidget(QWidget):
             # on the scene
             handler = self.__possibleSelectionHandler
             self._setUserInteractionHandler(handler)
+            self.__possibleSelectionHandler = None
             return handler.mouseMoveEvent(event)
 
         return False
 
     def sceneMouseReleaseEvent(self, event):
+        scene = self.__scene
+        if scene.user_interaction_handler:
+            return False
+
         if event.button() == Qt.LeftButton and self.__possibleMouseItemsMove:
             self.__possibleMouseItemsMove = False
             self.__scene.node_item_position_changed.disconnect(
@@ -1046,21 +1067,8 @@ class SchemeEditWidget(QWidget):
 
                 self.__itemsMoving.clear()
                 return True
-
-        if self.__emptyClickButtons & Qt.LeftButton and \
-                event.button() & Qt.LeftButton:
-            self.__emptyClickButtons &= ~Qt.LeftButton
-
-            if self.__quickMenuTriggers & SchemeEditWidget.Clicked and \
-                    mouse_drag_distance(event, Qt.LeftButton) < 1:
-                action = interactions.NewNodeAction(self)
-
-                with nested(disabled(self.__undoAction),
-                            disabled(self.__redoAction)):
-                    action.create_new(event.screenPos())
-
-                event.accept()
-                return True
+        elif event.button() == Qt.LeftButton:
+            self.__possibleSelectionHandler = None
 
         return False
 
@@ -1112,13 +1120,17 @@ class SchemeEditWidget(QWidget):
             return False
 
         handler = None
+        searchText = ""
         if (event.key() == Qt.Key_Space and \
                 self.__quickMenuTriggers & SchemeEditWidget.SpaceKey):
             handler = interactions.NewNodeAction(self)
 
         elif len(event.text()) and \
-                self.__quickMenuTriggers & SchemeEditWidget.AnyKey:
+                self.__quickMenuTriggers & SchemeEditWidget.AnyKey and \
+                is_printable(unicode(event.text())[0]):
             handler = interactions.NewNodeAction(self)
+            searchText = unicode(event.text())
+
             # TODO: set the search text to event.text() and set focus on the
             # search line
 
@@ -1131,7 +1143,7 @@ class SchemeEditWidget(QWidget):
             with nested(disabled(self.__removeSelectedAction),
                         disabled(self.__undoAction),
                         disabled(self.__redoAction)):
-                handler.create_new(QCursor.pos())
+                handler.create_new(QCursor.pos(), searchText)
 
             event.accept()
             return True
@@ -1413,6 +1425,16 @@ class SchemeEditWidget(QWidget):
             self.__linkMenu.popup(globalPos)
             return
 
+        item = self.scene().item_at(scenePos)
+        if not item and \
+                self.__quickMenuTriggers & SchemeEditWidget.RightClicked:
+            action = interactions.NewNodeAction(self)
+
+            with nested(disabled(self.__undoAction),
+                        disabled(self.__redoAction)):
+                action.create_new(globalPos)
+            return
+
     def __onRenameAction(self):
         """
         Rename was requested for the selected widget.
@@ -1552,3 +1574,14 @@ def set_enabled_all(objects, enable):
     """
     for obj in objects:
         obj.setEnabled(enable)
+
+
+# All control character categories.
+_control = set(["Cc", "Cf", "Cs", "Co", "Cn"])
+
+
+def is_printable(unichar):
+    """
+    Return True if the unicode character `unichar` is a printable character.
+    """
+    return unicodedata.category(unichar) not in _control
