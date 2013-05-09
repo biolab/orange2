@@ -20,14 +20,15 @@ from PyQt4.QtGui import (
     QButtonGroup, QStackedWidget, QHBoxLayout, QVBoxLayout, QSizePolicy,
     QStandardItemModel, QSortFilterProxyModel, QStyleOptionToolButton,
     QStylePainter, QStyle, QApplication, QStyledItemDelegate,
-    QStyleOptionViewItemV4, QSizeGrip
+    QStyleOptionViewItemV4, QSizeGrip, QCursor, QPolygon, QRegion
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
 from PyQt4.QtCore import pyqtProperty as Property
 
 from PyQt4.QtCore import (
-    Qt, QObject, QPoint, QSize, QRect, QEventLoop, QEvent, QModelIndex
+    Qt, QObject, QPoint, QSize, QRect, QEventLoop, QEvent, QModelIndex,
+    QTimer
 )
 
 
@@ -433,8 +434,12 @@ class TabBarWidget(QWidget):
         self.__group.buttonPressed[QAbstractButton].connect(
             self.__onButtonPressed
         )
+        self.setMouseTracking(True)
 
-        self.__hoverListener = ToolButtonEventListener(self)
+        self.__sloppyButton = None
+        self.__sloppyRegion = QRegion()
+        self.__sloppyTimer = QTimer(self, singleShot=True)
+        self.__sloppyTimer.timeout.connect(self.__onSloppyTimeout)
 
     def setChangeOnHover(self, changeOnHover):
         """
@@ -444,15 +449,6 @@ class TabBarWidget(QWidget):
         """
         if self.__changeOnHover != changeOnHover:
             self.__changeOnHover = changeOnHover
-
-            if changeOnHover:
-                self.__hoverListener.buttonEnter.connect(
-                    self.__onButtonEnter
-                )
-            else:
-                self.__hoverListener.buttonEnter.disconnect(
-                    self.__onButtonEnter
-                )
 
     def changeOnHover(self):
         """
@@ -480,10 +476,11 @@ class TabBarWidget(QWidget):
         button.setSizePolicy(QSizePolicy.Expanding,
                              QSizePolicy.Expanding)
         button.setIconSize(self.__iconSize)
+        button.setMouseTracking(True)
 
         self.__group.addButton(button)
 
-        button.installEventFilter(self.__hoverListener)
+        button.installEventFilter(self)
 
         tab = _Tab(text, icon, toolTip, button, None, None)
         self.layout().insertWidget(index, button)
@@ -504,7 +501,11 @@ class TabBarWidget(QWidget):
             tab = self.__tabs.pop(index)
             self.__group.removeButton(tab.button)
 
-            tab.button.removeEventFilter(self.__hoverListener)
+            tab.button.removeEventFilter(self)
+
+            if tab.button is self.__sloppyButton:
+                self.__sloppyButton = None
+                self.__sloppyRegion = QRegion()
 
             tab.button.deleteLater()
 
@@ -549,6 +550,9 @@ class TabBarWidget(QWidget):
         if self.__currentIndex != index:
             self.__currentIndex = index
 
+            self.__sloppyRegion = QRegion()
+            self.__sloppyButton = None
+
             if index != -1:
                 self.__tabs[index].button.setChecked(True)
 
@@ -585,9 +589,6 @@ class TabBarWidget(QWidget):
         if tab.icon is not None and not tab.icon.isNull():
             b.setIcon(tab.icon)
 
-        if tab.toolTip:
-            b.setToolTip(tab.toolTip)
-
         if tab.palette:
             b.setPalette(tab.palette)
 
@@ -597,9 +598,61 @@ class TabBarWidget(QWidget):
                 self.setCurrentIndex(i)
                 break
 
-    def __onButtonEnter(self, button):
-        if self.__changeOnHover:
-            button.click()
+    def __calcSloppyRegion(self, current):
+        """
+        Given a current mouse cursor position return a region of the widget
+        where hover/move events should change the current tab only on a
+        timeout.
+
+        """
+        p1 = current + QPoint(0, 2)
+        p2 = current + QPoint(0, -2)
+        p3 = self.pos() + QPoint(self.width(), 0)
+        p4 = self.pos() + QPoint(self.width(), self.height())
+        return QRegion(QPolygon([p1, p2, p3, p4]))
+
+    def __setSloppyButton(self, button):
+        """
+        Set the current sloppy button (a tab button inside sloppy region)
+        and reset the sloppy timeout.
+
+        """
+        self.__sloppyButton = button
+        delay = self.style().styleHint(QStyle.SH_Menu_SubMenuPopupDelay, None)
+        # The delay timeout is the same as used by Qt in the QMenu.
+        self.__sloppyTimer.start(delay * 6)
+
+    def __onSloppyTimeout(self):
+        if self.__sloppyButton is not None:
+            button = self.__sloppyButton
+            self.__sloppyButton = None
+            if not button.isChecked():
+                button.setChecked(True)
+
+                # Update the sloppy region from the current cursor position.
+                current = self.mapFromGlobal(QCursor.pos())
+                if self.contentsRect().contains(current):
+                    self.__sloppyRegion = self.__calcSloppyRegion(current)
+
+    def eventFilter(self, receiver, event):
+        if event.type() == QEvent.MouseMove and \
+                isinstance(receiver, TabButton):
+            pos = receiver.mapTo(self, event.pos())
+            if self.__sloppyRegion.contains(pos):
+                self.__setSloppyButton(receiver)
+            else:
+                if not receiver.isChecked():
+                    index = [tab.button for tab in self.__tabs].index(receiver)
+                    self.setCurrentIndex(index)
+                    self.__sloppyRegion = self.__calcSloppyRegion(pos)
+
+        return QWidget.eventFilter(self, receiver, event)
+
+    def leaveEvent(self, event):
+        self.__sloppyButton = None
+        self.__sloppyRegion = QRegion()
+
+        return QWidget.leaveEvent(self, event)
 
 
 class PagedMenu(QWidget):
