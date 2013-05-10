@@ -21,6 +21,7 @@ from ..gui.toolbar import DynamicResizeToolBar
 from ..gui.quickhelp import QuickHelp
 from ..gui.framelesswindow import FramelessWindow
 from ..document.quickmenu import MenuPage
+from ..document.quickmenu import create_css_gradient
 from .widgettoolbox import WidgetToolBox, iter_item
 
 from ..registry.qt import QtWidgetRegistry
@@ -315,11 +316,11 @@ class QuickCategoryToolbar(ToolGrid):
         button.setProperty("quick-category-toolbutton", True)
 
         style_sheet = ("QToolButton {\n"
-                       "    background-color: %s;\n"
+                       "    background: %s;\n"
                        "    border: none;\n"
-                       "    border-bottom: 1px solid palette(dark);\n"
+                       "    border-bottom: 1px solid palette(mid);\n"
                        "}")
-        button.setStyleSheet(style_sheet % brush.color().name())
+        button.setStyleSheet(style_sheet % create_css_gradient(brush.color()))
 
         return button
 
