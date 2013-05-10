@@ -40,6 +40,8 @@ Submodules
 
 .. automodule:: Orange.utils.selection
 
+.. automodule:: Orange.utils.serverfiles
+
 """
 
 __all__ = ["deprecated_members", "deprecated_keywords",
