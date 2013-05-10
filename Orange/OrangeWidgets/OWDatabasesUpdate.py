@@ -456,6 +456,7 @@ class OWDatabasesUpdate(OWWidget):
         task.start()
 
         self._tasks = []
+        self._haveProgress = False
 
     def RetrieveFilesList(self):
         self.progress.setRange(0, 3)
@@ -710,12 +711,14 @@ class OWDatabasesUpdate(OWWidget):
     def _updateProgress(self, *args):
         rmin, rmax = self.progress.range()
         if rmin != rmax:
-            if self.progressBarValue <= 0:
+            if not self._haveProgress:
+                self._haveProgress = True
                 self.progressBarInit()
 
             self.progressBarSet(self.progress.ratioCompleted() * 100,
                                 processEventsFlags=None)
         if rmin == rmax:
+            self._haveProgress = False
             self.progressBarFinished()
 
 
