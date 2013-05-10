@@ -10,7 +10,7 @@ from PyQt4.QtGui import (
 )
 
 from PyQt4.QtCore import (
-    Qt, QSize, QObject, QPropertyAnimation, QEvent, QRect,
+    Qt, QSize, QObject, QPropertyAnimation, QEvent, QRect, QPoint,
     QModelIndex, QPersistentModelIndex, QEventLoop, QMimeData
 )
 
@@ -535,3 +535,44 @@ def widget_popup_geometry(pos, widget):
         geom.translate(-size.width(), 0)
 
     return geom
+
+
+def popup_position_from_source(popup, source, orientation=Qt.Vertical):
+    popup.ensurePolished()
+    source.ensurePolished()
+
+    if popup.testAttribute(Qt.WA_Resized):
+        size = popup.size()
+    else:
+        size = popup.sizeHint()
+
+    desktop = QApplication.desktop()
+    screen_geom = desktop.availableGeometry(source)
+    source_rect = QRect(source.mapToGlobal(QPoint(0, 0)), source.size())
+
+    if orientation == Qt.Vertical:
+        if source_rect.right() + size.width() < screen_geom.width():
+            x = source_rect.right()
+        else:
+            x = source_rect.left() - size.width()
+
+        # bottom overflow
+        dy = source_rect.top() + size.height() - screen_geom.height()
+        if dy < 0:
+            y = source_rect.top()
+        else:
+            y = source_rect.top() - dy
+    else:
+        # right overflow
+        dx = source_rect.left() + size.width() - screen_geom.width()
+        if dx < 0:
+            x = source_rect.left()
+        else:
+            x = source_rect.left() - dx
+
+        if source_rect.bottom() + size.height() < screen_geom.height():
+            y = source_rect.bottom()
+        else:
+            y = source_rect.top() - size.height()
+
+    return QPoint(x, y)
