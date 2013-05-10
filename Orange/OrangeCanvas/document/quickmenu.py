@@ -153,7 +153,6 @@ class MenuPage(ToolTree):
 
     def sizeHint(self):
         view = self.view()
-        hint = view.sizeHint()
         model = view.model()
 
         # This will not work for nested items (tree).
@@ -165,8 +164,8 @@ class MenuPage(ToolTree):
             height = view.sizeHintForRow(0)
             height = height * count
         else:
-            height = hint.height()
-        return QSize(max(width, hint.width()), max(height, hint.height()))
+            height = 0
+        return QSize(width, height)
 
 
 class ItemDisableFilter(QSortFilterProxyModel):
