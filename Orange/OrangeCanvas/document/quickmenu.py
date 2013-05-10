@@ -621,8 +621,8 @@ class TabBarWidget(QWidget):
         """
         p1 = current + QPoint(0, 2)
         p2 = current + QPoint(0, -2)
-        p3 = self.pos() + QPoint(self.width(), 0)
-        p4 = self.pos() + QPoint(self.width(), self.height())
+        p3 = self.pos() + QPoint(self.width()+10, 0)
+        p4 = self.pos() + QPoint(self.width()+10, self.height())
         return QRegion(QPolygon([p1, p2, p3, p4]))
 
     def __setSloppyButton(self, button):
@@ -631,10 +631,13 @@ class TabBarWidget(QWidget):
         and reset the sloppy timeout.
 
         """
-        self.__sloppyButton = button
-        delay = self.style().styleHint(QStyle.SH_Menu_SubMenuPopupDelay, None)
-        # The delay timeout is the same as used by Qt in the QMenu.
-        self.__sloppyTimer.start(delay * 6)
+        if not button.isChecked():
+            self.__sloppyButton = button
+            delay = self.style().styleHint(QStyle.SH_Menu_SubMenuPopupDelay, None)
+            # The delay timeout is the same as used by Qt in the QMenu.
+            self.__sloppyTimer.start(delay)
+        else:
+            self.__sloppyTimer.stop()
 
     def __onSloppyTimeout(self):
         if self.__sloppyButton is not None:
@@ -643,11 +646,6 @@ class TabBarWidget(QWidget):
             if not button.isChecked():
                 index = [tab.button for tab in self.__tabs].index(button)
                 self.setCurrentIndex(index)
-
-                # Update the sloppy region from the current cursor position.
-                current = self.mapFromGlobal(QCursor.pos())
-                if self.contentsRect().contains(current):
-                    self.__sloppyRegion = self.__calcSloppyRegion(current)
 
     def eventFilter(self, receiver, event):
         if event.type() == QEvent.MouseMove and \
@@ -659,7 +657,8 @@ class TabBarWidget(QWidget):
                 if not receiver.isChecked():
                     index = [tab.button for tab in self.__tabs].index(receiver)
                     self.setCurrentIndex(index)
-                    self.__sloppyRegion = self.__calcSloppyRegion(pos)
+                #also update sloppy region if mouse is moved on the same icon
+                self.__sloppyRegion = self.__calcSloppyRegion(pos)
 
         return QWidget.eventFilter(self, receiver, event)
 
