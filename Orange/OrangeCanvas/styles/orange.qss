@@ -374,7 +374,6 @@ QuickMenu QFrame#menu-frame {
 }
 
 QuickMenu ToolTree QTreeView::item {
-	height: 25px;
 	border-bottom: 1px solid #e9eff2;
 }
 
@@ -394,10 +393,11 @@ QuickMenu QTreeView::item:selected {
 }
 
 QuickMenu TabBarWidget QToolButton {
-	width: 33px;
 	height: 25px;
 	border-bottom: 1px solid palette(dark);
 	padding-right: 5px;
+	padding-left: 5px;
+	qproperty-showMenuIndicator_: true;
 }
 
 QuickMenu TabBarWidget QToolButton#search-tab-button {

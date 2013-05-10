@@ -16,7 +16,6 @@ from PyQt4.QtGui import (
     QMainWindow, QWidget, QAction, QActionGroup, QMenu, QMenuBar, QDialog,
     QFileDialog, QMessageBox, QVBoxLayout, QSizePolicy, QColor, QKeySequence,
     QIcon, QToolBar, QToolButton, QDockWidget, QDesktopServices, QApplication,
-    QCursor
 )
 
 from PyQt4.QtCore import (
@@ -41,7 +40,7 @@ from ..gui.utils import message_critical, message_question, \
 from ..help import HelpManager
 
 from .canvastooldock import CanvasToolDock, QuickCategoryToolbar, \
-                            CategoryPopupMenu
+                            CategoryPopupMenu, popup_position_from_source
 from .aboutdialog import AboutDialog
 from .schemeinfo import SchemeInfoDialog
 from .outputview import OutputView
@@ -772,13 +771,15 @@ class CanvasMainWindow(QMainWindow):
         category = action.text()
         if self.use_popover:
             # Show a popup menu with the widgets in the category
-            m = CategoryPopupMenu(self.quick_category)
+            popup = CategoryPopupMenu(self.quick_category)
             reg = self.widget_registry.model()
             i = index(self.widget_registry.categories(), category,
                       predicate=lambda name, cat: cat.name == name)
             if i != -1:
-                m.setCategoryItem(reg.item(i))
-                action = m.exec_(QCursor.pos())
+                popup.setCategoryItem(reg.item(i))
+                button = self.quick_category.buttonForAction(action)
+                pos = popup_position_from_source(popup, button)
+                action = popup.exec_(pos)
                 if action is not None:
                     self.on_tool_box_widget_activated(action)
 

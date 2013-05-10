@@ -20,14 +20,15 @@ from PyQt4.QtGui import (
     QButtonGroup, QStackedWidget, QHBoxLayout, QVBoxLayout, QSizePolicy,
     QStandardItemModel, QSortFilterProxyModel, QStyleOptionToolButton,
     QStylePainter, QStyle, QApplication, QStyledItemDelegate,
-    QStyleOptionViewItemV4, QSizeGrip
+    QStyleOptionViewItemV4, QSizeGrip, QCursor, QPolygon, QRegion
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
 from PyQt4.QtCore import pyqtProperty as Property
 
 from PyQt4.QtCore import (
-    Qt, QObject, QPoint, QSize, QRect, QEventLoop, QEvent, QModelIndex
+    Qt, QObject, QPoint, QSize, QRect, QEventLoop, QEvent, QModelIndex,
+    QTimer
 )
 
 
@@ -152,7 +153,6 @@ class MenuPage(ToolTree):
 
     def sizeHint(self):
         view = self.view()
-        hint = view.sizeHint()
         model = view.model()
 
         # This will not work for nested items (tree).
@@ -164,8 +164,8 @@ class MenuPage(ToolTree):
             height = view.sizeHintForRow(0)
             height = height * count
         else:
-            height = hint.height()
-        return QSize(max(width, hint.width()), max(height, hint.height()))
+            height = 0
+        return QSize(width, height)
 
 
 class ItemDisableFilter(QSortFilterProxyModel):
@@ -358,6 +358,7 @@ class TabButton(QToolButton):
         self.setCheckable(True)
 
         self.__flat = True
+        self.__showMenuIndicator = False
 
     def setFlat(self, flat):
         if self.__flat != flat:
@@ -370,10 +371,23 @@ class TabButton(QToolButton):
     flat_ = Property(bool, fget=flat, fset=setFlat,
                      designable=True)
 
+    def setShownMenuIndicator(self, show):
+        if self.__showMenuIndicator != show:
+            self.__showMenuIndicator = show
+            self.update()
+
+    def showMenuIndicator(self):
+        return self.__showMenuIndicator
+
+    showMenuIndicator_ = Property(bool, fget=showMenuIndicator,
+                                  fset=setShownMenuIndicator,
+                                  designable=True)
+
     def paintEvent(self, event):
         opt = QStyleOptionToolButton()
         self.initStyleOption(opt)
-        opt.features |= QStyleOptionToolButton.HasMenu
+        if self.__showMenuIndicator and self.isChecked():
+            opt.features |= QStyleOptionToolButton.HasMenu
         if self.__flat:
             # Use default widget background/border styling.
             StyledWidget_paintEvent(self, event)
@@ -387,7 +401,8 @@ class TabButton(QToolButton):
     def sizeHint(self):
         opt = QStyleOptionToolButton()
         self.initStyleOption(opt)
-        opt.features |= QStyleOptionToolButton.HasMenu
+        if self.__showMenuIndicator and self.isChecked():
+            opt.features |= QStyleOptionToolButton.HasMenu
         style = self.style()
 
         hint = style.sizeFromContents(QStyle.CT_ToolButton, opt,
@@ -433,8 +448,12 @@ class TabBarWidget(QWidget):
         self.__group.buttonPressed[QAbstractButton].connect(
             self.__onButtonPressed
         )
+        self.setMouseTracking(True)
 
-        self.__hoverListener = ToolButtonEventListener(self)
+        self.__sloppyButton = None
+        self.__sloppyRegion = QRegion()
+        self.__sloppyTimer = QTimer(self, singleShot=True)
+        self.__sloppyTimer.timeout.connect(self.__onSloppyTimeout)
 
     def setChangeOnHover(self, changeOnHover):
         """
@@ -444,15 +463,6 @@ class TabBarWidget(QWidget):
         """
         if self.__changeOnHover != changeOnHover:
             self.__changeOnHover = changeOnHover
-
-            if changeOnHover:
-                self.__hoverListener.buttonEnter.connect(
-                    self.__onButtonEnter
-                )
-            else:
-                self.__hoverListener.buttonEnter.disconnect(
-                    self.__onButtonEnter
-                )
 
     def changeOnHover(self):
         """
@@ -480,10 +490,11 @@ class TabBarWidget(QWidget):
         button.setSizePolicy(QSizePolicy.Expanding,
                              QSizePolicy.Expanding)
         button.setIconSize(self.__iconSize)
+        button.setMouseTracking(True)
 
         self.__group.addButton(button)
 
-        button.installEventFilter(self.__hoverListener)
+        button.installEventFilter(self)
 
         tab = _Tab(text, icon, toolTip, button, None, None)
         self.layout().insertWidget(index, button)
@@ -504,7 +515,11 @@ class TabBarWidget(QWidget):
             tab = self.__tabs.pop(index)
             self.__group.removeButton(tab.button)
 
-            tab.button.removeEventFilter(self.__hoverListener)
+            tab.button.removeEventFilter(self)
+
+            if tab.button is self.__sloppyButton:
+                self.__sloppyButton = None
+                self.__sloppyRegion = QRegion()
 
             tab.button.deleteLater()
 
@@ -549,6 +564,9 @@ class TabBarWidget(QWidget):
         if self.__currentIndex != index:
             self.__currentIndex = index
 
+            self.__sloppyRegion = QRegion()
+            self.__sloppyButton = None
+
             if index != -1:
                 self.__tabs[index].button.setChecked(True)
 
@@ -585,9 +603,6 @@ class TabBarWidget(QWidget):
         if tab.icon is not None and not tab.icon.isNull():
             b.setIcon(tab.icon)
 
-        if tab.toolTip:
-            b.setToolTip(tab.toolTip)
-
         if tab.palette:
             b.setPalette(tab.palette)
 
@@ -597,9 +612,62 @@ class TabBarWidget(QWidget):
                 self.setCurrentIndex(i)
                 break
 
-    def __onButtonEnter(self, button):
-        if self.__changeOnHover:
-            button.click()
+    def __calcSloppyRegion(self, current):
+        """
+        Given a current mouse cursor position return a region of the widget
+        where hover/move events should change the current tab only on a
+        timeout.
+
+        """
+        p1 = current + QPoint(0, 2)
+        p2 = current + QPoint(0, -2)
+        p3 = self.pos() + QPoint(self.width(), 0)
+        p4 = self.pos() + QPoint(self.width(), self.height())
+        return QRegion(QPolygon([p1, p2, p3, p4]))
+
+    def __setSloppyButton(self, button):
+        """
+        Set the current sloppy button (a tab button inside sloppy region)
+        and reset the sloppy timeout.
+
+        """
+        self.__sloppyButton = button
+        delay = self.style().styleHint(QStyle.SH_Menu_SubMenuPopupDelay, None)
+        # The delay timeout is the same as used by Qt in the QMenu.
+        self.__sloppyTimer.start(delay * 6)
+
+    def __onSloppyTimeout(self):
+        if self.__sloppyButton is not None:
+            button = self.__sloppyButton
+            self.__sloppyButton = None
+            if not button.isChecked():
+                index = [tab.button for tab in self.__tabs].index(button)
+                self.setCurrentIndex(index)
+
+                # Update the sloppy region from the current cursor position.
+                current = self.mapFromGlobal(QCursor.pos())
+                if self.contentsRect().contains(current):
+                    self.__sloppyRegion = self.__calcSloppyRegion(current)
+
+    def eventFilter(self, receiver, event):
+        if event.type() == QEvent.MouseMove and \
+                isinstance(receiver, TabButton):
+            pos = receiver.mapTo(self, event.pos())
+            if self.__sloppyRegion.contains(pos):
+                self.__setSloppyButton(receiver)
+            else:
+                if not receiver.isChecked():
+                    index = [tab.button for tab in self.__tabs].index(receiver)
+                    self.setCurrentIndex(index)
+                    self.__sloppyRegion = self.__calcSloppyRegion(pos)
+
+        return QWidget.eventFilter(self, receiver, event)
+
+    def leaveEvent(self, event):
+        self.__sloppyButton = None
+        self.__sloppyRegion = QRegion()
+
+        return QWidget.leaveEvent(self, event)
 
 
 class PagedMenu(QWidget):
@@ -619,7 +687,7 @@ class PagedMenu(QWidget):
 
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setSpacing(6)
 
         self.__tab = TabBarWidget(self)
         self.__tab.currentChanged.connect(self.setCurrentIndex)
@@ -712,6 +780,23 @@ class PagedMenu(QWidget):
         Return the tab button instance for index.
         """
         return self.__tab.button(index)
+
+
+TAB_BUTTON_STYLE_TEMPLATE = """\
+TabButton {
+    qproperty-flat_: false;
+    background: %s;
+    border: none;
+    border-bottom: 1px solid palette(dark);
+}
+
+TabButton:checked {
+    background: %s;
+    border: none;
+    border-top: 1px solid #609ED7;
+    border-bottom: 1px solid #609ED7;
+}
+"""
 
 
 class QuickMenu(FramelessWindow):
@@ -890,16 +975,9 @@ class QuickMenu(FramelessWindow):
                 base_color = brush.color()
                 button = self.__pages.tabButton(i)
                 button.setStyleSheet(
-                    "TabButton {\n"
-                    "    qproperty-flat_: false;\n"
-                    "    background: %s;\n"
-                    "    border: none;\n"
-                    "    border-bottom: 1px solid palette(dark);\n"
-                    "}\n"
-                    "TabButton:checked {\n"
-                    "    background: %s\n"
-                    "}" % (create_css_gradient(base_color),
-                           create_css_gradient(base_color.darker(110)))
+                    TAB_BUTTON_STYLE_TEMPLATE %
+                    (create_css_gradient(base_color),
+                     create_css_gradient(base_color.darker(120)))
                 )
 
         self.__model = model
