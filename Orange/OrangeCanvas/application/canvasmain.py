@@ -495,7 +495,7 @@ class CanvasMainWindow(QMainWindow):
                     )
 
         self.show_properties_action = \
-            QAction(self.tr("Show Properties"), self,
+            QAction(self.tr("Scheme Info"), self,
                     objectName="show-properties-action",
                     toolTip=self.tr("Show scheme properties."),
                     triggered=self.show_scheme_properties,

@@ -128,8 +128,8 @@ class SchemeInfoDialog(QDialog):
 
         check_layout.addWidget(self.__showAtNewSchemeCheck)
         check_layout.addWidget(
-               QLabel(self.tr("You can edit and add Scheme Info later at the "
-                              "bottom of the menu"),
+               QLabel(self.tr("You can also edit Scheme Info later "
+                              "(File -> Scheme Info)."),
                       self,
                       objectName="auto-show-info"),
                alignment=Qt.AlignRight)
