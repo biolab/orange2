@@ -174,7 +174,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
             self.setData(3, self.EditRole2, item.latest)
         else:
             self.setData(3, Qt.DisplayRole, "N/A")
-            self.setData(3, self.EditRole2, datetime.datetime())
+            self.setData(3, self.EditRole2, datetime.now())
 
         self._updateToolTip()
 
