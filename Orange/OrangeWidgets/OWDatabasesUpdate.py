@@ -366,7 +366,12 @@ def retrieveFilesList(serverFiles, domains=None, advance=lambda: None):
     """
     domains = serverFiles.listdomains() if domains is None else domains
     advance()
-    serverInfo = dict([(dom, serverFiles.allinfo(dom)) for dom in domains])
+    serverInfo = {}
+    for dom in domains:
+        try:
+            serverInfo[dom] = serverFiles.allinfo(dom)
+        except Exception: #ignore inexistent domains
+            pass
     advance()
     return serverInfo
 
