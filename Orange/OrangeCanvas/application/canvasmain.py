@@ -681,7 +681,7 @@ class CanvasMainWindow(QMainWindow):
                                          QDockWidget.DockWidgetFloatable)
 
         self.widgets_tool_box.setExclusive(
-            settings.value("toolbox-dock-exclusive", False, type=bool)
+            settings.value("toolbox-dock-exclusive", True, type=bool)
         )
 
         self.toogle_margins_action.setChecked(
@@ -1699,7 +1699,7 @@ class CanvasMainWindow(QMainWindow):
         self.dock_widget.setFeatures(features)
 
         toolbox_exclusive = settings.value("toolbox-dock-exclusive",
-                                           defaultValue=False,
+                                           defaultValue=True,
                                            type=bool)
         self.widgets_tool_box.setExclusive(toolbox_exclusive)
 
