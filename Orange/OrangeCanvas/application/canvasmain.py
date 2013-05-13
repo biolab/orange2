@@ -1288,8 +1288,8 @@ class CanvasMainWindow(QMainWindow):
         dialog.setWindowTitle(self.tr("Scheme Info"))
         dialog.setFixedSize(725, 450)
 
-        dialog.setDontShowAtNewScheme(
-            not settings.value(value_key, True, type=bool)
+        dialog.setShowAtNewScheme(
+            settings.value(value_key, True, type=bool)
         )
 
         return dialog
@@ -1316,7 +1316,7 @@ class CanvasMainWindow(QMainWindow):
             stack.endMacro()
 
             # Store the check state.
-            settings.setValue(value_key, not dlg.dontShowAtNewScheme())
+            settings.setValue(value_key, dlg.showAtNewScheme())
         return status
 
     def show_scheme_properties_for(self, scheme, window_title=None):
@@ -1337,7 +1337,7 @@ class CanvasMainWindow(QMainWindow):
         status = dialog.exec_()
         if status == QDialog.Accepted:
             # Store the check state.
-            settings.setValue(value_key, not dialog.dontShowAtNewScheme())
+            settings.setValue(value_key, dialog.showAtNewScheme())
 
         dialog.deleteLater()
 
