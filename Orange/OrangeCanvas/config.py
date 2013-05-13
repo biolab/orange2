@@ -55,7 +55,7 @@ spec = \
      ("schemeinfo/show-at-new-scheme", bool, True,
       "Show Scheme Properties when creating a new Scheme"),
 
-     ("mainwindow/scheme-margins-enabled", bool, True,
+     ("mainwindow/scheme-margins-enabled", bool, False,
       "Show margins around the scheme view"),
 
      ("mainwindow/show-scheme-shadow", bool, True,
