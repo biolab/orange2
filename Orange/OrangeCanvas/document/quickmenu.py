@@ -995,9 +995,12 @@ class QuickMenu(FramelessWindow):
         """
         Popup the menu at `pos` (in screen coordinates). 'Search' text field
         is initialized with `searchText` if provided.
+
         """
         if pos is None:
             pos = QPoint()
+
+        self.__clearCurrentItems()
 
         self.__search.setText(searchText)
         self.__suggestPage.setFilterFixedString(searchText)
@@ -1087,6 +1090,13 @@ class QuickMenu(FramelessWindow):
         Set the current page index.
         """
         self.__pages.setCurrentIndex(index)
+
+    def __clearCurrentItems(self):
+        """
+        Clear any selected (or current) items in all the menus.
+        """
+        for i in range(self.__pages.count()):
+            self.__pages.page(i).view().selectionModel().clear()
 
     def __onTriggered(self, action):
         """
