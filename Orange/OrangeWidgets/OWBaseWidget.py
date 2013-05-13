@@ -783,7 +783,7 @@ class OWBaseWidget(QDialog):
     progressBarValue = pyqtProperty(
         float,
         fset=lambda self, val:
-            self.progressBarSet(val, processEventsFlags=None),
+            OWBaseWidget.progressBarSet(self, val, processEventsFlags=None),
         fget=progressBarValue
     )
 
