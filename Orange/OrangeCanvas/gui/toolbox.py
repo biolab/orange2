@@ -14,8 +14,7 @@ from operator import eq, attrgetter
 from PyQt4.QtGui import (
     QWidget, QFrame, QSizePolicy, QIcon, QFontMetrics, QPainter, QStyle,
     QStyleOptionToolButton, QStyleOptionToolBoxV2, QPalette, QBrush, QPen,
-    QLinearGradient, QColor, QScrollArea, QVBoxLayout, QToolButton,
-    QAction, QActionGroup
+    QColor, QScrollArea, QVBoxLayout, QToolButton, QAction, QActionGroup
 )
 
 from PyQt4.QtCore import (
@@ -36,22 +35,6 @@ _ToolBoxPage = namedtuple(
 
 
 FOCUS_OUTLINE_COLOR = "#609ED7"
-
-
-def create_tab_gradient(base_color):
-    """
-    Create a default background gradient for a tab button from a single
-    color.
-
-    """
-    grad = QLinearGradient(0, 0, 0, 1)
-    grad.setStops([(0.0, base_color),
-                   (0.5, base_color),
-                   (0.8, base_color.darker(105)),
-                   (1.0, base_color.darker(110)),
-                   ])
-    grad.setCoordinateMode(QLinearGradient.ObjectBoundingMode)
-    return grad
 
 
 class ToolBoxTabButton(QToolButton):

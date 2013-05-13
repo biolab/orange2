@@ -35,9 +35,7 @@ from PyQt4.QtCore import (
 from ..gui.framelesswindow import FramelessWindow
 from ..gui.lineedit import LineEdit
 from ..gui.tooltree import ToolTree, FlattenedTreeItemModel
-from ..gui.toolgrid import ToolButtonEventListener
-from ..gui.toolbox import create_tab_gradient
-from ..gui.utils import StyledWidget_paintEvent
+from ..gui.utils import StyledWidget_paintEvent, create_css_gradient
 
 from ..registry.qt import QtWidgetRegistry
 
@@ -1320,16 +1318,3 @@ class WindowSizeGrip(QSizeGrip):
             y = window_size.height() - size.height()
 
         self.move(x, y)
-
-
-def create_css_gradient(base_color):
-    """
-    Create a Qt css linear gradient fragment based on the `base_color`.
-    """
-    grad = create_tab_gradient(base_color)
-    stops = grad.stops()
-    stops = "\n".join("    stop: {0:f} {1}".format(stop, color.name())
-                      for stop, color in stops)
-    return ("qlineargradient(\n"
-            "    x1: 0, y1: 0, x2: 0, y2: 1,\n"
-            "{0})").format(stops)

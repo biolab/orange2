@@ -21,9 +21,10 @@ from PyQt4.QtCore import (
 
 from PyQt4.QtCore import  pyqtSignal as Signal, pyqtProperty as Property
 
-from ..gui.toolbox import ToolBox, create_tab_gradient
+from ..gui.toolbox import ToolBox
 from ..gui.toolgrid import ToolGrid
 from ..gui.quickhelp import StatusTipPromoter
+from ..gui.utils import create_gradient
 from ..registry.qt import QtWidgetRegistry
 
 
@@ -389,7 +390,7 @@ class WidgetToolBox(ToolBox):
             brush = self.palette().brush(QPalette.Button)
 
         if not brush.gradient():
-            gradient = create_tab_gradient(brush.color())
+            gradient = create_gradient(brush.color())
             brush = QBrush(gradient)
 
         palette = button.palette()
