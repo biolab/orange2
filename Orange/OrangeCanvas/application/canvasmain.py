@@ -196,8 +196,6 @@ class CanvasMainWindow(QMainWindow):
 
         self.restore()
 
-        self.resize(800, 600)
-
     def setup_ui(self):
         """Setup main canvas ui
         """
@@ -1680,6 +1678,13 @@ class CanvasMainWindow(QMainWindow):
                     self.window_menu.setEnabled(not self.isMinimized())
 
             QMainWindow.changeEvent(self, event)
+
+    def sizeHint(self):
+        """
+        Reimplemented from QMainWindow.sizeHint
+        """
+        hint = QMainWindow.sizeHint(self)
+        return hint.expandedTo(QSize(1024, 720))
 
     def tr(self, sourceText, disambiguation=None, n=-1):
         """Translate the string.
