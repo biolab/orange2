@@ -517,9 +517,7 @@ class CanvasMainWindow(QMainWindow):
                     objectName="canvas-addons-action",
                     toolTip=self.tr("Manage add-ons."),
                     triggered=self.open_addons,
-                    menuRole=QAction.PreferencesRole
                     )
-
 
         self.show_output_action = \
             QAction(self.tr("Show Output View"), self,
