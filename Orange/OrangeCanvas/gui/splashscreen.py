@@ -7,7 +7,7 @@ from PyQt4.QtGui import (
     QSplashScreen,  QWidget, QPixmap, QPainter, QTextDocument,
     QTextBlockFormat, QTextCursor, QApplication
 )
-from PyQt4.QtCore import Qt, qVersion
+from PyQt4.QtCore import Qt
 
 from .utils import is_transparency_supported
 
@@ -104,29 +104,29 @@ class SplashScreen(QSplashScreen):
         QSplashScreen.showMessage(self, message, alignment, color)
         QApplication.instance().processEvents()
 
-    if qVersion() < "4.8":
-        # in 4.7 the splash screen does not support transparency
-        def setPixmap(self, pixmap):
-            self.setAttribute(Qt.WA_TranslucentBackground,
-                              pixmap.hasAlpha() and \
-                              is_transparency_supported())
+    # Reimplemented to allow graceful fall back if the windowing system
+    # does not support transparency.
+    def setPixmap(self, pixmap):
+        self.setAttribute(Qt.WA_TranslucentBackground,
+                          pixmap.hasAlpha() and \
+                          is_transparency_supported())
 
-            self.__pixmap = pixmap
+        self.__pixmap = pixmap
 
-            QSplashScreen.setPixmap(self, pixmap)
-            if pixmap.hasAlpha() and not is_transparency_supported():
-                self.setMask(pixmap.createHeuristicMask())
+        QSplashScreen.setPixmap(self, pixmap)
+        if pixmap.hasAlpha() and not is_transparency_supported():
+            self.setMask(pixmap.createHeuristicMask())
 
-        def repaint(self):
-            QWidget.repaint(self)
-            QApplication.flush()
+    def repaint(self):
+        QWidget.repaint(self)
+        QApplication.flush()
 
-        def event(self, event):
-            if event.type() == event.Paint:
-                pixmap = self.__pixmap
-                painter = QPainter(self)
-                if not pixmap.isNull():
-                    painter.drawPixmap(0, 0, pixmap)
-                self.drawContents(painter)
-                return True
-            return QSplashScreen.event(self, event)
+    def event(self, event):
+        if event.type() == event.Paint:
+            pixmap = self.__pixmap
+            painter = QPainter(self)
+            if not pixmap.isNull():
+                painter.drawPixmap(0, 0, pixmap)
+            self.drawContents(painter)
+            return True
+        return QSplashScreen.event(self, event)
