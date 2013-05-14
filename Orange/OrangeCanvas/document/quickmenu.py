@@ -784,7 +784,7 @@ TabButton {
     qproperty-flat_: false;
     background: %s;
     border: none;
-    border-bottom: 1px solid palette(dark);
+    border-bottom: 1px solid palette(mid);
 }
 
 TabButton:checked {
