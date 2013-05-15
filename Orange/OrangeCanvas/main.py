@@ -121,6 +121,11 @@ def main(argv=None):
     log.debug("Starting CanvasApplicaiton with argv = %r.", qt_argv)
     app = CanvasApplication(qt_argv)
 
+    # intercept any QFileOpenEvent requests until the main window is
+    # fully initialized
+    open_requests = []
+    app.fileOpenRequest.connect(open_requests.append)
+
     # Note: config.init must be called after the QApplication constructor
     config.init()
     settings = QSettings()
@@ -230,7 +235,7 @@ def main(argv=None):
 
     canvas_window.raise_()
 
-    if want_welcome and not args:
+    if want_welcome and not args and not open_requests:
         # Process events to make sure the canvas_window layout has
         # a chance to activate (the welcome dialog is modal and will
         # block the event queue)
@@ -241,6 +246,12 @@ def main(argv=None):
         log.info("Loading a scheme from the command line argument %r",
                  args[0])
         canvas_window.load_scheme(args[0])
+    elif open_requests:
+        log.info("Loading a scheme from an `QFileOpenEvent` for %r",
+                 open_requests[-1])
+        canvas_window.load_scheme(open_requests[-1].toLocalFile())
+
+    app.fileOpenRequest.connect(canvas_window.open_scheme_file)
 
     stdout_redirect = \
         settings.value("output/redirect-stdout", True, type=bool)

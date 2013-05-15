@@ -880,6 +880,21 @@ class CanvasMainWindow(QMainWindow):
         else:
             return QDialog.Rejected
 
+    def open_scheme_file(self, filename):
+        """
+        Open and load a scheme file.
+        """
+        if isinstance(filename, QUrl):
+            filename = filename.toLocalFile()
+
+        document = self.current_document()
+        if document.isModifiedStrict():
+            if self.ask_save_changes() == QDialog.Rejected:
+                return QDialog.Rejected
+
+        self.load_scheme(filename)
+        return QDialog.Accepted
+
     def load_scheme(self, filename):
         """Load a scheme from a file (`filename`) into the current
         document updates the recent scheme list and the loaded scheme path
