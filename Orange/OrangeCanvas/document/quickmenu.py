@@ -20,7 +20,7 @@ from PyQt4.QtGui import (
     QButtonGroup, QStackedWidget, QHBoxLayout, QVBoxLayout, QSizePolicy,
     QStandardItemModel, QSortFilterProxyModel, QStyleOptionToolButton,
     QStylePainter, QStyle, QApplication, QStyledItemDelegate,
-    QStyleOptionViewItemV4, QSizeGrip, QCursor, QPolygon, QRegion
+    QStyleOptionViewItemV4, QSizeGrip, QPolygon, QRegion, QItemSelectionModel
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
@@ -78,6 +78,8 @@ class MenuPage(ToolTree):
         self.__icon = icon
 
         self.view().setItemDelegate(_MenuItemDelegate(self.view()))
+        self.view().entered.connect(self.__onEntered)
+        self.view().viewport().setMouseTracking(True)
         # Make sure the initial model is wrapped in a ItemDisableFilter.
         self.setModel(self.model())
 
@@ -164,6 +166,13 @@ class MenuPage(ToolTree):
         else:
             height = 0
         return QSize(width, height)
+
+    def __onEntered(self, index):
+        self.view().selectionModel().select(
+            index,
+            QItemSelectionModel.ClearAndSelect
+        )
+        self.view().setCurrentIndex(index)
 
 
 class ItemDisableFilter(QSortFilterProxyModel):
