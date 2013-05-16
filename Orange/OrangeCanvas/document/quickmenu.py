@@ -168,11 +168,20 @@ class MenuPage(ToolTree):
         return QSize(width, height)
 
     def __onEntered(self, index):
-        self.view().selectionModel().select(
-            index,
-            QItemSelectionModel.ClearAndSelect
-        )
-        self.view().setCurrentIndex(index)
+        if not index.isValid():
+            return
+
+        if self.view().state() != QTreeView.NoState:
+            # The item view can emit an 'entered' signal while the model/view
+            # is being changed (rows removed). When this happens, setting the
+            # current item can segfault (in QTreeView::scrollTo).
+            return
+
+        if index.flags() & Qt.ItemIsEnabled:
+            self.view().selectionModel().setCurrentIndex(
+                index,
+                QItemSelectionModel.ClearAndSelect
+            )
 
 
 class ItemDisableFilter(QSortFilterProxyModel):
