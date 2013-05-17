@@ -803,6 +803,7 @@ TabButton {
     background: %s;
     border: none;
     border-bottom: 1px solid palette(mid);
+    border-right: 1px solid palette(mid);
 }
 
 TabButton:checked {
@@ -810,6 +811,7 @@ TabButton:checked {
     border: none;
     border-top: 1px solid #609ED7;
     border-bottom: 1px solid #609ED7;
+    border-right: 1px solid #609ED7;
 }
 """
 
