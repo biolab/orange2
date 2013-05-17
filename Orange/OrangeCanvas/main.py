@@ -15,14 +15,14 @@ from contextlib import nested
 import pkg_resources
 
 from PyQt4.QtGui import QFont, QColor
-from PyQt4.QtCore import Qt, QRect, QDir
+from PyQt4.QtCore import Qt, QDir
 
 from Orange import OrangeCanvas
 from Orange.OrangeCanvas.application.application import CanvasApplication
 from Orange.OrangeCanvas.application.canvasmain import CanvasMainWindow
 from Orange.OrangeCanvas.application.outputview import TextStream, ExceptHook
 
-from Orange.OrangeCanvas.gui.splashscreen import SplashScreen, QPixmap
+from Orange.OrangeCanvas.gui.splashscreen import SplashScreen
 from Orange.OrangeCanvas.config import cache_dir
 from Orange.OrangeCanvas import config
 from Orange.OrangeCanvas.utils.redirect import redirect_stdout, redirect_stderr
@@ -197,11 +197,7 @@ def main(argv=None):
         not options.no_splash
 
     if want_splash:
-        pm = QPixmap(pkg_resources.resource_filename(
-                        __name__, "icons/orange-splash-screen.png")
-                     )
-        # Text rectangle in which to fit the message.
-        rect = QRect(88, 193, 200, 20)
+        pm, rect = config.splash_screen()
         splash_screen = SplashScreen(pixmap=pm, textRect=rect)
         splash_screen.setFont(QFont("Helvetica", 12))
         color = QColor("#FFD39F")
