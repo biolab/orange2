@@ -32,19 +32,19 @@ else
 	echo "Repository $CLONE_FULLPATH already present".
 fi
 
+cd $CLONE_FULLPATH
+
 echo "Checking for incomming changesets"
-if hg incoming -R $CLONE_FULLPATH; then 
-	echo "Changesets found. Pulling and updating."
-	hg pull --update -R $CLONE_FULLPATH
+if hg incoming; then
+	echo "Changesets found. Pulling."
+	hg pull
 fi
 
-cd $CLONE_FULLPATH
+echo "Updating to ${REVISION}"
+hg update -r ${REVISION}
 
 # Run installation
 echo "Running setup.py install with python '$PYTHON'"
 $PYTHON setup.py install --single-version-externally-managed --record=RECORD.txt
-
-# Clean up the archive
-cd $WORK_DIR
 
 true

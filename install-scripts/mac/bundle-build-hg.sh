@@ -70,11 +70,11 @@ Plugins = ../../../../../Resources/Qt4/plugins/" > $APP/Contents/Frameworks/Pyth
 
 echo "Checkouting and building bioinformatics addon"
 echo "============================================="
-./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-bioinformatics bioinformatics $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-bioinformatics bioinformatics tip $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
 echo "Checkouting and building text addon"
 echo "==================================="
-./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-text text $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-text text tip $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
 
 echo "Installing networkx"
 echo "+++++++++++++++++++"
