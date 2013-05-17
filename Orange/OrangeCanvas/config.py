@@ -74,7 +74,7 @@ spec = \
       "Use a popover menu to select a widget when clicking on a category "
       "button"),
 
-     ("mainwindow/number-of-recent-schemes", int, 7,
+     ("mainwindow/number-of-recent-schemes", int, 15,
       "Number of recent schemes to keep in history"),
 
      ("schemeedit/show-channel-names", bool, True,

@@ -186,6 +186,7 @@ class CanvasMainWindow(QMainWindow):
         )
 
         self.recent_schemes = config.recent_schemes()
+        self.num_recent_schemes = 15
 
         self.open_in_external_browser = False
         self.help = HelpManager(self)
@@ -1453,9 +1454,8 @@ class CanvasMainWindow(QMainWindow):
             # No associated persistent path so we can't do anything.
             return
 
-        if title is None:
+        if not title:
             title = os.path.basename(path)
-            title, _ = os.path.splitext(title)
 
         filename = os.path.abspath(os.path.realpath(path))
         filename = os.path.normpath(filename)
@@ -1473,6 +1473,7 @@ class CanvasMainWindow(QMainWindow):
 
             action = actions_by_filename[filename]
             self.recent_menu.removeAction(action)
+            self.recent_scheme_action_group.removeAction(action)
             action.setText(title or self.tr("untitled"))
         else:
             action = QAction(title or self.tr("untitled"), self,
@@ -1488,6 +1489,12 @@ class CanvasMainWindow(QMainWindow):
         self.recent_scheme_action_group.addAction(action)
         self.recent_schemes.insert(0, (title, filename))
 
+        if len(self.recent_schemes) > max(self.num_recent_schemes, 1):
+            title, filename = self.recent_schemes.pop(-1)
+            action = actions_by_filename[filename]
+            self.recent_menu.removeAction(action)
+            self.recent_scheme_action_group.removeAction(action)
+
         config.save_recent_scheme_list(self.recent_schemes)
 
     def clear_recent_schemes(self):
@@ -1501,6 +1508,7 @@ class CanvasMainWindow(QMainWindow):
 
         for action in actions_to_remove:
             self.recent_menu.removeAction(action)
+            self.recent_scheme_action_group.removeAction(action)
 
         self.recent_schemes = []
         config.save_recent_scheme_list([])
@@ -1722,6 +1730,10 @@ class CanvasMainWindow(QMainWindow):
                                            defaultValue=True,
                                            type=bool)
         self.widgets_tool_box.setExclusive(toolbox_exclusive)
+
+        self.num_recent_schemes = settings.value("num-recent-schemes",
+                                                 defaultValue=15,
+                                                 type=int)
 
         settings.endGroup()
         settings.beginGroup("quickmenu")
