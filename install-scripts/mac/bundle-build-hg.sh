@@ -21,12 +21,28 @@ fi
 echo "Preaparing the bundle template"
 TEMPLATE_VERSION=`curl --silent http://orange.biolab.si/download/bundle-templates/CURRENT.txt`
 curl --silent http://orange.biolab.si/download/bundle-templates/Orange-template-${TEMPLATE_VERSION}.tar.gz | tar -xz -C $WORK_DIR
-#svn export --non-interactive http://orange.biolab.si/svn/orange/externals/trunk/install-scripts/mac/bundle/ $TMP_BUNDLE_DIR
 
 # Make repos dir if it does not yet exist
 if [ ! -e $REPOS_DIR ]; then
 	mkdir $REPOS_DIR
 fi
+
+# Create bundle startup script
+cat <<-'EOF' > ${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/Orange
+	#!/bin/bash
+
+	source `dirname "$0"`/ENV
+
+	# LaunchServices passes the Carbon process identifier to the application with
+	# -psn parameter - we do not want it
+	if [[ $1 == -psn_* ]]; then
+	    shift 1
+	fi
+
+	exec -a "$0" "$PYTHONEXECUTABLE" -m Orange.OrangeCanvas.main "$@"
+EOF
+
+chmod +x ${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/Orange
 
 # Python interpreter in the bundle
 PYTHON=${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/python
