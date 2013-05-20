@@ -30,8 +30,10 @@ cd sourcestopack
 rem # build source distribution
 e:\Python27\python.exe setup.py sdist
 
-rem # build msi file
-e:\Python27\python.exe setup.py bdist_msi
+break_on_error
+
+rem # build msi file (disabled due to StrictVersion requirement for .msi)
+rem e:\Python27\python.exe setup.py bdist_msi
 
 break_on_error
 
