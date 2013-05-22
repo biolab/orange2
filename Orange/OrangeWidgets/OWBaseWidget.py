@@ -201,6 +201,7 @@ class OWBaseWidget(QDialog):
 
         self.asyncCalls = []
         self.asyncBlock = False
+        self.__wasShown = False
         self.__progressBarValue = -1
 
     # uncomment this when you need to see which events occured
@@ -360,26 +361,21 @@ class OWBaseWidget(QDialog):
             self.savedWidgetGeometry = str(self.saveGeometry())
         QDialog.hideEvent(self, ev)
 
-    # override the default show function.
-    # after show() we must call processEvents because show puts some LayoutRequests in queue
-    # and we must process them immediately otherwise the width(), height(), ... of elements in the widget will be wrong
-#    def show(self):
-#        QDialog.show(self)
-#        qApp.processEvents()
-
-    # set widget state to shown
-    def showEvent(self, ev):    
+    def showEvent(self, ev):
         QDialog.showEvent(self, ev)
         if self.savePosition:
             self.widgetShown = 1
-            
+
+        self.__wasShown = True
         self.restoreWidgetPosition()
-        
+
     def closeEvent(self, ev):
-        if self.savePosition:
+        if self.savePosition and self.__wasShown:
+            # self.geometry() is 'invalid' (not yet resized/layout) until the
+            # widget is made explicitly visible.
             self.savedWidgetGeometry = str(self.saveGeometry())
         QDialog.closeEvent(self, ev)
-        
+
     def wheelEvent(self, event):
         """ Silently accept the wheel event. This is to ensure combo boxes
         and other controls that have focus don't receive this event unless
