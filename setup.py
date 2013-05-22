@@ -645,6 +645,7 @@ def get_package_data():
         "Orange.OrangeCanvas": ["icons/*.png", "icons/*.svg",
                                 "orngCanvas.pyw", "WidgetTabs.txt"],
         "Orange.OrangeCanvas.styles": ["*.qss", "orange/*.svg"],
+        "Orange.OrangeCanvas.application.tutorials": ["*.ows"],
         "Orange.OrangeWidgets": ["icons/*.png", "icons/backgrounds/*.png",
                                  "report/index.html"],
         "Orange.OrangeWidgets.Associate": ["icons/*.png", "icons/*.svg"],
