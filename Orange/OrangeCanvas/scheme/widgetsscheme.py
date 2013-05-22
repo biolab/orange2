@@ -82,6 +82,8 @@ class WidgetsScheme(Scheme):
         del self.widget_for_node[node]
         del self.node_for_widget[widget]
 
+        widget.close()
+
         # Save settings to user global settings.
         if not widget._settingsFromSchema:
             widget.saveSettings()
@@ -192,11 +194,12 @@ class WidgetsScheme(Scheme):
 
             # Notify the widget instances.
             for widget in self.widget_for_node.values():
+                widget.close()
+
                 if not widget._settingsFromSchema:
                     # First save global settings if necessary.
                     widget.saveSettings()
 
-                widget.close()
                 widget.onDeleteWidget()
 
             event.accept()
