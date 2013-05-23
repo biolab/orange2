@@ -1016,12 +1016,30 @@ class CanvasMainWindow(QMainWindow):
     def check_can_save(self, document, path):
         """
         Check if saving the document to `path` would prevent it from
-        being read by the version 1.0 of scheme parser.
+        being read by the version 1.0 of scheme parser. Return ``True``
+        if the existing scheme is version 1.0 else show a message box and
+        return ``False``
+
+        .. note::
+            In case of an error (opening, parsing), this method will return
+            ``True``, so the
 
         """
         if path and os.path.exists(path):
-            version = sniff_version(open(path, "rb"))
+            try:
+                version = sniff_version(open(path, "rb"))
+            except (IOError, OSError):
+                log.error("Error opening '%s'", path, exc_info=True)
+                # The client should fail attempting to write.
+                return True
+            except Exception:
+                log.error("Error sniffing scheme version in '%s'", path,
+                          exc_info=True)
+                # Malformed .ows file, ...
+                return True
+
             if version == "1.0":
+                # TODO: Ask for overwrite confirmation instead
                 message_information(
                     self.tr("Can not overwrite a version 1.0 ows file. "
                             "Please save your work to a new file"),
