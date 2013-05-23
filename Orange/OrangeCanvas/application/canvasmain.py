@@ -997,7 +997,7 @@ class CanvasMainWindow(QMainWindow):
         document = self.current_document()
 
         selected = message_question(
-            self.tr("Do you want to save the changes you made to scheme %r?") \
+            self.tr('Do you want to save the changes you made to scheme "%s"?')
                     % document.scheme().title,
             self.tr("Save Changes?"),
             self.tr("If you do not save your changes will be lost"),
@@ -1058,6 +1058,7 @@ class CanvasMainWindow(QMainWindow):
         """
         document = self.current_document()
         curr_scheme = document.scheme()
+        title = curr_scheme.title or "untitled"
 
         if document.path():
             start_dir = document.path()
@@ -1069,7 +1070,6 @@ class CanvasMainWindow(QMainWindow):
                     QDesktopServices.DocumentsLocation
                 )
 
-            title = curr_scheme.title or "untitled"
             start_dir = os.path.join(unicode(start_dir), title + ".ows")
 
         filename = QFileDialog.getSaveFileName(
@@ -1095,10 +1095,9 @@ class CanvasMainWindow(QMainWindow):
                 # TODO: should handle permission errors with a
                 # specialized messages.
                 message_critical(
-                     self.tr("An error occurred while trying to save the %r "
-                             "scheme to %r" % \
-                             (curr_scheme.title, basename)),
-                     title=self.tr("Error saving %r") % basename,
+                     self.tr('An error occurred while trying to save scheme '
+                             '"%s" to "%s"') % (title, basename),
+                     title=self.tr("Error saving %s") % basename,
                      exc_info=True,
                      parent=self)
                 return QFileDialog.Rejected
