@@ -1057,21 +1057,23 @@ class CanvasMainWindow(QMainWindow):
         """
         document = self.current_document()
         curr_scheme = document.scheme()
+        path = document.path()
 
-        if document.path() and self.check_can_save(document, document.path()):
-            curr_scheme.save_to(open(document.path(), "wb"),
-                                pretty=True, pickle_fallback=True)
-
-            document.setModified(False)
-            self.add_recent_scheme(curr_scheme.title, document.path())
-            return QDialog.Accepted
+        if path and self.check_can_save(document, path):
+            if self.save_scheme_to(curr_scheme, path):
+                document.setModified(False)
+                self.add_recent_scheme(curr_scheme.title, document.path())
+                return QDialog.Accepted
+            else:
+                return QDialog.Rejected
         else:
             return self.save_scheme_as()
 
     def save_scheme_as(self):
-        """Save the current scheme by asking the user for a filename.
-        Return QFileDialog.Accepted if the scheme was saved successfully
-        and QFileDialog.Rejected if not.
+        """
+        Save the current scheme by asking the user for a filename. Return
+        `QFileDialog.Accepted` if the scheme was saved successfully and
+        `QFileDialog.Rejected` if not.
 
         """
         document = self.current_document()
@@ -1100,33 +1102,73 @@ class CanvasMainWindow(QMainWindow):
             if not self.check_can_save(document, filename):
                 return QDialog.Rejected
 
-            dirname, basename = os.path.split(filename)
-            self.last_scheme_dir = dirname
+            self.last_scheme_dir = os.path.dirname(filename)
 
-            try:
-                curr_scheme.save_to(open(filename, "wb"),
-                                    pretty=True, pickle_fallback=True)
-            except Exception:
-                log.error("Error saving %r to %r", curr_scheme, filename,
-                          exc_info=True)
-                # Also show a message box
-                # TODO: should handle permission errors with a
-                # specialized messages.
-                message_critical(
-                     self.tr('An error occurred while trying to save scheme '
-                             '"%s" to "%s"') % (title, basename),
-                     title=self.tr("Error saving %s") % basename,
-                     exc_info=True,
-                     parent=self)
-                return QFileDialog.Rejected
+            if self.save_scheme_to(curr_scheme, filename):
+                document.setPath(filename)
+                document.setModified(False)
+                self.add_recent_scheme(curr_scheme.title, document.path())
 
-            document.setPath(filename)
+                return QFileDialog.Accepted
 
-            document.setModified(False)
-            self.add_recent_scheme(curr_scheme.title, document.path())
-            return QFileDialog.Accepted
-        else:
-            return QFileDialog.Rejected
+        return QFileDialog.Rejected
+
+    def save_scheme_to(self, scheme, filename):
+        """
+        Save a Scheme instance `scheme` to `filename`. On success return
+        `True`, else show a message to the user explaining the error and
+        return `False`.
+
+        """
+        dirname, basename = os.path.split(filename)
+        self.last_scheme_dir = dirname
+        title = scheme.title or "untitled"
+        try:
+            scheme.save_to(open(filename, "wb"),
+                           pretty=True, pickle_fallback=True)
+            return True
+        except (IOError, OSError) as ex:
+            log.error("%s saving '%s'", type(ex).__name__, filename,
+                      exc_info=True)
+            if ex.errno == 2:
+                # user might enter a string containing a path separator
+                message_warning(
+                    self.tr('Scheme "%s" could not be saved. The path does '
+                            'not exist') % title,
+                    title="",
+                    informative_text=self.tr("Choose another location."),
+                    parent=self
+                )
+            elif ex.errno == 13:
+                message_warning(
+                    self.tr('Scheme "%s" could not be saved. You do not '
+                            'have write permissions.') % title,
+                    title="",
+                    informative_text=self.tr(
+                        "Change the file system permissions or choose "
+                        "another location."),
+                    parent=self
+                )
+            else:
+                message_warning(
+                    self.tr('Scheme "%s" could not be saved.') % title,
+                    title="",
+                    informative_text=ex.strerror,
+                    exc_info=True,
+                    parent=self
+                )
+            return False
+
+        except Exception:
+            log.error("Error saving %r to %r", scheme, filename, exc_info=True)
+            message_critical(
+                self.tr('An error occurred while trying to save scheme '
+                        '"%s" to "%s"') % (title, basename),
+                title=self.tr("Error saving %s") % basename,
+                exc_info=True,
+                parent=self
+            )
+            return False
 
     def get_started(self, *args):
         """Show getting started video
