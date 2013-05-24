@@ -938,15 +938,21 @@ class SchemeEditWidget(QWidget):
                         "application/vnv.orange-canvas.registry.qualified-name"
                         ):
                     event.acceptProposedAction()
+                else:
+                    event.ignore()
                 return True
             elif etype == QEvent.GraphicsSceneDrop:
                 data = event.mimeData()
                 qname = data.data(
                     "application/vnv.orange-canvas.registry.qualified-name"
                 )
-                desc = self.__registry.widget(unicode(qname))
-                pos = event.scenePos()
-                self.createNewNode(desc, position=(pos.x(), pos.y()))
+                try:
+                    desc = self.__registry.widget(unicode(qname))
+                except KeyError:
+                    log.error("Unknown qualified name '%s'", qname)
+                else:
+                    pos = event.scenePos()
+                    self.createNewNode(desc, position=(pos.x(), pos.y()))
                 return True
 
             elif etype == QEvent.GraphicsSceneMousePress:
