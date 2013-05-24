@@ -1461,6 +1461,7 @@ class CanvasMainWindow(QMainWindow):
         """Open canvas settings/preferences dialog
         """
         dlg = UserSettingsDialog(self)
+        dlg.setWindowTitle(self.tr("Preferences"))
         dlg.show()
         status = dlg.exec_()
         if status == 0:
