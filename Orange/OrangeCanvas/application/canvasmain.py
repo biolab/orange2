@@ -995,12 +995,12 @@ class CanvasMainWindow(QMainWindow):
 
         """
         document = self.current_document()
-
+        title = document.scheme().title or "untitled"
         selected = message_question(
             self.tr('Do you want to save the changes you made to scheme "%s"?')
-                    % document.scheme().title,
+                    % title,
             self.tr("Save Changes?"),
-            self.tr("If you do not save your changes will be lost"),
+            self.tr("Your changes will be lost if you do not save them."),
             buttons=QMessageBox.Save | QMessageBox.Cancel | \
                     QMessageBox.Discard,
             default_button=QMessageBox.Save,
