@@ -333,8 +333,6 @@ class OWBaseWidget(QDialog):
         if self.savePosition and getattr(self, "widgetShown", None):
             self.show()
 
-    # when widget is resized, save new width and height into widgetWidth and widgetHeight. some widgets can put this two
-    # variables into settings and last widget shape is restored after restart
     def resizeEvent(self, ev):
         QDialog.resizeEvent(self, ev)
         # Don't store geometry if the widget is not visible
@@ -343,36 +341,27 @@ class OWBaseWidget(QDialog):
         if self.savePosition and self.isVisible():
             self.savedWidgetGeometry = str(self.saveGeometry())
 
+    def showEvent(self, ev):
+        QDialog.showEvent(self, ev)
+        if self.savePosition:
+            self.widgetShown = 1
 
-    # when widget is moved, save new x and y position into widgetXPosition and widgetYPosition. some widgets can put this two
-    # variables into settings and last widget position is restored after restart
-    # Commented out because of Ubuntu (on call to restoreGeometry calls move event saving pos (0, 0)
-#    def moveEvent(self, ev):
-#        QDialog.moveEvent(self, ev)
-#        if self.savePosition:
-#            self.widgetXPosition = self.frameGeometry().x()
-#            self.widgetYPosition = self.frameGeometry().y()
-#            self.savedWidgetGeometry = str(self.saveGeometry())
+            if not self.__wasShown:
+                self.__wasShown = True
+                self.restoreWidgetPosition()
 
-    # set widget state to hidden
     def hideEvent(self, ev):
         if self.savePosition:
             self.widgetShown = 0
             self.savedWidgetGeometry = str(self.saveGeometry())
         QDialog.hideEvent(self, ev)
 
-    def showEvent(self, ev):
-        QDialog.showEvent(self, ev)
-        if self.savePosition:
-            self.widgetShown = 1
-
-        self.__wasShown = True
-        self.restoreWidgetPosition()
-
     def closeEvent(self, ev):
-        if self.savePosition and self.__wasShown:
+        if self.savePosition and self.isVisible() and self.__wasShown:
             # self.geometry() is 'invalid' (not yet resized/layout) until the
-            # widget is made explicitly visible.
+            # widget is made explicitly visible or it might be invalid if
+            # widget was hidden (in this case hideEvent already saved a valid
+            # geometry).
             self.savedWidgetGeometry = str(self.saveGeometry())
         QDialog.closeEvent(self, ev)
 
