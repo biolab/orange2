@@ -301,7 +301,8 @@ class SchemeEditWidget(QWidget):
                     objectName="help-action",
                     toolTip=self.tr("Show widget help"),
                     triggered=self.__onHelpAction,
-                    shortcut=QKeySequence("F1")
+                    shortcut=QKeySequence("F1"),
+                    enabled=False,
                     )
 
         self.__linkEnableAction = \
