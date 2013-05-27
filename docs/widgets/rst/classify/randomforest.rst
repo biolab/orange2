@@ -21,8 +21,6 @@ Outputs:
       dialog
    - Random Forest Classifier
       Trained random forest
-   - Choosen Tree
-      One of the classification trees from the random forest classifer
 
 
 Description
@@ -69,13 +67,6 @@ a tree learner (in this case, C4.5) on a specific data set.
 .. image:: images/RandomForest-Test.png
    :alt: Random forest evaluation
 
-A simple use of this widget where we wanted to explore how do the actual
-trees in the forest look like is presented in the following snapshot. In
-our case, the 5-th tree from the forest was rendered in the Classification
-Tree Graph widget.
-
-.. image:: images/RandomForest-TreeGraph.png
-   :alt: Visualization of a tree from random forest
 
 References
 ----------
