@@ -5,8 +5,9 @@
 <priority>40</priority>
 <icon>icons/PaintData.svg</icon>
 """
-
 import orange
+
+from PyQt4 import QtCore
 
 from OWWidget import *
 from OWGraph import *
@@ -109,6 +110,7 @@ class DataTool(QObject):
     def installed(self):
         """ Called when the tool is installed on a graph.
         """
+        pass
         
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress:
@@ -867,6 +869,7 @@ class OWPaintData(OWWidget):
         self.currentTool, self.currentOptionsWidget = tool, option = self.toolsStackCache[tool]
         self.optionsLayout.setCurrentWidget(option)
         self.currentTool.setGraph(self.graph)
+
         
     def onDomainChanged(self, *args):
         if self.variablesModel:
@@ -879,6 +882,10 @@ class OWPaintData(OWWidget):
             
     def onDataChanged(self):
         self.dataChangedFlag = True
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Delete and isinstance(self.currentTool, SelectTool):
+            self.currentTool.deleteSelected()
     
     def commitIf(self):
         if self.commitOnChange and self.dataChangedFlag:
