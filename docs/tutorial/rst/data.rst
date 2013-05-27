@@ -112,9 +112,9 @@ The script above displays the following output::
    [4.9, 3.0, 1.4, 0.2, 'Iris-setosa']
    [4.7, 3.2, 1.3, 0.2, 'Iris-setosa']
    25-th data instance:
-   [5.0, 3.4, 1.6, 0.4, 'Iris-setosa']
+   [4.8, 3.4, 1.9, 0.2, 'Iris-setosa']
    Value of 'sepal width' for the first instance: 3.5
-   The 3rd value of the 25th data instance: 1.6
+   The 3rd value of the 25th data instance: 1.9
 
 Iris data set we have used above has four continous attributes. Here's a script that computes their mean:
 
