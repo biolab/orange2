@@ -7,6 +7,8 @@
 """
 import orange
 
+import copy
+
 from PyQt4 import QtCore
 
 from OWWidget import *
@@ -47,6 +49,7 @@ class PaintDataGraph(OWGraph):
         else:
             self.removeDrawingCurves()
             data = self.data
+
         clsValues, hasCls = (self.data.domain.classVar.values, True) if self.data.domain.classVar else ([0], False)
         
         palette = ColorPaletteGenerator(len(clsValues))
@@ -707,7 +710,23 @@ class OWPaintData(OWWidget):
 
         
         self.classVariable = orange.EnumVariable("Class label", values=["Class 1", "Class 2"], baseValue=0)
-        
+
+        ur = OWGUI.widgetBox(self.controlArea, "Undo / Redo")
+        undo = QAction("Undo", self)
+        undo.pyqtConfigure(toolTip="Undo action")
+        self.connect(undo, SIGNAL("triggered()"), self.undoAction)
+
+        redo = QAction("Redo", self)
+        redo.pyqtConfigure(toolTip="Redo action")
+        self.connect(redo, SIGNAL("triggered()"), self.redoAction)
+
+        actionsWidget =  ModelActionsWidget([undo, redo], self)
+        actionsWidget.layout().addStretch(10)
+        actionsWidget.layout().setSpacing(1)
+
+        ur.layout().addWidget(actionsWidget)
+
+
         w = OWGUI.widgetBox(self.controlArea, "Class Label")
         
         self.classValuesView = listView = QListView()
@@ -778,6 +797,7 @@ class OWPaintData(OWWidget):
         self.graph.setAxisScale(QwtPlot.yLeft, 0.0, 1.0)
         self.graph.setAttribute(Qt.WA_Hover, True)
         self.mainArea.layout().addWidget(self.graph)
+
         
         self.currentOptionsWidget = None
         self.data = []
@@ -786,9 +806,13 @@ class OWPaintData(OWWidget):
         
         self.onDomainChanged()
         self.toolActions.actions()[0].trigger()
+
+        self.dataHistory = [(orange.ExampleTable(self.domain), ["Class 1", "Class 2"])]
+        self.historyCounter = 0
+        self.updateHistoryBool = True
         
         self.resize(800, 600)
-        
+
     def addNewClassLabel(self):
         i = 1
         while True:
@@ -814,21 +838,26 @@ class OWPaintData(OWWidget):
         self.classValuesView.selectionModel().select(newindex, QItemSelectionModel.ClearAndSelect)
         
         self.removeClassLabel.setEnabled(len(self.classValuesModel) > 1)
+
+        self.updateHistory()
         
-    def removeSelectedClassLabel(self):
+    def removeSelectedClassLabel(self, label=None):
         index = self.selectedClassLabelIndex()
         if index is not None and len(self.classValuesModel) > 1:
-            label = self.classValuesModel[index]
+            if not label:
+                label = self.classValuesModel[index]
             examples = [ex for ex in self.graph.data if str(ex.getclass()) != label]
+            print examples
             
             values = [val for val in self.classValuesModel if val != label]
+            print "we have values"
             newclass = orange.EnumVariable("Class label", values=values)
             newdomain = orange.Domain(self.graph.data.domain.attributes, newclass)
             newdata = orange.ExampleTable(newdomain)
             for ex in examples:
                 if ex[self.classVariable] != label and ex[self.classVariable] in values:
                     newdata.append(orange.Example(newdomain, [ex[a] for a in ex.domain.attributes] + [str(ex.getclass())]))
-                
+
             self.classVariable = newclass
             self.classValuesModel.wrap(self.classVariable.values)
             
@@ -838,7 +867,9 @@ class OWPaintData(OWWidget):
             newindex = self.classValuesModel.index(max(0, index - 1))
             self.classValuesView.selectionModel().select(newindex, QItemSelectionModel.ClearAndSelect)
             
-            self.removeClassLabel.setEnabled(len(self.classValuesModel) > 1) 
+            self.removeClassLabel.setEnabled(len(self.classValuesModel) > 1)
+
+            self.updateHistory()
         
     def selectedClassLabelIndex(self):
         rows = [i.row() for i in self.classValuesView.selectionModel().selectedRows()]
@@ -864,13 +895,55 @@ class OWPaintData(OWWidget):
 #            self.connect(newtool, SIGNAL("dataChanged()"), self.onDataChanged)
             self.connect(newtool, SIGNAL("editing()"), self.onDataChanged)
             self.connect(newtool, SIGNAL("editingFinished()"), self.commitIf)
+            self.connect(newtool, SIGNAL("editingFinished()"), self.updateHistory)
             self.toolsStackCache[tool] = (newtool, option)
         
         self.currentTool, self.currentOptionsWidget = tool, option = self.toolsStackCache[tool]
         self.optionsLayout.setCurrentWidget(option)
         self.currentTool.setGraph(self.graph)
 
-        
+    def updateHistory(self):
+        if not self.updateHistoryBool:
+            return
+        if not self.historyCounter == len(self.dataHistory)-1:
+            self.dataHistory = self.dataHistory[self.historyCounter:]
+        labels = list(self.classValuesModel)
+        self.dataHistory.append((copy.deepcopy(self.graph.data), labels))
+        if len(self.dataHistory) > 10:
+            self.dataHistory.pop(0)
+        self.historyCounter += 1
+        self.historyCounter %= len(self.dataHistory)
+        print self.historyCounter
+        print self.dataHistory[self.historyCounter]
+
+    def undoAction(self):
+        if self.historyCounter > 0:
+            self.historyCounter -= 1
+            data, labels = self.dataHistory[self.historyCounter]
+            self.graph.setData(data, 0, 1)
+            self.updateHistoryBool = False
+            if len(self.classValuesModel) > len(labels):
+                diff = set(self.classValuesModel) - set(labels)
+                self.removeSelectedClassLabel(label=diff.pop())
+            if len(self.classValuesModel) < len(labels):
+                self.addNewClassLabel()
+            self.updateHistoryBool = True
+            print self.dataHistory[self.historyCounter]
+
+    def redoAction(self):
+        if self.historyCounter < len(self.dataHistory)-1:
+            self.historyCounter += 1
+            data, labels = self.dataHistory[self.historyCounter]
+            self.graph.setData(data, 0, 1)
+            self.updateHistoryBool = False
+            if len(self.classValuesModel) > len(labels):
+                diff = set(self.classValuesModel) - set(labels)
+                self.removeSelectedClassLabel(label=diff.pop())
+            if len(self.classValuesModel) < len(labels):
+                self.addNewClassLabel()
+            self.updateHistoryBool = True
+            print self.dataHistory[self.historyCounter]
+
     def onDomainChanged(self, *args):
         if self.variablesModel:
             self.domain = orange.Domain(list(self.variablesModel), self.classVariable)
@@ -901,6 +974,7 @@ class OWPaintData(OWWidget):
             domain = orange.Domain(data.domain.attributes, None)
             data = orange.ExampleTable(domain, data)
         self.send("Data", data)
+
         
         
 if __name__ == "__main__":
