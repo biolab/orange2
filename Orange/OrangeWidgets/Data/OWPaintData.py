@@ -847,10 +847,9 @@ class OWPaintData(OWWidget):
             if not label:
                 label = self.classValuesModel[index]
             examples = [ex for ex in self.graph.data if str(ex.getclass()) != label]
-            print examples
             
             values = [val for val in self.classValuesModel if val != label]
-            print "we have values"
+
             newclass = orange.EnumVariable("Class label", values=values)
             newdomain = orange.Domain(self.graph.data.domain.attributes, newclass)
             newdata = orange.ExampleTable(newdomain)
@@ -905,44 +904,57 @@ class OWPaintData(OWWidget):
     def updateHistory(self):
         if not self.updateHistoryBool:
             return
+        # if we start updating from previously undone actions, we cut off redos in our history
         if not self.historyCounter == len(self.dataHistory)-1:
-            self.dataHistory = self.dataHistory[self.historyCounter:]
+            self.dataHistory = self.dataHistory[0:self.historyCounter+1]
+        # append an update of labels and data
         labels = list(self.classValuesModel)
         self.dataHistory.append((copy.deepcopy(self.graph.data), labels))
-        if len(self.dataHistory) > 10:
+        # set the size of the data history stack and remove the oldest update if we go over the size
+        if len(self.dataHistory) > 100:
             self.dataHistory.pop(0)
+            self.historyCounter -= 1
         self.historyCounter += 1
-        self.historyCounter %= len(self.dataHistory)
         print self.historyCounter
-        print self.dataHistory[self.historyCounter]
+        print len(self.dataHistory)-1
 
     def undoAction(self):
+        # check to see if we are at the end of the stack
         if self.historyCounter > 0:
             self.historyCounter -= 1
             data, labels = self.dataHistory[self.historyCounter]
-            self.graph.setData(data, 0, 1)
+            # we dont update history when undoing
             self.updateHistoryBool = False
+            # check if we only need to update labels
             if len(self.classValuesModel) > len(labels):
                 diff = set(self.classValuesModel) - set(labels)
                 self.removeSelectedClassLabel(label=diff.pop())
-            if len(self.classValuesModel) < len(labels):
+            elif len(self.classValuesModel) < len(labels):
                 self.addNewClassLabel()
+            # if not, update data
+            else:
+                self.graph.data = data
+                self.graph.updateGraph()
             self.updateHistoryBool = True
-            print self.dataHistory[self.historyCounter]
+            print self.historyCounter
+            print len(self.dataHistory)-1
 
     def redoAction(self):
         if self.historyCounter < len(self.dataHistory)-1:
             self.historyCounter += 1
             data, labels = self.dataHistory[self.historyCounter]
-            self.graph.setData(data, 0, 1)
             self.updateHistoryBool = False
             if len(self.classValuesModel) > len(labels):
                 diff = set(self.classValuesModel) - set(labels)
                 self.removeSelectedClassLabel(label=diff.pop())
-            if len(self.classValuesModel) < len(labels):
+            elif len(self.classValuesModel) < len(labels):
                 self.addNewClassLabel()
+            else:
+                self.graph.data = data
+                self.graph.updateGraph()
             self.updateHistoryBool = True
-            print self.dataHistory[self.historyCounter]
+            print self.historyCounter
+            print len(self.dataHistory)-1
 
     def onDomainChanged(self, *args):
         if self.variablesModel:
