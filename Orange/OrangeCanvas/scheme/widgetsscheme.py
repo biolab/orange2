@@ -16,6 +16,7 @@ companion :class:`WidgetsSignalManager` class.
   :bases:
 
 """
+import sys
 import logging
 
 import sip
@@ -391,7 +392,9 @@ class WidgetsSignalManager(SignalManager):
             try:
                 handler(*args)
             except Exception:
-                log.exception("Error")
+                sys.excepthook(*sys.exc_info())
+                log.exception("Error calling '%s' of '%s'",
+                              handler.__name__, node.title)
             finally:
                 app.restoreOverrideCursor()
 
@@ -399,7 +402,9 @@ class WidgetsSignalManager(SignalManager):
         try:
             widget.handleNewSignals()
         except Exception:
-            log.exception("Error")
+            sys.excepthook(*sys.exc_info())
+            log.exception("Error calling 'handleNewSignals()' of '%s'",
+                          node.title)
         finally:
             app.restoreOverrideCursor()
 
