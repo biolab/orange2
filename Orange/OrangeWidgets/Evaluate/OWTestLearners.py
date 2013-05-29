@@ -13,8 +13,6 @@ import orngTest, orngStat, OWGUI
 import time
 import warnings
 from orngWrap import PreprocessedLearner
-warnings.filterwarnings("ignore", "'id' is not a builtin attribute",
-                        orange.AttributeWarning)
 
 import Orange
 
@@ -446,6 +444,12 @@ class OWTestLearners(OWWidget):
         self.paintscores()
         
     def clearScores(self, ids=None):
+        """
+        Clear/invalidate evaluation results/scores for learners for an
+        `ids` sequence (keys into self.learners). If `ids` is None then
+        invalidate data for all learners.
+
+        """
         if ids is None:
             ids = self.learners.keys()
 
@@ -455,39 +459,44 @@ class OWTestLearners(OWWidget):
 
     # handle input signals
     def setData(self, data):
-        """handle input train data set"""
+        """
+        Set the input train data set.
+        """
         self.closeContext()
-        
-        multilabel= self.ismultilabel(data)
+
+        self.clearScores()
+
+        multilabel = self.ismultilabel(data)
         if not multilabel:
-            self.data = self.isDataWithClass(data, checkMissing=True) and data or None
+            if self.isDataWithClass(data, checkMissing=True):
+                self.data = orange.Filter_hasClassValue(data)
+            else:
+                self.data = None
         else:
             self.data = data
-        
+
         self.fillClassCombo()
-        if not self.data:
-            # data was removed, remove the scores
-            self.clearScores()
-            self.send("Evaluation Results", None)
-        else:
-            # new data has arrived
-            self.clearScores()
 
-            if not multilabel:
-                self.data = orange.Filter_hasClassValue(self.data)
+        if self.data is not None:
+            # Ensure the correct statistics selection is visible.
+            if self.ismultilabel():
+                statwidget = self.mbox
+                stat = self.mStatistics
+            elif self.isclassification():
+                statwidget = self.cbox
+                stat = self.cStatistics
+            else:
+                statwidget = self.rbox
+                stat = self.rStatistics
 
-            self.statLayout.setCurrentWidget([self.rbox, self.cbox, self.mbox][2 if self.ismultilabel() else self.isclassification()])
+            self.statLayout.setCurrentWidget(statwidget)
 
-            self.stat = [self.rStatistics, self.cStatistics, self.mStatistics][2 if self.ismultilabel() else self.isclassification()]
-
-            if self.learners:
-                self.recompute()
-            
-        self.openContext("", data)
-        self.paintscores()
+            self.stat = stat
 
     def setTestData(self, data):
-        """handle test data set"""
+        """
+        Set the 'Separate Test Data' input.
+        """
         if data is None:
             self.testdata = None
         else:
@@ -495,16 +504,12 @@ class OWTestLearners(OWWidget):
         self.testDataBtn.setEnabled(self.testdata is not None)
         if self.testdata is not None:
             if self.resampling == 4:
-                if self.data:
-                    self.recompute()
-                else:
-                    for l in self.learners.values():
-                        l.scores = []
-                self.paintscores()
+                self.clearScores()
+
         elif self.resampling == 4 and self.data:
             # test data removed, switch to testing on train data
             self.resampling = 3
-            self.recompute()
+            self.clearScores()
 
     def fillClassCombo(self):
         """upon arrival of new data appropriately set the target class combo"""
@@ -522,34 +527,55 @@ class OWTestLearners(OWWidget):
             self.targetClass=0
 
     def setLearner(self, learner, id=None):
-        """add/remove a learner"""
-        if learner: # a new or updated learner
-            if id in self.learners: # updated learner
+        """
+        Set the input learner with `id`.
+        """
+        if learner is not None:
+            # a new or updated learner
+            if id in self.learners:
                 time = self.learners[id].time
                 self.learners[id] = Learner(learner, id)
                 self.learners[id].time = time
-            else: # new learner
-                self.learners[id] = Learner(learner, id)
-            if self.applyOnAnyChange:
-                self.score([id])
+                self.learners[id] = self.learners[id]
+                self.clearScores([id])
             else:
-                self.recompute()
-        else: # remove a learner and corresponding results
+                self.learners[id] = Learner(learner, id)
+        else:
+            # remove a learner and corresponding results
             if id in self.learners:
                 res = self.learners[id].results
                 if res and res.numberOfLearners > 1:
+                    # Remove the learner from the shared results instance
                     old_learner = self.learners[id].learner
                     indx = res.learners.index(old_learner)
                     res.remove(indx)
                     del res.learners[indx]
                 del self.learners[id]
-            self.sendResults()
-        self.paintscores()
-        
+
     def setPreprocessor(self, pp):
         self.preprocessor = pp
-        if self.learners:
-            self.recompute()
+        self.clearScores()
+
+    def handleNewSignals(self):
+        """
+        Update the evaluations/scores after new inputs were received.
+        """
+        def needsupdate(learner_id):
+            return not (self.learners[learner_id].scores or
+                        self.learners[learner_id].results)
+
+        if self.applyOnAnyChange:
+            self.score(filter(needsupdate, self.learners))
+            self.applyBtn.setEnabled(False)
+        else:
+            self.applyBtn.setEnabled(True)
+
+        self.paintscores()
+
+        if self.data is not None:
+            self.openContext("", self.data)
+        else:
+            self.send("Evaluation Results", None)
 
     # handle output signals
 
@@ -593,6 +619,7 @@ class OWTestLearners(OWWidget):
         if not self.applyOnAnyChange:
             self.applyBtn.setDisabled(self.applyOnAnyChange)
         else:
+            self.clearScores()
             if self.learners:
                 self.recompute()
 
@@ -622,9 +649,20 @@ class OWTestLearners(OWWidget):
             self.recompute(False)
 
     def applyChange(self):
+        """
+        A change of 'Apply on any change' check box.
+        """
+        def needsupdate(learner_id):
+            return not (self.learners[learner_id].scores or
+                        self.learners[learner_id].results)
+
         if self.applyOnAnyChange:
             self.applyBtn.setDisabled(True)
-        
+            pending = filter(needsupdate, self.learners)
+            if pending:
+                self.score(pending)
+                self.paintscores()
+
     def changedTarget(self):
         self.recomputeCM()
 
