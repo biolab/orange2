@@ -915,8 +915,6 @@ class OWPaintData(OWWidget):
             self.dataHistory.pop(0)
             self.historyCounter -= 1
         self.historyCounter += 1
-        print self.historyCounter
-        print len(self.dataHistory)-1
 
     def undoAction(self):
         # check to see if we are at the end of the stack
@@ -936,8 +934,6 @@ class OWPaintData(OWWidget):
                 self.graph.data = data
                 self.graph.updateGraph()
             self.updateHistoryBool = True
-            print self.historyCounter
-            print len(self.dataHistory)-1
 
     def redoAction(self):
         if self.historyCounter < len(self.dataHistory)-1:
@@ -953,8 +949,6 @@ class OWPaintData(OWWidget):
                 self.graph.data = data
                 self.graph.updateGraph()
             self.updateHistoryBool = True
-            print self.historyCounter
-            print len(self.dataHistory)-1
 
     def onDomainChanged(self, *args):
         if self.variablesModel:
