@@ -335,17 +335,17 @@ class OWTestLearners(OWWidget):
                 learner = self.preprocessor.wrapLearner(learner)
             try:
                 predictor = learner(new)
+            except Exception, ex:
+                learner_exceptions.append((l, ex))
+                l.scores = []
+                l.results = None
+            else:
                 if (multilabel and isinstance(learner, Orange.multilabel.MultiLabelLearner)) or predictor(new[0]).varType == new.domain.classVar.varType:
                     learners.append(learner)
                     used_ids.append(l.id)
                 else:
                     l.scores = []
                     l.results = None
-
-            except Exception, ex:
-                learner_exceptions.append((l, ex))
-                l.scores = []
-                l.results = None
 
         if learner_exceptions:
             text = "\n".join("Learner %s ends with exception: %s" % (l.name, str(ex)) \
