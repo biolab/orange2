@@ -6,6 +6,7 @@
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
 
+from xml.sax.saxutils import escape
 import Orange
 
 from OWWidget import *
@@ -13,7 +14,6 @@ import OWGUI
 import math
 from orngDataCaching import *
 import OWColorPalette
-
 
 NAME = "Data Table"
 
@@ -37,19 +37,37 @@ INPUTS = [("Data", ExampleTable, "dataset", Multiple + Default)]
 OUTPUTS = [("Selected Data", ExampleTable, Default),
            ("Other Data", ExampleTable)]
 
-##############################################################################
 
-def safe_call(func):
-    from functools import wraps
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception, ex:
-            print >> sys.stderr, func.__name__, "call error", ex 
-            return QVariant()
-    return wrapper
-    
+def header_text(feature, labels=None):
+    """
+    Return an header text for an `Orange.feature.Descriptor` instance
+    `feature`. If labels is not none it should be a sequence of keys into
+    `feature.attributes` to include in the header (one per line). If the
+    `feature.attribures` does not contain a value for the key the returned
+    text will include an empty line for it.
+
+    """
+    lines = [feature.name]
+    if labels is not None:
+        lines += [str(feature.attributes.get(label, ""))
+                  for label in labels]
+    return "\n".join(lines)
+
+
+def header_tooltip(feature, labels=None):
+    """
+    Return an header tooltip text for an `Orange.feature.Decriptor` instance.
+    """
+
+    if labels is None:
+        labels = feature.attributes.keys()
+
+    pairs = [(escape(key), escape(str(feature.attributes[key])))
+             for key in labels if key in feature.attributes]
+    tip = "<b>%s</b>" % escape(feature.name)
+    tip = "<br/>".join([tip] + ["%s = %s" % pair for pair in pairs])
+    return tip
+
 
 class ExampleTableModel(QAbstractItemModel):
     Attribute, ClassVar, ClassVars, Meta = range(4)
@@ -91,14 +109,18 @@ class ExampleTableModel(QAbstractItemModel):
 
         self.background_colors = map(role_to_color.get, self.table_roles)
 
-        self.sorted_map = range(len(self.examples))
-
         # all attribute labels (annotation) keys
         self.attr_labels = sorted(
             reduce(set.union,
                    [attr.attributes for attr in self.all_attrs],
                    set())
         )
+
+        # text for all header items (no attr labels by default)
+        self.header_labels = [header_text(feature)
+                              for feature in self.all_attrs]
+
+        self.sorted_map = range(len(self.examples))
 
         self._show_attr_labels = False
         self._other_data = {}
@@ -107,18 +129,28 @@ class ExampleTableModel(QAbstractItemModel):
         return self._show_attr_labels
 
     def set_show_attr_labels(self, val):
-        self.emit(SIGNAL("layoutAboutToBeChanged()"))
-        self._show_attr_labels = val
-        self.emit(SIGNAL("headerDataChanged(Qt::Orientation, int, int)"),
-                  Qt.Horizontal,
-                  0,
-                  len(self.all_attrs) - 1
-                  )
-        self.emit(SIGNAL("layoutChanged()"))
-        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"),
-                  self.index(0, 0),
-                  self.index(len(self.examples) - 1, len(self.all_attrs) - 1)
-                  )
+        if self._show_attr_labels != val:
+            self.emit(SIGNAL("layoutAboutToBeChanged()"))
+            self._show_attr_labels = val
+            if val:
+                labels = self.attr_labels
+            else:
+                labels = None
+            self.header_labels = [header_text(feature, labels)
+                                  for feature in self.all_attrs]
+
+            self.emit(SIGNAL("headerDataChanged(Qt::Orientation, int, int)"),
+                      Qt.Horizontal,
+                      0,
+                      len(self.all_attrs) - 1)
+
+            self.emit(SIGNAL("layoutChanged()"))
+
+            self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"),
+                      self.index(0, 0),
+                      self.index(len(self.examples) - 1,
+                                 len(self.all_attrs) - 1)
+                      )
 
     show_attr_labels = pyqtProperty("bool",
                                     fget=get_show_attr_labels,
@@ -190,28 +222,26 @@ class ExampleTableModel(QAbstractItemModel):
         if parent.isValid():
             return 0
         else:
-            return max([len(self.examples)] + [row for row, _, _ in self._other_data.keys()])
-        
-    def columnCount(self, index=QModelIndex()):
-        return max([len(self.all_attrs)] + [col for _, col, _ in self._other_data.keys()])
-    
-    @safe_call
+            return len(self.examples)
+
+    def columnCount(self, parent=QModelIndex()):
+        if parent.isValid():
+            return 0
+        else:
+            return len(self.all_attrs)
+
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal:
             attr = self.all_attrs[section]
-            if role ==Qt.DisplayRole:
-                values = [attr.name] + ([str(attr.attributes.get(label, "")) for label in self.attr_labels] if self.show_attr_labels else [])
-                return QVariant("\n".join(values))
+            if role == Qt.DisplayRole:
+                return self.header_labels[section]
             if role == Qt.ToolTipRole:
-                pairs = [(key, str(attr.attributes[key])) for key in self.attr_labels if key in attr.attributes]
-                tip = "<b>%s</b>" % attr.name
-                tip = "<br>".join([tip] + ["%s = %s" % pair for pair in pairs])
-                return QVariant(tip)  
+                return header_tooltip(attr, self.attr_labels)
         else:
             if role == Qt.DisplayRole:
                 return QVariant(section + 1)
         return QVariant()
-    
+
     def sort(self, column, order=Qt.AscendingOrder):
         self.emit(SIGNAL("layoutAboutToBeChanged()"))
         attr = self.all_attrs[column] 
