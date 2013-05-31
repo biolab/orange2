@@ -389,7 +389,12 @@ class OWDataTable(OWWidget):
             self.colorSettings = dlg.getColorSchemas()
             self.selectedSchemaIndex = dlg.selectedSchemaIndex
             self.discPalette = dlg.getDiscretePalette("discPalette")
-            self.distColorRgb = dlg.getColor("Default")
+            self.distColor = color = dlg.getColor("Default")
+            self.distColorRgb = (color.red(), color.green(), color.red())
+
+            if self.showDistributions:
+                # Update the views
+                self.cbShowDistributions()
 
     def increaseColWidth(self):
         table = self.tabs.currentWidget()
