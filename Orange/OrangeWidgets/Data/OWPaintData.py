@@ -5,8 +5,11 @@
 <priority>40</priority>
 <icon>icons/PaintData.svg</icon>
 """
-
 import orange
+
+import copy
+
+from PyQt4 import QtCore
 
 from OWWidget import *
 from OWGraph import *
@@ -39,13 +42,14 @@ class PaintDataGraph(OWGraph):
         self.attr2 = attr2
         self.updateGraph()
         
-    def updateGraph(self, dataInterval = None):
+    def updateGraph(self, dataInterval=None):
         if dataInterval:
             start, end = dataInterval
             data = self.data[start:end]
         else:
             self.removeDrawingCurves()
             data = self.data
+
         clsValues, hasCls = (self.data.domain.classVar.values, True) if self.data.domain.classVar else ([0], False)
         
         palette = ColorPaletteGenerator(len(clsValues))
@@ -89,7 +93,7 @@ class DataTool(QObject):
         """
         self.graph = graph
         if graph:
-            installed = getattr(graph,"_data_tool_event_filter", None)
+            installed = getattr(graph, "_data_tool_event_filter", None)
             if installed:
                 self.graph.canvas().removeEventFilter(installed)
                 installed.removed()
@@ -109,6 +113,7 @@ class DataTool(QObject):
     def installed(self):
         """ Called when the tool is installed on a graph.
         """
+        pass
         
     def eventFilter(self, obj, event):
         if event.type() == QEvent.MouseButtonPress:
@@ -223,7 +228,8 @@ class GraphSelections(QObject):
             self._moving_index = -1
         else:
             self._moving_index, self._moving_pos, self._selection_region = index, pos, self.selection[index]
-            self.emit(SIGNAL("selectionRegionMoveStarted(int, QPointF, QPainterPath)"), index, pos, self.toPath(self.selection[index]))  
+            self.emit(SIGNAL("selectionRegionMoveStarted(int, QPointF, QPainterPath)"),
+                      index, pos, self.toPath(self.selection[index]))
         self.emit(SIGNAL("selectionGeometryChanged()"))
     
     def update(self, event):
@@ -231,11 +237,13 @@ class GraphSelections(QObject):
         index = self._moving_index
         if index == -1:
             self.selection[-1] = self.selection[-1][:-1] + (pos,)
-            self.emit(SIGNAL("selectionRegionUpdated(int, QPainterPath)"), len(self.selection) - 1 , self.toPath(self.selection[-1]))
+            self.emit(SIGNAL("selectionRegionUpdated(int, QPainterPath)"), len(self.selection) - 1,
+                      self.toPath(self.selection[-1]))
         else:
             diff = self._moving_pos - pos
             self.selection[index] = tuple([p - diff for p in self._selection_region])
-            self.emit(SIGNAL("selectionRegionMoved(int, QPointF, QPainterPath)"), index, pos, self.toPath(self.selection[index]))
+            self.emit(SIGNAL("selectionRegionMoved(int, QPointF, QPainterPath)"),
+                      index, pos, self.toPath(self.selection[index]))
             
         self.emit(SIGNAL("selectionGeometryChanged()"))
     
@@ -315,10 +323,14 @@ class SelectTool(DataTool):
         self.pen.setCosmetic(True)
         self.pen.setJoinStyle(Qt.RoundJoin)
         self.pen.setCapStyle(Qt.RoundCap)
-        self.connect(self.selection, SIGNAL("selectionRegionMoveStarted(int, QPointF, QPainterPath)"), self.onMoveStarted)
-        self.connect(self.selection, SIGNAL("selectionRegionMoved(int, QPointF, QPainterPath)"), self.onMove)
-        self.connect(self.selection, SIGNAL("selectionRegionMoveFinished(int, QPointF, QPainterPath)"), self.onMoveFinished)
-        self.connect(self.selection, SIGNAL("selectionRegionUpdated(int, QPainterPath)"), self.invalidateMoveSelection)
+        self.connect(self.selection, SIGNAL("selectionRegionMoveStarted(int, QPointF, QPainterPath)"),
+                     self.onMoveStarted)
+        self.connect(self.selection, SIGNAL("selectionRegionMoved(int, QPointF, QPainterPath)"),
+                     self.onMove)
+        self.connect(self.selection, SIGNAL("selectionRegionMoveFinished(int, QPointF, QPainterPath)"),
+                     self.onMoveFinished)
+        self.connect(self.selection, SIGNAL("selectionRegionUpdated(int, QPainterPath)"),
+                     self.invalidateMoveSelection)
         self._validMoveSelection = False
         self._moving = None
         
@@ -415,7 +427,8 @@ class SelectTool(DataTool):
         if selected:
             self.emit(SIGNAL("editing()"))
             self.emit(SIGNAL("editingFinished()"))
-        
+
+
 class GraphLassoSelections(GraphSelections):
     def start(self, event):
         pos = self.getPos(event)
@@ -425,7 +438,8 @@ class GraphLassoSelections(GraphSelections):
             self.addSelectionRegion([pos])
         else:
             self._moving_index, self._moving_pos, self._selection_region = index, pos, self.selection[index]
-            self.emit(SIGNAL("selectionRegionMoveStarted(int, QPointF, QPainterPath)"), index, pos, self.toPath(self.selection[index]))  
+            self.emit(SIGNAL("selectionRegionMoveStarted(int, QPointF, QPainterPath)"),
+                      index, pos, self.toPath(self.selection[index]))
         self.emit(SIGNAL("selectionGeometryChanged()"))
         
     def update(self, event):
@@ -433,11 +447,13 @@ class GraphLassoSelections(GraphSelections):
         index = self._moving_index
         if index == -1:
             self.selection[-1].append(pos)
-            self.emit(SIGNAL("selectionRegionUpdated(int, QPainterPath)"), len(self.selection) - 1 , self.toPath(self.selection[-1]))
+            self.emit(SIGNAL("selectionRegionUpdated(int, QPainterPath)"),
+                      len(self.selection) - 1, self.toPath(self.selection[-1]))
         else:
             diff = self._moving_pos - pos
             self.selection[index] = [p - diff for p in self._selection_region]
-            self.emit(SIGNAL("selectionRegionMoved(int, QPointF, QPainterPath)"), index, pos, self.toPath(self.selection[index]))
+            self.emit(SIGNAL("selectionRegionMoved(int, QPointF, QPainterPath)"),
+                      index, pos, self.toPath(self.selection[index]))
             
         self.emit(SIGNAL("selectionGeometryChanged()"))
         
@@ -635,8 +651,8 @@ class JitterTool(BrushTool):
             advance = 0.005
             dx = -(x1 - x)/dist * attraction / max(distsq, rx) * advance
             dy = -(y1 - y)/dist * attraction / max(distsq, ry) * advance
-            ex[attr1] = x1 - random.normalvariate(0, dx) #*self.density)
-            ex[attr2] = y1 - random.normalvariate(0, dy) #*self.density)
+            ex[attr1] = x1 - random.normalvariate(0, dx)    # *self.density)
+            ex[attr2] = y1 - random.normalvariate(0, dy)    # *self.density)
         self.graph.updateGraph()
         
         
@@ -701,22 +717,40 @@ class OWPaintData(OWWidget):
         
         self.loadSettings()
         
-        self.variablesModel = VariableListModel([orange.FloatVariable(name) for name in ["X", "Y"]], self, flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
+        self.variablesModel = VariableListModel([orange.FloatVariable(name) for name in ["X", "Y"]], self,
+                                                flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable)
 
-        
         self.classVariable = orange.EnumVariable("Class label", values=["Class 1", "Class 2"], baseValue=0)
-        
+
+        ur = OWGUI.widgetBox(self.controlArea, "Undo / Redo")
+        undo = QAction("Undo", self)
+        undo.pyqtConfigure(toolTip="Undo action")
+        self.connect(undo, SIGNAL("triggered()"), self.undoAction)
+
+        redo = QAction("Redo", self)
+        redo.pyqtConfigure(toolTip="Redo action")
+        self.connect(redo, SIGNAL("triggered()"), self.redoAction)
+
+        actionsWidget =  ModelActionsWidget([undo, redo], self)
+        actionsWidget.layout().addStretch(10)
+        actionsWidget.layout().setSpacing(1)
+
+        ur.layout().addWidget(actionsWidget)
+
         w = OWGUI.widgetBox(self.controlArea, "Class Label")
         
         self.classValuesView = listView = QListView()
         listView.setSelectionMode(QListView.SingleSelection)
         
-        self.classValuesModel = EnumVariableModel(self.classVariable, self, flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled| Qt.ItemIsEditable)
+        self.classValuesModel = EnumVariableModel(self.classVariable, self,
+                                                  flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled| Qt.ItemIsEditable)
         self.classValuesModel.wrap(self.classVariable.values)
         
         listView.setModel(self.classValuesModel)
         listView.selectionModel().select(self.classValuesModel.index(0), QItemSelectionModel.ClearAndSelect)
-        self.connect(listView.selectionModel(), SIGNAL("selectionChanged(QItemSelection, QItemSelection)"), self.onClassLabelSelection)
+        self.connect(listView.selectionModel(),
+                     SIGNAL("selectionChanged(QItemSelection, QItemSelection)"),
+                     self.onClassLabelSelection)
         listView.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Maximum)
         w.layout().addWidget(listView)
         
@@ -776,7 +810,7 @@ class OWPaintData(OWWidget):
         self.graph.setAxisScale(QwtPlot.yLeft, 0.0, 1.0)
         self.graph.setAttribute(Qt.WA_Hover, True)
         self.mainArea.layout().addWidget(self.graph)
-        
+
         self.currentOptionsWidget = None
         self.data = []
         self.dataChangedFlag = False 
@@ -784,13 +818,17 @@ class OWPaintData(OWWidget):
         
         self.onDomainChanged()
         self.toolActions.actions()[0].trigger()
+
+        self.dataHistory = [(orange.ExampleTable(self.domain), ["Class 1", "Class 2"])]
+        self.historyCounter = 0
+        self.updateHistoryBool = True
         
         self.resize(800, 600)
-        
+
     def addNewClassLabel(self):
         i = 1
         while True:
-            newlabel = "Class %i" %i
+            newlabel = "Class %i" % i
             if newlabel not in self.classValuesModel:
 #                self.classValuesModel.append(newlabel)
                 break
@@ -812,21 +850,26 @@ class OWPaintData(OWWidget):
         self.classValuesView.selectionModel().select(newindex, QItemSelectionModel.ClearAndSelect)
         
         self.removeClassLabel.setEnabled(len(self.classValuesModel) > 1)
+
+        self.updateHistory()
         
-    def removeSelectedClassLabel(self):
+    def removeSelectedClassLabel(self, label=None):
         index = self.selectedClassLabelIndex()
         if index is not None and len(self.classValuesModel) > 1:
-            label = self.classValuesModel[index]
+            if not label:
+                label = self.classValuesModel[index]
             examples = [ex for ex in self.graph.data if str(ex.getclass()) != label]
             
             values = [val for val in self.classValuesModel if val != label]
+
             newclass = orange.EnumVariable("Class label", values=values)
             newdomain = orange.Domain(self.graph.data.domain.attributes, newclass)
             newdata = orange.ExampleTable(newdomain)
             for ex in examples:
                 if ex[self.classVariable] != label and ex[self.classVariable] in values:
-                    newdata.append(orange.Example(newdomain, [ex[a] for a in ex.domain.attributes] + [str(ex.getclass())]))
-                
+                    newdata.append(orange.Example(newdomain, [ex[a] for a in ex.domain.attributes] +
+                                                             [str(ex.getclass())]))
+
             self.classVariable = newclass
             self.classValuesModel.wrap(self.classVariable.values)
             
@@ -836,7 +879,9 @@ class OWPaintData(OWWidget):
             newindex = self.classValuesModel.index(max(0, index - 1))
             self.classValuesView.selectionModel().select(newindex, QItemSelectionModel.ClearAndSelect)
             
-            self.removeClassLabel.setEnabled(len(self.classValuesModel) > 1) 
+            self.removeClassLabel.setEnabled(len(self.classValuesModel) > 1)
+
+            self.updateHistory()
         
     def selectedClassLabelIndex(self):
         rows = [i.row() for i in self.classValuesView.selectionModel().selectedRows()]
@@ -862,12 +907,62 @@ class OWPaintData(OWWidget):
 #            self.connect(newtool, SIGNAL("dataChanged()"), self.onDataChanged)
             self.connect(newtool, SIGNAL("editing()"), self.onDataChanged)
             self.connect(newtool, SIGNAL("editingFinished()"), self.commitIf)
+            self.connect(newtool, SIGNAL("editingFinished()"), self.updateHistory)
             self.toolsStackCache[tool] = (newtool, option)
         
         self.currentTool, self.currentOptionsWidget = tool, option = self.toolsStackCache[tool]
         self.optionsLayout.setCurrentWidget(option)
         self.currentTool.setGraph(self.graph)
-        
+
+    def updateHistory(self):
+        if not self.updateHistoryBool:
+            return
+        # if we start updating from previously undone actions, we cut off redos in our history
+        if not self.historyCounter == len(self.dataHistory)-1:
+            self.dataHistory = self.dataHistory[0:self.historyCounter+1]
+        # append an update of labels and data
+        labels = list(self.classValuesModel)
+        self.dataHistory.append((copy.deepcopy(self.graph.data), labels))
+        # set the size of the data history stack and remove the oldest update if we go over the size
+        if len(self.dataHistory) > 100:
+            self.dataHistory.pop(0)
+            self.historyCounter -= 1
+        self.historyCounter += 1
+
+    def undoAction(self):
+        # check to see if we are at the end of the stack
+        if self.historyCounter > 0:
+            self.historyCounter -= 1
+            data, labels = self.dataHistory[self.historyCounter]
+            # we dont update history when undoing
+            self.updateHistoryBool = False
+            # check if we only need to update labels
+            if len(self.classValuesModel) > len(labels):
+                diff = set(self.classValuesModel) - set(labels)
+                self.removeSelectedClassLabel(label=diff.pop())
+            elif len(self.classValuesModel) < len(labels):
+                self.addNewClassLabel()
+            # if not, update data
+            else:
+                self.graph.data = data
+                self.graph.updateGraph()
+            self.updateHistoryBool = True
+
+    def redoAction(self):
+        if self.historyCounter < len(self.dataHistory)-1:
+            self.historyCounter += 1
+            data, labels = self.dataHistory[self.historyCounter]
+            self.updateHistoryBool = False
+            if len(self.classValuesModel) > len(labels):
+                diff = set(self.classValuesModel) - set(labels)
+                self.removeSelectedClassLabel(label=diff.pop())
+            elif len(self.classValuesModel) < len(labels):
+                self.addNewClassLabel()
+            else:
+                self.graph.data = data
+                self.graph.updateGraph()
+            self.updateHistoryBool = True
+
     def onDomainChanged(self, *args):
         if self.variablesModel:
             self.domain = orange.Domain(list(self.variablesModel), self.classVariable)
@@ -879,6 +974,10 @@ class OWPaintData(OWWidget):
             
     def onDataChanged(self):
         self.dataChangedFlag = True
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Delete and isinstance(self.currentTool, SelectTool):
+            self.currentTool.deleteSelected()
     
     def commitIf(self):
         if self.commitOnChange and self.dataChangedFlag:
@@ -894,11 +993,9 @@ class OWPaintData(OWWidget):
             domain = orange.Domain(data.domain.attributes, None)
             data = orange.ExampleTable(domain, data)
         self.send("Data", data)
-        
-        
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = OWPaintData()
     w.show()
     app.exec_()
-        
