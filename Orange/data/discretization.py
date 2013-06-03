@@ -2,6 +2,8 @@ import Orange
 
 from Orange.core import\
     EquiNDiscretization as EqualFreq,\
+    EquiDistDiscretization as EqualWidth,\
+    EntropyDiscretization as Entropy,\
     BiModalDiscretization as BiModal,\
     Preprocessor_discretize
 
