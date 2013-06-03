@@ -12,8 +12,10 @@ Python scripting:
 
 Development documentation:
 
-- :doc:`Widget development manual <extend-widgets/rst/index>`
 - :doc:`Canvas development reference <canvas/index>`
+- :doc:`Widget development manual <extend-widgets/rst/index>`
+- :doc:`Writing Extensions in C++ <development/rst/c>`
+- :doc:`Testing <development/rst/testing>`
 - `Wiki pages for developers <http://orange.biolab.si/trac>`_
 
 Indices and tables
