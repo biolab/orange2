@@ -18,6 +18,12 @@ from the command line. You can customize the build process by
 editing the setup-site.cfg file in this directory (see the comments
 in that file for instructions on how to do that).
 
+Running tests
+-------------
+You can run included tests using
+
+    python setup.py test
+
 Starting Orange Canvas
 ----------------------
 
