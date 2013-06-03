@@ -5,6 +5,7 @@ Orange Library Development
 .. toctree::
    :maxdepth: 3
 
+   c
    testing
 
 ****************
