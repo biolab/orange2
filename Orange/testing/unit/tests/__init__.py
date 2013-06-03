@@ -1,5 +1,7 @@
 import os
 import unittest
+if not hasattr(unittest.TestLoader, 'discover'):
+    import unittest2 as unittest
 
 
 def suite():
