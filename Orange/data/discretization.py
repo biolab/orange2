@@ -1,12 +1,6 @@
 import Orange
 
-from Orange.core import\
-    EquiNDiscretization as EqualFreq,\
-    EquiDistDiscretization as EqualWidth,\
-    EntropyDiscretization as Entropy,\
-    BiModalDiscretization as BiModal,\
-    Preprocessor_discretize
-
+from Orange.core import Preprocessor_discretize
 
 class DiscretizeTable(object):
     """Discretizes all continuous features of the data table.
