@@ -20,9 +20,11 @@ in that file for instructions on how to do that).
 
 Running tests
 -------------
-You can run included tests using
+After Orange is installed, you can check if everything is working OK by running the included tests::
 
     python setup.py test
+
+This command runs all the unit tests and documentation examples. Some of the latter have additional dependencies you can satisfy by installing matplotlib, PIL and scipy.
 
 Starting Orange Canvas
 ----------------------
