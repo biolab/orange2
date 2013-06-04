@@ -7,3 +7,5 @@ correspondence.py
 simple_tree_random_forest.py
 kmeans-silhouette.py
 kmeans-trace.py
+tree_c45.py
+tree_c45_printtree.py
