@@ -96,7 +96,7 @@ class build_pyqt_ext(sipdistutils.build_ext):
     def run(self):
         try:
             sipdistutils.build_ext.run(self)
-        except Exception, ex:
+        except Exception as ex:
             if self.required:
                 raise
             else:

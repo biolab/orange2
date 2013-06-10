@@ -722,21 +722,6 @@ class OWPaintData(OWWidget):
 
         self.classVariable = orange.EnumVariable("Class label", values=["Class 1", "Class 2"], baseValue=0)
 
-        ur = OWGUI.widgetBox(self.controlArea, "Undo / Redo")
-        undo = QAction("Undo", self)
-        undo.pyqtConfigure(toolTip="Undo action")
-        self.connect(undo, SIGNAL("triggered()"), self.undoAction)
-
-        redo = QAction("Redo", self)
-        redo.pyqtConfigure(toolTip="Redo action")
-        self.connect(redo, SIGNAL("triggered()"), self.redoAction)
-
-        actionsWidget =  ModelActionsWidget([undo, redo], self)
-        actionsWidget.layout().addStretch(10)
-        actionsWidget.layout().setSpacing(1)
-
-        ur.layout().addWidget(actionsWidget)
-
         w = OWGUI.widgetBox(self.controlArea, "Class Label")
         
         self.classValuesView = listView = QListView()
@@ -793,8 +778,25 @@ class OWPaintData(OWWidget):
         self.optionsLayout = QStackedLayout()
         self.toolsStackCache = {}
         optionsbox = OWGUI.widgetBox(self.controlArea, "Options", orientation=self.optionsLayout)
-        
-#        OWGUI.checkBox(self.controlArea, self, "addClassAsMeta", "Add class ids as meta attributes")
+
+
+        ur = OWGUI.widgetBox(self.controlArea, "")
+        undo = QAction("Undo", self)
+        undo.pyqtConfigure(toolTip="Undo action")
+        undo.setShortcut("Ctrl+Z")
+        self.connect(undo, SIGNAL("triggered()"), self.undoAction)
+
+        redo = QAction("Redo", self)
+        redo.pyqtConfigure(toolTip="Redo action")
+        redo.setShortcut("Ctrl+Shift+Z")
+        self.connect(redo, SIGNAL("triggered()"), self.redoAction)
+
+        actionsWidget =  ModelActionsWidget([undo, redo], self)
+        actionsWidget.layout().addStretch(10)
+        actionsWidget.layout().setSpacing(1)
+
+        ur.layout().addWidget(actionsWidget)
+
         OWGUI.rubber(self.controlArea)
         box = OWGUI.widgetBox(self.controlArea, "Commit")
         
