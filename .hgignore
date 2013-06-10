@@ -31,6 +31,7 @@ source/orangeom/lib_vectors.cpp
 source/orangeom/lib_vectors_auto.txt
 
 # Ignore files created by setup.py.
+_build
 build
 dist
 MANIFEST

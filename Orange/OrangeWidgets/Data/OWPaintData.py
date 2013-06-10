@@ -921,7 +921,7 @@ class OWPaintData(OWWidget):
             return
         # if we start updating from previously undone actions, we cut off redos in our history
         if not self.historyCounter == len(self.dataHistory)-1:
-            self.dataHistory = self.dataHistory[0:self.historyCounter+1]
+            self.dataHistory = self.dataHistory[:self.historyCounter+1]
         # append an update of labels and data
         labels = list(self.classValuesModel)
         self.dataHistory.append((copy.deepcopy(self.graph.data), labels))
@@ -946,7 +946,7 @@ class OWPaintData(OWWidget):
                 self.addNewClassLabel()
             # if not, update data
             else:
-                self.graph.data = data
+                self.graph.data = copy.deepcopy(data)
                 self.graph.updateGraph()
             self.updateHistoryBool = True
 
@@ -961,7 +961,7 @@ class OWPaintData(OWWidget):
             elif len(self.classValuesModel) < len(labels):
                 self.addNewClassLabel()
             else:
-                self.graph.data = data
+                self.graph.data = copy.deepcopy(data)
                 self.graph.updateGraph()
             self.updateHistoryBool = True
 

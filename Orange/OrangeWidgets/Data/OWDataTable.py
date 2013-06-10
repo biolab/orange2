@@ -6,12 +6,14 @@
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
 
+from xml.sax.saxutils import escape
+import Orange
+
 from OWWidget import *
 import OWGUI
 import math
 from orngDataCaching import *
 import OWColorPalette
-
 
 NAME = "Data Table"
 
@@ -35,89 +37,177 @@ INPUTS = [("Data", ExampleTable, "dataset", Multiple + Default)]
 OUTPUTS = [("Selected Data", ExampleTable, Default),
            ("Other Data", ExampleTable)]
 
-##############################################################################
 
-def safe_call(func):
-    from functools import wraps
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception, ex:
-            print >> sys.stderr, func.__name__, "call error", ex 
-            return QVariant()
-    return wrapper
-    
+def header_text(feature, labels=None):
+    """
+    Return an header text for an `Orange.feature.Descriptor` instance
+    `feature`. If labels is not none it should be a sequence of keys into
+    `feature.attributes` to include in the header (one per line). If the
+    `feature.attribures` does not contain a value for the key the returned
+    text will include an empty line for it.
+
+    """
+    lines = [feature.name]
+    if labels is not None:
+        lines += [str(feature.attributes.get(label, ""))
+                  for label in labels]
+    return "\n".join(lines)
+
+
+def header_tooltip(feature, labels=None):
+    """
+    Return an header tooltip text for an `Orange.feature.Decriptor` instance.
+    """
+
+    if labels is None:
+        labels = feature.attributes.keys()
+
+    pairs = [(escape(key), escape(str(feature.attributes[key])))
+             for key in labels if key in feature.attributes]
+    tip = "<b>%s</b>" % escape(feature.name)
+    tip = "<br/>".join([tip] + ["%s = %s" % pair for pair in pairs])
+    return tip
+
 
 class ExampleTableModel(QAbstractItemModel):
+    Attribute, ClassVar, ClassVars, Meta = range(4)
+
     def __init__(self, examples, dist, *args):
         QAbstractItemModel.__init__(self, *args)
         self.examples = examples
+        self.domain = examples.domain
         self.dist = dist
-        self.attributes = list(self.examples.domain.attributes)
-        self.class_var = self.examples.domain.classVar
+        self.attributes = list(examples.domain.attributes)
+        self.class_var = self.examples.domain.class_var
+        self.class_vars = list(self.examples.domain.class_vars)
         self.metas = self.examples.domain.getmetas().values()
-        self.all_attrs = self.attributes + ([self.class_var] if self.class_var else []) + self.metas
-        self.cls_color = QColor(160,160,160)
-        self.meta_color = QColor(220,220,200)
+        # Attributes/features for all table columns
+        self.all_attrs = (self.attributes +
+                          ([self.class_var] if self.class_var else []) +
+                          self.class_vars + self.metas)
+        # Table roles for all table columns
+        self.table_roles = \
+            (([ExampleTableModel.Attribute] * len(self.attributes)) +
+             ([ExampleTableModel.ClassVar] if self.class_var else []) +
+             ([ExampleTableModel.ClassVars] * len(self.class_vars)) +
+             ([ExampleTableModel.Meta] * len(self.metas)))
+
+        # True if an feature at column i is continuous
+        self._continuous_mask = [isinstance(attr, Orange.feature.Continuous)
+                                 for attr in self.all_attrs]
+
+        self._meta_mask = [role == ExampleTableModel.Meta
+                           for role in self.table_roles]
+
+        self.cls_color = QColor(160, 160, 160)
+        self.meta_color = QColor(220, 220, 200)
+
+        role_to_color = {ExampleTableModel.Attribute: None,
+                         ExampleTableModel.ClassVar: self.cls_color,
+                         ExampleTableModel.ClassVars: self.cls_color,
+                         ExampleTableModel.Meta: self.meta_color}
+
+        self.background_colors = map(role_to_color.get, self.table_roles)
+
+        # all attribute labels (annotation) keys
+        self.attr_labels = sorted(
+            reduce(set.union,
+                   [attr.attributes for attr in self.all_attrs],
+                   set())
+        )
+
+        # text for all header items (no attr labels by default)
+        self.header_labels = [header_text(feature)
+                              for feature in self.all_attrs]
+
         self.sorted_map = range(len(self.examples))
-        
-        self.attr_labels = sorted(reduce(set.union, [attr.attributes for attr in self.all_attrs], set()))
+
         self._show_attr_labels = False
         self._other_data = {}
-        
+
     def get_show_attr_labels(self):
         return self._show_attr_labels
-    
+
     def set_show_attr_labels(self, val):
-        self.emit(SIGNAL("layoutAboutToBeChanged()"))
-        self._show_attr_labels = val
-        self.emit(SIGNAL("headerDataChanged(Qt::Orientation, int, int)"),
-                  Qt.Horizontal, 
-                  0, 
-                  len(self.all_attrs) - 1
-                  )
-        self.emit(SIGNAL("layoutChanged()"))
-        self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), 
-                  self.index(0,0),
-                  self.index(len(self.examples) - 1, len(self.all_attrs) - 1)
-                  )
-        
-    show_attr_labels = pyqtProperty("bool", 
-                                   fget=get_show_attr_labels,
-                                   fset=set_show_attr_labels,
-                                   )
-    
-    @safe_call
-    def data(self, index, role):
+        if self._show_attr_labels != val:
+            self.emit(SIGNAL("layoutAboutToBeChanged()"))
+            self._show_attr_labels = val
+            if val:
+                labels = self.attr_labels
+            else:
+                labels = None
+            self.header_labels = [header_text(feature, labels)
+                                  for feature in self.all_attrs]
+
+            self.emit(SIGNAL("headerDataChanged(Qt::Orientation, int, int)"),
+                      Qt.Horizontal,
+                      0,
+                      len(self.all_attrs) - 1)
+
+            self.emit(SIGNAL("layoutChanged()"))
+
+            self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"),
+                      self.index(0, 0),
+                      self.index(len(self.examples) - 1,
+                                 len(self.all_attrs) - 1)
+                      )
+
+    show_attr_labels = pyqtProperty("bool",
+                                    fget=get_show_attr_labels,
+                                    fset=set_show_attr_labels)
+
+    def data(self, index, role,
+             # For optimizing out LOAD_GLOBAL byte code instructions in
+             # the item role tests (goes from 14 us to 9 us average).
+             _str=str,
+             _Qt_DisplayRole=Qt.DisplayRole,
+             _Qt_BackgroundRole=Qt.BackgroundRole,
+             _OWGUI_TableBarItem_BarRole=OWGUI.TableBarItem.BarRole,
+             _OWGUI_TableValueRole=OWGUI.TableValueRole,
+             _OWGUI_TableClassValueRole=OWGUI.TableClassValueRole,
+             _OWGUI_TableVariable=OWGUI.TableVariable,
+             # Some cached local precomputed values.
+             # All of the above roles we respond to
+             _recognizedRoles=set([Qt.DisplayRole,
+                                   Qt.BackgroundRole,
+                                   OWGUI.TableBarItem.BarRole,
+                                   OWGUI.TableValueRole,
+                                   OWGUI.TableClassValueRole,
+                                   OWGUI.TableVariable]),
+             ):
+        """
+        Return the data for `role` for an value at `index`.
+        """
+        if role not in _recognizedRoles:
+            return self._other_data.get((index.row(), index.column(), role),
+                                        None)
+
         row, col = self.sorted_map[index.row()], index.column()
         example, attr = self.examples[row], self.all_attrs[col]
+
         val = example[attr]
-        domain = self.examples.domain
-        if role == Qt.DisplayRole:
-                return QVariant(str(val))
-        elif role == Qt.BackgroundRole:
-            #check if attr is actual class or a duplication in the meta attributes
-            if attr == self.class_var and col == len(domain.attributes) and domain.classVar:
-                return QVariant(self.cls_color)
-            elif attr in self.metas:
-                return QVariant(self.meta_color)
-        elif role == OWGUI.TableBarItem.BarRole and val.varType == orange.VarTypes.Continuous \
-                    and not val.isSpecial() and attr not in self.metas:
+
+        if role == _Qt_DisplayRole:
+            return _str(val)
+        elif role == _Qt_BackgroundRole:
+            return self.background_colors[col]
+        elif role == _OWGUI_TableBarItem_BarRole and \
+                self._continuous_mask[col] and not val.isSpecial() and \
+                col < len(self.dist):
             dist = self.dist[col]
-            return QVariant((float(val) - dist.min) / (dist.max - dist.min or 1))
-        elif role == OWGUI.TableValueRole:
-            # The actual value
-            return QVariant(val)
-        elif role == OWGUI.TableClassValueRole: 
+            return (float(val) - dist.min) / (dist.max - dist.min or 1)
+        elif role == _OWGUI_TableValueRole:
+            # The actual value instance (should it be EditRole?)
+            return val
+        elif role == _OWGUI_TableClassValueRole and self.class_var is not None:
             # The class value for the row's example
-            return QVariant(example.get_class())
-        elif role == OWGUI.TableVariable: 
+            return example.get_class()
+        elif role == _OWGUI_TableVariable:
             # The variable descriptor for column
-            return QVariant(val.variable)
-        
-        return self._other_data.get((index.row(), index.column(), role), QVariant())
-        
+            return attr
+
+        return None
+
     def setData(self, index, variant, role):
         self._other_data[index.row(), index.column(), role] = variant
         self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"), index, index)
@@ -132,28 +222,26 @@ class ExampleTableModel(QAbstractItemModel):
         if parent.isValid():
             return 0
         else:
-            return max([len(self.examples)] + [row for row, _, _ in self._other_data.keys()])
-        
-    def columnCount(self, index=QModelIndex()):
-        return max([len(self.all_attrs)] + [col for _, col, _ in self._other_data.keys()])
-    
-    @safe_call
+            return len(self.examples)
+
+    def columnCount(self, parent=QModelIndex()):
+        if parent.isValid():
+            return 0
+        else:
+            return len(self.all_attrs)
+
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal:
             attr = self.all_attrs[section]
-            if role ==Qt.DisplayRole:
-                values = [attr.name] + ([str(attr.attributes.get(label, "")) for label in self.attr_labels] if self.show_attr_labels else [])
-                return QVariant("\n".join(values))
+            if role == Qt.DisplayRole:
+                return self.header_labels[section]
             if role == Qt.ToolTipRole:
-                pairs = [(key, str(attr.attributes[key])) for key in self.attr_labels if key in attr.attributes]
-                tip = "<b>%s</b>" % attr.name
-                tip = "<br>".join([tip] + ["%s = %s" % pair for pair in pairs])
-                return QVariant(tip)  
+                return header_tooltip(attr, self.attr_labels)
         else:
             if role == Qt.DisplayRole:
                 return QVariant(section + 1)
         return QVariant()
-    
+
     def sort(self, column, order=Qt.AscendingOrder):
         self.emit(SIGNAL("layoutAboutToBeChanged()"))
         attr = self.all_attrs[column] 
@@ -301,7 +389,12 @@ class OWDataTable(OWWidget):
             self.colorSettings = dlg.getColorSchemas()
             self.selectedSchemaIndex = dlg.selectedSchemaIndex
             self.discPalette = dlg.getDiscretePalette("discPalette")
-            self.distColorRgb = dlg.getColor("Default")
+            self.distColor = color = dlg.getColor("Default")
+            self.distColorRgb = (color.red(), color.green(), color.red())
+
+            if self.showDistributions:
+                # Update the views
+                self.cbShowDistributions()
 
     def increaseColWidth(self):
         table = self.tabs.currentWidget()
@@ -667,26 +760,27 @@ class OWDataTable(OWWidget):
             self.send("Other Data", None)
             
         self.selectionChangedFlag = False
-            
-        
 
-if __name__=="__main__":
+
+def test():
     a = QApplication(sys.argv)
     ow = OWDataTable()
 
-    #d1 = orange.ExampleTable(r'..\..\doc\datasets\auto-mpg')
-    #d2 = orange.ExampleTable('test-labels')
-    #d3 = orange.ExampleTable(r'..\..\doc\datasets\sponge.tab')
-    #d4 = orange.ExampleTable(r'..\..\doc\datasets\wpbc.csv')
-    d5 = orange.ExampleTable('../../doc/datasets/adult_sample.tab')
-    #d5 = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\wine.tab")
-#    d5 = orange.ExampleTable("adult_sample")
-#    d5 = orange.ExampleTable("/home/marko/tdw")
-    #d5 = orange.ExampleTable(r"e:\Development\Orange Datasets\Cancer\SRBCT.tab")
+    d1 = orange.ExampleTable("auto-mpg")
+    d2 = orange.ExampleTable("sponge.tab")
+    d3 = orange.ExampleTable("wpbc.csv")
+    d4 = orange.ExampleTable("adult_sample.tab")
+    d5 = orange.ExampleTable("wine.tab")
+
     ow.show()
-    #ow.dataset(d1,"auto-mpg")
-    #ow.dataset(d2,"voting")
-    #ow.dataset(d4,"wpbc")
-    ow.dataset(d5,"adult_sample")
+    ow.dataset(d1, "auto-mpg")
+    ow.dataset(d2, "sponge")
+    ow.dataset(d3, "wpbc")
+    ow.dataset(d4, "adult_sample")
+    ow.dataset(d5, "wine")
     a.exec_()
     ow.saveSettings()
+
+
+if __name__ == "__main__":
+    test()

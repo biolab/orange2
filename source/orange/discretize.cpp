@@ -725,9 +725,9 @@ void TEntropyDiscretization::divide(
     if (S2dist.abs==0)
       break;
 
-	  float entro1 = S1dist.abs*float(getEntropy(S1dist))/N;
-	  float entro2 = S2dist.abs*float(getEntropy(S2dist))/N;
-	  float E = entro1+entro2;
+	float entro1 = S1dist.abs*float(getEntropy(S1dist))/N;
+	float entro2 = S2dist.abs*float(getEntropy(S2dist))/N;
+	float E = entro1+entro2;
     if (   (!wins || (E<bestE)) && ((wins=1)==1)
         || (E==bestE) && rgen.randbool(++wins)) {
       bestS1 = S1dist;

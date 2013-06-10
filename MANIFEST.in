@@ -20,7 +20,8 @@ prune source/orangene/ppp
 exclude source/orangeom/lib_vectors.cpp
 exclude source/orangene/lib_vectors.cpp
 
-recursive-include docs *.rst *.py *.png *.css *.txt Makefile
+recursive-include docs *.rst *.py *.png *.gif *.css *.txt *.tab *.basket *.arff *.csv *.res Makefile
+prune docs/build
 
 graft docs/sphinx-ext
 graft distribute

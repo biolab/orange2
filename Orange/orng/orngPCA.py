@@ -9,14 +9,6 @@ import orange, numpy
 from numpy import sqrt, abs, dot, transpose
 from numpy.linalg import eig, inv
 
-mathlib_import = True
-try:
-    import matplotlib.pyplot as plt
-except:
-    import warnings
-    warnings.warn("Importing of matplotlib has failed.\nPlotting functions will be unavailable.")
-    mathlib_import = False
-
 #color table for biplot
 Colors = ['bo', 'go', 'yo', 'co', 'mo']
 
@@ -353,11 +345,7 @@ class PCAClassifier(object):
         filename : File name under which plot will be saved (default: scree_plot.png)
             If None, plot will be shown
         """
-
-        if not mathlib_import:
-            raise orange.KernelException, "Matplotlib was not imported!"
-
-        #plt.clf() -> opens two windows
+        import pylab as plt
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
@@ -391,9 +379,7 @@ class PCAClassifier(object):
         filename : File name under which plot will be saved (default: biplot.png)
             If None, plot will be shown
         """
-
-        if not mathlib_import:
-            raise orange.KernelException, "Matplotlib was not imported!"
+        import pylab as plt
 
         if self._dataMatrix == None:
             raise orange.KernelException, "No data available for biplot!"

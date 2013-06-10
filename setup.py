@@ -31,7 +31,7 @@ from distutils.extension import Extension
 
 NAME = 'Orange'
 
-VERSION = '2.7rc1'
+VERSION = '2.7.1'
 ISRELEASED = False
 
 DESCRIPTION = 'Orange, a component-based data mining framework.'
@@ -783,7 +783,7 @@ def setup_package():
         entry_points = ENTRY_POINTS,
         include_package_data = True,
         zip_safe = False,
-
+        test_suite = 'Orange.testing.unit.tests.test_suite',
         cmdclass = cmdclass,
         ext_modules = ext_modules,
     )

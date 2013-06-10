@@ -433,7 +433,7 @@ class CanvasMainWindow(QMainWindow):
         self.get_started_action = \
             QAction(self.tr("Get Started"), self,
                     objectName="get-started-action",
-                    toolTip=self.tr("View a 'Getting Started' video."),
+                    toolTip=self.tr("View a 'Get Started' introduction."),
                     triggered=self.get_started,
                     icon=canvas_icons("Get Started.svg")
                     )
