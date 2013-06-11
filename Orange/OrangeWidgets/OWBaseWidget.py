@@ -3,6 +3,8 @@
 # Orange Widget
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
+import warnings
+
 from Orange.utils import environ
 from Orange.orng.orngEnviron import directoryNames as old_directory_names
 from PyQt4.QtCore import *
@@ -203,6 +205,7 @@ class OWBaseWidget(QDialog):
         self.asyncBlock = False
         self.__wasShown = False
         self.__progressBarValue = -1
+        self.__progressState = 0
 
     # uncomment this when you need to see which events occured
     """
@@ -728,7 +731,10 @@ class OWBaseWidget(QDialog):
         self.setWindowTitle(self.captionTitle + " (0% complete)")
         if self.progressBarHandler:
             self.progressBarHandler(self, 0)
-        self.processingStateChanged.emit(1)
+
+        if self.__progressState != 1:
+            self.__progressState = 1
+            self.processingStateChanged.emit(1)
 
     def progressBarSet(self, value, processEventsFlags=QEventLoop.AllEvents):
         """
@@ -739,6 +745,13 @@ class OWBaseWidget(QDialog):
         """
         old = self.__progressBarValue
         if value > 0:
+            if self.__progressState != 1:
+                warnings.warn("progressBarSet() called without a "
+                              "preceding progressBarInit()",
+                              stacklevel=2)
+                self.__progressState = 1
+                self.processingStateChanged.emit(1)
+
             self.__progressBarValue = value
             usedTime = max(1, time.time() - self.startTime)
             totalTime = (100.0 * usedTime) / float(value)
@@ -779,7 +792,10 @@ class OWBaseWidget(QDialog):
         self.setWindowTitle(self.captionTitle)
         if self.progressBarHandler:
             self.progressBarHandler(self, 101)
-        self.processingStateChanged.emit(0)
+
+        if self.__progressState != 0:
+            self.__progressState = 0
+            self.processingStateChanged.emit(0)
 
     # handler must be a function, that receives 2 arguments. First is the widget instance, the second is the value between -1 and 101
     def setProgressBarHandler(self, handler):
