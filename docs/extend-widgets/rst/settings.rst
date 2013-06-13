@@ -45,7 +45,6 @@ declare this just after the widget class definition.
 
     class OWDataSamplerB(OWWidget):
         settingsList = ['proportion', 'commitOnChange']
-        def __init__(self, parent=None, signalManager=None):
 
 Any setting has to be initialized, and then we need to call
 :obj:`loadSettings()` to override defaults in case we have used
@@ -156,7 +155,7 @@ now is::
 You can now also inspect the :download:`complete code <OWDataSamplerB.py>`
 of this widget. To distinguish it with a widget we have developed in the
 previous section, we have designed a special
-:download:`icon <DataSamplerB.png>` for it. If you wish to test is
+:download:`icon <DataSamplerB.svg>` for it. If you wish to test is
 widget in the Orange Canvas, put its code in the Test directory we
 have created for the previous widget, update the Canvas registry, and
 try it out using a schema with a File and Data Table widget.
@@ -408,57 +407,6 @@ in the scatter plot, too.
 But the tuples are actually a shortcut for instances of
 :obj:`ContextField`. When you say :obj:`"attrX"` this is actually
 :obj:`ContextField("attrX", DomainContextHandler.Required)`
-
-..
-   But see this monster from widget "Select Attributes" (file OWDataDomain.py)::
-
-       contextHandlers = {"": DomainContextHandler("",
-           [ContextField("chosenAttributes",
-                          DomainContextHandler.RequiredList,
-                          selected="selectedChosen", reservoir="inputAttributes"),
-            ContextField("classAttribute",
-                          DomainContextHandler.RequiredList,
-                          selected="selectedClass", reservoir="inputAttributes"),
-            ContextField("metaAttributes",
-                          DomainContextHandler.RequiredList,
-                          selected="selectedMeta", reservoir="inputAttributes")
-       ])}
-
-
-   :obj:`ContextField`'s constructor gets the name and flags and a list of
-   arguments that are written directly into the object instance. To follow the
-   example, recall what Select Attributes looks like: it allows you to select a
-   subset of attributes, the class attribute and the meta attributes that you
-   want to use; the attributes in the corresponding three list boxes are stored
-   in the widget's variables :obj:`chosenAttributes`, :obj:`classAttribute`
-   and :obj:`metaAttributes` respectively. When the user selects some attributes
-   in any of these boxes, the selection is stored in :obj:`selectedChosen`,
-   :obj:`selectedClass` and :obj:`selectedMeta`. The remaining attributes
-   - those that are not in any of these three list boxes - are in the leftover
-   listbox on the left-hand side of the widget, and the content of the box is
-   stored in the widget's variable :obj:`inputAttributes`.
-
-   The above definition tells that the context needs to store the contents of
-   the three list boxes by specifying the corresponding variables; the list of
-   attributes is given as the name of the field and the list of selected
-   attributes is in the optional named attribute :obj:`selected`. By
-   :obj:`reservoir` we told the context handler that the attributes are taken
-   from :obj:`inputAttributes`. So, when a context is retrieved, all the
-   attributes that are not in any of the three list boxes are put into
-   :obj:`inputAttributes`.
-
-   Why the mess? Couldn't we just store :obj:`inputAttributes` as the fourth
-   list box? Imagine that the user first loads the data with attributes A, B,
-   C, D, E and F, puts A, B, C in chosen and D in class. E and F are left in
-   :obj:`inputAttributes`. Now she loads another data which has attributes A,
-   B, C, D, E, and G. The contexts should match (the new data has all the
-   attributes we need), but :obj:`inputAttributes` should now contain E and
-   G, not E and F, since F doesn't exist any more, while G needs to be made
-   available.
-
-   You can use :obj:`ContextField` (instead of tuples and strings) for
-   declaring any fields, but you will usually need them only for lists or,
-   maybe, some complicated future controls.
 
 
 *****************************

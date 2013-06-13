@@ -72,10 +72,11 @@ class OWLearningCurveC(OWWidget):
         OWGUI.checkBox(box, self, 'commitOnChange', 'Apply setting on any change')
         self.commitBtn = OWGUI.button(box, self, "Apply Setting", callback=self.computeCurve, disabled=1)
 
+        # ~start main area tabs~
         # start of content (right) area
         tabs = OWGUI.tabWidget(self.mainArea)
 
-        # graph widget
+        # graph tab
         tab = OWGUI.createTabPage(tabs, "Graph")
         self.graph = OWPlot(tab)
         self.graph.set_axis_autoscale(xBottom)
@@ -83,9 +84,10 @@ class OWLearningCurveC(OWWidget):
         tab.layout().addWidget(self.graph)
         self.setGraphGrid()
 
-        # table widget
+        # table tab
         tab = OWGUI.createTabPage(tabs, "Table")
         self.table = OWGUI.table(tab, selectionMode=QTableWidget.NoSelection)
+        # ~end main area tabs~
 
         self.resize(550,200)
 
@@ -255,8 +257,13 @@ class OWLearningCurveC(OWWidget):
         curve.set_pen(QPen(learner.color, 5))
 
     def drawLearningCurve(self, learner):
-        if not self.data: return
-        curve = self.graph.add_curve(learner.name, xData=self.curvePoints, yData=learner.score, autoScale=True)
+        if not self.data:
+            return
+        curve = self.graph.add_curve(
+            learner.name,
+            xData=self.curvePoints,
+            yData=learner.score,
+            autoScale=True)
         
         learner.curve = curve
         self.setGraphStyle(learner)
