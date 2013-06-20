@@ -1,12 +1,6 @@
 import Orange
 
-from Orange.core import\
-    EquiNDiscretization as EqualFreq,\
-    EquiDistDiscretization as EqualWidth,\
-    EntropyDiscretization as Entropy,\
-    BiModalDiscretization as BiModal,\
-    Preprocessor_discretize
-
+from Orange.core import Preprocessor_discretize
 
 class DiscretizeTable(object):
     """Discretizes all continuous features of the data table.
@@ -30,7 +24,7 @@ class DiscretizeTable(object):
 
     """
     def __new__(cls, data=None, features=None, discretize_class=False,
-                method=EqualFreq(n=3), clean=True):
+                method=Orange.feature.discretization.EqualFreq(n=3), clean=True):
         if data is None:
             self = object.__new__(cls)
             return self
@@ -40,7 +34,7 @@ class DiscretizeTable(object):
             return self(data)
 
     def __init__(self, features=None, discretize_class=False,
-                 method=EqualFreq(n=3), clean=True):
+                 method=Orange.feature.discretization.EqualFreq(n=3), clean=True):
         self.features = features
         self.discretize_class = discretize_class
         self.method = method

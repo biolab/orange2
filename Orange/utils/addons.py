@@ -64,6 +64,8 @@ global addons_corrupted
 with closing(open_addons()) as addons:
     addons_corrupted = len(addons)==0
 
+del addons
+
 addon_refresh_callback = []
 
 global index

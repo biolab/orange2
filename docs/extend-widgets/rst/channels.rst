@@ -17,14 +17,13 @@ complex widgets in this section.
 Multi-Input Channels
 ********************
 
-First, I do not like the name, but can't make up anything better. In
-essence, the basic idea about "multi-input" channels is that they can
+In essence, the basic idea about "multi-input" channels is that they can
 be used to connect them with several output channels. That is, if a
 widget supports such a channel, several widgets can feed their input
 to that widget simultaneously.
 
 Say we want to build a widget that takes a data set and test
-various predictive modelling techniques on it. A widget has to have an
+various predictive modeling techniques on it. A widget has to have an
 input data channel, and this we know how to deal with from our
 :doc:`previous <settings>` lesson. But, somehow differently, we
 want to connect any number of widgets which define learners to our
@@ -49,8 +48,9 @@ like:
 Now back to channels and tokens. Input and output channels for our
 widget are defined by::
 
-    self.inputs = [("Data", ExampleTable, self.dataset),
-                   ("Learner", orange.Learner, self.learner, Multiple + Default)]
+    self.inputs = [("Data", Orange.data.Table, self.dataset),
+                   ("Learner", Orange.classification.Learner,
+                    self.learner, Multiple + Default)]
 
 Notice that everything is pretty much the same as it was with
 widgets from previous lessons, the only difference being
@@ -62,16 +62,17 @@ If it would be unspecified then by default value of
 widget can receive the input only from one widget and is not the default input
 channel for its type (more on default channels later).
 
-.. note:: :obj:`Default` flag here is used for illustration. Since *Learner*
-          channel is the only channel for a :class:`orange.Learner` type
-          it is also the default.
+.. note::
+   :obj:`Default` flag here is used for illustration. Since *"Learner"*
+   channel is the only channel for a :class:`Orange.classification.Learner`
+   type it is also the default.
 
 How does the widget know from which widget did the token come from?
 In Orange, tokens are sent around with an id of a widget that is
 sending the token, and having a multi-input channel only tells Orange to
 send a token together with sending widget id, the two arguments with
-which the receiving function is called. For our :obj:`Learner`
-channel the receiving function is :obj:`learner`, and this looks
+which the receiving function is called. For our *"Learner"*
+channel the receiving function is :func:`learner`, and this looks
 like the following::
 
     def learner(self, learner, id=None):
@@ -130,7 +131,7 @@ that list is a more appropriate structure.
 The function above first checks if the learner sent is empty
 (:obj:`None`). Remember that sending an empty learner
 essentially means that the link with the sending widget was removed,
-hance we need to remove such learner from our list. If a non-empty
+hence we need to remove such learner from our list. If a non-empty
 learner was sent, then it is either a new learner (say, from a widget
 we have just linked to our learning curve widget), or an update
 version of the previously sent learner. If the later is the case, then
@@ -148,12 +149,12 @@ scoring functions from stats. I rather like
 the easy by which new scoring functions are added to the widget, since
 all that is needed is the augmenting the list::
 
-    self.scoring = [("Classification Accuracy", orngStat.CA),
-                    ("AUC", orngStat.AUC),
-                    ("BrierScore", orngStat.BrierScore),
-                    ("Information Score", orngStat.IS),
-                    ("Sensitivity", orngStat.sens),
-                    ("Specificity", orngStat.spec)]
+    self.scoring = [("Classification Accuracy", Orange.evaluation.scoring.CA),
+                    ("AUC", Orange.evaluation.scoring.AUC),
+                    ("BrierScore", Orange.evaluation.scoring.Brier_score),
+                    ("Information Score", Orange.evaluation.scoring.IS),
+                    ("Sensitivity", Orange.evaluation.scoring.Sensitivity),
+                    ("Specificity", Orange.evaluation.scoring.Specificity)]
 
 which is defined in the initialization part of the widget. The
 other useful trick in this widget is that evaluation (k-fold cross
@@ -177,14 +178,15 @@ send out the sampled data to one channel, and all other data to
 another channel. The corresponding channel definition of this widget
 is::
 
-    self.outputs = [("Sampled Data", ExampleTable), ("Other Data", ExampleTable)]
+    self.outputs = [("Sampled Data", Orange.data.Table),
+                    ("Other Data", Orange.data.Table)]
 
 We used this in the third incarnation of :download:`data sampler widget <OWDataSamplerC.py>`,
-with essentially the only other change in the code in the :obj:`selection` and
-:obj:`commit` functions::
+with essentially the only other change in the code in the :func:`selection` and
+:func:`commit` functions::
 
     def selection(self):
-        indices = orange.MakeRandomIndices2(p0=self.proportion / 100.)
+        indices = Orange.data.sample.SubsetIndices2(p0=self.proportion / 100.)
         ind = indices(self.dataset)
         self.sample = self.dataset.select(ind, 0)
         self.otherdata = self.dataset.select(ind, 1)
@@ -196,10 +198,9 @@ with essentially the only other change in the code in the :obj:`selection` and
 
 If a widget that has multiple channels of the same type is
 connected to a widget that accepts such tokens, Orange Canvas opens a
-window asking the user to confirm which channels to connect. The
-channel mentioned in :obj:`self.outputs` is connected by
-default. Hence, if we have just connected Data Sampler
-(C) widget to a Data Table widget in a schema below:
+window asking the user to confirm which channels to connect. Hence,
+if we have just connected *Data Sampler (C)* widget to a Data Table
+widget in a schema below:
 
 .. image:: datasampler-totable.png
 
@@ -222,14 +223,14 @@ provide the training data set, so we would not like to be bothered (in
 Orange Canvas) with the dialog which channel to connect to, as the
 training data set channel will be the default one.
 
-When enlisting the input channel of the same type, the non-default
+When enlisting the input channel of the same type, the default
 channels have a special flag in the channel specification list. So for
 our new :download:`learning curve <OWLearningCurveB.py>` widget, the
 channel specification is::
 
-    self.inputs = [("Train Data", ExampleTable, self.trainset, Default),
-                   ("Test Data", ExampleTable, self.testset),
-                   ("Learner", orange.Learner, self.learner, Multiple)]
+    self.inputs = [("Train Data", Orange.data.Table, self.trainset, Default),
+                   ("Test Data", Orange.data.Table, self.testset),
+                   ("Learner", Orange.classification.Learner, self.learner, Multiple)]
 
 That is, the :obj:`Train Data` channel is a single-token
 channel which is a default one (third parameter). Note that the flags can
@@ -239,8 +240,5 @@ To test how this works, connect a file widget to a learning curve widget and
 
 .. image:: file-to-learningcurveb.png
 
-That is, no window with a query on which channels
-to connect to will open. To find out which channels got connected,
-double click on the green link between the two widgets:
-
-.. image:: file-to-learningcurveb-channels.png
+That is, no window with a query on which channels to connect to will
+open, as the default *"Train Data"* was selected.

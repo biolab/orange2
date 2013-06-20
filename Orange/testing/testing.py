@@ -613,7 +613,7 @@ try:
     __IPYTHON__  #We are running tests from ipython
     if getattr(__IPYTHON__.shell, "call_pdb", None): # Is pdb enabled
         enable_pdb()
-except NameError:
+except:
     pass
 
 

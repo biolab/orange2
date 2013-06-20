@@ -1,9 +1,11 @@
 """
 <name>Data Sampler (C)</name>
 <description>Randomly selects a subset of instances from the data set</description>
-<icon>icons/DataSamplerC.png</icon>
+<icon>icons/DataSamplerC.svg</icon>
 <priority>30</priority>
 """
+import Orange
+
 from OWWidget import *
 import OWGUI
 
@@ -12,8 +14,9 @@ class OWDataSamplerC(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'SampleDataC')
         
-        self.inputs = [("Data", ExampleTable, self.data)]
-        self.outputs = [("Sampled Data", ExampleTable), ("Other Data", ExampleTable)]
+        self.inputs = [("Data", Orange.data.Table, self.data)]
+        self.outputs = [("Sampled Data", Orange.data.Table),
+                        ("Other Data", Orange.data.Table)]
 
         self.proportion = 50
         self.commitOnChange = 0
@@ -48,7 +51,7 @@ class OWDataSamplerC(OWWidget):
             self.infob.setText('')
 
     def selection(self):
-        indices = orange.MakeRandomIndices2(p0=self.proportion / 100.)
+        indices = Orange.data.sample.SubsetIndices2(p0=self.proportion / 100.)
         ind = indices(self.dataset)
         self.sample = self.dataset.select(ind, 0)
         self.otherdata = self.dataset.select(ind, 1)
@@ -62,13 +65,11 @@ class OWDataSamplerC(OWWidget):
         if self.commitOnChange:
             self.commit()
 
-##############################################################################
-# Test the widget, run from prompt
 
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWDataSamplerC()
     ow.show()
-    dataset = orange.ExampleTable('iris.tab')
+    dataset = Orange.data.Table('iris.tab')
     ow.data(dataset)
     appl.exec_()

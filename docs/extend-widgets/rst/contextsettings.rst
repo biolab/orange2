@@ -20,7 +20,7 @@ stored in this manner.
 To learn how to do it yourself, consider the widget below used for
 selecting a subset of attributes and the class attributes (note that a
 better widget for this task is already included in your Orange
-instalation).
+installation).
 
 .. image:: attributesampler.png
 
@@ -28,30 +28,12 @@ The widget gets examples on the input and outputs the same examples
 with the attributes and the class chosen by the user. We'd like to
 somehow store the user's selection.
 
-Here's the widget's :obj:`__init__` function.
+Here's the widget's :func:`__init__` function.
 
-Part of :download:`OWAttributeSampler.py <OWAttributeSampler.py>`::
+Part of :download:`OWAttributeSampler.py <OWAttributeSampler.py>`
 
-    def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self, parent, signalManager, 'AttributeSampler')
-
-        self.inputs = [("Examples", ExampleTable, self.dataset)]
-        self.outputs = [("Examples", ExampleTable)]
-
-        self.icons = self.createAttributeIconDict()
-
-        self.attributeList = []
-        self.selectedAttributes = []
-        self.classAttribute = None
-        self.loadSettings()
-
-        OWGUI.listBox(self.controlArea, self, "selectedAttributes", "attributeList", box="Selected attributes", selectionMode = QListWidget.ExtendedSelection)
-        OWGUI.separator(self.controlArea)
-        self.classAttrCombo = OWGUI.comboBox(self.controlArea, self, "classAttribute", box="Class attribute")
-        OWGUI.separator(self.controlArea)
-        OWGUI.button(self.controlArea, self, "Commit", callback = self.outputData)
-
-        self.resize(150,400)
+.. literalinclude:: OWAttributeSampler.py
+   :pyobject: OWAttributeSampler.__init__
 
 Note that we are strictly using controls from OWGUI. As for the
 usual settings, if you use Qt controls directly, their state won't get
@@ -63,9 +45,7 @@ attributes. Combo box will put the index of the chosen class attribute
 into :obj:`classAttribute`.
 
 When the widget gets the data, a function :obj:`dataset` is
-called.
-
-Part of :download:`OWAttributeSampler.py`::
+called::
 
     def dataset(self, data):
         self.classAttrCombo.clear()
@@ -84,13 +64,9 @@ Part of :download:`OWAttributeSampler.py`::
         self.outputData()
 
 
-    def outputData(self):
-        if not self.data:
-            self.send("Examples", None)
-        else:
-            newDomain = orange.Domain([self.data.domain[i] for i in self.selectedAttributes], self.data.domain[self.classAttribute])
-            newData = orange.ExampleTable(newDomain, self.data)
-            self.send("Examples", newData)
+.. literalinclude:: OWAttributeSampler.py
+   :pyobject: OWAttributeSampler.outputData
+
 
 Nothing special here (yet). We fill the list box, deselect all
 attributes and set the last attribute to be the class
@@ -109,13 +85,11 @@ every time it gets a new signal. Besides, the ordinary settings in the
 would usually try to assign, say, the class attribute which doesn't
 exist in the actual domain at all.
 
-To make the setting dependent on the context, we put ::
+To make the setting dependent on the context, we put
 
-    contextHandlers = {"": DomainContextHandler("", [
-            ContextField("classAttribute", DomainContextHandler.Required),
-            ContextField("attributeList", DomainContextHandler.List +
-                                          DomainContextHandler.SelectedRequired,
-                         selected="selectedAttributes")])}
+.. literalinclude:: OWAttributeSampler.py
+   :start-after: # ~start context handler~
+   :end-before: # ~end context handler~
 
 at the same place where we usually declare :obj:`settingsList`.
 
@@ -155,17 +129,22 @@ context will still match and be used.
 As you have guessed, we can also have optional attributes
 (:obj:`DomainContextHandler.Optional`); sometimes certain
 attribute doesn't really matter, so if it is present in the domain,
-it's gonna be used, otherwise not. And for the list, we could say
+it's going to be used, otherwise not. And for the list, we could say
 :obj:`DomainContextHandler.List + DomainContextHandler.Required`
 in which case all the attributes on the list would be required for the
 domain to match.
 
-The default flag is :obj:`DomainContextHandler.Required`, and there are other shortcuts for declaring the context, too. The above code could be simplified as ::
+The default flag is :obj:`DomainContextHandler.Required`, and there
+are other shortcuts for declaring the context, too. The above code could
+be simplified as ::
 
-    contextHandlers = {"": DomainContextHandler("", [
-            "classAttribute",
-            ContextField("attributeList", DomainContextHandler.SelectedRequiredList,
-                         selected="selectedAttributes")])}
+    contextHandlers = {
+        "": DomainContextHandler(
+            "",
+            ["classAttribute",
+             ContextField("attributeList",
+                          DomainContextHandler.SelectedRequiredList,
+                          selected="selectedAttributes")])}
 
 Why the dictionary and the empty string as the key? A widget can
 have multiple contexts, depending, usually, on multiple input
@@ -185,29 +164,28 @@ automatically - you have to add the calls of the appropriate context
 changing functions yourself. Here's what you have to do with the
 function :obj:`dataset`
 
-Part of :download:`OWAttributeSampler.py`::
+.. literalinclude:: OWAttributeSampler.py
+   :pyobject: OWAttributeSampler.dataset
 
-    def dataset(self, data):
-        self.closeContext()
-    
-        self.classAttrCombo.clear()
-        if data:
-            self.attributeList = [(attr.name, attr.varType) for attr in data.domain]
-            self.selectedAttributes = []
-            for attrName, attrType in self.attributeList:
-                self.classAttrCombo.addItem(self.icons[attrType], attrName)
-            self.classAttribute = 0
-        else:
-            self.attributeList = []
-            self.selectedAttributes = []
-            self.classAttrCombo.addItem("")
-    
-        self.openContext("", data)
-    
-        self.data = data
-        self.outputData()
-
-We added only two lines. First, before you change any controls in the widget, you need to call :obj:`self.closeContext` (the function has an optional argument, the context name, but since we use the default name, an empty string, we can omit it). This reads the data from the widget into the stored context. Then the function proceeds as before: the controls (the list box and combo box) are filled in as if there were no context handling (this is important, so once again: widget should be set up as if there were not context dependent settings). When the controls are put in a consistent state, we call :obj:`self.openContext`. The first argument is the context name and the second is the object from which the handler reads the context. In case of :obj:`DomainContextHandler` this can be either a domain or the data. :obj:`openContext` will make the context handler search through the stored context for the one that (best) matches the data, and if one is find the widget's state is set accordingly (that is, the list boxes are filled, attributes in it are selected etc.). If no context is found, a new context is established and the data from widget is copied to the context.
+We added only two lines. First, before you change any controls in
+the widget, you need to call :obj:`self.closeContext` (the function
+has an optional argument, the context name, but since we use the
+default name, an empty string, we can omit it). This reads the
+data from the widget into the stored context. Then the function
+proceeds as before: the controls (the list box and combo box)
+are filled in as if there were no context handling (this is
+important, so once again: widget should be set up as if there
+were not context dependent settings). When the controls are put
+in a consistent state, we call :obj:`self.openContext`. The first
+argument is the context name and the second is the object from
+which the handler reads the context. In case of
+:obj:`DomainContextHandler` this can be either a domain or the
+data. :obj:`openContext` will make the context handler search
+through the stored context for the one that (best) matches the
+data, and if one is find the widget's state is set accordingly
+(that is, the list boxes are filled, attributes in it are selected
+etc.). If no context is found, a new context is established and the
+data from widget is copied to the context.
 
 What can be stored as a context dependent setting? Anything, even
 the state of check boxes if you want to. But don't do that. Make

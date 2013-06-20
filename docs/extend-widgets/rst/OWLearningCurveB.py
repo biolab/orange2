@@ -1,12 +1,15 @@
 """
 <name>Learning Curve (B)</name>
 <description>Takes a data set and a set of learners and shows a learning curve in a table</description>
-<icon>icons/LearningCurveB.png</icon>
+<icon>icons/LearningCurve.svg</icon>
 <priority>1010</priority>
 """
 
+import Orange
+
 from OWWidget import *
-import OWGUI, orngTest, orngStat
+import OWGUI
+
 
 class OWLearningCurveB(OWWidget):
     settingsList = ["folds", "steps", "scoringF", "commitOnChange"]
@@ -14,17 +17,23 @@ class OWLearningCurveB(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'LearningCurveA')
 
-        self.inputs = [("Train Data", ExampleTable, self.trainset, Default),
-                       ("Test Data", ExampleTable, self.testset),
-                       ("Learner", orange.Learner, self.learner, Multiple)]
+        self.inputs = [("Train Data", Orange.data.Table, self.trainset, Default),
+                       ("Test Data", Orange.data.Table, self.testset),
+                       ("Learner", Orange.classification.Learner,
+                        self.learner, Multiple)]
         
         self.folds = 5     # cross validation folds
         self.steps = 10    # points in the learning curve
         self.scoringF = 0  # scoring function
         self.commitOnChange = 1 # compute curve on any change of parameters
         self.loadSettings()
-        self.setCurvePoints() # sets self.curvePoints, self.steps equidistantpoints from 1/self.steps to 1
-        self.scoring = [("Classification Accuracy", orngStat.CA), ("AUC", orngStat.AUC), ("BrierScore", orngStat.BrierScore), ("Information Score", orngStat.IS), ("Sensitivity", orngStat.sens), ("Specificity", orngStat.spec)]
+        self.setCurvePoints() # sets self.curvePoints, self.steps equidistan points from 1/self.steps to 1
+        self.scoring = [("Classification Accuracy", Orange.evaluation.scoring.CA),
+                        ("AUC", Orange.evaluation.scoring.AUC),
+                        ("BrierScore", Orange.evaluation.scoring.Brier_score),
+                        ("Information Score", Orange.evaluation.scoring.IS),
+                        ("Sensitivity", Orange.evaluation.scoring.Sensitivity),
+                        ("Specificity", Orange.evaluation.scoring.Specificity)]
         self.learners = [] # list of current learners from input channel, tuples (id, learner)
         self.data = None   # data on which to construct the learning curve
         self.testdata = None # optional test data
@@ -37,27 +46,36 @@ class OWLearningCurveB(OWWidget):
         self.infob = OWGUI.widgetLabel(box, 'No learners.')
 
         OWGUI.separator(self.controlArea)
+
         box = OWGUI.widgetBox(self.controlArea, "Evaluation Scores")
         scoringNames = [x[0] for x in self.scoring]
-        OWGUI.comboBox(box, self, "scoringF", items=scoringNames, callback=self.computeScores)
+        OWGUI.comboBox(box, self, "scoringF", items=scoringNames,
+                       callback=self.computeScores)
 
         OWGUI.separator(self.controlArea)
+
         box = OWGUI.widgetBox(self.controlArea, "Options")
-        OWGUI.spin(box, self, 'folds', 2, 100, step=1, label='Cross validation folds:  ',
+        OWGUI.spin(box, self, 'folds', 2, 100, step=1,
+                   label='Cross validation folds:  ',
                    callback=lambda: self.computeCurve(self.commitOnChange))
-        OWGUI.spin(box, self, 'steps', 2, 100, step=1, label='Learning curve points:  ',
-                   callback=[self.setCurvePoints, lambda: self.computeCurve(self.commitOnChange)])
+
+        OWGUI.spin(box, self, 'steps', 2, 100, step=1,
+                   label='Learning curve points:  ',
+                   callback=[self.setCurvePoints,
+                             lambda: self.computeCurve(self.commitOnChange)])
 
         OWGUI.checkBox(box, self, 'commitOnChange', 'Apply setting on any change')
-        self.commitBtn = OWGUI.button(box, self, "Apply Setting", callback=self.computeCurve, disabled=1)
+        self.commitBtn = OWGUI.button(box, self, "Apply Setting",
+                                      callback=self.computeCurve, disabled=1)
 
         # table widget
-        self.table = OWGUI.table(self.mainArea, selectionMode=QTableWidget.NoSelection)
+        self.table = OWGUI.table(self.mainArea,
+                                 selectionMode=QTableWidget.NoSelection)
                 
         self.resize(500,200)
 
-    ##############################################################################    
-    # slots: handle input signals        
+    ##############################################################################
+    # slots: handle input signals
 
     def trainset(self, data):
         if data:
@@ -69,7 +87,7 @@ class OWLearningCurveB(OWWidget):
             self.infoa.setText('No data on input.')
             self.curves = []
             self.scores = []
-        self.commitBtn.setEnabled(self.data<>None)
+        self.commitBtn.setEnabled(self.data is not None)
 
     def testset(self, testdata):
         if not testdata and not self.testdata:
@@ -139,15 +157,21 @@ class OWLearningCurveB(OWWidget):
     def getLearningCurve(self, learners):   
         pb = OWGUI.ProgressBar(self, iterations=self.steps*self.folds)
         if not self.testdata:
-            curve = orngTest.learningCurveN(learners, self.data, folds=self.folds, proportions=self.curvePoints, callback=pb.advance)
+            curve = Orange.evaluation.testing.learning_curve_n(
+                learners, self.data, folds=self.folds,
+                proportions=self.curvePoints,
+                callback=pb.advance)
         else:
-            curve = orngTest.learningCurveWithTestData(learners,
-              self.data, self.testdata, times=self.folds, proportions=self.curvePoints, callback=pb.advance)            
+            curve = Orange.evaluation.testing.learning_curve_with_test_data(
+                learners, self.data, self.testdata, times=self.folds,
+                proportions=self.curvePoints,
+#                callback=pb.advance
+                )
         pb.finish()
         return curve
 
     def setCurvePoints(self):
-        self.curvePoints = [(x+1.)/self.steps for x in range(self.steps)]
+        self.curvePoints = [(x + 1.)/self.steps for x in range(self.steps)]
 
     def setTable(self):
         self.table.setColumnCount(0)
@@ -166,34 +190,33 @@ class OWLearningCurveB(OWWidget):
         for i in range(len(self.learners)):
             self.table.setColumnWidth(i, 80)
 
-##############################################################################
-# Test the widget, run from prompt
 
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWLearningCurveB()
     ow.show()
     
-    l1 = orange.BayesLearner()
+    l1 = Orange.classification.bayes.NaiveLearner()
     l1.name = 'Naive Bayes'
     ow.learner(l1, 1)
 
-    data = orange.ExampleTable('iris.tab')
-    indices = orange.MakeRandomIndices2(data, p0 = 0.7)
+    data = Orange.data.Table('iris.tab')
+    indices = Orange.data.sample.SubsetIndices2(data, p0 = 0.7)
     train = data.select(indices, 0)
     test = data.select(indices, 1)
 
     ow.trainset(train)
     ow.testset(test)
 
-    l2 = orange.BayesLearner()
+    l2 = Orange.classification.bayes.NaiveLearner()
     l2.name = 'Naive Bayes (m=10)'
-    l2.estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=10)
-    l2.conditionalEstimatorConstructor = orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=10))
+    l2.estimatorConstructor = Orange.statistics.estimate.M(m=10)
+    l2.conditionalEstimatorConstructor = \
+        Orange.statistics.estimate.ConditionalByRows(
+            estimatorConstructor = Orange.statistics.estimate.M(m=10))
     ow.learner(l2, 2)
 
-    import orngTree
-    l4 = orngTree.TreeLearner(minSubset=2)
+    l4 = Orange.classification.tree.TreeLearner(minSubset=2)
     l4.name = "Decision Tree"
     ow.learner(l4, 4)
 

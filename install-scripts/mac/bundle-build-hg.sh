@@ -19,7 +19,7 @@ if [ -e $TMP_BUNDLE_DIR ]; then
 fi
 
 echo "Preaparing the bundle template"
-TEMPLATE_VERSION=`curl --silent http://orange.biolab.si/download/bundle-templates/CURRENT.txt`
+TEMPLATE_VERSION=$(curl --silent http://orange.biolab.si/download/bundle-templates/CURRENT.txt)
 curl --silent http://orange.biolab.si/download/bundle-templates/Orange-template-${TEMPLATE_VERSION}.tar.gz | tar -xz -C $WORK_DIR
 
 # Make repos dir if it does not yet exist
@@ -27,11 +27,56 @@ if [ ! -e $REPOS_DIR ]; then
 	mkdir $REPOS_DIR
 fi
 
-# Create bundle startup script
-cat <<-'EOF' > ${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/Orange
+APP=${TMP_BUNDLE_DIR}/Orange.app
+
+# Python interpreter in the bundle
+PYTHON=${APP}/Contents/MacOS/python
+
+# Python version
+PY_VER=`$PYTHON -c "import sys; print sys.version[:3]"`
+
+SITE_PACKAGES=${APP}/Contents/Frameworks/Python.framework/Versions/${PY_VER}/lib/python${PY_VER}/site-packages/
+
+# easy_install script in the bundle
+EASY_INSTALL=${APP}/Contents/MacOS/easy_install
+
+# Link Python.app startup script to top bundle
+ln -fs ../Frameworks/Python.framework/Versions/Current/Resources/Python.app/Contents/MacOS/Python ${APP}/Contents/MacOS/PythonAppStart
+
+echo "Preparing startup scripts"
+
+# Create an enironment startup script
+cat <<-'EOF' > $APP/Contents/MacOS/ENV
+	# Create an environment for running python from the bundle
+	# Should be run as "source ENV"
+
+	BUNDLE_DIR=`dirname "$0"`/../
+	BUNDLE_DIR=`perl -MCwd=realpath -e 'print realpath($ARGV[0])' "$BUNDLE_DIR"`/
+	FRAMEWORKS_DIR="$BUNDLE_DIR"Frameworks/
+	RESOURCES_DIR="$BUNDLE_DIR"Resources/
+
+	PYVERSION="2.7"
+
+	PYTHONEXECUTABLE="$FRAMEWORKS_DIR"Python.framework/Resources/Python.app/Contents/MacOS/Python
+	PYTHONHOME="$FRAMEWORKS_DIR"Python.framework/Versions/"$PYVERSION"/
+
+	DYLD_FRAMEWORK_PATH="$FRAMEWORKS_DIR"${DYLD_FRAMEWORK_PATH:+:$DYLD_FRAMEWORK_PATH}
+
+	export PYTHONEXECUTABLE
+	export PYTHONHOME
+
+	export DYLD_FRAMEWORK_PATH
+
+	# Some non framework libraries are put in $FRAMEWORKS_DIR by macho_standalone
+	export DYLD_LIBRARY_PATH="$FRAMEWORKS_DIR"${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+EOF
+
+# Create Orange application startup script
+cat <<-'EOF' > ${APP}/Contents/MacOS/Orange
 	#!/bin/bash
 
-	source `dirname "$0"`/ENV
+	DIRNAME=$(dirname "$0")
+	source "$DIRNAME"/ENV
 
 	# LaunchServices passes the Carbon process identifier to the application with
 	# -psn parameter - we do not want it
@@ -39,19 +84,10 @@ cat <<-'EOF' > ${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/Orange
 	    shift 1
 	fi
 
-	exec -a "$0" "$PYTHONEXECUTABLE" -m Orange.OrangeCanvas.main "$@"
+	exec -a "$0" "$DIRNAME"/PythonAppStart -m Orange.OrangeCanvas.main "$@"
 EOF
 
-chmod +x ${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/Orange
-
-# Python interpreter in the bundle
-PYTHON=${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/python
-
-# easy_install script in the bundle
-EASY_INSTALL=${TMP_BUNDLE_DIR}/Orange.app/Contents/MacOS/easy_install
-
-#Python version
-PY_VER=`$PYTHON -c "import sys; print sys.version[:3]"`
+chmod +x ${APP}/Contents/MacOS/Orange
 
 # First install/upgrade distrubute. The setup.py scripts might
 # need it
@@ -62,43 +98,44 @@ $EASY_INSTALL -U distribute
 
 echo "Checkouting and building orange"
 echo "==============================="
-./bundle-inject-hg.sh https://bitbucket.org/biolab/orange orange $REVISION $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+./bundle-inject-hg.sh https://bitbucket.org/biolab/orange orange $REVISION $REPOS_DIR ${APP}
 
 echo "Specifically building orangeqt"
 echo "------------------------------"
 
-CUR_DIR=`pwd`
-cd $REPOS_DIR/orange/source/orangeqt
+pushd $REPOS_DIR/orange/source/orangeqt
 echo "Fixing sip/pyqt configuration"
 
-APP=${TMP_BUNDLE_DIR}/Orange.app
-APP_ESCAPED=`echo ${TMP_BUNDLE_DIR}/Orange.app | sed s/'\/'/'\\\\\/'/g`
-sed -i.bak "s/Users.*Orange.app/$APP_ESCAPED/g"  $APP/Contents/Frameworks/Python.framework/Versions/$PY_VER/lib/python$PY_VER/site-packages/PyQt4/pyqtconfig.py
-sed -i.bak "s/Users.*Orange.app/$APP_ESCAPED/g"  $APP/Contents/Frameworks/Python.framework/Versions/$PY_VER/lib/python$PY_VER/site-packages/sipconfig.py
+sed -i.bak "s@/Users/.*/Orange.app/@$APP/@g" ${SITE_PACKAGES}/PyQt4/pyqtconfig.py
+sed -i.bak "s@/Users/.*/Orange.app/@$APP/@g" ${SITE_PACKAGES}/sipconfig.py
 export PATH=$APP/Contents/Resources/Qt4/bin:$PATH
 $PYTHON setup.py install
-cd $CUR_DIR
+
+popd
 
 echo "Fixing Qt plugins search path"
 echo "[Paths]
 Plugins = ../../../../../Resources/Qt4/plugins/" > $APP/Contents/Frameworks/Python.framework/Resources/Python.app/Contents/Resources/qt.conf
 
+echo "[Paths]
+Plugins = Resources/Qt4/plugins/" > $APP/Contents/Resources/qt.conf
+
 
 echo "Checkouting and building bioinformatics addon"
 echo "============================================="
-./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-bioinformatics bioinformatics tip $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-bioinformatics bioinformatics tip $REPOS_DIR ${APP}
 
 echo "Checkouting and building text addon"
 echo "==================================="
-./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-text text tip $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-text text tip $REPOS_DIR ${APP}
 
 echo "Installing networkx"
 echo "+++++++++++++++++++"
-./bundle-inject-pypi.sh networkx-1.6 http://pypi.python.org/packages/source/n/networkx/networkx-1.6.tar.gz $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+./bundle-inject-pypi.sh networkx-1.6 http://pypi.python.org/packages/source/n/networkx/networkx-1.6.tar.gz $REPOS_DIR ${APP}
 
 echo "Installing suds library"
 echo "+++++++++++++++++++++++"
-./bundle-inject-pypi.sh suds-0.4 http://pypi.python.org/packages/source/s/suds/suds-0.4.tar.gz $REPOS_DIR ${TMP_BUNDLE_DIR}/Orange.app
+./bundle-inject-pypi.sh suds-0.4 http://pypi.python.org/packages/source/s/suds/suds-0.4.tar.gz $REPOS_DIR ${APP}
 
 echo "Instaling slumber library"
 echo "+++++++++++++++++++++++++"
@@ -107,7 +144,7 @@ $EASY_INSTALL slumber
 echo "Removing unnecessary files."
 find $TMP_BUNDLE_DIR \( -name '*~' -or -name '*.bak' -or -name '*.pyc' -or -name '*.pyo' -or -name '*.pyd' \) -exec rm -rf {} ';'
 
-ln -s ../Frameworks/Python.framework/Versions/Current/lib/python${PY_VER}/site-packages/Orange ${TMP_BUNDLE_DIR}/Orange.app/Contents/Resources/Orange
+ln -s ../Frameworks/Python.framework/Versions/Current/lib/python${PY_VER}/site-packages/Orange ${APP}/Contents/Resources/Orange
 
 	
 echo "Preparing the .dmg image"

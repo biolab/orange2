@@ -83,8 +83,8 @@ MAPPING = {"orange.ExampleTable": "Orange.data.Table",
 
            "orange.EntropyDiscretization": "Orange.feature.discretization.Entropy",
            "orange.EquiDistDiscretization": "Orange.feature.discretization.EqualWidth",
-           "orange.EquiNDiscretization": "Orange.data.discretization.EqualFreq",
-           "orange.BiModalDiscretization": "Orange.data.discretization.BiModal",
+           "orange.EquiNDiscretization": "Orange.feature.discretization.EqualFreq",
+           "orange.BiModalDiscretization": "Orange.feature.discretization.BiModal",
 
            "orngFSS.attMeasure": "Orange.feature.scoring.score_all",
            "orngFSS.bestNAtts": "Orange.feature.selection.top_rated",
