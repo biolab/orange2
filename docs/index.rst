@@ -6,8 +6,8 @@ Visual programming
 
 - :doc:`Widget catalog <widgets/rst/index>`
 
-Scripting
----------
+Python Scripting
+----------------
 
 - :doc:`Tutorial <tutorial/rst/index>`
 - :doc:`Reference <reference/rst/index>`
