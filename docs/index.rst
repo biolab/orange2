@@ -1,16 +1,19 @@
 Orange Documentation
 ====================
 
-Visual programming:
+Visual programming
+------------------
 
 - :doc:`Widget catalog <widgets/rst/index>`
 
-Python scripting:
+Python scripting
+----------------
 
 - :doc:`Tutorial <tutorial/rst/index>`
 - :doc:`Reference <reference/rst/index>`
 
-Development documentation:
+Development documentation
+-------------------------
 
 - :doc:`Canvas development reference <canvas/index>`
 - :doc:`Widget development manual <extend-widgets/rst/index>`
