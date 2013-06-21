@@ -600,7 +600,7 @@ class SVMClassifier(_SVMClassifier):
         # Build args for svm_classifier_type constructor
         args = (bin_class_var, self.examples, all_sv, model)
 
-        if isinstance(svm_classifier_type, _SVMClassifierSparse):
+        if issubclass(svm_classifier_type, _SVMClassifierSparse):
             args = args + (int(self.__wrapped.use_non_meta),)
 
         if self.kernel_type == kernels.Custom:
