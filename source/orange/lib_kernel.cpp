@@ -2180,7 +2180,8 @@ PyObject *loadDataFromFilePath(PyTypeObject *type, char *filename, PyObject *arg
   for(const char *pi = path, *pe=pi; *pi; pi = pe+1) {
     for(pe = pi; *pe && *pe != sep; pe++);
     const int plen = pe-pi;
-    char *npath = strncpy(new char[plen+flen+2], pi, pe-pi);
+    char *npath = new char[plen + flen + 2];
+    strncpy(npath, pi, pe - pi);
     if (!plen || (pi[plen] != pathsep)) {
       npath[plen] = pathsep;
       strcpy(npath+plen+1, filename);
@@ -2189,6 +2190,8 @@ PyObject *loadDataFromFilePath(PyTypeObject *type, char *filename, PyObject *arg
       strcpy(npath+plen, filename);
     }
     PyObject *res = loadDataFromFileNoSearch(type, npath, argstuple, keywords, generatorOnly);
+    delete[] npath;
+
     PyErr_Clear();
     if (res) {
       return res;

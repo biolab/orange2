@@ -1071,7 +1071,12 @@ PyObject *Orange_get_name(TPyOrange *self)
     if ((*name >= 'A') && (*name <= 'Z')) {
       *name ^= 32;
       }
-    return PyString_FromString(name);
+
+    PyObject * orangename = PyString_FromString(name);
+    free(name);
+
+    return orangename;
+
   PyCATCH
 }
 
