@@ -634,39 +634,12 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	svm_model* model;
 	svm_node* x_space;
 
-	param.svm_type = svm_type;
-	param.kernel_type = kernel_type;
-	param.degree = degree;
-	param.gamma = gamma;
-	param.coef0 = coef0;
-	param.nu = nu;
-	param.C = C;
-	param.eps = eps;
-	param.p = p;
-	param.cache_size=cache_size;
-	param.shrinking=shrinking;
-	param.probability=probability;
-	param.nr_weight = nr_weight;
-
-	if (nr_weight > 0) {
-		param.weight_label = Malloc(int, nr_weight);
-		param.weight = Malloc(double, nr_weight);
-		int i;
-		for (i=0; i<nr_weight; i++) {
-			param.weight_label[i] = weight_label[i];
-			param.weight[i] = weight[i];
-		}
-	} else {
-		param.weight_label = NULL;
-		param.weight = NULL;
-	}
-
 	PDomain domain = examples->domain;
 
 	int classVarType;
 	if (domain->classVar)
 		classVarType = domain->classVar->varType;
-	else{
+	else {
 		classVarType = TValue::NONE;
 		if(svm_type != ONE_CLASS)
 			raiseError("Domain has no class variable");
@@ -687,7 +660,38 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 		train_data->sort(sort_columns);
 	}
 
+	// Initialize svm parameters
+	param.svm_type = svm_type;
+	param.kernel_type = kernel_type;
+	param.degree = degree;
+	param.gamma = gamma;
+	param.coef0 = coef0;
+	param.nu = nu;
+	param.C = C;
+	param.eps = eps;
+	param.p = p;
+	param.cache_size = cache_size;
+	param.shrinking = shrinking;
+	param.probability = probability;
+	param.nr_weight = nr_weight;
+
+	if (nr_weight > 0) {
+		param.weight_label = Malloc(int, nr_weight);
+		param.weight = Malloc(double, nr_weight);
+		int i;
+		for (i=0; i<nr_weight; i++) {
+			param.weight_label[i] = weight_label[i];
+			param.weight[i] = weight[i];
+		}
+	} else {
+		param.weight_label = NULL;
+		param.weight = NULL;
+	}
+
 	int numElements = getNumOfElements(train_data);
+
+	prob.x = NULL;
+	prob.y = NULL;
 
 	if (kernel_type != PRECOMPUTED)
 		x_space = init_problem(prob, train_data, numElements);
@@ -697,11 +701,12 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	if (param.gamma==0)
 		param.gamma=1.0f/(float(numElements)/float(prob.l)-1);
 
-	const char* error=svm_check_parameter(&prob,&param);
+	const char* error=svm_check_parameter(&prob, &param);
 	if (error){
 		free(x_space);
 		free(prob.y);
 		free(prob.x);
+		svm_destroy_param(&param);
 		raiseError("LibSVM parameter error: %s", error);
 	}
 
@@ -721,9 +726,10 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 
 	if ((svm_type==C_SVC || svm_type==NU_SVC) && !model->nSV) {
 		svm_free_and_destroy_model(&model);
-		if (x_space) {
-			free(x_space);
-		}
+		free(x_space);
+		free(prob.x);
+		free(prob.y);
+		svm_destroy_param(&param);
 		raiseError("LibSVM returned no support vectors");
 	}
 
