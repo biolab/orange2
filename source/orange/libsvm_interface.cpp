@@ -661,32 +661,44 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 		param.weight = NULL;
 	}
 
+	PDomain domain = examples->domain;
+
 	int classVarType;
-	if(examples->domain->classVar)
-		classVarType=examples->domain->classVar->varType;
+	if (domain->classVar)
+		classVarType = domain->classVar->varType;
 	else{
-		classVarType=TValue::NONE;
-		if(svm_type!=ONE_CLASS)
+		classVarType = TValue::NONE;
+		if(svm_type != ONE_CLASS)
 			raiseError("Domain has no class variable");
 	}
-	if(classVarType==TValue::FLOATVAR && !(svm_type==EPSILON_SVR || svm_type==NU_SVR ||svm_type==ONE_CLASS))
+	if (classVarType == TValue::FLOATVAR && !(svm_type == EPSILON_SVR || svm_type == NU_SVR ||svm_type == ONE_CLASS))
 		raiseError("Domain has continuous class");
 
-	if(kernel_type==PRECOMPUTED && !kernelFunc)
+	if (kernel_type == PRECOMPUTED && !kernelFunc)
 		raiseError("Custom kernel function not supplied");
 
-	int numElements=getNumOfElements(examples);
+	PExampleTable train_data = mlnew TExampleTable(examples, /* owns= */ false);
 
-	if(kernel_type != PRECOMPUTED)
-		x_space = init_problem(prob, examples, numElements);
+	if (classVarType == TValue::INTVAR && svm_type != ONE_CLASS) {
+		/* Sort the train data by the class columns so the order of
+		 * classVar.values is preserved in libsvm's model.
+		 */
+		vector<int> sort_columns(domain->variables->size() - 1);
+		train_data->sort(sort_columns);
+	}
+
+	int numElements = getNumOfElements(train_data);
+
+	if (kernel_type != PRECOMPUTED)
+		x_space = init_problem(prob, train_data, numElements);
 	else // Compute the matrix using the kernelFunc
-		x_space = init_precomputed_problem(prob, examples, kernelFunc.getReference());
+		x_space = init_precomputed_problem(prob, train_data, kernelFunc.getReference());
 
-	if(param.gamma==0)
+	if (param.gamma==0)
 		param.gamma=1.0f/(float(numElements)/float(prob.l)-1);
 
 	const char* error=svm_check_parameter(&prob,&param);
-	if(error){
+	if (error){
 		free(x_space);
 		free(prob.y);
 		free(prob.x);
@@ -724,11 +736,9 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 
 	free(x_space);
 
-	PExampleTable supportVectors = extract_support_vectors(model, examples);
+	PExampleTable supportVectors = extract_support_vectors(model, train_data);
 
-	PDomain domain = examples->domain;
-
-	return PClassifier(createClassifier(examples->domain, model, supportVectors, examples));
+	return PClassifier(createClassifier(domain, model, supportVectors, train_data));
 }
 
 svm_node* TSVMLearner::example_to_svm(const TExample &ex, svm_node* node, float last, int type){
@@ -760,10 +770,16 @@ int TSVMLearner::getNumOfElements(PExampleGenerator examples){
 
 TSVMClassifier* TSVMLearner::createClassifier(
 		PDomain domain, svm_model* model, PExampleTable supportVectors, PExampleTable examples) {
+	PKernelFunc kfunc;
 	if (kernel_type != PRECOMPUTED) {
+		// Classifier does not need the train data and the kernelFunc.
 		examples = NULL;
+		kfunc = NULL;
+	} else {
+		kfunc = kernelFunc;
 	}
-	return mlnew TSVMClassifier(domain, model, supportVectors, kernelFunc, examples);
+
+	return mlnew TSVMClassifier(domain, model, supportVectors, kfunc, examples);
 }
 
 TSVMLearner::~TSVMLearner(){
@@ -771,7 +787,7 @@ TSVMLearner::~TSVMLearner(){
 		free(weight_label);
 
 	if(weight)
-			free(weight);
+		free(weight);
 }
 
 svm_node* TSVMLearnerSparse::example_to_svm(const TExample &ex, svm_node* node, float last, int type){
@@ -784,10 +800,15 @@ int TSVMLearnerSparse::getNumOfElements(PExampleGenerator examples){
 
 TSVMClassifier* TSVMLearnerSparse::createClassifier(
 		PDomain domain, svm_model* model, PExampleTable supportVectors, PExampleTable examples) {
+	PKernelFunc kfunc;
 	if (kernel_type != PRECOMPUTED) {
+		// Classifier does not need the train data and the kernelFunc.
 		examples = NULL;
+		kfunc = NULL;
+	} else {
+		kfunc = kernelFunc;
 	}
-	return mlnew TSVMClassifierSparse(domain, model, useNonMeta, supportVectors, kernelFunc, examples);
+	return mlnew TSVMClassifierSparse(domain, model, useNonMeta, supportVectors, kfunc, examples);
 }
 
 
