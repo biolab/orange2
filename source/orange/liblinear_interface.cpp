@@ -388,6 +388,16 @@ TLinearLearner::TLinearLearner(){
 
 
 PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &weight){
+	PDomain domain = examples->domain;
+
+	if (!domain->classVar) {
+	    raiseError("classVar expected");
+	}
+
+	if (domain->classVar->varType != TValue::INTVAR) {
+	    raiseError("Discrete class expected");
+	}
+
 	parameter *param = new parameter;
 	param->solver_type = solver_type;
 	param->eps = eps;
@@ -395,14 +405,6 @@ PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &we
 	param->nr_weight = 0;
 	param->weight_label = NULL;
 	param->weight = NULL;
-
-	PDomain domain = examples->domain;
-
-	if (!domain->classVar)
-	    raiseError("classVar expected");
-
-	if (domain->classVar->varType != TValue::INTVAR)
-	    raiseError("Discrete class expected");
 
 	// Shallow copy of examples.
 	PExampleTable train_data = mlnew TExampleTable(examples, /* owns= */ false);
