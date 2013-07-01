@@ -32,6 +32,6 @@ l3.name = "SVM - Composite"
 tests = evaluation.testing.cross_validation([l1, l2, l3], iris, folds=5)
 [ca1, ca2, ca3] = evaluation.scoring.CA(tests)
 
-print l1.name, "CA:", ca1
-print l2.name, "CA:", ca2
-print l3.name, "CA:", ca3
+print l1.name, "CA: %.2f" % ca1
+print l2.name, "CA: %.2f" % ca2
+print l3.name, "CA: %.2f" % ca3

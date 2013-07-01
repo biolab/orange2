@@ -25,6 +25,6 @@ l3.name="SVM - Composite"
 import orngTest, orngStat
 tests=orngTest.crossValidation([l1, l2, l3], data, folds=5)
 [ca1, ca2, ca3]=orngStat.CA(tests)
-print l1.name, "CA:", ca1
-print l2.name, "CA:", ca2
-print l3.name, "CA:", ca3
+print l1.name, "CA: %.2f" % ca1
+print l2.name, "CA: %.2f" % ca2
+print l3.name, "CA: %.2f" % ca3

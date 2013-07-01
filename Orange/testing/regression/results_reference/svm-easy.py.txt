@@ -1,3 +1,3 @@
 Name     CA        AUC
-svm easy 0.83      0.96
-svm      0.76      0.95
+svm easy 0.81      0.96
+svm      0.74      0.94
