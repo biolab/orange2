@@ -105,10 +105,10 @@ class SVMLearner(_SVMLearner):
         >>> data = Orange.data.Table("vehicle.tab")
         >>> learner = svm.SVMLearner()
         >>> results = testing.cross_validation([learner], data, folds=5)
-        >>> print "CA:  %.4f" % scoring.CA(results)[0]
-        CA:  0.7908
-        >>> print "AUC: %.4f" % scoring.AUC(results)[0]
-        AUC: 0.9565
+        >>> print "CA:  %.2f" % scoring.CA(results)[0]
+        CA:  0.79
+        >>> print "AUC: %.2f" % scoring.AUC(results)[0]
+        AUC: 0.95
 
     """
     __new__ = _orange__new__(_SVMLearner)
@@ -1047,25 +1047,12 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
         >>> score = Orange.classification.svm.ScoreSVMWeights()
         >>> svm_scores = [(score(f, table), f) for f in table.domain.features]
         >>> for feature_score, feature in sorted(svm_scores, reverse=True):
-        ...     print "%-35s: %.3f" % (feature.name, feature_score)
-        pr.axis aspect ratio               : 44.263
-        kurtosis about major axis          : 42.593
-        max.length rectangularity          : 39.377
-        radius ratio                       : 28.741
-        skewness about major axis          : 26.682
-        hollows ratio                      : 20.993
-        compactness                        : 20.085
-        elongatedness                      : 17.410
-        distance circularity               : 14.542
-        scaled radius of gyration          : 12.584
-        max.length aspect ratio            : 10.686
-        scatter ratio                      : 10.574
-        scaled variance along minor axis   : 10.049
-        circularity                        : 8.360
-        pr.axis rectangularity             : 7.473
-        scaled variance along major axis   : 5.731
-        skewness about minor axis          : 1.368
-        kurtosis about minor axis          : 0.690
+        ...     print "%-35s: %.1f" % (feature.name, feature_score)
+        pr.axis aspect ratio               : 44.3
+        kurtosis about major axis          : 42.6
+        max.length rectangularity          : 39.4
+        radius ratio                       : 28.7
+        ...
 
 
     """

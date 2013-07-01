@@ -223,7 +223,7 @@ class TestRFE(testing.DataTestCase):
 
 def load_tests(loader, tests, ignore):
     import doctest
-    tests.addTests(doctest.DocTestSuite(svm))
+    tests.addTests(doctest.DocTestSuite(svm, optionflags=doctest.ELLIPSIS))
     return tests
 
 if __name__ == "__main__":
