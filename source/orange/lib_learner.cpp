@@ -1328,25 +1328,53 @@ C_CALL(LinearLearner, Learner, "([examples] -/-> Classifier)")
 C_NAMED(LinearClassifier - Orange.classification.svm.LinearClassifier, ClassifierFD, " ")
 
 
+PyObject * LinearClassifier_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) BASED_ON(ClassifierFD, "(Domain, str) -> LinearClassifier")
+{
+	PyTRY
+		PDomain domain;
+		char * model_string;
 
-PyObject *LinearClassifier__reduce__(PyObject *self){
+		if (!PyArg_ParseTuple(args, "O&s:__new__", cc_Domain, &domain, &model_string)) {
+			return NULL;
+		}
+		string buf(model_string);
+		struct model * model = linear_load_model_alt(buf);
+
+		PLinearClassifier classifier = mlnew TLinearClassifier(domain, model);
+
+		return WrapOrange(classifier);
+	PyCATCH
+}
+
+
+PyObject *LinearClassifier__reduce__(PyObject *self)
+{
   PyTRY
 	CAST_TO(TLinearClassifier, classifier);
 	string buff;
 	if (linear_save_model_alt(buff, classifier->getModel()) != 0)
 		raiseError("Could not save the model");
-	return Py_BuildValue("O(OOOs)N", getExportedFunction("__pickleLoaderLinearClassifier"),
-									self->ob_type,
-									WrapOrange(classifier->classVar),
-									WrapOrange(classifier->examples),
-									buff.c_str(),
-									packOrangeDictionary(self));
+
+	return Py_BuildValue(
+			"O(Os)N",
+			self->ob_type,
+			WrapOrange(classifier->domain),
+			buff.c_str(),
+			packOrangeDictionary(self));
   PyCATCH
 }
 
-PyObject *__pickleLoaderLinearClassifier(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_data)")
+/*
+ * Deprecated. Left here so old pickled objects can be restored.
+ * The old pickled arguments were:
+ *
+ *     (type(self), classVar, examples, model_string),
+ */
+
+PyObject *__pickleLoaderLinearClassifier(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, packed_data) Deprecated!!")
 {
   PyTRY
+	//raiseWarning(PyExc_DeprecationWarning, "Deprecated pickle reconstructor")
 	PyTypeObject* type;
     PVariable var;
 	PExampleTable examples;
@@ -1357,9 +1385,23 @@ PyObject *__pickleLoaderLinearClassifier(PyObject *, PyObject *args) PYARGS(METH
 	model *model = linear_load_model_alt(buff);
 	if (!model)
 		raiseError("Could not load the model");
-	return WrapNewOrange(mlnew TLinearClassifier(var, examples, model), (PyTypeObject*)&PyOrLinearClassifier_Type);
+	return WrapNewOrange(mlnew TLinearClassifier(examples->domain, model), (PyTypeObject*)&PyOrLinearClassifier_Type);
   PyCATCH
 }
+
+
+PyObject * LinearClassifer_get_model_str(PyObject * self, PyObject *) PYARGS(METH_NOARGS, "() -> str")
+{
+	PyTRY
+		CAST_TO(TLinearClassifier, classifier);
+		string buff;
+		if (linear_save_model_alt(buff, classifier->getModel()) != 0) {
+			raiseError("Could not convert the model to a string");
+		}
+		return PyString_FromString(buff.c_str());
+	PyCATCH
+}
+
 
 /************* LIBSVM ************/
 

@@ -26,6 +26,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <assert.h>
+
 #include "liblinear_interface.ppp"
 
 #define Malloc(type,n) (type *) malloc((n)*sizeof(type))
@@ -291,13 +293,90 @@ problem *problemFromExamples(PExampleGenerator examples, double bias){
 }
 
 void destroy_problem(problem *prob){
-	for (int i=0; i<prob->l; i++)
+	for (int i = 0; i < prob->l; i++)
 		delete[] prob->x[i];
 	delete[] prob->x;
 	delete[] prob->y;
 }
 
 static void dont_print_string(const char *s){}
+
+
+/*
+ * Extract feature weights from a LIBLINEAR model.
+ * The number of class values must be provided.
+ */
+
+TFloatListList * extract_feature_weights(model * model, int nr_class_values) {
+	/* Number of liblinear classifiers.
+	 *
+	 * NOTE: If some class values do not have any data instances in
+	 * the training set they are not present in the liblinear model
+	 * so this number might be different than nr_class_values.
+	 */
+	int nr_classifier = model->nr_class;
+	if (model->nr_class == 2 && model->param.solver_type != MCSVM_CS) {
+		// model contains a single weight vector
+		nr_classifier = 1;
+	}
+
+	// Number of weight vectors to return.
+	int nr_orange_weights = nr_class_values;
+	if (nr_class_values == 2 && model->param.solver_type != MCSVM_CS) {
+		nr_orange_weights = 1;
+	}
+
+	assert(nr_orange_weights >= nr_classifier);
+
+	int nr_feature = model->nr_feature;
+
+	if (model->bias >= 0.0){
+		nr_feature++;
+	}
+
+	int* labels = new int[model->nr_class];
+	get_labels(model, labels);
+
+	// Initialize the weight matrix (nr_orange_weights x nr_features).
+	TFloatListList * weights = mlnew TFloatListList(nr_orange_weights);
+	for (int i = 0; i < nr_orange_weights; i++){
+		weights->at(i) = mlnew TFloatList(nr_feature, 0.0f);
+	}
+
+	if (nr_classifier > 1) {
+		/*
+		 * NOTE: If some class was missing from the training data set
+		 * (had no instances) its weight vector will be left initialized
+		 * to 0
+		 */
+		for (int i = 0; i < nr_classifier; i++) {
+			for (int j = 0; j < nr_feature; j++) {
+				weights->at(labels[i])->at(j) = model->w[j * nr_classifier + i];
+			}
+		}
+	} else {
+		for (int j = 0; j < nr_feature; j++) {
+			if (nr_orange_weights > 1) {
+				/* There were more than 2 orange class values. This means
+				 * there were no instances for one or more classed in the
+				 * training data set. We cannot simply leave the 'negative'
+				 * class vector as zero because we would lose information
+				 * which class was used (i.e. we could not make a proper
+				 * negative classification using the weights).
+				 */
+				weights->at(labels[0])->at(j) = model->w[j];
+				weights->at(labels[1])->at(j) = - model->w[j];
+			} else {
+				weights->at(0)->at(j) = model->w[j];
+			}
+		}
+	}
+
+	delete[] labels;
+
+	return weights;
+}
+
 
 TLinearLearner::TLinearLearner(){
 	solver_type = L2R_LR;
@@ -306,6 +385,7 @@ TLinearLearner::TLinearLearner(){
 	bias = -1.0;
 	set_print_string_function(&dont_print_string);
 }
+
 
 PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &weight){
 	parameter *param = new parameter;
@@ -316,13 +396,27 @@ PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &we
 	param->weight_label = NULL;
 	param->weight = NULL;
 
-	PVariable classVar = examples->domain->classVar;
-	if (!classVar)
+	PDomain domain = examples->domain;
+
+	if (!domain->classVar)
 	    raiseError("classVar expected");
-	if (classVar->varType != TValue::INTVAR)
+
+	if (domain->classVar->varType != TValue::INTVAR)
 	    raiseError("Discrete class expected");
 
-	problem *prob = problemFromExamples(examples, bias);
+	// Shallow copy of examples.
+	PExampleTable train_data = mlnew TExampleTable(examples, /* owns= */ false);
+
+	/*
+	 * Sort the training instances by class.
+	 * This is necessary because LIBLINEAR's class/label/weight order
+	 * is defined by the order of labels encountered in the training
+	 * data. By sorting we make sure it matches classVar.values order.
+	 */
+	vector<int> sort_column(domain->variables->size() - 1);
+	train_data->sort(sort_column);
+
+	problem *prob = problemFromExamples(train_data, bias);
 
 	const char * error_msg = check_parameter(prob, param);
 	if (error_msg){
@@ -332,102 +426,34 @@ PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &we
 	}
 	/* The solvers in liblinear use rand() function.
 	 * To make the results reproducible we set the seed from the data table's
-	 * crc
+	 * crc.
 	 */
-	PExampleTable extable(examples);
-	srand(extable->checkSum(false));
+	srand(train_data->checkSum(false));
 
 	model *model = train(prob, param);
 	destroy_problem(prob);
 
-	return PClassifier(mlnew TLinearClassifier(examples->domain->classVar, examples, model));
+	return PClassifier(mlnew TLinearClassifier(domain, model));
 }
 
-TLinearClassifier::TLinearClassifier(const PVariable &var, PExampleTable _examples, struct model *_model){
-	classVar = var;
-	domain = _examples->domain;
-	examples = _examples;
-	linmodel = _model;
-	bias = _model->bias;
-	dbias = _model->bias;
+
+/*
+ * Construct a TLinearClassifer given a domain and a trained LIBLINEAR
+ * constructed model.
+ */
+
+TLinearClassifier::TLinearClassifier(PDomain domain, struct model * model) : TClassifierFD(domain) {
+	linmodel = model;
+	bias = model->bias;
+	dbias = model->bias;
 
 	computesProbabilities = check_probability_model(linmodel) != 0;
-	// Number of class values
-	int nr_values = this->get_nr_values();
 
-	/* Number of liblinear classifiers (if some class values are missing
-	 * from the training set they are not present in the liblinear model).
-	 */
-	int nr_classifier = linmodel->nr_class;
-	if (linmodel->nr_class == 2 && linmodel->param.solver_type != MCSVM_CS)
-	{
-	    nr_classifier = 1;
-	}
-
-	// Number of weight vectors exposed in orange.
-	int nr_orange_weights = nr_values;
-	if (nr_values == 2 && linmodel->param.solver_type != MCSVM_CS)
-	{
-	    nr_orange_weights = 1;
-	}
-
-	int nr_feature = linmodel->nr_feature;
-
-	if (linmodel->bias >= 0.0)
-	{
-	    nr_feature++;
-	}
-
-	int* labels = new int[linmodel->nr_class];
-	get_labels(linmodel, labels);
-
-	// Initialize nr_orange_weights vectors
-    weights = mlnew TFloatListList(nr_orange_weights);
-    for (int i = 0; i < nr_orange_weights; i++)
-    {
-        weights->at(i) = mlnew TFloatList(nr_feature, 0.0f);
-    }
-
-    if (nr_classifier > 1)
-    {
-        for (int i = 0; i < nr_classifier; i++)
-        {
-            for (int j = 0; j < nr_feature; j++)
-            {
-                weights->at(labels[i])->at(j) = \
-                        linmodel->w[j*nr_classifier + i];
-            }
-        }
-}
-    else
-    {
-        /* If the order of the liblinear internaly stored classes
-         * is different from the order of orange's class values,
-         * we reverse the weight vector.
-         */
-        float factor = (labels[0] == 0)? 1.0f : -1.0f;
-
-        for (int j = 0; j < nr_feature; j++)
-        {
-            if (nr_orange_weights > 1)
-            {
-               /* There are more than 2 orange class values. This means
-                * there were no instances for one or more classed in the training
-                * data set.
-                */
-                weights->at(labels[0])->at(j) = linmodel->w[j];
-                weights->at(labels[1])->at(j) = - linmodel->w[j];
-            }
-            else
-            {
-                weights->at(0)->at(j) = factor * linmodel->w[j];
-            }
-        }
-    }
-    delete[] labels;
+	weights = extract_feature_weights(model, get_nr_values());
 }
 
-TLinearClassifier::~TLinearClassifier(){
+
+TLinearClassifier::~TLinearClassifier() {
 	if (linmodel)
 		free_and_destroy_model(&linmodel);
 }
@@ -440,12 +466,10 @@ int TLinearClassifier::get_nr_values()
     int nr_values = 0;
     TEnumVariable * enum_var = NULL;
     enum_var = dynamic_cast<TEnumVariable*>(classVar.getUnwrappedPtr());
-    if (enum_var)
-    {
+    if (enum_var) {
         nr_values = enum_var->noOfValues();
     }
-    else
-    {
+    else {
         raiseError("Discrete class expected.");
     }
     return nr_values;
@@ -454,7 +478,7 @@ int TLinearClassifier::get_nr_values()
 PDistribution TLinearClassifier::classDistribution(const TExample &example){
     TExample new_example(domain, example);
 	int numClass = get_nr_class(linmodel);
-	map<int, int> indexMap;
+
 	feature_node *x = feature_nodeFromExample(new_example, bias);
 
 	int *labels = new int [numClass];
@@ -476,11 +500,10 @@ PDistribution TLinearClassifier::classDistribution(const TExample &example){
 TValue TLinearClassifier::operator () (const TExample &example){
     TExample new_example(domain, example);
 	int numClass = get_nr_class(linmodel);
-	map<int, int> indexMap;
+
 	feature_node *x = feature_nodeFromExample(new_example, bias);
 
 	int predict_label = predict(linmodel, x);
 	delete[] x;
 	return TValue(predict_label);
 }
-

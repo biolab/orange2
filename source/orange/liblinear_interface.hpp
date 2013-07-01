@@ -50,29 +50,34 @@ public:
 	
 	int solver_type;	//P(&LinearLearner_Lossfunction1) Solver type (loss function1)
 	float eps;			//P Stopping criteria
-	float C;			//P Regularization parameter
+	float C;			//P Regularization parameter C
 	float bias;         //P bias parameter (default -1.0 - no bias)
 
 	TLinearLearner();
 	PClassifier operator()(PExampleGenerator, const int & = 0);
 };
 
-class ORANGE_API TLinearClassifier : public TClassifierFD{
+class ORANGE_API TLinearClassifier : public TClassifierFD {
 public:
 	__REGISTER_CLASS
+
 	TLinearClassifier() {};
-	TLinearClassifier(const PVariable &var, PExampleTable examples, model *_model);
+
+	TLinearClassifier(PDomain domain, struct model * model);
+
 	~TLinearClassifier();
 
 	PDistribution classDistribution(const TExample &);
 	TValue operator()(const TExample&);
 
 	PFloatListList weights;	//P Computed feature weights
-	PExampleTable examples;	//P Examples used to train the classifier
 	float bias; //PR bias
+
 	model *getModel(){ return linmodel; }
+
 private:
 	model *linmodel;
+	// bias in double precision.
 	double dbias;
 	int get_nr_values();
 };
