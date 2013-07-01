@@ -1452,20 +1452,13 @@ PyObject *SVMClassifier__reduce__(PyObject* self)
     if (svm_save_model_alt(buf, svm->getModel())){
     	raiseError("Error saving SVM model");
     }
-    if(svm->kernelFunc)
-        return Py_BuildValue("O(OOOsO)N", self->ob_type,
-                                    WrapOrange(svm->classVar),
-                                    WrapOrange(svm->examples),
-                                    WrapOrange(svm->supportVectors),
+
+    return Py_BuildValue("O(OsOOO)N", self->ob_type,
+                                    WrapOrange(svm->domain),
                                     buf.c_str(),
+                                    WrapOrange(svm->supportVectors),
                                     WrapOrange(svm->kernelFunc),
-                                    packOrangeDictionary(self));
-    else
-        return Py_BuildValue("O(OOOs)N", self->ob_type,
-                                    WrapOrange(svm->classVar),
                                     WrapOrange(svm->examples),
-                                    WrapOrange(svm->supportVectors),
-                                    buf.c_str(),
                                     packOrangeDictionary(self));
   PyCATCH
 }
@@ -1479,22 +1472,14 @@ PyObject *SVMClassifierSparse__reduce__(PyObject* self)
     if (svm_save_model_alt(buf, svm->getModel())){
         raiseError("Error saving SVM model.");
     }
-    if(svm->kernelFunc)
-        return Py_BuildValue("O(OOOsbO)N", self->ob_type,
-                                    WrapOrange(svm->classVar),
-                                    WrapOrange(svm->examples),
-                                    WrapOrange(svm->supportVectors),
-                                    buf.c_str(),
-									(char)(svm->useNonMeta? 1: 0),
-                                    WrapOrange(svm->kernelFunc),
-                                    packOrangeDictionary(self));
-    else
-        return Py_BuildValue("O(OOOsb)N", self->ob_type,
-                                    WrapOrange(svm->classVar),
-                                    WrapOrange(svm->examples),
-                                    WrapOrange(svm->supportVectors),
+
+    return Py_BuildValue("O(OsbOOO)N", self->ob_type,
+                                    WrapOrange(svm->domain),
                                     buf.c_str(),
                                     (char)(svm->useNonMeta? 1: 0),
+                                    WrapOrange(svm->supportVectors),
+                                    WrapOrange(svm->kernelFunc),
+                                    WrapOrange(svm->examples),
                                     packOrangeDictionary(self));
   PyCATCH
 }
@@ -1522,26 +1507,46 @@ PyCATCH
 }
 
 
-PyObject * SVMClassifier_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) BASED_ON(ClassifierFD, "(Variable, Examples, Examples, string, [kernelFunc]) -> SVMClassifier")
-{PyTRY
-	PVariable classVar;
-	PExampleTable examples;
+PyObject * SVMClassifier_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) BASED_ON(ClassifierFD, "(Domain, model_string, supportVectors, [kernelFunc, examples]) -> SVMClassifier")
+{
+PyTRY
+	PDomain domain;
+	char*  model_string = NULL;
 	PExampleTable supportVectors;
-	char*  model_string;
 	PKernelFunc kernel;
+	PExampleTable examples;
+
 	if (PyArg_ParseTuple(args, ""))
 		return WrapNewOrange(mlnew TSVMClassifier(), type);
+
 	PyErr_Clear();
-	
-	if (!PyArg_ParseTuple(args, "O&O&O&s|O&:__new__", cc_Variable, &classVar, ccn_ExampleTable, &examples, cc_ExampleTable, &supportVectors, &model_string, cc_KernelFunc, &kernel))
-		return NULL;
+
+	if (!PyArg_ParseTuple(args, "O&sO&|O&O&",
+			cc_Domain, &domain,
+			&model_string,
+			cc_ExampleTable, &supportVectors,
+			ccn_KernelFunc, &kernel,
+			ccn_ExampleTable, &examples)) {
+		 // Old pickle arguments format.
+		PVariable classVar;
+		if (!PyArg_ParseTuple(args, "O&O&O&s|O&:__new__",
+				cc_Variable, &classVar,
+				ccn_ExampleTable, &examples,
+				cc_ExampleTable, &supportVectors,
+				&model_string,
+				cc_KernelFunc, &kernel)) {
+			return NULL;
+		}
+		PyErr_Clear();
+		domain = supportVectors->domain;
+	}
 
 	string buffer(model_string);
 	svm_model* model = svm_load_model_alt(buffer);
 	if (!model)
 		raiseError("Error building LibSVM Model");
 
-	PSVMClassifier svm = mlnew TSVMClassifier(classVar, examples, supportVectors, model, kernel);
+	PSVMClassifier svm = mlnew TSVMClassifier(domain, model, supportVectors, kernel, examples);
 
 	return WrapOrange(svm);
 PyCATCH
@@ -1549,27 +1554,52 @@ PyCATCH
 
 
 
-PyObject * SVMClassifierSparse_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) BASED_ON(SVMClassifier, "(Variable, Examples, Examples, string, [useNonMeta, kernelFunc]) -> SVMClassifierSparse")
-{PyTRY
-	PVariable classVar;
-	PExampleTable examples;
+PyObject * SVMClassifierSparse_new(PyTypeObject* type, PyObject* args, PyObject* kwargs) BASED_ON(SVMClassifier, "(Domain, model_string, useNonMeta, supportVectors, [kernelFunc, examples]) -> SVMClassifierSparse")
+{
+PyTRY
+	PDomain domain;
+	char*  model_string = NULL;
+	char useNonMeta = 0;
+
 	PExampleTable supportVectors;
-	char*  model_string;
-	char useNonMeta;
 	PKernelFunc kernel;
+	PExampleTable examples;
+
 	if (PyArg_ParseTuple(args, ""))
 		return WrapNewOrange(mlnew TSVMClassifierSparse(), type);
+
 	PyErr_Clear();
-	
-	if (!PyArg_ParseTuple(args, "O&O&O&s|bO&:__new__", cc_Variable, &classVar, ccn_ExampleTable, &examples, cc_ExampleTable, &supportVectors, &model_string, &useNonMeta, cc_KernelFunc, &kernel))
-		return NULL;
-	
+
+	if (!PyArg_ParseTuple(args, "O&sbO&|O&O&:__new__",
+			cc_Domain, &domain,
+			&model_string,
+			&useNonMeta,
+			cc_ExampleTable, &supportVectors,
+			ccn_KernelFunc, &kernel,
+			ccn_ExampleTable, &examples)) {
+
+		 // Old pickle arguments format.
+		PVariable classVar;
+		if (!PyArg_ParseTuple(args, "O&O&O&s|bO&:__new__",
+				cc_Variable, &classVar,
+				ccn_ExampleTable, &examples,
+				cc_ExampleTable, &supportVectors,
+				&model_string,
+				&useNonMeta,
+				cc_KernelFunc, &kernel)) {
+			return NULL;
+		}
+
+		PyErr_Clear();
+		domain = supportVectors->domain;
+	}
+
 	string buffer(model_string);
 	svm_model* model = svm_load_model_alt(buffer);
 	if (!model)
 		raiseError("Error building LibSVM Model");
 
-	PSVMClassifier svm = mlnew TSVMClassifierSparse(classVar, examples, supportVectors, model, useNonMeta != 0, kernel);
+	PSVMClassifier svm = mlnew TSVMClassifierSparse(domain, model, useNonMeta != 0, supportVectors, kernel, examples);
 
 	return WrapOrange(svm);
 PyCATCH

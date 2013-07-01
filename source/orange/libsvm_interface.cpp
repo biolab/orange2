@@ -726,15 +726,9 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 
 	PExampleTable supportVectors = extract_support_vectors(model, examples);
 
-	PVariable classVar;
+	PDomain domain = examples->domain;
 
-	if (param.svm_type == ONE_CLASS) {
-		classVar = mlnew TFloatVariable("one class");
-	} else {
-		classVar = examples->domain->classVar;
-	}
-
-	return PClassifier(createClassifier(classVar, examples, supportVectors, model));
+	return PClassifier(createClassifier(examples->domain, model, supportVectors, examples));
 }
 
 svm_node* TSVMLearner::example_to_svm(const TExample &ex, svm_node* node, float last, int type){
@@ -765,11 +759,11 @@ int TSVMLearner::getNumOfElements(PExampleGenerator examples){
 }
 
 TSVMClassifier* TSVMLearner::createClassifier(
-		PVariable classVar, PExampleTable examples, PExampleTable supportVectors, svm_model* model) {
+		PDomain domain, svm_model* model, PExampleTable supportVectors, PExampleTable examples) {
 	if (kernel_type != PRECOMPUTED) {
 		examples = NULL;
 	}
-	return mlnew TSVMClassifier(classVar, examples, supportVectors, model, kernelFunc);
+	return mlnew TSVMClassifier(domain, model, supportVectors, kernelFunc, examples);
 }
 
 TSVMLearner::~TSVMLearner(){
@@ -789,32 +783,34 @@ int TSVMLearnerSparse::getNumOfElements(PExampleGenerator examples){
 }
 
 TSVMClassifier* TSVMLearnerSparse::createClassifier(
-		PVariable classVar, PExampleTable examples, PExampleTable supportVectors, svm_model* model) {
+		PDomain domain, svm_model* model, PExampleTable supportVectors, PExampleTable examples) {
 	if (kernel_type != PRECOMPUTED) {
 		examples = NULL;
 	}
-	return mlnew TSVMClassifierSparse(classVar, examples, supportVectors, model, useNonMeta, kernelFunc);
+	return mlnew TSVMClassifierSparse(domain, model, useNonMeta, supportVectors, kernelFunc, examples);
 }
 
 
 TSVMClassifier::TSVMClassifier(
-		const PVariable &var,
-		PExampleTable examples,
+		PDomain domain, svm_model * model,
 		PExampleTable supportVectors,
-		svm_model* model,
-		PKernelFunc kernelFunc) {
-	this->classVar = var;
-	this->examples = examples;
-	this->supportVectors = supportVectors;
+		PKernelFunc kernelFunc,
+		PExampleTable examples
+		) : TClassifierFD(domain) {
 	this->model = model;
+	this->supportVectors = supportVectors;
 	this->kernelFunc = kernelFunc;
+	this->examples = examples;
 
-	domain = supportVectors->domain;
 	svm_type = svm_get_svm_type(model);
 	kernel_type = model->param.kernel_type;
 
+	if (svm_type == ONE_CLASS) {
+		this->classVar = mlnew TFloatVariable("one class");
+	}
+
 	computesProbabilities = model && svm_check_probability_model(model) && \
-			(svm_type != NU_SVR && svm_type != EPSILON_SVR); // Disable prob. estimation for regression
+				(svm_type != NU_SVR && svm_type != EPSILON_SVR); // Disable prob. estimation for regression
 
 	int nr_class = svm_get_nr_class(model);
 	int i = 0;
@@ -822,39 +818,53 @@ TSVMClassifier::TSVMClassifier(
 	/* Expose (copy) the model data (coef, rho, probA) to public
 	 * class interface.
 	 */
-    if (svm_type == C_SVC || svm_type == NU_SVC){
-	    nSV = mlnew TIntList(nr_class); // num of SVs for each class (sum = model->l)
-	    for(i = 0;i < nr_class; i++)
-		    nSV->at(i) = model->nSV[i];
-    }
+	if (svm_type == C_SVC || svm_type == NU_SVC) {
+		nSV = mlnew TIntList(nr_class); // num of SVs for each class (sum(nSV) == model->l)
+		for(i = 0;i < nr_class; i++) {
+			nSV->at(i) = model->nSV[i];
+		}
+	}
 
 	coef = mlnew TFloatListList(nr_class-1);
-	for(i = 0; i < nr_class - 1; i++){
+	for(i = 0; i < nr_class - 1; i++) {
 		TFloatList *coefs = mlnew TFloatList(model->l);
-		for(int j = 0;j < model->l; j++)
+		for(int j = 0;j < model->l; j++) {
 			coefs->at(j) = model->sv_coef[i][j];
-		coef->at(i)=coefs;
+		}
+		coef->at(i) = coefs;
 	}
-	rho = mlnew TFloatList(nr_class*(nr_class-1)/2);
-	for(i = 0; i < nr_class*(nr_class-1)/2; i++)
+
+	// Number of binary classifiers in the model
+	int nr_bin_cls = nr_class * (nr_class - 1) / 2;
+
+	rho = mlnew TFloatList(nr_bin_cls);
+	for(i = 0; i < nr_bin_cls; i++) {
 		rho->at(i) = model->rho[i];
-	if(model->probA){
-		probA = mlnew TFloatList(nr_class*(nr_class-1)/2);
-		if (model->param.svm_type != NU_SVR && model->param.svm_type != EPSILON_SVR && model->probB) // Regression has only probA
-			probB = mlnew TFloatList(nr_class*(nr_class-1)/2);
-		for(i=0; i<nr_class*(nr_class-1)/2; i++){
+	}
+
+	if(model->probA) {
+		probA = mlnew TFloatList(nr_bin_cls);
+		if (model->param.svm_type != NU_SVR && model->param.svm_type != EPSILON_SVR && model->probB) {
+			// Regression only has probA
+			probB = mlnew TFloatList(nr_bin_cls);
+		}
+
+		for(i=0; i<nr_bin_cls; i++) {
 			probA->at(i) = model->probA[i];
-			if (model->param.svm_type != NU_SVR && model->param.svm_type != EPSILON_SVR && model->probB)
+			if (model->param.svm_type != NU_SVR && model->param.svm_type != EPSILON_SVR && model->probB) {
 				probB->at(i) = model->probB[i];
+			}
 		}
 	}
 }
+
 
 TSVMClassifier::~TSVMClassifier(){
 	if (model) {
 		svm_free_and_destroy_model(&model);
 	}
 }
+
 
 PDistribution TSVMClassifier::classDistribution(const TExample & example){
 	if(!model)

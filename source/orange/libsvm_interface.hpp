@@ -66,7 +66,6 @@ public:
 
 WRAPPER(KernelFunc)
 
-//#include "callback.hpp"
 
 class ORANGE_API TSVMLearner : public TLearner{
 public:
@@ -107,7 +106,7 @@ protected:
 	virtual svm_node* init_problem(svm_problem &problem, PExampleTable examples, int n_elements);
 	virtual int getNumOfElements(PExampleGenerator examples);
 	virtual TSVMClassifier* createClassifier(
-			PVariable var, PExampleTable examples, PExampleTable supportVectors, svm_model* model);
+				PDomain domain, svm_model* model, PExampleTable supportVectors, PExampleTable examples);
 };
 
 class ORANGE_API TSVMLearnerSparse : public TSVMLearner{
@@ -118,19 +117,19 @@ protected:
 	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
 	virtual int getNumOfElements(PExampleGenerator examples);
 	virtual TSVMClassifier* createClassifier(
-			PVariable classVar, PExampleTable examples, PExampleTable supportVectors, svm_model* model);
+			PDomain domain, svm_model* model, PExampleTable supportVectors, PExampleTable examples);
 };
 
 
-class ORANGE_API TSVMClassifier : public TClassifierFD{
+class ORANGE_API TSVMClassifier : public TClassifierFD {
 public:
 	__REGISTER_CLASS
-	TSVMClassifier(){
+	TSVMClassifier() {
 		this->model = NULL;
 	};
 
-	TSVMClassifier(const PVariable & , PExampleTable examples, PExampleTable supportVectors,
-			svm_model* model, PKernelFunc kernelFunc);
+	TSVMClassifier(PDomain, svm_model * model, PExampleTable supportVectors,
+			PKernelFunc kernelFunc=NULL, PExampleTable examples=NULL);
 
 	~TSVMClassifier();
 
@@ -145,8 +144,9 @@ public:
 	PFloatList probA; //P probA - pairwise probability information
 	PFloatList probB; //P probB - pairwise probability information
 	PExampleTable supportVectors; //P support vectors
-	PExampleTable examples;	//P (training instances when svm_type == Custom)
-	PKernelFunc kernelFunc;	//P custom kernel function
+
+	PExampleTable examples;	//P training instances when svm_type == Custom
+	PKernelFunc kernelFunc;	//P custom kernel function used when svm_type == Custom
 
 	int svm_type; //P(&SVMLearner_SVMType)  SVM type (C_SVC=0, NU_SVC, ONE_CLASS, EPSILON_SVR=3, NU_SVR=4)
 	int kernel_type; //P(&SVMLearner_Kernel)  kernel type (LINEAR=0, POLY, RBF, SIGMOID, CUSTOM=4)
@@ -161,17 +161,21 @@ private:
 	svm_model *model;
 };
 
-class ORANGE_API TSVMClassifierSparse : public TSVMClassifier{
+class ORANGE_API TSVMClassifierSparse : public TSVMClassifier {
 public:
 	__REGISTER_CLASS
-	TSVMClassifierSparse(){};
-	TSVMClassifierSparse(PVariable var, PExampleTable examples,  PExampleTable supportVectors,
-			svm_model* model, bool useNonMeta, PKernelFunc kernelFunc
-			) :TSVMClassifier(var, examples, supportVectors, model, kernelFunc){
+	TSVMClassifierSparse() {};
+
+	TSVMClassifierSparse(
+			PDomain domain, svm_model * model, bool useNonMeta,
+			PExampleTable supportVectors,
+			PKernelFunc kernelFunc=NULL,
+			PExampleTable examples=NULL
+			) : TSVMClassifier(domain, model, supportVectors, kernelFunc, examples) {
 		this->useNonMeta = useNonMeta;
 	}
 
-	bool useNonMeta; //P include non meta attributes
+	bool useNonMeta; //PR include non meta attributes
 
 protected:
 	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
