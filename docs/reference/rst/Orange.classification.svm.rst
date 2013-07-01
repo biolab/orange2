@@ -65,12 +65,32 @@ Linear SVM learners are more suitable for large scale problems since
 they are significantly faster then :class:`SVMLearner` and its
 subclasses. A down side is that they support only a linear kernel and
 can not estimate probabilities.
+
    
 .. autoclass:: Orange.classification.svm.LinearSVMLearner
    :members:
+
    
 .. autoclass:: Orange.classification.svm.MultiClassSVMLearner
    :members:
+
+
+.. class:: LinearClassifier
+
+   The classifier returned by LIBLINEAR based learners.
+
+   .. attribute:: weights
+
+      A 2 dim table of computed feature weights of the classifier,
+      one for each one vs. rest underlying binary classifier (i.e.
+      ``classifier.weights[i]`` contains the i'th class vs. rest
+      binary classifier weights. If :attr:`bias` > 0 then the bias
+      weight term is appended as the last element of the weight
+      vector.
+
+   .. attribute:: bias
+
+      The bias parameter as passed to the learner.
    
    
 SVM Based feature selection and scoring

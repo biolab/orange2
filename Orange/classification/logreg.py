@@ -1026,11 +1026,16 @@ Logistic regression learner from LIBLINEAR
 
 
 class LibLinearLogRegLearner(Orange.core.LinearLearner):
-    """A logistic regression learner from `LIBLINEAR`_.
+    """
+    A logistic regression learner from `LIBLINEAR`_.
 
     Supports L2 regularized learning.
 
     .. _`LIBLINEAR`: http://www.csie.ntu.edu.tw/~cjlin/liblinear/
+
+    .. note::
+        Unlike :class:`LogRegLearner` this one supports multi-class
+        classification using one vs. rest strategy.
 
     """
 
@@ -1084,6 +1089,20 @@ class LibLinearLogRegLearner(Orange.core.LinearLearner):
             setattr(self, name, value)
 
     def __call__(self, data, weight_id=None):
+        """
+        Return a classifier trained on the `data` (`weight_id` is ignored).
+
+        :param Orange.data.Table data:
+            Training data set.
+        :param int weight_id:
+            Ignored.
+        :rval: Orange.core.LinearClassifier
+
+        .. note::
+            The :class:`Orange.core.LinearClassifier` is same class as
+            :class:`Orange.classification.svm.LinearClassifier`.
+
+        """
         if not isinstance(data.domain.class_var, Orange.feature.Discrete):
             raise TypeError("Can only learn a discrete class.")
 

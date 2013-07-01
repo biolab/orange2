@@ -151,8 +151,10 @@ of variables and handling of constant variables and singularities.
 
 .. autofunction:: dump
 
+
 .. autoclass:: LibLinearLogRegLearner
    :members:
+   :member-order: bysource
 
 
 Examples
