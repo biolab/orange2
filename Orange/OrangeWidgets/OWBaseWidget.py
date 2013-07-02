@@ -4,6 +4,7 @@
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
 import warnings
+import shutil
 
 from Orange.utils import environ
 from Orange.orng.orngEnviron import directoryNames as old_directory_names
@@ -451,11 +452,29 @@ class OWBaseWidget(QDialog):
         return settings
 
     def getDefaultSettingsFilename(self):
+        """
+        Return a default widget settings filename.
+        """
+        settings_dir = self.widgetSettingsDir
+        class_ = type(self)
+        basename = "%s.%s.pck" % (class_.__module__, class_.__name__)
+        filename = os.path.join(settings_dir, basename)
+
+        if os.path.exists(filename):
+            return filename
+
+        # Try to find the old filename format ({caption}.ini) and
+        # copy it to the new place
         fs_encoding = sys.getfilesystemencoding()
         basename = self.captionTitle + ".ini"
-        filename = os.path.join(
-            self.widgetSettingsDir,  # is assumed to be a str in FS encoding
+        legacy_filename = os.path.join(
+            settings_dir,  # is assumed to be a str in FS encoding
             basename.encode(fs_encoding))
+
+        if os.path.isfile(legacy_filename):
+            # Copy the old settings file to the new place.
+            shutil.copy(legacy_filename, filename)
+
         return filename
 
     def getSettingsFile(self, file):
