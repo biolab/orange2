@@ -14,6 +14,7 @@ import unicodedata
 from operator import attrgetter
 from contextlib import nested
 from urllib import urlencode
+from StringIO import StringIO
 
 from PyQt4.QtGui import (
     QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QActionGroup,
@@ -127,8 +128,8 @@ class SchemeEditWidget(QWidget):
         self.__undoStack = QUndoStack(self)
         self.__undoStack.cleanChanged[bool].connect(self.__onCleanChanged)
 
-        # OWBaseWidget properties when set to clean state
-        self.__cleanSettings = []
+        # Serialized scheme when  set to a clean state
+        self.__cleanSchemeString = None
 
         self.__editFinishedMapper = QSignalMapper(self)
         self.__editFinishedMapper.mapped[QObject].connect(
@@ -479,30 +480,31 @@ class SchemeEditWidget(QWidget):
             self.__modified = modified
 
         if not modified:
-            self.__cleanSettings = self.__scheme.widget_settings()
+            self.__cleanSchemeString = scheme_to_string(self.__scheme)
             self.__undoStack.setClean()
         else:
-            self.__cleanSettings = []
+            self.__cleanSchemeString = None
 
     modified = Property(bool, fget=isModified, fset=setModified)
 
     def isModifiedStrict(self):
         """
-        Is the document modified. Run a strict check against all node
-        properties as they were at the time when the last call to
-        `setModified(True)` was made.
+        Is the document modified.
+
+        Run a strict check comparing to a serialized scheme string
+        the time when the last call to `setModified(True)` was made.
 
         """
-        settingsChanged = self.__cleanSettings != \
-                          self.__scheme.widget_settings()
+        schemeChanged = self.__cleanSchemeString != \
+                        scheme_to_string(self.__scheme)
 
         log.debug("Modified strict check (modified flag: %s, "
-                  "undo stack clean: %s, properties: %s)",
+                  "undo stack clean: %s, scheme: %s)",
                   self.__modified,
                   self.__undoStack.isClean(),
-                  settingsChanged)
+                  schemeChanged)
 
-        return self.isModified() or settingsChanged
+        return self.isModified() or schemeChanged
 
     def setQuickMenuTriggers(self, triggers):
         """
@@ -597,9 +599,9 @@ class SchemeEditWidget(QWidget):
             if self.__scheme:
                 self.__scheme.title_changed.connect(self.titleChanged)
                 self.titleChanged.emit(scheme.title)
-                self.__cleanSettings = scheme.widget_settings()
+                self.__cleanSchemeString = scheme_to_string(scheme)
             else:
-                self.__cleanSettings = []
+                self.__cleanSchemeString = None
 
             self.__teardownScene(self.__scene)
             self.__scene.deleteLater()
@@ -1521,6 +1523,12 @@ class SchemeEditWidget(QWidget):
 
         if self.__scene:
             self.__scene.setFont(font)
+
+
+def scheme_to_string(scheme):
+    stream = StringIO()
+    scheme.save_to(stream, pretty=False, pickle_fallback=True)
+    return stream.getvalue()
 
 
 def geometry_from_annotation_item(item):
