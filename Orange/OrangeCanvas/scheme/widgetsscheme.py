@@ -25,6 +25,7 @@ from PyQt4.QtCore import Qt, QCoreApplication, QEvent, SIGNAL
 
 from .signalmanager import SignalManager, compress_signals, can_enable_dynamic
 from .scheme import Scheme, SchemeNode
+from .node import UserMessage
 from .utils import name_lookup, check_arg, check_type
 from ..resources import icon_loader
 from ..config import rc
@@ -144,6 +145,7 @@ class WidgetsScheme(Scheme):
         # Bind widgets progress/processing state back to the node's properties
         widget.progressBarValueChanged.connect(node.set_progress)
         widget.processingStateChanged.connect(node.set_processing_state)
+        widget.widgetStateChanged.connect(self.__on_widget_state_changed)
         self.connect(widget,
                      SIGNAL("blockingStateChanged(bool)"),
                      self.signal_manager._update)
@@ -158,6 +160,41 @@ class WidgetsScheme(Scheme):
         """
         return [self.widget_for_node[node].getSettings(alsoContexts=False)
                 for node in self.nodes]
+
+    def __on_widget_state_changed(self, message_type, message_id,
+                                  message_value):
+        """
+        The OWBaseWidget info/warning/error state has changed.
+
+        message_type is one of "Info", "Warning" or "Error" string depending
+        of which method (information, warning, error) was called. message_id
+        is the first int argument if supplied, and message_value the message
+        text.
+
+        """
+        widget = self.sender()
+        node = self.node_for_widget.get(widget)
+        if node is not None:
+            message_type = str(message_type)
+            if message_type == "Info":
+                contents = widget.widgetStateToHtml(True, False, False)
+                level = UserMessage.Info
+            elif message_type == "Warning":
+                contents = widget.widgetStateToHtml(False, True, False)
+                level = UserMessage.Warning
+            elif message_type == "Error":
+                contents = widget.widgetStateToHtml(False, False, True)
+                level = UserMessage.Error
+            else:
+                raise ValueError("Invalid message_type: %r" % message_type)
+
+            if not contents:
+                contents = None
+
+            message = UserMessage(contents, severity=level,
+                                  message_id=message_type,
+                                  data={"contents-type": "text/html"})
+            node.set_state_message(message)
 
     def sync_node_properties(self):
         """Sync the widget settings/properties with the SchemeNode.properties.

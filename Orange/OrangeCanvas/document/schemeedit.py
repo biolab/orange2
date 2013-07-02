@@ -588,8 +588,6 @@ class SchemeEditWidget(QWidget):
         if self.__scheme is not scheme:
             if self.__scheme:
                 self.__scheme.title_changed.disconnect(self.titleChanged)
-                self.__scheme.node_added.disconnect(self.__onNodeAdded)
-                self.__scheme.node_removed.disconnect(self.__onNodeRemoved)
                 self.__scheme.removeEventFilter(self)
 
             self.__scheme = scheme
@@ -598,8 +596,6 @@ class SchemeEditWidget(QWidget):
 
             if self.__scheme:
                 self.__scheme.title_changed.connect(self.titleChanged)
-                self.__scheme.node_added.connect(self.__onNodeAdded)
-                self.__scheme.node_removed.connect(self.__onNodeRemoved)
                 self.titleChanged.emit(scheme.title)
                 self.__cleanSettings = scheme.widget_settings()
             else:
@@ -618,9 +614,6 @@ class SchemeEditWidget(QWidget):
             self.__scene.set_scheme(scheme)
 
             if self.__scheme:
-                for node in self.__scheme.nodes:
-                    self.__onNodeAdded(node)
-
                 self.__scheme.installEventFilter(self)
 
     def scheme(self):
@@ -1227,30 +1220,6 @@ class SchemeEditWidget(QWidget):
                                    priority=QuickHelpTipEvent.Permanent)
 
             QCoreApplication.sendEvent(self, ev)
-
-    def __onNodeAdded(self, node):
-        widget = self.__scheme.widget_for_node[node]
-        widget.widgetStateChanged.connect(self.__onWidgetStateChanged)
-
-    def __onNodeRemoved(self, node):
-        widget = self.__scheme.widget_for_node[node]
-        widget.widgetStateChanged.disconnect(self.__onWidgetStateChanged)
-
-    def __onWidgetStateChanged(self, *args):
-        widget = self.sender()
-        self.scheme()
-        widget_to_node = dict(reversed(item) for item in \
-                              self.__scheme.widget_for_node.items())
-        node = widget_to_node[widget]
-        item = self.__scene.item_for_node(node)
-
-        info = widget.widgetStateToHtml(True, False, False)
-        warning = widget.widgetStateToHtml(False, True, False)
-        error = widget.widgetStateToHtml(False, False, True)
-
-        item.setInfoMessage(info or None)
-        item.setWarningMessage(warning or None)
-        item.setErrorMessage(error or None)
 
     def __onNodeActivate(self, item):
         node = self.__scene.node_for_item(item)
