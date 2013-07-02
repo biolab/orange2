@@ -20,7 +20,7 @@ from PyQt4.QtGui import (
     QWidget, QVBoxLayout, QInputDialog, QMenu, QAction, QActionGroup,
     QKeySequence, QUndoStack, QGraphicsItem, QGraphicsObject,
     QGraphicsTextItem, QCursor, QFont, QPainter, QPixmap, QColor,
-    QIcon, QWhatsThisClickedEvent
+    QIcon, QWhatsThisClickedEvent, QBrush
 )
 
 from PyQt4.QtCore import (
@@ -32,7 +32,9 @@ from PyQt4.QtCore import pyqtProperty as Property, pyqtSignal as Signal
 from ..registry.qt import whats_this_helper
 from ..gui.quickhelp import QuickHelpTipEvent
 from ..gui.utils import message_information, disabled
-from ..scheme import scheme, SchemeNode, SchemeLink, BaseSchemeAnnotation
+from ..scheme import (
+    scheme, signalmanager, SchemeNode, SchemeLink, BaseSchemeAnnotation
+)
 from ..canvas.scene import CanvasScene
 from ..canvas.view import CanvasView
 from ..canvas import items
@@ -591,6 +593,10 @@ class SchemeEditWidget(QWidget):
             if self.__scheme:
                 self.__scheme.title_changed.disconnect(self.titleChanged)
                 self.__scheme.removeEventFilter(self)
+                sm = self.__scheme.findChild(signalmanager.SignalManager)
+                if sm:
+                    sm.stateChanged.disconnect(
+                        self.__signalManagerStateChanged)
 
             self.__scheme = scheme
 
@@ -600,6 +606,10 @@ class SchemeEditWidget(QWidget):
                 self.__scheme.title_changed.connect(self.titleChanged)
                 self.titleChanged.emit(scheme.title)
                 self.__cleanSchemeString = scheme_to_string(scheme)
+                sm = scheme.findChild(signalmanager.SignalManager)
+                if sm:
+                    sm.stateChanged.connect(self.__signalManagerStateChanged)
+
             else:
                 self.__cleanSchemeString = None
 
@@ -1523,6 +1533,14 @@ class SchemeEditWidget(QWidget):
 
         if self.__scene:
             self.__scene.setFont(font)
+
+    def __signalManagerStateChanged(self, state):
+        if state == signalmanager.SignalManager.Running:
+            self.__view.setBackgroundBrush(QBrush(Qt.NoBrush))
+#            self.__view.setBackgroundIcon(QIcon())
+        elif state == signalmanager.SignalManager.Paused:
+            self.__view.setBackgroundBrush(QBrush(QColor(235, 235, 235)))
+#            self.__view.setBackgroundIcon(QIcon("canvas_icons:Pause.svg"))
 
 
 def scheme_to_string(scheme):
