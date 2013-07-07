@@ -547,24 +547,18 @@ class OWDatabasesUpdate(OWWidget):
             self.setEnabled(True)
 
     def UpdateInfoLabel(self):
-        local = [item for item, _, _ in self.updateItems
-                 if item.state != AVAILABLE]
-        onServer = [item for item, _, _ in self.updateItems]
+        local = [item for item, tree_item, _ in self.updateItems
+                 if item.state != AVAILABLE and not tree_item.isHidden() ]
+        size = sum(float(item.size) for item in local)
 
-        size = sum(float(special_tags(item).get("#uncompressed", item.size))
-                   for item in local)
+        onServer = [item for item, tree_item, _ in self.updateItems if not tree_item.isHidden()]
+        sizeOnServer = sum(float(item.size) for item in onServer)
 
-        sizeOnServer = sum(float(item.size) for item, _, _ in self.updateItems)
-
-        if self.showAll:
-
-            text = ("%i items, %s (data on server: %i items, %s)" %
-                    (len(local),
-                     sizeof_fmt(size),
-                     len(onServer),
-                     sizeof_fmt(sizeOnServer)))
-        else:
-            text = "%i items, %s" % (len(local), sizeof_fmt(size))
+        text = ("%i items, %s (on server: %i items, %s)" %
+                (len(local),
+                 sizeof_fmt(size),
+                 len(onServer),
+                 sizeof_fmt(sizeOnServer)))
 
         self.infoLabel.setText(text)
 
@@ -586,6 +580,7 @@ class OWDatabasesUpdate(OWWidget):
             hide = not all(UpdateItem_match(item, string)
                            for string in strings)
             tree_item.setHidden(hide)
+        self.UpdateInfoLabel()
 
     def SubmitDownloadTask(self, domain, filename):
         """
