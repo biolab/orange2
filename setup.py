@@ -501,7 +501,8 @@ def get_source_files(path, ext="cpp", exclude=[]):
 
 include_ext = LibStatic("orange_include",
                         get_source_files("source/include/"),
-                        include_dirs=include_dirs)
+                        include_dirs=include_dirs,
+                        extra_compile_args=extra_compile_args)
 
 
 if sys.platform == "win32": # ?? mingw/cygwin
