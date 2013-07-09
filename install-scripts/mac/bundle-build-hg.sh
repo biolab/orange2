@@ -89,12 +89,6 @@ EOF
 
 chmod +x ${APP}/Contents/MacOS/Orange
 
-# First install/upgrade distrubute. The setup.py scripts might
-# need it
-echo "Installing/upgrading distribute in the bundle"
-echo "============================================="
-$EASY_INSTALL -U distribute
-
 
 echo "Checkouting and building orange"
 echo "==============================="
@@ -128,14 +122,6 @@ echo "============================================="
 echo "Checkouting and building text addon"
 echo "==================================="
 ./bundle-inject-hg.sh https://bitbucket.org/biolab/orange-text text tip $REPOS_DIR ${APP}
-
-echo "Installing networkx"
-echo "+++++++++++++++++++"
-./bundle-inject-pypi.sh networkx-1.6 http://pypi.python.org/packages/source/n/networkx/networkx-1.6.tar.gz $REPOS_DIR ${APP}
-
-echo "Installing suds library"
-echo "+++++++++++++++++++++++"
-./bundle-inject-pypi.sh suds-0.4 http://pypi.python.org/packages/source/s/suds/suds-0.4.tar.gz $REPOS_DIR ${APP}
 
 echo "Instaling slumber library"
 echo "+++++++++++++++++++++++++"
