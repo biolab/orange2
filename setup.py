@@ -2,7 +2,8 @@
 
 try:
     import distribute_setup
-    distribute_setup.use_setuptools()
+    # require distutils >= 0.6.26 or setuptools >= 0.7
+    distribute_setup.use_setuptools(version='0.6.26')
 except ImportError:
     # For documentation we load setup.py to get version
     # so it does not matter if importing fails
