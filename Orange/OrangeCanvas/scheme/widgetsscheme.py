@@ -26,7 +26,7 @@ from PyQt4.QtCore import Qt, QCoreApplication, QEvent, SIGNAL
 from .signalmanager import SignalManager, compress_signals, can_enable_dynamic
 from .scheme import Scheme, SchemeNode
 from .node import UserMessage
-from .utils import name_lookup, check_arg, check_type
+from ..utils import name_lookup, check_arg, check_type
 from ..resources import icon_loader
 from ..config import rc
 

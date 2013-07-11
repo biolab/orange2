@@ -20,7 +20,7 @@ from .node import SchemeNode
 from .link import SchemeLink, compatible_channels
 from .annotations import BaseSchemeAnnotation
 
-from .utils import check_arg, check_type
+from ..utils import check_arg, check_type
 
 from .errors import (
     SchemeCycleError, IncompatibleChannelTypeError, SinkChannelError,
