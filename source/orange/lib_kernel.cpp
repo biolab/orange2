@@ -5214,7 +5214,7 @@ PyObject *ContDistribution_add(PyObject *self, PyObject *args) PYARGS(METH_VARAR
 
     float f;
     if (PyNumber_ToFloat(index, f)) {
-      dist->addfloat(f);
+      dist->addfloat(f, weight);
       RETURN_NONE;
     }
 
