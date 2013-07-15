@@ -554,6 +554,38 @@ ScaleData = deprecated_members({"rawData": "raw_data",
                                 })(ScaleData)
 
 
+def jitter_array(array, ratio=0.01, axis=0, rand_seed=0):
+    """
+    """
+    array = numpy.array(array)
+    shape = array.shape
+
+    if array.ndim == 1:
+        if axis != 0:
+            raise ValueError("Invalid axis")
+        array = array.reshape((-1, 1))
+
+    if array.ndim > 2:
+        raise ValueError("'array' must be at most 2 dimensional.")
+
+    axis_min = array.min(axis=axis)
+    axis_max = array.max(axis=axis)
+    axis_span = axis_max - axis_min
+
+    # roll axis to front
+    array = numpy.rollaxis(array, axis, 0)
+
+    random = numpy.random.RandomState(rand_seed)
+    for i, span in enumerate(axis_span):
+        array[:, i] += random.uniform(-ratio * span / 2, ratio * span / 2,
+                                      array.shape[0])
+
+    # roll axis back to its original position
+    array = numpy.rollaxis(array, 0, axis + 1)
+    array = array.reshape(shape)
+    return array
+
+
 class ScaleLinProjData(ScaleData):
     def __init__(self):
         ScaleData.__init__(self)
@@ -825,8 +857,10 @@ class ScaleLinProjData(ScaleData):
             y_positions *= self.trueScaleFactor
 
         if jitter_size > 0.0:
-            x_positions += numpy.random.uniform(-jitter_size, jitter_size, len(x_positions))
-            y_positions += numpy.random.uniform(-jitter_size, jitter_size, len(y_positions))
+            x_positions = jitter_array(x_positions, jitter_size / 100.,
+                                       rand_seed=self.jitter_seed)
+            y_positions = jitter_array(y_positions, jitter_size / 100.,
+                                       rand_seed=self.jitter_seed)
 
         self.last_attr_indices = attr_indices
         if class_list != None:
