@@ -410,25 +410,46 @@ class LearnerTestCase(DataTestCase):
     def test_pickling_on(self, dataset):
         """ Test learner and classifier pickling.
         """
-        classifier = self.learner(dataset)
+        def clone(obj):
+            return pickle.loads(pickle.dumps(obj))
 
-        s = pickle.dumps(classifier)
-        classifier_clone = pickle.loads(s)
+        cloned_learner = clone(self.learner)
+        classifier = self.learner(dataset)
+        classifier_clone = clone(classifier)
+        classifier_from_cloned = cloned_learner(dataset)
 
         indices = orange.MakeRandomIndices2(p0=20)(dataset)
         test = dataset.select(indices, 0)
+        class_var = dataset.domain.class_var
 
         for ex in test:
-            if isinstance(dataset.domain.class_var, Orange.feature.Continuous):
+            prediction1 = classifier(ex, orange.GetValue)
+            prediction2 = classifier_clone(ex, orange.GetValue)
+            prediction3 = classifier_from_cloned(ex, orange.GetValue)
+
+            if isinstance(class_var, Orange.feature.Continuous):
                 # Test to third digit after the decimal point
-                self.assertAlmostEqual(classifier(ex, orange.GetValue).native(),
-                                       classifier_clone(ex, orange.GetValue).native(),
-                                       min(3, dataset.domain.class_var.number_of_decimals),
-                                       "Pickled and original classifier return a different value!")
+                self.assertAlmostEqual(
+                    prediction1.native(), prediction2.native(),
+                    min(3, class_var.number_of_decimals),
+                    "Pickled and original classifier return a different "
+                    "value!")
+
+                self.assertAlmostEqual(
+                    prediction1.native(), prediction3.native(),
+                    min(3, class_var.number_of_decimals),
+                    "Pickled and original learner return a different "
+                    "classifier!")
             else:
-                self.assertEqual(classifier(ex, orange.GetValue),
-                                 classifier_clone(ex, orange.GetValue),
-                                 "Pickled and original classifier return a different value!")
+                self.assertEqual(
+                    prediction1, prediction2,
+                    "Pickled and original classifier return a different "
+                    "value!")
+
+                self.assertEqual(
+                    prediction1, prediction3,
+                    "Pickled and original learner return a different "
+                    "classifier!")
 
 
 class MeasureAttributeTestCase(DataTestCase):
