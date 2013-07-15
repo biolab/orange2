@@ -91,6 +91,10 @@ class BoostedLearner(orange.Learner):
         instances.removeMetaAttribute(weight)
         return BoostedClassifier(classifiers = classifiers, name=self.name, 
             class_var=instances.domain.class_var)
+
+    def __reduce__(self):
+        return type(self), (self.learner,), dict(self.__dict__)
+
 BoostedLearner = Orange.utils.deprecated_members({"examples":"instances", "classVar":"class_var", "weightId":"weigth_id", "origWeight":"orig_weight"})(BoostedLearner)
 
 class BoostedClassifier(orange.Classifier):

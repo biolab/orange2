@@ -45,6 +45,10 @@ class StackedClassificationLearner(Orange.classification.Learner):
         feature_domain = Orange.data.Domain(features)
         return StackedClassifier(classifiers, meta_classifier, name=self.name)
 
+    def __reduce__(self):
+        return type(self), (self.learner,), dict(self.__dict__)
+
+
 class StackedClassifier:
     """
     A classifier for stacking. Uses a set of level-0 classifiers to induce class probabilities, which
