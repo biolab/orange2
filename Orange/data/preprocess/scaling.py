@@ -554,7 +554,7 @@ ScaleData = deprecated_members({"rawData": "raw_data",
                                 })(ScaleData)
 
 
-def jitter_array(array, ratio=0.01, axis=0, rand_seed=0):
+def jitter_array(array, ratio=0.01, axis=0, rand_seed=None):
     """
     """
     array = numpy.array(array)
@@ -857,10 +857,12 @@ class ScaleLinProjData(ScaleData):
             y_positions *= self.trueScaleFactor
 
         if jitter_size > 0.0:
-            x_positions = jitter_array(x_positions, jitter_size / 100.,
-                                       rand_seed=self.jitter_seed)
-            y_positions = jitter_array(y_positions, jitter_size / 100.,
-                                       rand_seed=self.jitter_seed)
+            positions = numpy.vstack((x_positions, y_positions))
+            positions = jitter_array(positions, jitter_size / 100., axis=1,
+                                     rand_seed=self.jitter_seed)
+            x_positions, y_positions = numpy.vsplit(positions, 2)
+            x_positions = x_positions.ravel()
+            y_positions = y_positions.ravel()
 
         self.last_attr_indices = attr_indices
         if class_list != None:
