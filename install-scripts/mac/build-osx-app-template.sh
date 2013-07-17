@@ -6,20 +6,90 @@
 #
 #   $ build-osx-app-template.sh $HOME/Orange.app
 #
+# Prerequisites:
+#     a working gcc compiler toolchain
+#     a working gfortran compiler on PATH
 
 
-SCRIPT_DIR_NAME=$(dirname "$0")
+function print_usage () {
+echo 'build-osx-app-template.sh [-t] [-k] some_path/Orange.app
 
-BUNDLE_LITE=$SCRIPT_DIR_NAME/bundle-lite/Orange.app
+Build an Orange application template from scratch.
+This will download and build all requirements (Python, Qt4, ...) for a
+standalone .app distribution.
+
+Warning: This will take a lot of time.
+
+Options:
+    -t --build-temp DIR   A temporary build directory.
+    -k --keep-temp        Do not delete the temp directory after build.
+    -h --help             Print this help.
+'
+}
+
+while [[ ${1:0:1} = "-" ]]; do
+	case $1 in
+		-t|--build-temp)
+			BUILD_TEMP=$2
+			shift 2
+			;;
+		-k|--keep-temp)
+			KEEP_TEMP=1
+			shift 1
+			;;
+		-h|--help)
+			print_usage
+			exit 0
+			;;
+		-*)
+			echo "Unknown option $1" >&2
+			print_usage
+			exit 1
+			;;
+	esac
+done
+
+
+if [[ $BUILD_TEMP ]]; then
+	mkdir -p "$BUILD_TEMP"
+else
+	BUILD_TEMP=$(mktemp -d -t build-template)
+fi
 
 APP=$1
 
 if [[ ! $APP ]]; then
-	echo "Applicatition path must be specified"
-	echo "Usage: ./build-osx-app-template.sh ApplicationTemplate"
+	echo "Target application path must be specified" >&2
+	print_usage
 	exit 1
 fi
 
+mkdir -p "$APP"
+
+# Convert to absolute path
+APP=$(cd "$APP"; pwd)
+
+# Get absolute path to the bundle-lite template
+SCRIPT_DIR_NAME=$(dirname "$0")
+# Convert to absolute path
+SCRIPT_DIR_NAME=$(cd "$SCRIPT_DIR_NAME"; pwd)
+BUNDLE_LITE=$SCRIPT_DIR_NAME/bundle-lite/Orange.app
+
+
+# Versions of included 3rd party software
+
+PYTHON_VER=2.7.5
+PIP_VER=1.3.1
+DISTRIBUTE_VER=0.6.49
+NUMPY_VER=1.7.1
+SCIPY_VER=0.12.0
+QT_VER=4.7.4
+SIP_VER=4.14.6
+PYQT_VER=4.10.1
+PYQWT_VER=5.2.0
+
+# Number of make jobs
+MAKE_JOBS=${MAKE_JOBS:-$(sysctl -n hw.physicalcpu)}
 
 PYTHON=$APP/Contents/MacOS/python
 EASY_INSTALL=$APP/Contents/MacOS/easy_install
@@ -28,6 +98,7 @@ PIP=$APP/Contents/MacOS/pip
 export MACOSX_DEPLOYMENT_TARGET=10.5
 
 SDK=/Developer/SDKs/MacOSX$MACOSX_DEPLOYMENT_TARGET.sdk
+
 
 function create_template {
 	# Create a minimal .app template with the expected dir structure
@@ -41,39 +112,39 @@ function create_template {
 	cp "$BUNDLE_LITE"/Contents/Resources/* "$APP"/Contents/Resources
 	cp "$BUNDLE_LITE"/Contents/Info.plist "$APP"/Contents/Info.plist
 
-	#cp $BUNDLE_LITE/Contents/PkgInfo $APP/Contents/PkgInfo
+	cp "$BUNDLE_LITE"/Contents/PkgInfo $APP/Contents/PkgInfo
 
 	cat <<-'EOF' > "$APP"/Contents/MacOS/ENV
-	# Create an environment for running python from the bundle
-	# Should be run as "source ENV"
+		# Create an environment for running python from the bundle
+		# Should be run as "source ENV"
 
-	BUNDLE_DIR=`dirname "$0"`/../
-	BUNDLE_DIR=`perl -MCwd=realpath -e 'print realpath($ARGV[0])' "$BUNDLE_DIR"`/
-	FRAMEWORKS_DIR="$BUNDLE_DIR"Frameworks/
-	RESOURCES_DIR="$BUNDLE_DIR"Resources/
+		BUNDLE_DIR=`dirname "$0"`/../
+		BUNDLE_DIR=`perl -MCwd=realpath -e 'print realpath($ARGV[0])' "$BUNDLE_DIR"`/
+		FRAMEWORKS_DIR="$BUNDLE_DIR"Frameworks/
+		RESOURCES_DIR="$BUNDLE_DIR"Resources/
 
-	PYVERSION="2.7"
+		PYVERSION="2.7"
 
-	PYTHONEXECUTABLE="$FRAMEWORKS_DIR"Python.framework/Resources/Python.app/Contents/MacOS/Python
-	PYTHONHOME="$FRAMEWORKS_DIR"Python.framework/Versions/"$PYVERSION"/
+		PYTHONEXECUTABLE="$FRAMEWORKS_DIR"Python.framework/Resources/Python.app/Contents/MacOS/Python
+		PYTHONHOME="$FRAMEWORKS_DIR"Python.framework/Versions/"$PYVERSION"/
 
-	DYLD_FRAMEWORK_PATH="$FRAMEWORKS_DIR"${DYLD_FRAMEWORK_PATH:+:$DYLD_FRAMEWORK_PATH}
+		DYLD_FRAMEWORK_PATH="$FRAMEWORKS_DIR"${DYLD_FRAMEWORK_PATH:+:$DYLD_FRAMEWORK_PATH}
 
-	export PYTHONEXECUTABLE
-	export PYTHONHOME
+		export PYTHONEXECUTABLE
+		export PYTHONHOME
 
-	export DYLD_FRAMEWORK_PATH
+		export DYLD_FRAMEWORK_PATH
 
-	# Some non framework libraries are put in $FRAMEWORKS_DIR by machlib standalone
-	export DYLD_LIBRARY_PATH="$FRAMEWORKS_DIR"${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+		# Some non framework libraries are put in $FRAMEWORKS_DIR by machlib standalone
+		export DYLD_LIBRARY_PATH="$FRAMEWORKS_DIR"${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
 EOF
 
 }
 
 function install_python() {
-	download_and_extract http://www.python.org/ftp/python/2.7.5/Python-2.7.5.tgz
+	download_and_extract "http://www.python.org/ftp/python/$PYTHON_VER/Python-$PYTHON_VER.tgz"
 
-	cd Python-2.7.5
+	pushd Python-$PYTHON_VER
 
 	# _hashlib import fails with  Symbol not found: _EVP_MD_CTX_md
 	# The 10.5 sdk's libssl does not define it (even though it is v 0.9.7)
@@ -89,12 +160,16 @@ EOF
 				--with-universal-archs=intel \
 				--enable-universalsdk="$SDK"
 
-	make
-	make install
-	cd ..
+	make -j $MAKE_JOBS
+
+	# We don't want to install IDLE.app, Python Launcher.app, in /Applications
+	# on the build system.
+	make install PYTHONAPPSDIR=$(pwd)
+
+	popd
 
 	# PythonAppStart will be used for starting the application GUI.
-	# This needs to be symlinked here for Desktop services used the app's
+	# This needs to be symlinked here for Desktop services to read the app's
 	# Info.plist and not the contained Python.app's
 	ln -fs ../Frameworks/Python.framework/Resources/Python.app/Contents/MacOS/Python "$APP"/Contents/MacOS/PythonAppStart
 	ln -fs ../Frameworks/Python.framework/Resources/Python.app "$APP"/Contents/Resources/Python.app
@@ -112,39 +187,52 @@ EOF
 
 	chmod +x "$APP"/Contents/MacOS/python
 
-	$PYTHON -c"import sys"
+	"$PYTHON" -c"import sys, hashlib"
 
 }
 
 function install_pip() {
-	download_and_extract "https://pypi.python.org/packages/source/p/pip/pip-1.3.1.tar.gz"
-	cd pip-1.3.1
+	download_and_extract "https://pypi.python.org/packages/source/p/pip/pip-$PIP_VER.tar.gz"
 
-	$PYTHON setup.py install
+	pushd pip-$PIP_VER
+
+	"$PYTHON" setup.py install
 	create_shell_start_script pip
 
-	$PIP --version
+	"$PIP" --version
+
+	popd
 }
 
 function install_distribute() {
-	download_and_extract "https://pypi.python.org/packages/source/d/distribute/distribute-0.6.45.tar.gz"
-	cd distribute-0.6.45
+	download_and_extract "https://pypi.python.org/packages/source/d/distribute/distribute-$DISTRIBUTE_VER.tar.gz"
 
-	$PYTHON setup.py install
+	pushd distribute-$DISTRIBUTE_VER
+
+	"$PYTHON" setup.py install
 	create_shell_start_script easy_install
 
-	$EASY_INSTALL --version
+	"$EASY_INSTALL" --version
+
+	popd
 }
 
 function install_ipython {
 	# install with easy_install (does not work with pip)
-	$EASY_INSTALL ipython
+	"$EASY_INSTALL" ipython
 	create_shell_start_script ipython
 }
 
 function install_qt4 {
-	download_and_extract "http://download.qt-project.org/archive/qt/4.7/qt-everywhere-opensource-src-4.7.4.tar.gz"
-	cd qt-everywhere-opensource-src-4.7.4
+	QT_VER_SHORT=${QT_VER%%\.[0-9]}
+
+	# 4.8.* (4.8 does not compile for x86_64 using 10.5 SDK)
+	#download_and_extract "http://download.qt-project.org/official_releases/qt/$QT_VER_SHORT/$QT_VER/qt-everywhere-opensource-src-$QT_VER.tar.gz"
+
+	# 4.7 or older
+	download_and_extract "http://download.qt-project.org/archive/qt/$QT_VER_SHORT/qt-everywhere-opensource-src-$QT_VER.tar.gz"
+
+	pushd qt-everywhere-opensource-src-$QT_VER
 
 	yes yes | ./configure -prefix "$APP"/Contents/Resources/Qt4 \
 				-libdir "$APP"/Contents/Frameworks \
@@ -165,82 +253,90 @@ function install_qt4 {
 				-nomake translations \
 				-sdk "$SDK"
 
-	make -j 4
+	make -j $MAKE_JOBS
 	make install
 
-	# Register plugins.
+	# Register plugins with Qt.
 	cat <<-EOF > "$APP"/Contents/Resources/qt.conf
 		[Paths]
 		Plugins = Resources/Qt4/plugins
 EOF
 
-	# In case the Python executable is invokes directly we also want it to
-	# find the plugins.
+	# In case the Python executable is invoked directly (not through
+	# Contents/MacOS/python) we also want it to find the plugins.
 	cat <<-EOF > "$APP"/Contents/Frameworks/Python.framework/Resources/Python.app/Contents/Resources/qt.conf
 		[Paths]
 		Plugins = ../../../../../Resources/Qt4/plugins
 EOF
 
+	popd
 }
 
 function install_sip {
-	download_and_extract "http://sourceforge.net/projects/pyqt/files/sip/sip-4.14.6/sip-4.14.6.tar.gz"
-	cd sip-4.14.6
+	download_and_extract "http://sourceforge.net/projects/pyqt/files/sip/sip-$SIP_VER/sip-$SIP_VER.tar.gz"
+	pushd sip-$SIP_VER
 
-	$PYTHON configure.py  --arch i386 --arch x86_64 --sdk "$SDK"
+	"$PYTHON" configure.py  --arch i386 --arch x86_64 --sdk "$SDK"
 
-	make
+	make -j $MAKE_JOBS
 	make install
 
-	$PYTHON -c"import sip"
+	"$PYTHON" -c"import sip"
+
+	popd
 
 }
 
 function install_pyqt4 {
-	download_and_extract "http://sourceforge.net/projects/pyqt/files/PyQt4/PyQt-4.10.1/PyQt-mac-gpl-4.10.1.tar.gz"
-	cd PyQt-mac-gpl-4.10.1
+	download_and_extract "http://sourceforge.net/projects/pyqt/files/PyQt4/PyQt-$PYQT_VER/PyQt-mac-gpl-$PYQT_VER.tar.gz"
+	pushd PyQt-mac-gpl-$PYQT_VER
 
-	yes yes | $PYTHON configure.py --qmake "$APP"/Contents/Resources/Qt4/bin/qmake
+	yes yes | "$PYTHON" configure.py --qmake "$APP"/Contents/Resources/Qt4/bin/qmake
 
-	make
+	make -j $MAKE_JOBS
 	make install
 
-	$PYTHON -c"import PyQt4.QtGui, PyQt4.QtGui"
+	"$PYTHON" -c"from PyQt4 import QtGui, QtWebKit, QtSvg, QtNetwork"
 
+	popd
 }
 
 function install_pyqwt5 {
-	download_and_extract "http://sourceforge.net/projects/pyqwt/files/pyqwt5/PyQwt-5.2.0/PyQwt-5.2.0.tar.gz"
+	download_and_extract "http://sourceforge.net/projects/pyqwt/files/pyqwt5/PyQwt-$PYQWT_VER/PyQwt-$PYQWT_VER.tar.gz"
+
+	pushd PyQwt-$PYQWT_VER/configure
 
 	# configure.py fails (with ld: library not found for -lcrt1.10.5.o) trying to
 	# build static libraries
 	export CPPFLAGS="--shared"
 
-	cd PyQwt-5.2.0/configure
+	PYQWT_VER_SHORT=${PYQWT_VER%%\.[0-9]}
 
-	$PYTHON configure.py -Q ../qwt-5.2 \
+	"$PYTHON" configure.py -Q ../qwt-$PYQWT_VER_SHORT \
 						--extra-cflags="-arch i386 -arch x86_64" \
 						--extra-cxxflags="-arch i386 -arch x86_64" \
 						--extra-lflags="-arch i386 -arch x86_64"
-	make
+	make -j $MAKE_JOBS
 	make install
 
 	unset CPPFLAGS
 
-	$PYTHON -c"import PyQt4.Qwt5"
+	"$PYTHON" -c"import PyQt4.Qwt5"
+
+	popd
 }
 
 function install_numpy {
-	$PIP install numpy
+	"$PIP" install numpy==$NUMPY_VER
 
-	$PYTHON -c"import numpy"
+	"$PYTHON" -c"import numpy"
 }
 
 function install_scipy {
 	# This is tricky (req gfortran)
-	$PIP install scipy
+	"$PIP" install scipy==$SCIPY_VER
 
-	$PYTHON -c"import scipy"
+	"$PYTHON" -c"import scipy"
 }
 
 function download_and_extract() {
@@ -259,9 +355,10 @@ function download_and_extract() {
 
 	if [[ ! -e $SOURCE_TAR ]]; then
 		echo "Downloading $SOURCE_TAR"
-		curl --fail -L --max-redirs 3 $URL -o $SOURCE_TAR
+		curl --fail -L --max-redirs 3 "$URL" -o "$SOURCE_TAR".part
+		mv "$SOURCE_TAR".part "$SOURCE_TAR"
 	fi
-	tar -xzf $SOURCE_TAR
+	tar -xzf "$SOURCE_TAR"
 }
 
 
@@ -289,23 +386,26 @@ EOF
 
 function cleanup {
 	# Cleanup the application bundle by removing unnecesary files.
-	find "$APP"/Contents/ \( -name '*~' -or -name '*.bak' -or -name '*.pyc' -or -name '*.pyo' -or -name '*.pyd' \) -exec rm -rf {} ';'
+	find "$APP"/Contents/ \( -name '*~' -or -name '*.bak' -or -name '*.pyc' -or -name '*.pyo' \) -delete
 
-	find "$APP"/Contents/Frameworks/*Qt*.framework -name '*_debug*' -delete
-	find "$APP"/Contents/Frameworks/*Qt*.framework -name '*_debug*' -delete
+	find "$APP"/Contents/Frameworks -name '*_debug*' -delete
 
-	find "$APP"/Contents/Frameworks/*Qt*.framework -name '*.la' -delete
-	find "$APP"/Contents/Frameworks/*Qt*.framework -name '*.a' -delete
-	find "$APP"/Contents/Frameworks/*Qt*.framework -name '*.prl' -delete
-
+	find "$APP"/Contents/Frameworks -name '*.la' -delete
+	find "$APP"/Contents/Frameworks -name '*.a' -delete
+	find "$APP"/Contents/Frameworks -name '*.prl' -delete
 }
 
 function make_standalone {
-	$PIP install macholib
-	$PYTHON -m macholib standalone $APP
-	yes y | $PIP uninstall altgraph
-	yes y | $PIP uninstall macholib
+	"$PIP" install macholib
+	"$PYTHON" -m macholib standalone $APP
+	yes y | "$PIP" uninstall altgraph
+	yes y | "$PIP" uninstall macholib
 }
+
+pushd $BUILD_TEMP
+
+echo "Building template in $BUILD_TEMP"
+echo
 
 create_template
 
@@ -329,6 +429,12 @@ install_pyqwt5
 
 install_ipython
 
+make_standalone
+
 cleanup
 
-make_standalone
+popd
+
+if [[ ! $KEEP_TEMP ]]; then
+	rm -rf $BUILD_TEMP
+fi
