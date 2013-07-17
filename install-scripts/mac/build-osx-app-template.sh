@@ -1,9 +1,10 @@
 #!/bin/bash -e
+#
 # Create (build) an Orange application bundle template
 #
 # example usage:
 #
-#   $./build-create-app-template.sh $HOME/Orange.app
+#   $ build-osx-app-template.sh $HOME/Orange.app
 #
 
 
@@ -15,7 +16,7 @@ APP=$1
 
 if [[ ! $APP ]]; then
 	echo "Applicatition path must be specified"
-	echo "Usage: ./build-create-app-template.sh ApplicationTemplate"
+	echo "Usage: ./build-osx-app-template.sh ApplicationTemplate"
 	exit 1
 fi
 
