@@ -112,7 +112,8 @@ class WidgetManager(QObject):
     #:   * InputUpdate - signal manager is updating/setting the
     #:     widget's inputs
     #:   * BlockingUpdate - widget has entered a blocking state
-    InputUpdate, BlockingUpdate = 1, 2
+    #:   * ProcessingUpdate - widget has entered processing state
+    InputUpdate, BlockingUpdate, ProcessingUpdate = 1, 2, 4
 
     def __init__(self, parent):
         QObject.__init__(self, parent)
@@ -262,10 +263,17 @@ class WidgetManager(QObject):
 
         node.title_changed.connect(widget.setCaption)
 
-        # Bind widgets progress/processing state back to the node's properties
-        widget.progressBarValueChanged.connect(node.set_progress)
-        widget.processingStateChanged.connect(node.set_processing_state)
+        # Widget's info/warning/error messages.
         widget.widgetStateChanged.connect(self.__on_widget_state_changed)
+
+        # Widget's progress bar value state.
+        widget.progressBarValueChanged.connect(node.set_progress)
+
+        # Widget processing state (progressBarInit/Finished)
+        # and the blocking state.
+        widget.processingStateChanged.connect(
+            self.__on_processing_state_changed
+        )
         self.connect(widget,
                      SIGNAL("blockingStateChanged(bool)"),
                      self.__on_blocking_state_changed)
@@ -368,6 +376,22 @@ class WidgetManager(QObject):
                                   message_id=message_type,
                                   data={"content-type": "text/html"})
             node.set_state_message(message)
+
+    def __on_processing_state_changed(self, state):
+        """
+        A widget processing state has changed (progressBarInit/Finished)
+        """
+        widget = self.sender()
+        try:
+            node = self.node_for_widget(widget)
+        except KeyError:
+            return
+
+        if state:
+            self.__widget_processing_state[widget] |= self.ProcessingUpdate
+        else:
+            self.__widget_processing_state[widget] &= ~self.ProcessingUpdate
+        self.__update_node_processing_state(node)
 
     def __on_processing_started(self, node):
         """
