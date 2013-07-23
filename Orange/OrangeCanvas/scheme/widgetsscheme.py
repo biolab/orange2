@@ -580,11 +580,6 @@ class WidgetsSignalManager(SignalManager):
         finally:
             app.restoreOverrideCursor()
 
-        # TODO: Test if async processing works, then remove this
-        while widget.isBlocking():
-            self.thread().msleep(50)
-            app.processEvents()
-
         if widget.processingHandler:
             widget.processingHandler(widget, 0)
 
