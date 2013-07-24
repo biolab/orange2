@@ -14,8 +14,8 @@
 #  set (NUMPY_FIND_QUIETLY TRUE)
 #endif (NUMPY_INCLUDE_DIR)
 
-EXECUTE_PROCESS(COMMAND ${PYTHON_EXECUTABLE} -c 
-    "import numpy; print numpy.get_include()"
+EXECUTE_PROCESS(COMMAND ${PYTHON_EXECUTABLE} -c
+    "import numpy; print(numpy.get_include())"
     OUTPUT_VARIABLE NUMPY_INCLUDE_DIR
     OUTPUT_STRIP_TRAILING_WHITESPACE)
 

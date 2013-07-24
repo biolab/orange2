@@ -110,9 +110,9 @@ MACRO(ADD_SIP_PYTHON_MODULE MODULE_NAME MODULE_SIP)
         ENDFOREACH(filename ${_sip_output_files})
     ENDIF(NOT WIN32)
     ADD_CUSTOM_COMMAND(
-        OUTPUT ${_sip_output_files} 
+        OUTPUT ${_sip_output_files}
         COMMAND ${CMAKE_COMMAND} -E echo ${message}
-        COMMAND ${TOUCH_COMMAND} ${_sip_output_files} 
+        COMMAND ${TOUCH_COMMAND} ${_sip_output_files}
         COMMAND ${SIP_EXECUTABLE} ${_sip_tags} ${_sip_x} ${SIP_EXTRA_OPTIONS} -j ${SIP_CONCAT_PARTS} -c ${CMAKE_CURRENT_SIP_OUTPUT_DIR} ${_sip_includes} ${_abs_module_sip}
         DEPENDS ${_abs_module_sip} ${SIP_EXTRA_FILES_DEPEND}
     )
@@ -122,15 +122,15 @@ MACRO(ADD_SIP_PYTHON_MODULE MODULE_NAME MODULE_SIP)
     ELSE (CYGWIN)
         ADD_LIBRARY(${_logical_name} SHARED ${SIP_EXTRA_SOURCES} ${_sip_output_files} )
     ENDIF (CYGWIN)
-    
+
 #	IF (WIN32)
-#		SET_TARGET_PROPERTIES(${_logical_name} PROPERTIES SUFFIX ".pyd") 
+#		SET_TARGET_PROPERTIES(${_logical_name} PROPERTIES SUFFIX ".pyd")
 #	ENDIF (WIN32)
 
 #	Use sysconfig to get the python module extension
-	execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import distutils.sysconfig; print distutils.sysconfig.get_config_var('SO')" 
-					RESULT_VARIABLE PYTHON_SOPY_PROCESS 
-					OUTPUT_VARIABLE PY_SO_SUFFIX 
+	execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('SO'))"
+					RESULT_VARIABLE PYTHON_SOPY_PROCESS
+					OUTPUT_VARIABLE PY_SO_SUFFIX
 					OUTPUT_STRIP_TRAILING_WHITESPACE)
 	SET_TARGET_PROPERTIES(${_logical_name} PROPERTIES SUFFIX ${PY_SO_SUFFIX})
     TARGET_LINK_LIBRARIES(${_logical_name} ${PYTHON_LIBRARY} ${SIP_EXTRA_LINK_LIBRARIES} ${EXTRA_LINK_LIBRARIES})
