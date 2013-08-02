@@ -28,15 +28,13 @@ def above_threshold(scores, threshold=0.0):
     """Return features (without scores) with scores above or
     equal to a specified threshold.
 
-    :param scores: a list such as one returned by
-      :obj:`~Orange.feature.scoring.score_all`
-    :type scores: list
-    :param threshold: threshold for selection
-    :type threshold: float
+    :param list scores:
+        A list such as one returned by :func:`.score_all`
+    :param float threshold: Threshold for selection.
     :rtype: :obj:`list`
 
     """
-    return [x[0] for x in scores if x[1] > threshold]
+    return [f for f, score in scores if score >= threshold]
 
 
 attsAboveThreshold = above_threshold

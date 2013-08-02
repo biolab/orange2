@@ -40,7 +40,7 @@ class TestSelection(unittest.TestCase):
         
     def test_above_threashold(self):
         threshold = self.scores[len(self.scores) / 2][1]
-        above = [item[0] for item in self.scores if item[1] > threshold]
+        above = [item[0] for item in self.scores if item[1] >= threshold]
         
         self.assertEqual(above, 
                          selection.above_threshold(self.scores, threshold)
