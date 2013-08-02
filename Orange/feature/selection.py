@@ -6,23 +6,23 @@ import Orange.core as orange
 
 from Orange.feature.scoring import score_all
 
+
 def top_rated(scores, n, highest_best=True):
     """Return n top-rated features from the list of scores.
 
-    :param scores: a list such as the one returned by
-      :obj:`~Orange.feature.scoring.score_all`
-    :type scores: list
-    :param n: number of features to select.
-    :type n: int
+    :param list scores:
+        A list such as the one returned by :func:`.score_all`
+    :param int n: Number of features to select.
+    :param bool highest_best:
+        If true, the features that are scored higher are preferred.
     :rtype: :obj:`list`
-    :param highest_best: if true, the features that are scored higher are preferred
-    :type highest_best: bool
+
     """
-    return [x[0] for x in \
-            sorted(scores, key=itemgetter(1), reverse=True)[:n]
-            ]
+    return [f for f, score in
+            sorted(scores, key=itemgetter(1), reverse=highest_best)[:n]]
 
 bestNAtts = top_rated
+
 
 def above_threshold(scores, threshold=0.0):
     """Return features (without scores) with scores above or
