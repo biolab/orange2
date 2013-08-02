@@ -65,7 +65,7 @@ class TestSelection(unittest.TestCase):
         domain = Orange.data.Domain(data.domain.features[:2],
                                     data.domain.class_var,
                                     class_vars=[data.domain.features[2]])
-        domain.add_metas({-1, data.domain.features[3]})
+        domain.add_metas({-1: data.domain.features[3]})
         data = Orange.data.Table(domain, data)
 
         d1 = selection._select_features_subset(data, [data.domain[0]])
