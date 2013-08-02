@@ -26,6 +26,11 @@ The script outputs::
 The module also includes a learner that incorporates feature subset
 selection.
 
+
+.. versionadded:: 2.7.1
+   `select`, `select_above_threshold` and `select_relief` now preserve
+   the domain's meta attributes and `class_vars`.
+
 --------------------------------------
 Functions for feature subset selection
 --------------------------------------

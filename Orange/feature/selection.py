@@ -2,9 +2,28 @@ __docformat__ = 'restructuredtext'
 
 from operator import itemgetter
 
+import Orange.data
 import Orange.core as orange
 
 from Orange.feature.scoring import score_all
+
+
+def _select_features_subset(data, features):
+    """Select the `features` from the `data`.
+
+    .. note::
+        The `features` must be a subset of the `data.domain.features`.
+
+    """
+    def as_descriptor(arg):
+        """Ensure `arg` is an descriptor from `data.domain`"""
+        return data.domain[arg]
+
+    features = map(as_descriptor, features)
+    domain = Orange.data.Domain(features, data.domain.class_var,
+                                class_vars=data.domain.class_vars)
+    domain.add_metas(data.domain.get_metas())
+    return Orange.data.Table(domain, data)
 
 
 def top_rated(scores, n, highest_best=True):
@@ -52,8 +71,10 @@ def select(data, scores, n):
     :param n: number of features to select
     :type n: int
     :rtype: :obj:`Orange.data.Table`
+
     """
-    return data.select(top_rated(scores, n) + [data.domain.classVar.name])
+    features = top_rated(scores, n)
+    return _select_features_subset(data, features)
 
 selectBestNAtts = select
 select_best_n = select
@@ -74,8 +95,8 @@ def select_above_threshold(data, scores, threshold=0.0):
     :type threshold: float
     :rtype: :obj:`Orange.data.Table`
     """
-    return data.select(above_threshold(scores, threshold) + \
-                       [data.domain.classVar.name])
+    features = above_threshold(scores, threshold)
+    return _select_features_subset(data, features)
 
 selectAttsAboveThresh = select_above_threshold
 

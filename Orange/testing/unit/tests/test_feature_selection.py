@@ -50,12 +50,29 @@ class TestSelection(unittest.TestCase):
                                                     self.scores, threshold)
         self.assertEqual(above, [a.name for a in new_data.domain.attributes])
         self.assertEqual(new_data.domain.class_var, self.data.domain.class_var)
-        
-        
-        
-        
-        
-    
+
+    def test_select_features_subset(self):
+        data = Orange.data.Table("lenses")
+
+        d1 = selection._select_features_subset(data, [])
+        self.assertSequenceEqual(d1.domain.features, [])
+        self.assertIs(d1.domain.class_var, data.domain.class_var)
+
+        d1 = selection._select_features_subset(data, [data.domain[0]])
+        self.assertSequenceEqual(d1.domain.features, [data.domain[0]])
+        self.assertIs(d1.domain.class_var, data.domain.class_var)
+
+        domain = Orange.data.Domain(data.domain.features[:2],
+                                    data.domain.class_var,
+                                    class_vars=[data.domain.features[2]])
+        domain.add_metas({-1, data.domain.features[3]})
+        data = Orange.data.Table(domain, data)
+
+        d1 = selection._select_features_subset(data, [data.domain[0]])
+        self.assertSequenceEqual(d1.domain.features, [data.domain[0]])
+        self.assertIs(d1.domain.class_var, data.domain.class_var)
+        self.assertSequenceEqual(d1.domain.class_vars, data.domain.class_vars)
+        self.assertEqual(d1.domain.get_metas(), data.domain.get_metas())
+
 if __name__ == "__main__":
     unittest.main()
-    
