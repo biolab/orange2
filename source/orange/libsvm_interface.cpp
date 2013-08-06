@@ -384,7 +384,8 @@ svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int
 					node->value=int(*i);
 				node->index=index++;
 				if(node->value==numeric_limits<float>::signaling_NaN() ||
-					node->value==numeric_limits<int>::max())
+					node->value==numeric_limits<int>::max() || 
+                    node->value == 0)
 					node--;
 				node++;
 			}
@@ -422,7 +423,8 @@ svm_node* example_to_svm_sparse(const TExample &ex, svm_node* node, float last=0
 					node->value=int(*i);
 				node->index=index;
 				if(node->value==numeric_limits<float>::signaling_NaN() ||
-					node->value==numeric_limits<int>::max())
+					node->value==numeric_limits<int>::max() ||
+                    node->value == 0)
 					node--;
 				node++;
 			}
