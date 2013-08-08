@@ -151,21 +151,61 @@ class SigmoidSVMTestCase(testing.LearnerTestCase):
 
 def to_sparse(data):
     domain = Orange.data.Domain([], data.domain.class_var)
-    domain.add_metas(dict([(Orange.core.newmetaid(), v) for v in data.domain.attributes]))
+    domain.add_metas(dict([(Orange.core.newmetaid(), v)
+                           for v in data.domain.attributes]))
     return Orange.data.Table(domain, data)
+
 
 def sparse_data_iter():
     for name, (data, ) in testing.datasets_iter(datasets):
         yield name, (to_sparse(data), )
 
+
 @testing.data_driven(data_iter=sparse_data_iter())
 class SparseSVMTestCase(testing.LearnerTestCase):
     LEARNER = SVMLearnerSparse(name="svm-sparse")
-    
+
     @test_on_data
     def test_learner_on(self, dataset):
         testing.LearnerTestCase.test_learner_on(self, dataset)
         svm_test_binary_classifier(self, dataset)
+
+
+@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS +
+                 testing.REGRESSION_DATASETS)
+class SparseLearnerEquivalence(unittest.TestCase):
+    @test_on_data
+    def test_sparse_learner_equivalence(self, dataset):
+        sparse_dataset = to_sparse(dataset)
+        if isinstance(dataset.domain.class_var, Orange.feature.Discrete):
+            svm_type = SVMLearner.C_SVC
+        else:
+            svm_type = SVMLearner.Epsilon_SVR
+
+        sparse_learner = Orange.core.SVMLearnerSparse(
+            probability=False,
+            svm_type=svm_type,
+            shrinking=False,
+            eps=1e-10
+        )
+        dense_learner = Orange.core.SVMLearner(
+            probability=False,
+            svm_type=svm_type,
+            shrinking=False,
+            eps=1e-10
+        )
+        sparse_cls = sparse_learner(sparse_dataset)
+        dense_cls = dense_learner(dataset)
+
+        for sparse, dense in zip(sparse_dataset, dataset):
+            val1, dist1 = sparse_cls(sparse, Orange.core.GetBoth)
+            val2, dist2 = dense_cls(dense, Orange.core.GetBoth)
+
+            if isinstance(dataset.domain.class_var, Orange.feature.Discrete):
+                for p1, p2 in zip(dist1, dist2):
+                    self.assertAlmostEqual(float(p1), float(p2), places=3)
+            else:
+                self.assertAlmostEqual(float(val1), float(val2), places=3)
 
 
 @datasets_driven(datasets=datasets)
