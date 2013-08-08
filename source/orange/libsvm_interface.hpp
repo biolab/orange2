@@ -102,7 +102,7 @@ public:
 	PClassifier operator()(PExampleGenerator, const int & = 0);
 
 protected:
-	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
+	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, double last=0.0);
 	virtual svm_node* init_problem(svm_problem &problem, PExampleTable examples, int n_elements);
 	virtual int getNumOfElements(PExampleGenerator examples);
 	virtual TSVMClassifier* createClassifier(
@@ -114,7 +114,7 @@ public:
 	__REGISTER_CLASS
 	bool useNonMeta; //P include non meta attributes in the learning process
 protected:
-	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
+	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, double last=0.0);
 	virtual int getNumOfElements(PExampleGenerator examples);
 	virtual TSVMClassifier* createClassifier(
 			PDomain domain, svm_model* model, PExampleTable supportVectors, PExampleTable examples);
@@ -154,7 +154,7 @@ public:
     svm_model* getModel() {return model;}
 
 protected:
-	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
+	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, double last=0.0);
 	virtual int getNumOfElements(const TExample& example);
 
 private:
@@ -178,7 +178,7 @@ public:
 	bool useNonMeta; //PR include non meta attributes
 
 protected:
-	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0);
+	virtual svm_node* example_to_svm(const TExample &ex, svm_node* node, double last=0.0);
 	virtual int getNumOfElements(const TExample& example);
 };
 

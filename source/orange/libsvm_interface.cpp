@@ -21,7 +21,12 @@
 #include <iostream>
 #include <sstream>
 
-#include "libsvm_interface.ppp"
+#include "libsvm_interface.hpp"
+#include "symmatrix.hpp"
+
+#include <algorithm>
+#include <cmath>
+
 
 // Defined in svm.cpp. If new svm or kernel types are added this should be updated.
 
@@ -136,8 +141,6 @@ int svm_save_model_alt(std::string& buffer, const svm_model *model){
 	return ret;
 }
 
-
-#include <algorithm>
 
 svm_model *svm_load_model_alt(std::istream& stream)
 {
@@ -350,6 +353,7 @@ svm_model *svm_load_model_alt(std::istream& stream)
 	return model;
 }
 
+
 svm_model *svm_load_model_alt(std::string& stream)
 {
 	std::istringstream strstream(stream);
@@ -357,97 +361,133 @@ svm_model *svm_load_model_alt(std::string& stream)
 }
 
 
+std::ostream & svm_node_vector_to_stream(std::ostream & stream, const svm_node * node) {
+	while (node->index != -1) {
+		stream << node->index << ":" << node->value << " ";
+		node++;
+	}
+	stream << node->index << ":" << node->value;
+	return stream;
+}
+
+std::ostream & operator << (std::ostream & stream, const svm_problem & problem) {
+	svm_node * node = NULL;
+	for (int i = 0; i < problem.l; i++) {
+		stream << problem.y[i] << " ";
+		svm_node_vector_to_stream(stream, problem.x[i]);
+		stream << endl;
+	}
+	return stream;
+}
+
 /*
  * Return a formated string representing a svm data instance (svm_node *)
  * (useful for debugging)
  */
-string svm_node_to_string(svm_node * node) {
+std::string svm_node_to_string(const svm_node * node) {
 	std::ostringstream strstream;
 	strstream.precision(17);
-	while (node->index != -1) {
-		strstream << node->index << ":" << node->value << " ";
-		node++;
-	}
-	strstream << node->index << ":" << node->value << " ";
+	svm_node_vector_to_stream(strstream, node);
 	return strstream.rdbuf()->str();
 }
 
 
-svm_node* example_to_svm(const TExample &ex, svm_node* node, float last=0.0, int type=0){
-	if(type==0){
-		int index=1;
-		for(TExample::iterator i=ex.begin(); i!=ex.end(); i++){
-			if(i->isRegular() && i!=&ex.getClass()){
-				if(i->varType==TValue::FLOATVAR)
-					node->value=float(*i);
-				else
-					node->value=int(*i);
-				node->index=index++;
-				if(node->value==numeric_limits<float>::signaling_NaN() ||
-					node->value==numeric_limits<int>::max() || 
-                    node->value == 0)
-					node--;
+#ifdef _MSC_VER
+	#include <float.h>
+	#define isfinite _finite
+#endif
+
+/*!
+ * Check if the value is valid (not a special value in 'TValue').
+ */
+
+inline bool is_valid(double value) {
+	return isfinite(value) && value != numeric_limits<int>::max();
+}
+
+
+svm_node* example_to_svm(const TExample &ex, svm_node* node, double last=0.0) {
+	int index = 1;
+	double value = 0.0;
+	TExample::iterator values_end;
+
+	if (ex.domain->classVar) {
+		values_end = ex.end() - 1;
+	} else {
+		values_end = ex.end();
+	}
+
+	for(TExample::iterator iter = ex.begin(); iter != values_end; iter++, index++) {
+		if(iter->isRegular()) {
+			if(iter->varType == TValue::FLOATVAR) {
+				value = iter->floatV;
+			} else if (iter->varType == TValue::INTVAR) {
+				value = iter->intV;
+			} else {
+				continue;
+			}
+
+			// Only add non zero values (speedup due to sparseness)
+			if (value != 0 && is_valid(value)) {
+				node->index = index;
+				node->value = value;
 				node++;
 			}
 		}
 	}
-    if(type == 1){ /*one dummy attr so we can pickle the classifier and keep the SV index in the training table*/
-        node->index=1;
-        node->value=last;
-        node++;
-    }
-	//cout<<(node-1)->index<<endl<<(node-2)->index<<endl;
-	node->index=-1;
-	node->value=last;
+
+	// Sentinel
+	node->index = -1;
+	node->value = last;
 	node++;
 	return node;
 }
 
 class SVM_NodeSort{
 public:
-	bool operator() (const svm_node &lhs, const svm_node &rhs){
+	bool operator() (const svm_node &lhs, const svm_node &rhs) {
 		return lhs.index < rhs.index;
 	}
 };
 
-svm_node* example_to_svm_sparse(const TExample &ex, svm_node* node, float last=0.0, bool useNonMeta=false){
-	svm_node *first=node;
-	int j=1;
-	int index=1;
-	if(useNonMeta)
-		for(TExample::iterator i=ex.begin(); i!=ex.end(); i++){
-			if(i->isRegular() && i!=&ex.getClass()){
-				if(i->varType==TValue::FLOATVAR)
-					node->value=float(*i);
-				else
-					node->value=int(*i);
-				node->index=index;
-				if(node->value==numeric_limits<float>::signaling_NaN() ||
-					node->value==numeric_limits<int>::max() ||
-                    node->value == 0)
-					node--;
+svm_node* example_to_svm_sparse(const TExample &ex, svm_node* node, double last=0.0, bool include_regular=false) {
+	svm_node *first = node;
+	int index = 1;
+	double value;
+
+	if (include_regular) {
+		node = example_to_svm(ex, node);
+		// Rewind the sentinel
+		node--;
+		assert(node->index == -1);
+		index += ex.domain->variables->size();
+	}
+
+	for (TMetaValues::const_iterator iter=ex.meta.begin(); iter!=ex.meta.end(); iter++) {
+		if(iter->second.isRegular()) {
+			if(iter->second.varType == TValue::FLOATVAR) {
+				value = iter->second.floatV;
+			} else if (iter->second.varType == TValue::INTVAR) {
+				value = iter->second.intV;
+			} else {
+				continue;
+			}
+
+			if (value != 0 && is_valid(value)) {
+				// add the (- meta_id) to index; meta_ids are negative
+				node->index = index - iter->first;
+				node->value = value;
 				node++;
 			}
-			index++;
-		}
-	for(TMetaValues::const_iterator i=ex.meta.begin(); i!=ex.meta.end();i++,j++){
-		if(i->second.isRegular()){
-			if(i->second.varType==TValue::FLOATVAR)
-				node->value=float(i->second);
-			else
-				node->value=int(i->second);
-			node->index = index - i->first;
-
-			if(node->value==numeric_limits<float>::signaling_NaN() ||
-				node->value==numeric_limits<int>::max())
-				node--;
-			node++;
 		}
 	}
+
+	// sort the nodes by index (metas are not ordered)
 	sort(first, node, SVM_NodeSort());
-	//cout<<first->index<<endl<<(first+1)->index<<endl;
-	node->index=-1;
-	node->value=last;
+
+	// Sentinel
+	node->index = -1;
+	node->value = last;
 	node++;
 	return node;
 }
@@ -456,48 +496,50 @@ svm_node* example_to_svm_sparse(const TExample &ex, svm_node* node, float last=0
  * Precompute Gram matrix row for ex.
  * Used for prediction when using the PRECOMPUTED kernel.
  */
-svm_node* example_to_svm_precomputed(const TExample &ex, PExampleGenerator examples, PKernelFunc kernel, svm_node* node){
+svm_node* example_to_svm_precomputed(const TExample &ex, PExampleGenerator examples, PKernelFunc kernel, svm_node* node) {
+	// Required node with index 0
 	node->index = 0;
 	node->value = 0.0; // Can be any value.
 	node++;
 	int k = 0;
 	PEITERATE(iter, examples){
 		node->index = ++k;
-		node->value = kernel.getReference()(*iter, ex);
+		node->value = kernel->operator()(*iter, ex);
 		node++;
 	}
-	node->index = -1; // sentry
+
+	// Sentinel
+	node->index = -1;
 	node++;
 	return node;
 }
 
 int getNumOfElements(const TExample &ex, bool meta=false, bool useNonMeta=false){
-	if(!meta)
-		return std::max(ex.domain->attributes->size()+1, 2);
-	else{
-		int count=1; //we need one to indicate the end of a sequence
-		if(useNonMeta)
-			count+=ex.domain->attributes->size();
-		for(TMetaValues::const_iterator i=ex.meta.begin(); i!=ex.meta.end();i++)
-			if(i->second.isRegular())
+	if (!meta)
+		return std::max(ex.domain->attributes->size() + 1, 2);
+	else {
+		int count = 1; // we need one to indicate the end of a sequence
+		if (useNonMeta)
+			count += ex.domain->attributes->size();
+		for (TMetaValues::const_iterator iter=ex.meta.begin(); iter!=ex.meta.end();iter++)
+			if(iter->second.isRegular())
 				count++;
 		return std::max(count,2);
 	}
 }
 
-int getNumOfElements(PExampleGenerator &examples, bool meta=false, bool useNonMeta=false){
-	if(!meta)
-		return getNumOfElements(*(examples->begin()), meta)*examples->numberOfExamples();
-	else{
-		int count=0;
+int getNumOfElements(PExampleGenerator &examples, bool meta=false, bool useNonMeta=false) {
+	if (!meta)
+		return getNumOfElements(*(examples->begin()), meta) * examples->numberOfExamples();
+	else {
+		int count = 0;
 		for(TExampleGenerator::iterator ex(examples->begin()); ex!=examples->end(); ++ex){
-			count+=getNumOfElements(*ex, meta, useNonMeta);
+			count += getNumOfElements(*ex, meta, useNonMeta);
 		}
 		return count;
 	}
 }
 
-#include "symmatrix.hpp"
 svm_node* init_precomputed_problem(svm_problem &problem, PExampleTable examples, TKernelFunc &kernel){
 	int n_examples = examples->numberOfExamples();
 	int i,j;
@@ -505,7 +547,6 @@ svm_node* init_precomputed_problem(svm_problem &problem, PExampleTable examples,
 	for (i = 0; i < n_examples; i++)
 		for (j = 0; j <= i; j++){
 			matrix->getref(i, j) = kernel(examples->at(i), examples->at(j));
-//			cout << i << " " << j << " " << matrix->getitem(i, j) << endl;
 		}
 	svm_node *x_space = Malloc(svm_node, n_examples * (n_examples + 2));
 	svm_node *node = x_space;
@@ -700,10 +741,10 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	else // Compute the matrix using the kernelFunc
 		x_space = init_precomputed_problem(prob, train_data, kernelFunc.getReference());
 
-	if (param.gamma==0)
-		param.gamma=1.0f/(float(numElements)/float(prob.l)-1);
+	if (param.gamma == 0)
+		param.gamma = 1.0f / (float(numElements) / float(prob.l) - 1);
 
-	const char* error=svm_check_parameter(&prob, &param);
+	const char* error = svm_check_parameter(&prob, &param);
 	if (error){
 		free(x_space);
 		free(prob.y);
@@ -749,13 +790,13 @@ PClassifier TSVMLearner::operator ()(PExampleGenerator examples, const int&){
 	return PClassifier(createClassifier(domain, model, supportVectors, train_data));
 }
 
-svm_node* TSVMLearner::example_to_svm(const TExample &ex, svm_node* node, float last, int type){
-	return ::example_to_svm(ex, node, last, type);
+svm_node* TSVMLearner::example_to_svm(const TExample &ex, svm_node* node, double last){
+	return ::example_to_svm(ex, node, last);
 }
 
 svm_node* TSVMLearner::init_problem(svm_problem &problem, PExampleTable examples, int n_elements){
 	problem.l = examples->numberOfExamples();
-	problem.y = Malloc(double ,problem.l);
+	problem.y = Malloc(double, problem.l);
 	problem.x = Malloc(svm_node*, problem.l);
 	svm_node *x_space = Malloc(svm_node, n_elements);
 	svm_node *node = x_space;
@@ -769,6 +810,9 @@ svm_node* TSVMLearner::init_problem(svm_problem &problem, PExampleTable examples
 			else if (examples->domain->classVar->varType == TValue::INTVAR)
 				problem.y[i] = examples->at(i).getClass().intV;
 	}
+
+//	cout << problem << endl;
+
 	return x_space;
 }
 
@@ -798,7 +842,7 @@ TSVMLearner::~TSVMLearner(){
 		free(weight);
 }
 
-svm_node* TSVMLearnerSparse::example_to_svm(const TExample &ex, svm_node* node, float last, int type){
+svm_node* TSVMLearnerSparse::example_to_svm(const TExample &ex, svm_node* node, double last){
 	return ::example_to_svm_sparse(ex, node, last, useNonMeta);
 }
 
@@ -1013,14 +1057,14 @@ PFloatList TSVMClassifier::getDecisionValues(const TExample &example){
 	return res;
 }
 
-svm_node *TSVMClassifier::example_to_svm(const TExample &ex, svm_node *node, float last, int type){
-	return ::example_to_svm(ex, node, last, type);
+svm_node *TSVMClassifier::example_to_svm(const TExample &ex, svm_node *node, double last){
+	return ::example_to_svm(ex, node, last);
 }
 
 int TSVMClassifier::getNumOfElements(const TExample& example){
 	return ::getNumOfElements(example);
 }
-svm_node *TSVMClassifierSparse::example_to_svm(const TExample &ex, svm_node *node, float last, int){
+svm_node *TSVMClassifierSparse::example_to_svm(const TExample &ex, svm_node *node, double last){
 	return ::example_to_svm_sparse(ex, node, last, useNonMeta);
 }
 
@@ -1029,3 +1073,4 @@ int TSVMClassifierSparse::getNumOfElements(const TExample& example){
 }
 
 
+#include "libsvm_interface.ppp"
