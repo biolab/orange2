@@ -113,9 +113,8 @@ A possible output::
 import sys
 import socket
 
-# timeout in seconds
+# default socket timeout in seconds
 timeout = 120
-socket.setdefaulttimeout(timeout)
 
 import urllib
 import urllib2
@@ -408,9 +407,9 @@ class ServerFiles(object):
             if self._authen():
                 auth = base64.encodestring('%s:%s' % (self.username, self.password))[:-1] 
                 request.add_header('Authorization', 'Basic %s' % auth ) # Add Auth header to request
-            
-            return opener.open(request)
-                
+
+            return opener.open(request, timeout=timeout)
+
         if repeat <= 0:
             return do()
         else:

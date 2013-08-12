@@ -685,7 +685,6 @@ def wget(url, directory=".", dst_obj=None, progress=None):
         dst_obj = open(os.path.join(directory, basename), "wb")
     
     if progress == True:
-        from Orange.utils import ConsoleProgressBar
         progress = ConsoleProgressBar("Downloading %r." % basename)
         with finishing(progress):
             copyfileobj(stream, dst_obj, buffer=2**10, content_len=length,

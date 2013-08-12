@@ -30,6 +30,10 @@ import os
 import sys
 import platform
 import subprocess
+import urllib2
+import urlparse
+import posixpath
+import site
 
 from collections import namedtuple, defaultdict
 from contextlib import closing
@@ -38,7 +42,6 @@ import Orange.utils.environ
 
 ADDONS_ENTRY_POINT="orange.addons"
 
-socket.setdefaulttimeout(120)  # In seconds.
 
 OrangeAddOn = namedtuple('OrangeAddOn', ['name', 'available_version', 'installed_version', 'summary', 'description',
                                          'author', 'docs_url', 'keywords', 'homepage', 'package_url',
@@ -49,6 +52,7 @@ OrangeAddOn = namedtuple('OrangeAddOn', ['name', 'available_version', 'installed
 INDEX_RE = "[^a-z0-9-']"  # RE for splitting entries in the search index
 
 AOLIST_FILE = os.path.join(Orange.utils.environ.orange_settings_dir, "addons.shelve")
+
 def open_addons():
     try:
         addons = shelve.open(AOLIST_FILE, 'c')
@@ -208,27 +212,34 @@ def run_setup(setup_script, args):
 def install(name, progress_callback=None):
     if progress_callback:
         progress_callback(1, 0)
-    import site
-    try:
-        import urllib
-        rh = (lambda done, bs, fs: progress_callback(fs/bs, done)) if progress_callback else None
-        with closing(open_addons()) as addons:
-            egg = urllib.urlretrieve(addons[name.lower()].release_url, reporthook=rh)[0]
-    except Exception, e:
-        raise Exception("Unable to download add-on from repository: %s" % e)
+
+    with closing(open_addons()) as addons:
+        addon = addons[name.lower()]
+    release_url = addon.release_url
 
     try:
-        try:
-            tmpdir = tempfile.mkdtemp()
-            egg_contents = tarfile.open(egg)
-            egg_contents.extractall(tmpdir)
-            with closing(open_addons()) as addons:
-                setup_py = os.path.join(tmpdir, name+'-'+addons[name.lower()].available_version, 'setup.py')
-        except Exception, e:
-            raise Exception("Unable to unpack add-on: %s" % e)
+        tmpdir = tempfile.mkdtemp()
+
+        stream = urllib2.urlopen(release_url, timeout=120)
+
+        parsed_url = urlparse.urlparse(release_url)
+        package_name = posixpath.basename(parsed_url.path)
+        package_path = os.path.join(tmpdir, package_name)
+
+        progress_cb = (lambda value: progress_callback(value, 0)) \
+                      if progress_callback else None
+        with open(package_path, "wb") as package_file:
+            Orange.utils.copyfileobj(
+                stream, package_file, progress=progress_cb)
+
+        egg_contents = tarfile.open(package_path)
+        egg_contents.extractall(tmpdir)
+        setup_py = os.path.join(tmpdir, name + '-' + addon.available_version,
+                                'setup.py')
 
         if not os.path.isfile(setup_py):
-            raise Exception("Unable to install add-on - it is not properly packed.")
+            raise Exception("Unable to install add-on - it is not properly "
+                            "packed.")
 
         switches = []
         if site.USER_SITE in sys.path:   # we're not in a virtualenv
