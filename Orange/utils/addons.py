@@ -309,7 +309,12 @@ def run_setup(setup_script, args):
         # by default a new console window would show up when executing the
         # script
         startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        if hasattr(subprocess, "STARTF_USESHOWWINDOW"):
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        else:
+            # This flag was missing in inital releases of 2.7
+            startupinfo.dwFlags |= subprocess._subprocess.STARTF_USESHOWWINDOW
+
         extra_kwargs["startupinfo"] = startupinfo
 
     subprocess.check_output([executable, setup_script] + args,
