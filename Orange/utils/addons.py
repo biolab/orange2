@@ -17,7 +17,6 @@ injection of add-ons into the namespace.
 
 #TODO Document this module.
 
-import socket
 import shelve
 import xmlrpclib
 import warnings
@@ -25,6 +24,7 @@ import re
 import pkg_resources
 import tempfile
 import tarfile
+import zipfile
 import shutil
 import os
 import sys
@@ -34,6 +34,7 @@ import urllib2
 import urlparse
 import posixpath
 import site
+import itertools
 
 from collections import namedtuple, defaultdict
 from contextlib import closing
@@ -182,6 +183,117 @@ def load_installed_addons():
     rebuild_index()
 
 
+def open_archive(path, mode="r"):
+    """
+    Return an open archive file object (zipfile.ZipFile or tarfile.TarFile).
+    """
+    _, ext = os.path.splitext(path)
+    if ext == ".zip":
+        # TODO: should it also open .egg, ...
+        archive = zipfile.ZipFile(path, mode)
+
+    elif ext in (".tar", ".gz", ".bz2", ".tgz", ".tbz2", ".tb2"):
+        archive = tarfile.open(path, mode)
+
+    return archive
+
+
+member_info = namedtuple(
+    "member_info",
+    ["info",  # original info object (Tar/ZipInfo)
+     "path",  # filename inside the archive
+     "linkname",  # linkname if applicable
+     "issym",  # True if sym link
+     "islnk",  # True if hardlink
+     ]
+)
+
+
+def archive_members(archive):
+    """
+    Given an open archive return an iterator of `member_info` instances.
+    """
+    if isinstance(archive, zipfile.ZipFile):
+        def converter(info):
+            return member_info(info, info.filename, None, False, False)
+
+        return itertools.imap(converter, archive.infolist())
+    elif isinstance(archive, tarfile.TarFile):
+        def converter(info):
+            return member_info(info, info.name, info.linkname,
+                               info.issym(), info.islnk())
+        return itertools.imap(converter, archive.getmembers())
+    else:
+        raise TypeError
+
+
+def resolve_path(path):
+    """
+    Return a normalized real path.
+    """
+    return os.path.normpath(os.path.realpath(os.path.abspath(path)))
+
+
+def is_badfile(member, base_dir):
+    """
+    Would extracting `member_info` instance write outside of `base_dir`.
+    """
+    path = member.path
+    full_path = resolve_path(os.path.join(base_dir, path))
+    return not full_path.startswith(base_dir)
+
+
+def is_badlink(member, base_dir):
+    """
+    Would extracting `member_info` instance create a link to outside
+    of `base_dir`.
+
+    """
+    if member.issym or member.islnk:
+        dirname = os.path.dirname(member.path)
+        full_path = resolve_path(os.path.join(dirname, member.linkname))
+        return not full_path.startswith(base_dir)
+    else:
+        return False
+
+
+def check_safe(member, base_dir):
+    """
+    Check if member is safe to extract to base_dir or raise an exception.
+    """
+    path = member.path
+    drive, path = os.path.splitdrive(path)
+
+    if drive != "":
+        raise ValueError("Absolute path in archive")
+
+    if path.startswith("/"):
+        raise ValueError("Absolute path in archive")
+
+    base_dir = resolve_path(base_dir)
+
+    if is_badfile(member, base_dir):
+        raise ValueError("Extract outside %r" % base_dir)
+    if is_badlink(member, base_dir):
+        raise ValueError("Link outside %r" % base_dir)
+
+    return True
+
+
+def extract_archive(archive, path="."):
+    """
+    Extract the contents of `archive` to `path`.
+    """
+    if isinstance(archive, basestring):
+        archive = open_archive(archive)
+
+    members = archive_members(archive)
+
+    for member in members:
+        if check_safe(member, path):
+            archive.extract(member.info, path)
+
+
 def run_setup(setup_script, args):
     """
     Run `setup_script` with `args` in a subprocess, using
@@ -229,8 +341,8 @@ def install(name, progress_callback=None):
             Orange.utils.copyfileobj(
                 stream, package_file, progress=progress_cb)
 
-        egg_contents = tarfile.open(package_path)
-        egg_contents.extractall(tmpdir)
+        extract_archive(package_path, tmpdir)
+
         setup_py = os.path.join(tmpdir, name + '-' + addon.available_version,
                                 'setup.py')
 
