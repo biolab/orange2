@@ -957,8 +957,8 @@ class AddOnManagerDialog(QDialog):
         if self.loadtimefn:
             lastRefresh = self.loadtimefn()
         t = time.time()
-        if t - lastRefresh > 7*24*3600 or Orange.utils.addons.addons_corrupted:
-            if Orange.utils.addons.addons_corrupted or \
+        if t - lastRefresh > 7*24*3600 or Orange.utils.addons.addons_corrupted():
+            if Orange.utils.addons.addons_corrupted() or \
                QMessageBox.question(self, "Refresh",
                                     "List of available add-ons has not been refreshed for more than a week. Do you want to download the list now?",
                                      QMessageBox.Yes | QMessageBox.Default,

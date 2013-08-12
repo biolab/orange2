@@ -64,11 +64,10 @@ def open_addons():
         addons = shelve.open(AOLIST_FILE, 'n')
     return addons
 
-global addons_corrupted
-with closing(open_addons()) as addons:
-    addons_corrupted = len(addons)==0
 
-del addons
+def addons_corrupted():
+    with closing(open_addons()) as addons:
+        return len(addons) == 0
 
 addon_refresh_callback = []
 
@@ -118,7 +117,6 @@ def refresh_available_addons(force=False, progress_callback=None):
     except:
         readthedocs = None
 
-    global addons_corrupted
     docs = {}
     if progress_callback:
         progress_callback(len(pkg_dict)+1, 1)
@@ -153,7 +151,6 @@ def refresh_available_addons(force=False, progress_callback=None):
                     warnings.warn('Could not load data for the following add-on: %s'%name)
             if progress_callback:
                 progress_callback(len(pkg_dict)+1, i+2)
-        addons_corrupted = False
 
     rebuild_index()
 

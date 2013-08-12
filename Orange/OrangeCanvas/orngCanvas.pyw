@@ -846,9 +846,9 @@ class OrangeCanvasDlg(QMainWindow):
         t = time.time()
         lastRefresh = self.settings["lastAddonsRefresh"]
         dlg = orngDlgs.AddOnManagerDialog(self, self)
-        if t - lastRefresh > 7*24*3600 or Orange.utils.addons.addons_corrupted:
+        if t - lastRefresh > 7*24*3600 or Orange.utils.addons.addons_corrupted():
             dlg.show()
-            if Orange.utils.addons.addons_corrupted or \
+            if Orange.utils.addons.addons_corrupted() or \
                QMessageBox.question(self, "Refresh",
                                     "List of add-ons in repository has not been refreshed for more than a week. Do you want to download the list now?",
                                      QMessageBox.Yes | QMessageBox.Default,
