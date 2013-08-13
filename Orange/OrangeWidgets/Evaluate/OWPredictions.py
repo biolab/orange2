@@ -128,7 +128,11 @@ class PredictionItemDelegete(QStyledItemDelegate):
         return QString(text)
 
 class OWPredictions(OWWidget):
-    settingsList = ["showProb", "showClass", "ShowAttributeMethod", "sendOnChange", "precision"]
+    contextHandlers = {
+        "": ClassValuesContextHandler("", ["selectedClasses"])
+    }
+    settingsList = ["showProb", "showClass", "ShowAttributeMethod",
+                    "sendOnChange", "precision"]
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Predictions")
@@ -382,12 +386,17 @@ class OWPredictions(OWWidget):
         self.handledAllSignalsFlag = True
         if self.data:
             self.setDataModel(self.data)
+            self.openContext("", list(self.classes))
             self.setPredictionModel(self.predictors.values(), self.data)
+
         self.checksendpredictions()
 
     def setData(self, data):
-        self.handledAllSignalsFlag = False
-        if not data:
+        """
+        Set input data table.
+        """
+        self.closeContext("")
+        if data is None:
             self.data = data
             self.datalabel = "N/A"
             self.clear()
