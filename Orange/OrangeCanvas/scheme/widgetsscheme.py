@@ -72,14 +72,11 @@ class WidgetsScheme(Scheme):
         Return True if there were any changes in the properties (i.e. if the
         new node.properties differ from the old value) and False otherwise.
 
-        .. note:: this should hopefully be removed in the feature, when the
-            widget can notify a changed setting property.
-
         """
         changed = False
         for node in self.nodes:
             widget = self.widget_for_node(node)
-            settings = widget.getSettings(alsoContexts=False)
+            settings = widget.getSettings(alsoContexts=True)
             if settings != node.properties:
                 node.properties = settings
                 changed = True
