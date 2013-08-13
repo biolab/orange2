@@ -86,13 +86,6 @@ class WidgetsScheme(Scheme):
         log.debug("Scheme node properties sync (changed: %s)", changed)
         return changed
 
-    def save_to(self, stream, pretty=True, pickle_fallback=False):
-        """
-        Reimplemented from :func:`Scheme.save_to`.
-        """
-        self.sync_node_properties()
-        Scheme.save_to(self, stream, pretty, pickle_fallback)
-
 
 class WidgetManager(QObject):
     """
