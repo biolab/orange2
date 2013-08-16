@@ -340,7 +340,6 @@ bool TExample::operator == (const TExample &other) const
 int TExample::compare(const TExample &other, const bool ignoreClass) const
 { if (domain != other.domain)
     raiseError("examples are from different domains");
-
   int Na = domain->variables->size();
   if (ignoreClass) {
       if (domain->classVar) {
@@ -351,7 +350,7 @@ int TExample::compare(const TExample &other, const bool ignoreClass) const
       Na += domain->classVars->size();
   }
   if (!Na)
-    return true;
+    return 0;
 
   const_iterator i1(begin()), i2(other.begin());
   int comp;

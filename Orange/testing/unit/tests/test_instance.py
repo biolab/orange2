@@ -49,6 +49,30 @@ class TestInstance(unittest.TestCase):
         self.assertRaises(TypeError, Orange.data.Instance, (domain, ["?", "?", "?"]))
         self.assertRaises(TypeError, Orange.data.Instance, (domain, ["?", "?"]))
 
+    def test_compare(self):
+        # Empty domain/instance (compare equal)
+        domain = Orange.data.Domain([])
+        self.assertEqual(Orange.data.Instance(domain, []),
+                         Orange.data.Instance(domain, []))
+
+        lenses = Orange.data.Table("lenses")
+
+        inst1 = lenses[0]
+        inst2 = Orange.data.Instance(inst1)
+
+        self.assertEqual(inst1, inst2)
+
+        inst1[0] = "?"
+        self.assertNotEqual(inst1, inst2)
+
+        inst2[0] = "?"
+        self.assertEqual(inst1, inst2)
+
+        for f in lenses.domain:
+            inst1[f] = inst2[f] = "?"
+
+        self.assertEqual(inst1, inst2)
+
 
 if __name__ == "__main__":
     unittest.main()
