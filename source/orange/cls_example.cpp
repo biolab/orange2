@@ -1079,6 +1079,11 @@ PyObject *richcmp_from_sign(const int &i, const int &op);
 
 PyObject *Example_richcmp(TPyExample *one, TPyExample *another, int op)
 { PyTRY
+    if (!PyOrExample_Check(another)) {
+        Py_INCREF(Py_NotImplemented);
+        return Py_NotImplemented;
+    }
+
     PExample rone = PyExample_AS_Example(one);
     TExample &ranother = PyExample_AS_ExampleReference(another);
     if (rone->domain != ranother.domain) {
