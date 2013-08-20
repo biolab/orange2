@@ -101,7 +101,7 @@ class WidgetDiscovery(object):
 
             try:
                 if isinstance(point, types.ModuleType):
-                    if point.__path__:
+                    if hasattr(point, "__path__"):
                         # Entry point is a package (a widget category)
                         self.process_category_package(
                             point,
