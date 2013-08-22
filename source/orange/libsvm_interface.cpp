@@ -152,6 +152,12 @@ svm_model *svm_load_model_alt(std::istream& stream)
 	model->label = NULL;
 	model->nSV = NULL;
 
+#if LIBSVM_VERSION >= 313
+	// libsvm seems to ensure ordered numbers for versioning (3.0 was 300,
+	// 3.1 was 310,  3.11 was 311, there was no 3.2, ...)
+	model->sv_indices = NULL;
+#endif
+
 	char cmd[81];
 	stream.width(80);
 	while (stream.good())
