@@ -23,6 +23,8 @@ from distutils.util import convert_path
 from distutils.sysconfig import get_python_inc, get_config_var
 import subprocess
 from subprocess import check_call
+from collections import namedtuple
+from ConfigParser import SafeConfigParser
 
 from setuptools import setup, find_packages
 from setuptools.command.install import install
@@ -91,6 +93,58 @@ elif sys.platform.startswith('linux'):
 else:
     extra_compile_args = []
     extra_link_args = []
+
+lib_cfg = namedtuple(
+    "lib_cfg", ["libraries", "library_dirs", "include_dirs"])
+
+site_cfg = namedtuple(
+    "site_cfg", ["libsvm", "liblinear", "blas", "R", "qhull"])
+
+
+def libs_parse(text):
+    return [lib.strip() for lib in text.strip().split()]
+
+
+def dirs_parse(text):
+    return text.strip().split(os.path.pathsep)
+
+
+def parse_lib_opt(parser, section):
+    libs, library_dirs, include_dirs = [], [], []
+
+    if parser.has_option(section, "libraries"):
+        libs = libs_parse(parser.get(section, "libraries"))
+    elif parser.has_option(section, "library"):
+        libs = libs_parse(parser.get(section, "library"))
+
+    if parser.has_option(section, "library_dirs"):
+        library_dirs = \
+            dirs_parse(parser.get(section, "library_dirs"))
+
+    if parser.has_option(section, "include_dirs"):
+        include_dirs = dirs_parse(parser.get(section, "include_dirs"))
+
+    if libs or library_dirs or include_dirs:
+        return lib_cfg(libs, library_dirs, include_dirs)
+    else:
+        return None
+
+
+def site_config():
+    """Return the parsed site configuration.
+    """
+    parser = SafeConfigParser()
+    parser.read(["setup-site.cfg",
+                 os.path.expanduser("~/.orange-site.cfg")])
+
+    libsvm = parse_lib_opt(parser, "libsvm")
+    liblinear = parse_lib_opt(parser, "liblinear")
+    blas = parse_lib_opt(parser, "blas")
+    R = parse_lib_opt(parser, "R")
+    qhull = parse_lib_opt(parser, "qhull")
+
+    return site_cfg(libsvm, liblinear, blas, R, qhull)
+
 
 # Get the command for building orangeqt extension from
 # source/orangeqt/setup.py file.
@@ -500,10 +554,13 @@ def get_source_files(path, ext="cpp", exclude=[]):
     files = [file for file in files if os.path.basename(file) not in exclude]
     return files
 
-include_ext = LibStatic("orange_include",
-                        get_source_files("source/include/"),
-                        include_dirs=include_dirs,
-                        extra_compile_args=extra_compile_args)
+# common library statically linked into orange, orangeom, ...
+include_ext = LibStatic(
+    "orange_include",
+    get_source_files("source/include/"),
+    include_dirs=include_dirs,
+    extra_compile_args=extra_compile_args
+)
 
 
 if sys.platform == "win32": # ?? mingw/cygwin
@@ -511,49 +568,60 @@ if sys.platform == "win32": # ?? mingw/cygwin
 else:
     libraries = ["stdc++", "orange_include"]
 
-import ConfigParser
-config = ConfigParser.RawConfigParser()
 
-config.read(["setup-site.cfg",
-             os.path.expanduser("~/.orange-site.cfg")]
-            )
+# Custom site configuration
+
+site = site_config()
 
 orange_sources = get_source_files("source/orange/")
+
 orange_include_dirs = list(include_dirs)
+orange_library_dirs = []
 orange_libraries = list(libraries)
 
-if config.has_option("blas", "library"):
+if site.blas:
     # Link external blas library
-    orange_libraries += [config.get("blas", "library")]
+    orange_libraries += site.blas.libraries
+    orange_library_dirs += site.blas.library_dirs
 else:
     orange_sources += get_source_files("source/orange/blas/", "c")
 
-if config.has_option("R", "library"):
+if site.R:
     # Link external R library (for linpack)
-    orange_libraries += [config.get("R", "library")]
+    orange_libraries += site.R.libraries
+    orange_library_dirs += site.R.library_dirs
 else:
     orange_sources += get_source_files("source/orange/linpack/", "c")
 
-if config.has_option("liblinear", "library"):
+if site.liblinear:
     # Link external LIBLINEAR library
-    orange_libraries += [config.get("liblinear", "library")]
+    orange_libraries += site.liblinear.libraries
+    orange_include_dirs += site.liblinear.include_dirs
+    orange_library_dirs += site.liblinear.library_dirs
 else:
     orange_sources += get_source_files("source/orange/liblinear/", "cpp")
     orange_include_dirs += ["source/orange/liblinear"]
 
-if config.has_option("libsvm", "library"):
+if site.libsvm:
     # Link external LibSVM library
-    orange_libraries += [config.get("libsvm", "library")]
+    orange_libraries += site.libsvm.libraries
+    orange_include_dirs += site.libsvm.include_dirs
+    orange_library_dirs += site.libsvm.library_dirs
 else:
     orange_sources += get_source_files("source/orange/libsvm/", "cpp")
 
-orange_ext = PyXtractSharedExtension("Orange.orange", orange_sources,
-                                      include_dirs=orange_include_dirs,
-                                      extra_compile_args = extra_compile_args + ["-DORANGE_EXPORTS"],
-                                      extra_link_args = extra_link_args,
-                                      libraries=orange_libraries,
-                                      extra_pyxtract_cmds = ["../pyxtract/defvectors.py"],
-                                      )
+
+orange_ext = PyXtractSharedExtension(
+    "Orange.orange",
+    orange_sources,
+    include_dirs=orange_include_dirs,
+    extra_compile_args=extra_compile_args + ["-DORANGE_EXPORTS"],
+    extra_link_args=extra_link_args,
+    libraries=orange_libraries,
+    library_dirs=orange_library_dirs,
+    extra_pyxtract_cmds=["../pyxtract/defvectors.py"],
+)
+
 
 if sys.platform == "darwin":
     build_shared_cmd = get_config_var("BLDSHARED")
@@ -566,45 +634,57 @@ if sys.platform == "darwin":
 else:
     shared_libs = libraries + ["orange"]
 
-orangeom_sources = get_source_files("source/orangeom/", exclude=["lib_vectors.cpp"])
+orangeom_sources = get_source_files(
+    "source/orangeom/", exclude=["lib_vectors.cpp"])
+
 orangeom_libraries = list(shared_libs)
 orangeom_include_dirs = list(include_dirs)
+orangeom_library_dirs = []
 
-if config.has_option("qhull", "library"):
+
+if site.qhull:
     # Link external qhull library
-    orangeom_libraries += [config.get("qhull", "library")]
+    orangeom_libraries += site.qhull.libraries
+    orangeom_include_dirs += site.qhull.include_dirs
+    orangeom_library_dirs += site.qhull.library_dirs
 else:
     orangeom_sources += get_source_files("source/orangeom/qhull/", "c")
     orangeom_include_dirs += ["source/orangeom"]
 
-orangeom_ext = PyXtractExtension("Orange.orangeom", orangeom_sources,
-                                  include_dirs=orangeom_include_dirs + ["source/orange/"],
-                                  extra_compile_args = extra_compile_args + ["-DORANGEOM_EXPORTS"],
-                                  extra_link_args = extra_link_args,
-                                  libraries=orangeom_libraries,
-                                  )
+orangeom_ext = PyXtractExtension(
+    "Orange.orangeom",
+    orangeom_sources,
+    include_dirs=orangeom_include_dirs + ["source/orange/"],
+    extra_compile_args=extra_compile_args + ["-DORANGEOM_EXPORTS"],
+    extra_link_args=extra_link_args,
+    libraries=orangeom_libraries,
+    library_dirs=orangeom_library_dirs
+ )
 
-orangene_ext = PyXtractExtension("Orange.orangene",
+orangene_ext = PyXtractExtension(
+    "Orange.orangene",
     get_source_files("source/orangene/", exclude=["lib_vectors.cpp"]),
-                                  include_dirs=include_dirs + ["source/orange/"], 
-                                  extra_compile_args = extra_compile_args + ["-DORANGENE_EXPORTS"],
-                                  extra_link_args = extra_link_args,
-                                  libraries=shared_libs,
-                                  )
+    include_dirs=include_dirs + ["source/orange/"],
+    extra_compile_args=extra_compile_args + ["-DORANGENE_EXPORTS"],
+    extra_link_args=extra_link_args,
+    libraries=shared_libs,
+)
 
-corn_ext = Extension("Orange.corn", get_source_files("source/corn/"),
-                     include_dirs=include_dirs + ["source/orange/"], 
-                     extra_compile_args = extra_compile_args + ["-DCORN_EXPORTS"],
-                     extra_link_args = extra_link_args,
-                     libraries=libraries
-                     )
+corn_ext = Extension(
+    "Orange.corn", get_source_files("source/corn/"),
+    include_dirs=include_dirs + ["source/orange/"],
+    extra_compile_args=extra_compile_args + ["-DCORN_EXPORTS"],
+    extra_link_args=extra_link_args,
+    libraries=libraries
+)
 
-statc_ext = Extension("Orange.statc", get_source_files("source/statc/"),
-                      include_dirs=include_dirs + ["source/orange/"], 
-                      extra_compile_args = extra_compile_args + ["-DSTATC_EXPORTS"],
-                      extra_link_args = extra_link_args,
-                      libraries=libraries
-                      )
+statc_ext = Extension(
+    "Orange.statc", get_source_files("source/statc/"),
+    include_dirs=include_dirs + ["source/orange/"],
+    extra_compile_args=extra_compile_args + ["-DSTATC_EXPORTS"],
+    extra_link_args=extra_link_args,
+    libraries=libraries
+)
 
 
 ext_modules = [include_ext, orange_ext, orangeom_ext,
