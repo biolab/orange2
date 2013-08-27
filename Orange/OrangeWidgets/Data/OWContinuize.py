@@ -1,6 +1,6 @@
 """
 <name>Continuize</name>
-<description>Turns discrete attributes into continuous and, optionally, normalizes the continuous values.</description>
+<description>Transform discrete attributes into continuous. Optionally, normalize the continuous values.</description>
 <icon>icons/Continuize.svg</icon>
 <contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
 <priority>2110</priority>
