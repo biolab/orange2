@@ -138,7 +138,7 @@ class MethodParameter(object):
         self.range = range
         self.default = default
         self.doc = doc
-    
+
 def supports_classification(name):
     return MEASURES_SUPPORTS_CLASSIFICATION.get(name, True)
 
