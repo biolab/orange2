@@ -37,7 +37,14 @@
 static const char *solver_type_table[]=
 {
 	"L2R_LR", "L2R_L2LOSS_SVC_DUAL", "L2R_L2LOSS_SVC", "L2R_L1LOSS_SVC_DUAL", "MCSVM_CS",
-	"L1R_L2LOSS_SVC", "L1R_LR", "L2R_LR_DUAL", NULL
+	"L1R_L2LOSS_SVC", "L1R_LR", "L2R_LR_DUAL",
+
+	#ifndef WITH_API_LIBLINEAR18
+		"", "", "",
+		"L2R_L2LOSS_SVR", "L2R_L2LOSS_SVR_DUAL", "L2R_L1LOSS_SVR_DUAL",
+	#endif
+
+	NULL
 };
 
 /*
@@ -279,13 +286,31 @@ problem *problemFromExamples(PExampleGenerator examples, double bias){
 	    prob->n++;
 
 	prob->x = new feature_node* [prob->l];
-	prob->y = new int [prob->l];
+
+	#ifndef WITH_API_LIBLINEAR18
+		prob->y = new double [prob->l];
+	#else
+		prob->y = new int [prob->l];
+	#endif
+
 	prob->bias = bias;
 	feature_node **ptrX = prob->x;
-	int *ptrY = prob->y;
+
+	#ifndef WITH_API_LIBLINEAR18
+		double *ptrY = prob->y;
+	#else
+		int *ptrY = prob->y;
+	#endif
+
 	PEITERATE(iter, examples){
 		*ptrX = feature_nodeFromExample(*iter, bias);
-		*ptrY = (int) (*iter).getClass();
+
+		#ifndef WITH_API_LIBLINEAR18
+			*ptrY = (double) (*iter).getClass().intV;
+		#else
+			*ptrY = (int) (*iter).getClass();
+		#endif
+
 		ptrX++;
 		ptrY++;
 	}
@@ -406,6 +431,10 @@ PClassifier TLinearLearner::operator()(PExampleGenerator examples, const int &we
 	param->weight_label = NULL;
 	param->weight = NULL;
 
+	#ifndef WITH_API_LIBLINEAR18
+		param->p = NULL;
+	#endif
+
 	// Shallow copy of examples.
 	PExampleTable train_data = mlnew TExampleTable(examples, /* owns= */ false);
 
@@ -505,7 +534,17 @@ TValue TLinearClassifier::operator () (const TExample &example){
 
 	feature_node *x = feature_nodeFromExample(new_example, bias);
 
-	int predict_label = predict(linmodel, x);
+	#ifndef WITH_API_LIBLINEAR18
+		double predict_label = predict(linmodel, x);
+	#else
+		int predict_label = predict(linmodel, x);
+	#endif
+
 	delete[] x;
-	return TValue(predict_label);
+
+	#ifndef WITH_API_LIBLINEAR18
+		return TValue((int) predict_label);
+	#else
+		return TValue(predict_label);
+	#endif
 }
