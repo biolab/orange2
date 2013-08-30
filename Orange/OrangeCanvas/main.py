@@ -105,9 +105,11 @@ def main(argv=None):
               logging.INFO,
               logging.DEBUG]
 
-    logging.basicConfig(level=levels[options.log_level])
-
+    # Fix streams before configuring logging (otherwise it will store
+    # and write to the old file descriptors)
     fix_win_pythonw_std_stream()
+
+    logging.basicConfig(level=levels[options.log_level])
 
     log.info("Starting 'Orange Canvas' application.")
 
