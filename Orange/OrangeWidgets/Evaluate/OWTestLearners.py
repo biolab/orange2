@@ -5,13 +5,15 @@
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>200</priority>
 """
-#
-# OWTestLearners.py
-#
-from OWWidget import *
-import orngTest, orngStat, OWGUI
+
 import time
 import warnings
+import itertools
+
+from OWWidget import *
+
+import orngTest, orngStat, OWGUI
+
 from orngWrap import PreprocessedLearner
 
 import Orange
@@ -19,13 +21,18 @@ import Orange
 ##############################################################################
 
 class Learner:
+    counter = itertools.count()
+
     def __init__(self, learner, id):
         self.learner = learner
         self.name = learner.name
         self.id = id
         self.scores = []
         self.results = None
-        self.time = time.time() # used to order the learners in the table
+        # Used to order the learners in the table (named time for
+        # back compatibility reasons)
+        self.time = next(self.counter)
+
 
 class Score:
     def __init__(self, name, label, f, show=True, cmBased=False):
@@ -34,7 +41,8 @@ class Score:
         self.f = f
         self.show = show
         self.cmBased = cmBased
-        
+
+
 def dispatch(score_desc, res, cm):
     """ Dispatch the call to orngStat method.
     """
@@ -536,7 +544,6 @@ class OWTestLearners(OWWidget):
                 time = self.learners[id].time
                 self.learners[id] = Learner(learner, id)
                 self.learners[id].time = time
-                self.learners[id] = self.learners[id]
                 self.clearScores([id])
             else:
                 self.learners[id] = Learner(learner, id)
@@ -581,36 +588,39 @@ class OWTestLearners(OWWidget):
 
     def sendResults(self):
         """commit evaluation results"""
-        # for each learner, we first find a list where a result is stored
-        # and remember the corresponding index
+        learners = sorted(self.learners.values(),
+                          key=lambda learner: learner.time)
 
-        valid = [(l.results, l.results.learners.index(l.learner))
-                 for l in self.learners.values() if l.scores and l.results]
-            
-        if not (self.data and len(valid)):
+        learners = [learner for learner in learners
+                    if learner.results and learner.scores]
+
+        if not (self.data and len(learners)):
             self.send("Evaluation Results", None)
             return
 
-        # find the result set for a largest number of learners
-        # and remove this set from the list of result sets
-        rlist = dict([(l.results,1) for l in self.learners.values() if l.scores and l.results]).keys()
-        rlen = [r.numberOfLearners for r in rlist]
-        results = rlist.pop(rlen.index(max(rlen)))
-        
-        for (i, l) in enumerate(results.learners):
-            if not l in [l.learner for l in self.learners.values()]:
-                results.remove(i)
-                del results.learners[i]
+        # Split combined results by learner/classifier
+        results_by_learner = {}
+        for learner in learners:
+            results = learner.results
+            res_split = orngStat.split_by_classifiers(results)
+            index = results.learners.index(learner.learner)
+            res_single = res_split[index]
+            res_single.learners = [learner.learner]
+            results_by_learner[learner] = res_single
 
-        for r in rlist:
-            for (i, l) in enumerate(r.learners):
-                learner_id = [l1.id for l1 in self.learners.values() if l1.learner is l][0]
-                if (r, i) in valid:
-                    results.add(r, i)
-                    results.learners.append(r.learners[i])
-                    self.learners[learner_id].results = results
-        self.send("Evaluation Results", results)
+        def add_results(rhs, lhs):
+            assert(lhs.number_of_learners == 1)
+            rhs.add(lhs, 0)
+            rhs.learners.extend(lhs.learners)
+            return rhs
+
+        results = [results_by_learner[learner] for learner in learners]
+
+        results = reduce(add_results, results)
+
         self.results = results
+        self.send("Evaluation Results", results)
+        return
 
     # signal processing
 
@@ -673,13 +683,12 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWTestLearners()
     ow.show()
-    a.exec_()
 
-    data1 = orange.ExampleTable(r'../../doc/datasets/voting')
-    data2 = orange.ExampleTable(r'../../golf')
-    datar = orange.ExampleTable(r'../../auto-mpg')
-    data3 = orange.ExampleTable(r'../../sailing-big')
-    data4 = orange.ExampleTable(r'../../sailing-test')
+    data1 = orange.ExampleTable('voting')
+#     data2 = orange.ExampleTable('golf')
+#     datar = orange.ExampleTable('auto-mpg')
+#     data3 = orange.ExampleTable('sailing-big')
+#     data4 = orange.ExampleTable('sailing-test')
     data5 = orange.ExampleTable('emotions')
 
     l1 = orange.MajorityLearner(); l1.name = '1 - Majority'
@@ -700,21 +709,22 @@ if __name__=="__main__":
 
     l5 = Orange.multilabel.BinaryRelevanceLearner()
 
-    testcase = 4
+    testcase = 0
 
     if testcase == 0: # 1(UPD), 3, 4
-        ow.setData(data2)
+        ow.setData(data1)
         ow.setLearner(r5, 5)
         ow.setLearner(l1, 1)
         ow.setLearner(l2, 2)
         ow.setLearner(l3, 3)
+        ow.handleNewSignals()
+
         l1.name = l1.name + " UPD"
         ow.setLearner(l1, 1)
         ow.setLearner(None, 2)
         ow.setLearner(l4, 4)
-#        ow.setData(data1)
-#        ow.setData(datar)
-#        ow.setData(data1)
+        ow.handleNewSignals()
+
     if testcase == 1: # data, but all learners removed
         ow.setLearner(l1, 1)
         ow.setLearner(l2, 2)
@@ -738,4 +748,5 @@ if __name__=="__main__":
         ow.setData(data5)
         ow.setLearner(l5, 6)
 
+    a.exec_()
     ow.saveSettings()
