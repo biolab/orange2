@@ -268,7 +268,7 @@ class TestUtils(unittest.TestCase):
     def test_split_by_classifier(self):
         learners = [random_learner, random_learner, random_learner]
         ds = data.Table("lenses")
-        cv = testing.cross_validation(learners, ds, folds=5)
+        cv = testing.cross_validation(learners, ds, folds=5, store_examples=True)
         cv_split = scoring.split_by_classifiers(cv)
         ca_scores = scoring.CA(cv)
         auc_scores = scoring.AUC(cv)
