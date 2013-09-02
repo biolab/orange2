@@ -7,6 +7,10 @@
 """
 
 from xml.sax.saxutils import escape
+from functools import wraps
+
+import sip
+
 import Orange
 
 from OWWidget import *
@@ -67,6 +71,17 @@ def header_tooltip(feature, labels=None):
     tip = "<b>%s</b>" % escape(feature.name)
     tip = "<br/>".join([tip] + ["%s = %s" % pair for pair in pairs])
     return tip
+
+
+def api_qvariant(func):
+    @wraps(func)
+    def data_get(*args, **kwargs):
+        return QVariant(func(*args, **kwargs))
+    return data_get
+
+if hasattr(sip, "getapi") and sip.getapi("QVariant") > 1:
+    def api_qvariant(func):
+        return func
 
 
 class ExampleTableModel(QAbstractItemModel):
@@ -156,6 +171,7 @@ class ExampleTableModel(QAbstractItemModel):
                                     fget=get_show_attr_labels,
                                     fset=set_show_attr_labels)
 
+    @api_qvariant
     def data(self, index, role,
              # For optimizing out LOAD_GLOBAL byte code instructions in
              # the item role tests (goes from 14 us to 9 us average).
@@ -230,6 +246,7 @@ class ExampleTableModel(QAbstractItemModel):
         else:
             return len(self.all_attrs)
 
+    @api_qvariant
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal:
             attr = self.all_attrs[section]
