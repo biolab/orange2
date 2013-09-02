@@ -1043,11 +1043,15 @@ class OWROC(OWWidget):
                 self.defaultPerfLinePValues.append(v)
                 self.pvalueList.append( v)
 
-            self.targetClass = 0 ## select first target
+            self.targetClass = 0  # select first class as default target
+            self.openContext("", self.dres)
+
+            # Update target class and selected classifiers from
+            # context settings
             self.target()
+            self.classifiersSelectionChange()
         else:
             self.classifierColor = None
-        self.openContext("", self.dres)
         self.performanceTabCosts.setEnabled(self.AveragingMethod == 'merge')
         self.setDefaultPValues()
 
