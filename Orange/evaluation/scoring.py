@@ -97,6 +97,7 @@ def split_by_iterations(res):
         ress[te.iteration_number].results.append(te)
     return ress
 
+
 def split_by_classifiers(res):
     """Split an instance of :obj:`ExperimentResults` into a list of
     :obj:`ExperimentResults`, one for each classifier. 
@@ -114,7 +115,12 @@ def split_by_classifiers(res):
                 te.iterationNumber, te.actualClass, n=1, weight=te.weight))
             r.results[-1].classes = [te.classes[i]]
             r.results[-1].probabilities = [te.probabilities[i]]
+
+        if hasattr(res, "examples"):
+            r.examples = res.examples
+
         split_res.append(r)
+
     return split_res
 
 

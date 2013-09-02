@@ -263,5 +263,30 @@ class TestMCC(CMScoreTest, unittest.TestCase):
     def score(self):
         return scoring.MCC
 
+
+class TestUtils(unittest.TestCase):
+    def test_split_by_classifier(self):
+        learners = [random_learner, random_learner, random_learner]
+        ds = data.Table("lenses")
+        cv = testing.cross_validation(learners, ds, folds=5)
+        cv_split = scoring.split_by_classifiers(cv)
+        ca_scores = scoring.CA(cv)
+        auc_scores = scoring.AUC(cv)
+        for i, cv1 in enumerate(cv_split):
+            self.assertEqual(cv1.class_values, cv.class_values)
+            self.assertEqual(cv1.classifier_names, [cv.classifier_names[i]])
+            self.assertEqual(cv1.number_of_iterations, cv.number_of_iterations)
+            self.assertEqual(cv1.number_of_learners, 1)
+            self.assertEqual(cv1.base_class, cv.base_class)
+            self.assertEqual(cv1.weights, cv.weights)
+            self.assertEqual(len(cv1.results), len(cv.results))
+            self.assertEqual(cv1.examples, cv.examples)
+
+            ca_one = scoring.CA(cv1)[0]
+            auc_one = scoring.AUC(cv1)[0]
+            self.assertAlmostEqual(ca_scores[i], ca_one, delta=1e-10)
+            self.assertAlmostEquals(auc_scores[i], auc_one, delta=1e-10)
+
+
 if __name__ == '__main__':
     unittest.main()
