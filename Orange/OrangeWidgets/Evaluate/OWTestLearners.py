@@ -121,6 +121,9 @@ class OWTestLearners(OWWidget):
         self.results = None             # from orngTest
         self.preprocessor = None
 
+        # should the output evaluation results be recomputed
+        self._resultsInvalid = False
+
         self.controlArea.layout().setSpacing(8)
         # GUI
         self.sBtns = OWGUI.radioButtonsInBox(self.controlArea, self, "resampling", 
@@ -320,11 +323,9 @@ class OWTestLearners(OWWidget):
 
     def score(self, ids):
         """compute scores for the list of learners"""
-        if (not self.data):
-            for id in ids:
-                self.learners[id].results = None
-                self.learners[id].scores = []
+        if not self.data:
             return
+
         # test which learners can accept the given data set
         # e.g., regressions can't deal with classification data
         learners = []
@@ -359,7 +360,7 @@ class OWTestLearners(OWWidget):
             text = "\n".join("Learner %s ends with exception: %s" % (l.name, str(ex)) \
                              for l, ex in learner_exceptions)
             self.warning(0, text)
-            
+
         if not learners:
             return
 
@@ -465,6 +466,8 @@ class OWTestLearners(OWWidget):
             self.learners[id].scores = []
             self.learners[id].results = None
 
+        self._resultsInvalid = bool(ids)
+
     # handle input signals
     def setData(self, data):
         """
@@ -500,6 +503,8 @@ class OWTestLearners(OWWidget):
             self.statLayout.setCurrentWidget(statwidget)
 
             self.stat = stat
+
+            self.openContext("", self.data)
 
     def setTestData(self, data):
         """
@@ -547,6 +552,7 @@ class OWTestLearners(OWWidget):
                 self.clearScores([id])
             else:
                 self.learners[id] = Learner(learner, id)
+                self._resultsInvalid = True
         else:
             # remove a learner and corresponding results
             if id in self.learners:
@@ -558,6 +564,8 @@ class OWTestLearners(OWWidget):
                     res.remove(indx)
                     del res.learners[indx]
                 del self.learners[id]
+
+                self._resultsInvalid = True
 
     def setPreprocessor(self, pp):
         self.preprocessor = pp
@@ -573,16 +581,19 @@ class OWTestLearners(OWWidget):
 
         if self.applyOnAnyChange:
             self.score(filter(needsupdate, self.learners))
+            if self._resultsInvalid:
+                self.sendResults()
+
             self.applyBtn.setEnabled(False)
         else:
             self.applyBtn.setEnabled(True)
 
         self.paintscores()
 
-        if self.data is not None:
-            self.openContext("", self.data)
-        else:
+        if self.data is None and self._resultsInvalid:
             self.send("Evaluation Results", None)
+            self._resultsInvalid = False
+
 
     # handle output signals
 
@@ -594,8 +605,9 @@ class OWTestLearners(OWWidget):
         learners = [learner for learner in learners
                     if learner.results and learner.scores]
 
-        if not (self.data and len(learners)):
+        if self.data is None or len(learners) == 0:
             self.send("Evaluation Results", None)
+            self._resultsInvalid = False
             return
 
         # Split combined results by learner/classifier
@@ -614,24 +626,24 @@ class OWTestLearners(OWWidget):
             rhs.learners.extend(lhs.learners)
             return rhs
 
+        # Reconstruct the results in the same order as displayed.
         results = [results_by_learner[learner] for learner in learners]
-
         results = reduce(add_results, results)
 
         self.results = results
         self.send("Evaluation Results", results)
+        self._resultsInvalid = False
         return
 
     # signal processing
 
     def newsampling(self):
         """handle change of evaluation method"""
+        self.clearScores()
         if not self.applyOnAnyChange:
             self.applyBtn.setDisabled(self.applyOnAnyChange)
-        else:
-            self.clearScores()
-            if self.learners:
-                self.recompute()
+        elif self.learners:
+            self.recompute()
 
     def newscoreselection(self):
         """handle change in set of scores to be displayed"""
