@@ -14,34 +14,29 @@ import pkg_resources
 from OWWidget import *
 
 import OWGUI
-import orange
 
-from Orange.regression.earth import ScoreEarthImportance
-from orngSVM import MeasureAttribute_SVMWeights
-from orngEnsemble import MeasureAttribute_randomForests
+import Orange
+from Orange.feature import scoring
+from Orange.regression import earth
+from Orange.classification import svm
+from Orange.ensemble import forest
 
 
-def _toPyObject(variant):
-    val = variant.toPyObject()
-    if isinstance(val, type(NotImplemented)):
-        # PyQt 4.4 converts python int, floats ... to C types and
-        # cannot convert them back again and returns an exception instance.
-        qtype = variant.type()
-        if qtype == QVariant.Double:
-            val, ok = variant.toDouble()
-        elif qtype == QVariant.Int:
-            val, ok = variant.toInt()
-        elif qtype == QVariant.LongLong:
-            val, ok = variant.toLongLong()
-        elif qtype == QVariant.String:
-            val = variant.toString()
-    return val
+def is_discrete(var):
+    return isinstance(var, Orange.feature.Discrete)
+
+
+def is_continuous(var):
+    return isinstance(var, Orange.feature.Continuous)
+
 
 def is_class_discrete(data):
-    return isinstance(data.domain.classVar, orange.EnumVariable)
+    return is_discrete(data.domain.class_var)
+
 
 def is_class_continuous(data):
-    return isinstance(data.domain.classVar, orange.FloatVariable)
+    return is_continuous(data.domain.class_var)
+
 
 def table(shape, fill=None):
     """ Return a 2D table with shape filed with ``fill``
@@ -50,7 +45,7 @@ def table(shape, fill=None):
 
 
 MEASURE_PARAMS = {
-    ScoreEarthImportance: [
+    earth.ScoreEarthImportance: [
         {"name": "t",
          "type": int,
          "display_name": "Num. models.",
@@ -70,7 +65,7 @@ MEASURE_PARAMS = {
          "default": 2,
          "doc": "Maximum degree of terms included in the model."}
     ],
-    orange.MeasureAttribute_relief: [
+    scoring.Relief: [
         {"name": "k",
          "type": int,
          "display_name": "Neighbours",
@@ -84,7 +79,7 @@ MEASURE_PARAMS = {
          "default": 20,
          "doc": ""}
         ],
-    MeasureAttribute_randomForests: [
+    forest.ScoreFeature: [
         {"name": "trees",
          "type": int,
          "display_name": "Num. of trees",
@@ -123,48 +118,48 @@ class score_meta(_score_meta):
 # Default scores.
 SCORES = [
     score_meta(
-        "ReliefF", "ReliefF", orange.MeasureAttribute_relief,
-        params=MEASURE_PARAMS[orange.MeasureAttribute_relief],
+        "ReliefF", "ReliefF", scoring.Relief,
+        params=MEASURE_PARAMS[scoring.Relief],
         handles_continuous=True,
         handles_discrete=True),
     score_meta(
-        "Information Gain", "Inf. gain", orange.MeasureAttribute_info,
+        "Information Gain", "Inf. gain", scoring.InfoGain,
         params=None,
         supports_regression=False,
         supports_classification=True,
         handles_continuous=False,
         handles_discrete=True),
     score_meta(
-        "Gain Ratio", "Gain Ratio", orange.MeasureAttribute_gainRatio,
+        "Gain Ratio", "Gain Ratio", scoring.GainRatio,
         params=None,
         supports_regression=False,
         handles_continuous=False,
         handles_discrete=True),
     score_meta(
-        "Gini Gain", "Gini", orange.MeasureAttribute_gini,
+        "Gini Gain", "Gini", scoring.Gini,
         params=None,
         supports_regression=False,
         supports_classification=True,
         handles_continuous=False),
     score_meta(
-        "Log Odds Ratio", "log OR", orange.MeasureAttribute_logOddsRatio,
+        "Log Odds Ratio", "log OR", Orange.core.MeasureAttribute_logOddsRatio,
         params=None,
         supports_regression=False,
         handles_continuous=False),
     score_meta(
-        "MSE", "MSE", orange.MeasureAttribute_MSE,
+        "MSE", "MSE", scoring.MSE,
         params=None,
         supports_classification=False,
         handles_continuous=False),
     score_meta(
-        "Linear SVM Weights", "SVM weight", MeasureAttribute_SVMWeights,
+        "Linear SVM Weights", "SVM weight", svm.ScoreSVMWeights,
         params=None),
     score_meta(
-        "Random Forests", "RF", MeasureAttribute_randomForests,
-        params=MEASURE_PARAMS[MeasureAttribute_randomForests]),
+        "Random Forests", "RF", forest.ScoreFeature,
+        params=MEASURE_PARAMS[forest.ScoreFeature]),
     score_meta(
-        "Earth Importance", "Earth imp.", ScoreEarthImportance,
-        params=MEASURE_PARAMS[ScoreEarthImportance],
+        "Earth Importance", "Earth imp.", earth.ScoreEarthImportance,
+        params=MEASURE_PARAMS[earth.ScoreEarthImportance],
     )
 ]
 
@@ -310,7 +305,7 @@ class OWRank(OWWidget):
                                label=param.display_name,
                                tooltip=param.doc,
                                callback=partial(
-                                    self.measureParamChanged, measure, param),
+                                   self.measureParamChanged, measure, param),
                                callbackOnReturn=True)
 
                 OWGUI.button(smallWidget.widget, self, "Load defaults",
@@ -329,24 +324,27 @@ class OWRank(OWWidget):
             if measure.supports_regression:
                 measure_control(continuousBox, measure)
 
-        OWGUI.comboBox(discreteBox, self, "sortBy", label = "Sort by"+"  ",
-                       items = ["No Sorting", "Attribute Name", "Number of Values"] + \
-                               [m.name for m in self.discMeasures],
-                       orientation=0, valueType = int,
-                       callback=self.sortingChanged)
-        
-        OWGUI.comboBox(continuousBox, self, "sortBy", label = "Sort by"+"  ",
-                       items = ["No Sorting", "Attribute Name", "Number of Values"] + \
-                               [m.name for m in self.contMeasures],
-                       orientation=0, valueType = int,
-                       callback=self.sortingChanged)
+        OWGUI.comboBox(
+            discreteBox, self, "sortBy", label="Sort by  ",
+            items=["No Sorting", "Attribute Name", "Number of Values"] +
+                  [m.name for m in self.discMeasures],
+            orientation=0, valueType=int,
+            callback=self.sortingChanged)
+
+        OWGUI.comboBox(
+            continuousBox, self, "sortBy", label="Sort by  ",
+            items=["No Sorting", "Attribute Name", "Number of Values"] +
+                  [m.name for m in self.contMeasures],
+            orientation=0, valueType=int,
+            callback=self.sortingChanged)
 
         box = OWGUI.widgetBox(self.controlArea, "Discretization",
                               addSpace=True)
         OWGUI.spin(box, self, "nIntervals", 2, 20,
                    label="Intervals: ",
                    orientation=0,
-                   tooltip="Disctetization for measures which cannot score continuous attributes.",
+                   tooltip="Disctetization for measures which cannot score "
+                           "continuous attributes.",
                    callback=self.discretizationChanged,
                    callbackOnReturn=True)
 
@@ -356,31 +354,54 @@ class OWRank(OWWidget):
 
         box = OWGUI.widgetBox(self.controlArea, "Score bars",
                               orientation="horizontal", addSpace=True)
-        self.cbShowDistributions = OWGUI.checkBox(box, self, "showDistributions",
-                                    'Enable', callback = self.cbShowDistributions)
-#        colBox = OWGUI.indentedBox(box, orientation = "horizontal")
+        self.cbShowDistributions = OWGUI.checkBox(
+            box, self, "showDistributions", 'Enable',
+            callback=self.showDistributionsChanged
+        )
+
         OWGUI.rubber(box)
         box = OWGUI.widgetBox(box, orientation="horizontal")
         wl = OWGUI.widgetLabel(box, "Color: ")
         OWGUI.separator(box)
-        self.colButton = OWGUI.toolButton(box, self, callback=self.changeColor, width=20, height=20, debuggingEnabled = 0)
+        self.colButton = OWGUI.toolButton(
+            box, self, callback=self.changeColor, width=20, height=20,
+            debuggingEnabled=0)
+
         self.cbShowDistributions.disables.extend([wl, self.colButton])
         self.cbShowDistributions.makeConsistent()
-#        OWGUI.rubber(box)
 
-        
-        selMethBox = OWGUI.widgetBox(self.controlArea, "Select attributes", addSpace=True)
-        self.clearButton = OWGUI.button(selMethBox, self, "Clear", callback=self.clearSelection)
+        selMethBox = OWGUI.widgetBox(self.controlArea, "Select attributes",
+                                     addSpace=True)
+        self.clearButton = OWGUI.button(selMethBox, self, "Clear",
+                                        callback=self.clearSelection)
         self.clearButton.setDisabled(True)
-        
+
         buttonGrid = QGridLayout()
-        selMethRadio = OWGUI.radioButtonsInBox(selMethBox, self, "selectMethod", [], callback=self.selectMethodChanged)
-        b1 = OWGUI.appendRadioButton(selMethRadio, self, "selectMethod", "All", insertInto=selMethRadio, callback=self.selectMethodChanged, addToLayout=False)
-        b2 = OWGUI.appendRadioButton(selMethRadio, self, "selectMethod", "Manual", insertInto=selMethRadio, callback=self.selectMethodChanged, addToLayout=False)
-        b3 = OWGUI.appendRadioButton(selMethRadio, self, "selectMethod", "Best ranked", insertInto=selMethRadio, callback=self.selectMethodChanged, addToLayout=False)
-#        brBox = OWGUI.widgetBox(selMethBox, orientation="horizontal", margin=0)
-#        OWGUI.appendRadioButton(selMethRadio, self, "selectMethod", "Best ranked", insertInto=brBox, callback=self.selectMethodChanged)
-        spin = OWGUI.spin(OWGUI.widgetBox(selMethRadio, addToLayout=False), self, "nSelected", 1, 100, orientation=0, callback=self.nSelectedChanged)
+        selMethRadio = OWGUI.radioButtonsInBox(
+            selMethBox, self, "selectMethod", [],
+            callback=self.selectMethodChanged)
+
+        b1 = OWGUI.appendRadioButton(
+            selMethRadio, self, "selectMethod", "All",
+            insertInto=selMethRadio,
+            callback=self.selectMethodChanged,
+            addToLayout=False)
+
+        b2 = OWGUI.appendRadioButton(
+            selMethRadio, self, "selectMethod", "Manual",
+            insertInto=selMethRadio,
+            callback=self.selectMethodChanged,
+            addToLayout=False)
+
+        b3 = OWGUI.appendRadioButton(
+            selMethRadio, self, "selectMethod", "Best ranked",
+            insertInto=selMethRadio,
+            callback=self.selectMethodChanged,
+            addToLayout=False)
+
+        spin = OWGUI.spin(OWGUI.widgetBox(selMethRadio, addToLayout=False),
+                          self, "nSelected", 1, 100, orientation=0,
+                          callback=self.nSelectedChanged)
         buttonGrid.addWidget(b1, 0, 0)
         buttonGrid.addWidget(b2, 1, 0)
         buttonGrid.addWidget(b3, 2, 0)
@@ -388,31 +409,34 @@ class OWRank(OWWidget):
         selMethRadio.layout().addLayout(buttonGrid)
         OWGUI.separator(selMethBox)
 
-        applyButton = OWGUI.button(selMethBox, self, "Commit", callback = self.apply, default=True)
-        autoApplyCB = OWGUI.checkBox(selMethBox, self, "autoApply", "Commit automatically")
-        OWGUI.setStopper(self, applyButton, autoApplyCB, "dataChanged", self.apply)
+        applyButton = OWGUI.button(
+            selMethBox, self, "Commit", callback=self.apply, default=True)
+        autoApplyCB = OWGUI.checkBox(
+            selMethBox, self, "autoApply", "Commit automatically")
+        OWGUI.setStopper(
+            self, applyButton, autoApplyCB, "dataChanged", self.apply)
 
         OWGUI.rubber(self.controlArea)
-        
+
         # Discrete and continuous table views are stacked
         self.ranksViewStack = QStackedLayout()
         self.mainArea.layout().addLayout(self.ranksViewStack)
-        
+
         self.discRanksView = QTableView()
         self.ranksViewStack.addWidget(self.discRanksView)
         self.discRanksView.setSelectionBehavior(QTableView.SelectRows)
         self.discRanksView.setSelectionMode(QTableView.MultiSelection)
         self.discRanksView.setSortingEnabled(True)
-#        self.discRanksView.horizontalHeader().restoreState(self.discRanksHeaderState)
-        
+
         self.discRanksModel = QStandardItemModel(self)
         self.discRanksModel.setHorizontalHeaderLabels(
             ["Attribute", "#"] + [m.shortname for m in self.discMeasures]
         )
+
         self.discRanksProxyModel = MySortProxyModel(self)
         self.discRanksProxyModel.setSourceModel(self.discRanksModel)
         self.discRanksView.setModel(self.discRanksProxyModel)
-#        self.discRanksView.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
+
         self.discRanksView.setColumnWidth(1, 20)
         self.discRanksView.sortByColumn(2, Qt.DescendingOrder)
         self.connect(self.discRanksView.selectionModel(),
@@ -424,23 +448,22 @@ class OWRank(OWWidget):
         self.connect(self.discRanksView.horizontalHeader(),
                      SIGNAL("sectionClicked(int)"),
                      self.headerClick)
-        
+
         self.contRanksView = QTableView()
         self.ranksViewStack.addWidget(self.contRanksView)
         self.contRanksView.setSelectionBehavior(QTableView.SelectRows)
         self.contRanksView.setSelectionMode(QTableView.MultiSelection)
         self.contRanksView.setSortingEnabled(True)
-#        self.contRanksView.setItemDelegate(OWGUI.ColoredBarItemDelegate())
-#        self.contRanksView.horizontalHeader().restoreState(self.contRanksHeaderState)
-        
+
         self.contRanksModel = QStandardItemModel(self)
         self.contRanksModel.setHorizontalHeaderLabels(
             ["Attribute", "#"] + [m.shortname for m in self.contMeasures]
         )
+
         self.contRanksProxyModel = MySortProxyModel(self)
         self.contRanksProxyModel.setSourceModel(self.contRanksModel)
         self.contRanksView.setModel(self.contRanksProxyModel)
-#        self.contRanksView.verticalHeader().setResizeMode(QHeaderView.ResizeToContents)
+
         self.discRanksView.setColumnWidth(1, 20)
         self.contRanksView.sortByColumn(2, Qt.DescendingOrder)
         self.connect(self.contRanksView.selectionModel(),
@@ -452,22 +475,21 @@ class OWRank(OWWidget):
         self.connect(self.contRanksView.horizontalHeader(),
                      SIGNAL("sectionClicked(int)"),
                      self.headerClick)
-        
+
         # Switch the current view to Discrete
         self.switchRanksMode(0)
         self.resetInternals()
         self.updateDelegates()
         self.updateVisibleScoreColumns()
 
-#        self.connect(self.table.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.headerClick)
-        
-        self.resize(690,500)
+        self.resize(690, 500)
         self.updateColor()
-        
+
         self.measure_scores = table((len(self.measures), 0), None)
 
     def switchRanksMode(self, index):
-        """ Switch between discrete/continuous mode
+        """
+        Switch between discrete/continuous mode
         """
         self.ranksViewStack.setCurrentIndex(index)
         self.stackedLayout.setCurrentIndex(index)
@@ -484,26 +506,29 @@ class OWRank(OWWidget):
             self.measures = self.contMeasures
 
         self.updateVisibleScoreColumns()
-            
+
     def setData(self, data):
         self.error(0)
         self.resetInternals()
         self.data = self.isDataWithClass(data) and data or None
         if self.data:
             attrs = self.data.domain.attributes
-            self.usefulAttributes = filter(lambda x:x.varType in [orange.VarTypes.Discrete, orange.VarTypes.Continuous],
-                                           attrs)
+            self.usefulAttributes = \
+                [attr for attr in attrs
+                 if is_discrete(attr) or is_continuous(attr)]
+
             if is_class_continuous(self.data):
                 self.switchRanksMode(1)
             elif is_class_discrete(self.data):
                 self.switchRanksMode(0)
-            else: # String or other.
-                self.error(0, "Cannot handle class variable type")
-            
-#            self.ranksView.setSortingEnabled(False)
+            else:
+                # String or other.
+                self.error(0, "Cannot handle class variable type %r" %
+                           type(self.data.domain.class_var).__name__)
+
             self.ranksModel.setRowCount(len(attrs))
             for i, a in enumerate(attrs):
-                if isinstance(a, orange.EnumVariable):
+                if is_discrete(a):
                     v = len(a.values)
                 else:
                     v = "C"
@@ -513,30 +538,30 @@ class OWRank(OWWidget):
                 item = PyStandardItem(a.name)
                 item.setData(QVariant(i), OWGUI.SortOrderRole)
                 self.ranksModel.setItem(i, 0, item)
-                
+
             self.ranksView.resizeColumnToContents(1)
-            
+
             self.measure_scores = table((len(self.measures),
                                          len(attrs)), None)
             self.updateScores()
             if is_class_discrete(self.data):
                 self.setLogORTitle()
             self.ranksView.setSortingEnabled(self.sortBy > 0)
-            
+
         self.applyIf()
 
     def updateScores(self, measuresMask=None):
-        """ Update the current computed measures. If measuresMask is given
-        it must be an list of bool values indicating what measures should be 
-        computed.
-        
-        """ 
+        """
+        Update the current computed scores.
+
+        If `measuresMask` is given it must be an list of bool values
+        indicating what measures should be recomputed.
+
+        """
         if not self.data:
             return
-        
-#         estimators = self.estimators
+
         measures = self.measures
-#         handlesContinous = self.handlesContinuous
         # Invalidate all warnings
         self.warning(range(max(len(self.discMeasures),
                                len(self.contMeasures))))
@@ -572,9 +597,10 @@ class OWRank(OWWidget):
                     try:
                         s = estimator(attr, data)
                     except Exception, ex:
-                        self.warning(measure_index, "Error evaluating %r: %r" % (meas.name, str(ex)))
-                        # TODO: store exception message (for widget info or item tooltip)
+                        self.warning(measure_index, "Error evaluating %r: %r" %
+                                     (meas.name, str(ex)))
                     if meas.name == "Log Odds Ratio" and s is not None:
+                        # Hardcoded values returned by log odds measure
                         if s == -999999:
                             attr = u"-\u221E"
                         elif s == 999999:
@@ -584,15 +610,16 @@ class OWRank(OWWidget):
                         s = ("%%.%df" % self.nDecimals + " (%s)") % (s, attr)
                 attr_scores.append(s)
             self.measure_scores[measure_index] = attr_scores
-        
+
         self.updateRankModel(measuresMask)
         self.ranksProxyModel.invalidate()
-        
+
         if self.selectMethod in [0, 2]:
             self.autoSelection()
-    
+
     def updateRankModel(self, measuresMask=None):
-        """ Update the rankModel.
+        """
+        Update the rankModel.
         """
         values = []
         for i, scores in enumerate(self.measure_scores):
@@ -605,10 +632,10 @@ class OWRank(OWWidget):
                 item = self.ranksModel.item(j, i + 2)
                 if not item:
                     item = PyStandardItem()
-                    self.ranksModel.setItem(j ,i + 2, item)
+                    self.ranksModel.setItem(j, i + 2, item)
                 item.setData(QVariant(s), Qt.DisplayRole)
             values.append(values_one)
-        
+
         for i, vals in enumerate(values):
             valid_vals = [v for v in vals if v is not None]
             if valid_vals:
@@ -617,16 +644,17 @@ class OWRank(OWWidget):
                     if v is not None:
                         # Set the bar ratio role for i-th measure.
                         ratio = float((v - vmin) / ((vmax - vmin) or 1))
+                        item = self.ranksModel.item(j, i + 2)
                         if self.showDistributions:
-                            self.ranksModel.item(j, i + 2).setData(QVariant(ratio), OWGUI.BarRatioRole)
+                            item.setData(QVariant(ratio), OWGUI.BarRatioRole)
                         else:
-                            self.ranksModel.item(j, i + 2).setData(QVariant(), OWGUI.BarRatioRole)
-                        
+                            item.setData(QVariant(), OWGUI.BarRatioRole)
+
         self.ranksView.resizeColumnsToContents()
         self.ranksView.setColumnWidth(1, 20)
         self.ranksView.resizeRowsToContents()
-            
-    def cbShowDistributions(self):
+
+    def showDistributionsChanged(self):
         # This should be handled by the delegates only (must always set the BarRatioRole
         self.updateRankModel()
         # Need to update the selection
@@ -640,12 +668,12 @@ class OWRank(OWWidget):
 
     def updateColor(self):
         self.distColor = QColor(*self.distColorRgb)
-        w = self.colButton.width()-8
-        h = self.colButton.height()-8
+        w = self.colButton.width() - 8
+        h = self.colButton.height() - 8
         pixmap = QPixmap(w, h)
         painter = QPainter()
         painter.begin(pixmap)
-        painter.fillRect(0,0,w,h, QBrush(self.distColor))
+        painter.fillRect(0, 0, w, h, QBrush(self.distColor))
         painter.end()
         self.colButton.setIcon(QIcon(pixmap))
         self.updateDelegates()
@@ -662,16 +690,18 @@ class OWRank(OWWidget):
         self.ranksModel.setRowCount(0)
 
     def onSelectionChanged(self, *args):
-        """ Called when the ranks view selection changes.
+        """
+        Called when the ranks view selection changes.
         """
         selected = self.selectedAttrs()
         self.clearButton.setEnabled(bool(selected))
         self.applyIf()
-        
+
     def onSelectItem(self, index):
-        """ Called when the user selects/unselects an item in the table view.
         """
-        self.selectMethod = 1 # Manual
+        Called when the user selects/unselects an item in the table view.
+        """
+        self.selectMethod = 1  # Manual
         self.clearButton.setEnabled(bool(self.selectedAttrs()))
         self.applyIf()
 
@@ -688,8 +718,10 @@ class OWRank(OWWidget):
 
     def getDiscretizedData(self):
         if not self.discretizedData:
-            discretizer = orange.EquiNDiscretization(numberOfIntervals=self.nIntervals)
-            contAttrs = filter(lambda attr: attr.varType == orange.VarTypes.Continuous, self.data.domain.attributes)
+            discretizer = Orange.feature.discretization.EqualFreq(
+                numberOfIntervals=self.nIntervals)
+            contAttrs = [attr for attr in self.data.domain.attributes
+                         if is_continuous(attr)]
             at = []
             attrDict = {}
             for attri in contAttrs:
@@ -699,7 +731,8 @@ class OWRank(OWWidget):
                     attrDict[attri] = nattr
                 except:
                     pass
-            self.discretizedData = self.data.select(orange.Domain(at, self.data.domain.classVar))
+            domain = Orange.data.Domain(at, self.data.domain.class_var)
+            self.discretizedData = self.data.translate(domain)
             self.discretizedData.setattr("attrDict", attrDict)
         return self.discretizedData
 
@@ -712,31 +745,30 @@ class OWRank(OWWidget):
         index = self.measures.index(measure)
         mask = [i == index for i, _ in enumerate(self.measures)]
         self.updateScores(mask)
-    
+
     def loadMeasureDefaults(self, measure):
-#         index = self.measures.index(measure)
-#         measure = self.estimators[index]
         params = measure_parameters(measure)
         for i, p in enumerate(params):
             setattr(self, param_attr_name(measure.score, p), p.default)
         self.measureParamChanged(measure)
-        
+
     def autoSelection(self):
         selModel = self.ranksView.selectionModel()
         rowCount = self.ranksModel.rowCount()
         columnCount = self.ranksModel.columnCount()
         model = self.ranksProxyModel
         if self.selectMethod == 0:
-            
-            selection = QItemSelection(model.index(0, 0),
-                                       model.index(rowCount - 1,
-                                       columnCount -1))
+            selection = QItemSelection(
+                model.index(0, 0),
+                model.index(rowCount - 1, columnCount - 1)
+            )
             selModel.select(selection, QItemSelectionModel.ClearAndSelect)
         if self.selectMethod == 2:
             nSelected = min(self.nSelected, rowCount)
-            selection = QItemSelection(model.index(0, 0),
-                                       model.index(nSelected - 1,
-                                       columnCount - 1))
+            selection = QItemSelection(
+                model.index(0, 0),
+                model.index(nSelected - 1, columnCount - 1)
+            )
             selModel.select(selection, QItemSelectionModel.ClearAndSelect)
 
     def headerClick(self, index):
@@ -744,7 +776,7 @@ class OWRank(OWWidget):
         if not self.ranksView.isSortingEnabled():
             # The sorting is disabled ("No sorting|" selected by user)
             self.sortingChanged()
-            
+
         if index > 1 and self.selectMethod == 2:
             # Reselect the top ranked attributes
             self.autoSelection()
@@ -752,20 +784,22 @@ class OWRank(OWWidget):
         return
 
     def sortingChanged(self):
-        """ Sorting was changed by user (through the Sort By combo box.)
+        """
+        Sorting was changed by user (through the Sort By combo box.)
         """
         self.updateSorting()
         self.autoSelection()
-        
+
     def updateSorting(self):
-        """ Update the sorting of the model/view.
+        """
+        Update the sorting of the model/view.
         """
         self.ranksProxyModel.invalidate()
         if self.sortBy == 0:
             self.ranksProxyModel.setSortRole(OWGUI.SortOrderRole)
             self.ranksProxyModel.sort(0, Qt.DescendingOrder)
             self.ranksView.setSortingEnabled(False)
-            
+
         else:
             self.ranksProxyModel.setSortRole(Qt.DisplayRole)
             self.ranksView.sortByColumn(self.sortBy - 1, Qt.DescendingOrder)
@@ -777,8 +811,7 @@ class OWRank(OWWidget):
             title = "log OR (for %r)" % var.values[1][:10]
         else:
             title = "log OR"
-#         if "Log Odds Ratio" in self.discEstimators:
-#             index = self.discMeasures.index("Log Odds Ratio")
+
         index = [m.name for m in self.discMeasures].index("Log Odds Ratio")
 
         item = PyStandardItem(title)
@@ -799,11 +832,12 @@ class OWRank(OWWidget):
             else:
                 measuresMask = [False] * len(self.measures)
         self.updateScores(measuresMask)
-        
+
         self.updateVisibleScoreColumns()
-            
+
     def updateVisibleScoreColumns(self):
-        """ Update the visible columns of the scores view.
+        """
+        Update the visible columns of the scores view.
         """
         for i, measure in enumerate(self.measures):
             shown = self.selectedMeasures.get(measure.name)
@@ -813,21 +847,28 @@ class OWRank(OWWidget):
         if col < 2:
             self.sortBy = 1 + col
         else:
-            self.sortBy = 3 + self.selectedMeasures[col-2]
+            self.sortBy = 3 + self.selectedMeasures[col - 2]
         self.sortingChanged()
 
     def decimalsChanged(self):
         self.updateDelegates()
         self.ranksView.resizeColumnsToContents()
-        
+
     def updateDelegates(self):
-        self.contRanksView.setItemDelegate(OWGUI.ColoredBarItemDelegate(self,
-                            decimals=self.nDecimals,
-                            color=self.distColor))
-        self.discRanksView.setItemDelegate(OWGUI.ColoredBarItemDelegate(self,
-                            decimals=self.nDecimals,
-                            color=self.distColor))
-        
+        self.contRanksView.setItemDelegate(
+            OWGUI.ColoredBarItemDelegate(
+                self,
+                decimals=self.nDecimals,
+                color=self.distColor)
+        )
+
+        self.discRanksView.setItemDelegate(
+            OWGUI.ColoredBarItemDelegate(
+                self,
+                decimals=self.nDecimals,
+                color=self.distColor)
+        )
+
     def sendReport(self):
         self.reportData(self.data)
         self.reportRaw(OWReport.reportTable(self.ranksView))
@@ -843,12 +884,12 @@ class OWRank(OWWidget):
         if not self.data or not selected:
             self.send("Reduced Data", None)
         else:
-            domain = orange.Domain(selected, self.data.domain.classVar)
+            domain = Orange.data.Domain(selected, self.data.domain.classVar)
             domain.addmetas(self.data.domain.getmetas())
-            data = orange.ExampleTable(domain, self.data)
+            data = Orange.data.Table(domain, self.data)
             self.send("Reduced Data", data)
         self.dataChanged = False
-        
+
     def selectedAttrs(self):
         if self.data:
             inds = self.ranksView.selectionModel().selectedRows(0)
@@ -857,16 +898,16 @@ class OWRank(OWWidget):
             inds = [ind.row() for ind in inds]
             return [self.data.domain.attributes[i] for i in inds]
         else:
-            return []    
+            return []
 
 
 class PyStandardItem(QStandardItem):
-    """ A StandardItem subclass for python objects.
+    """A StandardItem subclass for python objects.
     """
     def __init__(self, *args):
         QStandardItem.__init__(self, *args)
-        self.setFlags(Qt.ItemIsSelectable| Qt.ItemIsEnabled)
-        
+        self.setFlags(Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+
     def __lt__(self, other):
         my = self.data(Qt.DisplayRole).toPyObject()
         other = other.data(Qt.DisplayRole).toPyObject()
@@ -874,28 +915,29 @@ class PyStandardItem(QStandardItem):
             return True
         return my < other
 
+
 class MySortProxyModel(QSortFilterProxyModel):
     def headerData(self, section, orientation, role):
         """ Don't map headers.
         """
         source = self.sourceModel()
         return source.headerData(section, orientation, role)
-    
+
     def lessThan(self, left, right):
         role = self.sortRole()
         left = left.data(role).toPyObject()
         right = right.data(role).toPyObject()
         return left < right
 
-if __name__=="__main__":
-    a=QApplication(sys.argv)
-    ow=OWRank()
-    ow.setData(orange.ExampleTable("wine.tab"))
-    ow.setData(orange.ExampleTable("zoo.tab"))
-    ow.setData(orange.ExampleTable("servo.tab"))
-    ow.setData(orange.ExampleTable("iris.tab"))
+
+if __name__ == "__main__":
+    a = QApplication(sys.argv)
+    ow = OWRank()
+    ow.setData(Orange.data.Table("wine.tab"))
+    ow.setData(Orange.data.Table("zoo.tab"))
+    ow.setData(Orange.data.Table("servo.tab"))
+    ow.setData(Orange.data.Table("iris.tab"))
 #    ow.setData(orange.ExampleTable("auto-mpg.tab"))
     ow.show()
     a.exec_()
     ow.saveSettings()
-
