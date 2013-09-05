@@ -66,8 +66,8 @@ for %pyver in (%PYTHONVERSIONS) do (
   cdd %PYORANGEDIR
   except (*_d.pyd) for %pydf in (*.pyd) do (
     if exist %TMPDIR\Orange\%pydf del /q %TMPDIR\Orange\%pydf
-    upx %pydf -o %TMPDIR\Orange\%pydf
-    copy %TMPDIR\Orange\%pydf %TMPBINDIR
+    copy %pydf %TMPDIR\Orange\
+    copy %pydf %TMPBINDIR
   )
 
   cdd %TMPBINDIR
