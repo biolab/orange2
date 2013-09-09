@@ -7,12 +7,12 @@ train = Orange.data.Table([d for d in data if d not in test])
 
 lin = Orange.regression.linear.LinearRegressionLearner(train)
 lin.name = "lin"
-earth = Orange.regression.earth.EarthLearner(train)
-earth.name = "mars"
+rf = Orange.ensemble.forest.RandomForestLearner(train)
+rf.name = "rf"
 tree = Orange.regression.tree.TreeLearner(train)
 tree.name = "tree"
 
-models = [lin, earth, tree]
+models = [lin, rf, tree]
 
 print "y    " + " ".join("%-4s" % l.name for l in models)
 for d in test[:3]:

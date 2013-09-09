@@ -17,7 +17,6 @@ import OWGUI
 
 import Orange
 from Orange.feature import scoring
-from Orange.regression import earth
 from Orange.classification import svm
 from Orange.ensemble import forest
 
@@ -45,26 +44,6 @@ def table(shape, fill=None):
 
 
 MEASURE_PARAMS = {
-    earth.ScoreEarthImportance: [
-        {"name": "t",
-         "type": int,
-         "display_name": "Num. models.",
-         "range": (1, 20),
-         "default": 10,
-         "doc": "Number of models to train for feature scoring."},
-        {"name": "terms",
-         "type": int,
-         "display_name": "Max. num of terms",
-         "range": (3, 200),
-         "default": 10,
-         "doc": "Maximum number of terms in the forward pass"},
-        {"name": "degree",
-         "type": int,
-         "display_name": "Max. term degree",
-         "range": (1, 3),
-         "default": 2,
-         "doc": "Maximum degree of terms included in the model."}
-    ],
     scoring.Relief: [
         {"name": "k",
          "type": int,
@@ -157,10 +136,6 @@ SCORES = [
     score_meta(
         "Random Forests", "RF", forest.ScoreFeature,
         params=MEASURE_PARAMS[forest.ScoreFeature]),
-    score_meta(
-        "Earth Importance", "Earth imp.", earth.ScoreEarthImportance,
-        params=MEASURE_PARAMS[earth.ScoreEarthImportance],
-    )
 ]
 
 _DEFAULT_SELECTED = set(m.name for m in SCORES[:6])

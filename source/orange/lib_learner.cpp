@@ -1647,49 +1647,6 @@ PyTRY
 PyCATCH
 }
 
-
-/************ EARTH (MARS) ******/
-#include "earth.hpp"
-
-C_CALL(EarthLearner, Learner, "([examples], [weight=] -/-> Classifier)")
-C_NAMED(EarthClassifier, ClassifierFD, " ")
-
-PyObject *EarthClassifier_formatEarth(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
-{
-	PyTRY
-	CAST_TO(TEarthClassifier, classifier);
-	classifier->format_earth();
-	RETURN_NONE;
-	PyCATCH
-}
-
-PyObject *EarthClassifier__reduce__(PyObject *self) PYARGS(METH_VARARGS, "")
-{
-	PyTRY
-	CAST_TO(TEarthClassifier, classifier);
-	TCharBuffer buffer(1024);
-	classifier->save_model(buffer);
-	return Py_BuildValue("O(s#)N", getExportedFunction("__pickleLoaderEarthClassifier"),
-									buffer.buf, buffer.length(),
-									packOrangeDictionary(self));
-	PyCATCH
-}
-
-PyObject *__pickleLoaderEarthClassifier(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(buffer)")
-{
-	PyTRY
-	char * cbuf = NULL;
-	int buffer_size = 0;
-	if (!PyArg_ParseTuple(args, "s#:__pickleLoaderEarthClassifier", &cbuf, &buffer_size))
-		return NULL;
-	TCharBuffer buffer(cbuf);
-	PEarthClassifier classifier = mlnew TEarthClassifier();
-	classifier->load_model(buffer);
-	return WrapOrange(classifier);
-	PyCATCH
-}
-
-
 	
 /************* BAYES ************/
 

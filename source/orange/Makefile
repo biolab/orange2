@@ -13,7 +13,7 @@ include ../makefile.defs
 #########################################################################
 
 ifndef BLAS_LIB
-BLAS_OBJECTS = obj/daxpy.o obj/ddot.o obj/dnrm2.o obj/dscal.o obj/dcopy.o
+BLAS_OBJECTS = obj/daxpy.o obj/ddot.o obj/dnrm2.o obj/dscal.o
 else
 BLAS_OBJECTS =
 LINKOPTIONS += -l$(BLAS_LIB)
@@ -58,14 +58,9 @@ endif
 
 obj/%.o : libsvm/%.cpp libsvm/%.h
 	$(COMPILER) $(COMPILEOPTIONS) -c $< -o $@
-	
 
-LINPACK_OBJECTS = obj/dqrsl.o obj/dqrdc2.o obj/dtrsl.o obj/linpack.o
 
-obj/%.o : linpack/%.c linpack/linpack.h
-	$(CCOMPILER) $(COMPILEOPTIONS) -c $< -o $@
-
-ALL_OBJECTS = $(ORANGE_OBJECTS) $(BLAS_OBJECTS) $(LINPACK_OBJECTS) $(LIBLINEAR_OBJECTS) $(LIBSVM_OBJECTS)
+ALL_OBJECTS = $(ORANGE_OBJECTS) $(BLAS_OBJECTS) $(LIBLINEAR_OBJECTS) $(LIBSVM_OBJECTS)
 
 $(OLD)/orange.so:	ppp/stamp px/stamp $(ALL_OBJECTS)
 	$(LINKER) $(ALL_OBJECTS) $(LINKOPTIONS) -o $(OLD)/orange.so

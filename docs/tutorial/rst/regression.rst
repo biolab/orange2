@@ -35,7 +35,6 @@ The script outputs the tree::
 Following is initialization of few other regressors and their prediction of the first five data instances in housing price data set:
 
 .. index::
-   single: regression; mars
    single: regression; linear
 
 .. literalinclude:: code/regression-other.py
@@ -43,10 +42,11 @@ Following is initialization of few other regressors and their prediction of the 
 
 Looks like the housing prices are not that hard to predict::
 
-   y    lin  mars tree
-   21.4 24.8 23.0 20.1
-   15.7 14.4 19.0 17.3
-   36.5 35.7 35.6 33.8
+   y    lin  rf   tree
+   12.7 11.3 15.3 19.1
+   13.8 20.2 14.1 13.1
+   19.3 20.8 20.7 23.3
+
 
 Cross Validation
 ----------------
@@ -59,10 +59,9 @@ Just like for classification, the same evaluation module (``Orange.evaluation``)
 .. index: 
    single: regression; root mean squared error
 
-`MARS <http://en.wikipedia.org/wiki/Multivariate_adaptive_regression_splines>`_ has the lowest root mean squared error::
+Random forest has the lowest root mean squared error::
 
    Learner  RMSE
    lin      4.83
-   mars     3.84
+   rf       3.73
    tree     5.10
-

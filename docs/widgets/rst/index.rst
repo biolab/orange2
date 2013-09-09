@@ -645,7 +645,6 @@ Index:
 
    regression/mean.rst
    regression/linear.rst
-   regression/earth.rst
    regression/regressiontree.rst
    regression/regressiontreegraph.rst
    regression/pade.rst
