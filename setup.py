@@ -35,7 +35,7 @@ from distutils.extension import Extension
 NAME = 'Orange'
 
 VERSION = '2.7.1'
-ISRELEASED = False
+ISRELEASED = True
 
 DESCRIPTION = 'Orange, a component-based data mining framework.'
 LONG_DESCRIPTION = open(os.path.join(os.path.dirname(__file__), 'README.txt')).read()
@@ -57,7 +57,6 @@ CLASSIFIERS = (
     'Environment :: Console',
     'Environment :: Plugins',
     'Programming Language :: Python',
-    'Framework :: Orange',
     'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
     'Operating System :: POSIX',
     'Operating System :: Microsoft :: Windows',
