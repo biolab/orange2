@@ -35,6 +35,7 @@ import errno
 import urllib2
 import site
 import itertools
+import pipes
 
 from collections import namedtuple, defaultdict
 from contextlib import closing
@@ -428,6 +429,68 @@ def install(name, progress_callback=None):
     load_installed_addons()
     for func in addon_refresh_callback:
         func()
+
+
+def easy_install_process(args, bufsize=-1):
+    from setuptools.command import easy_install
+    # Check if easy_install supports '--user' switch
+    if "user" in [opt[0] for opt in easy_install.easy_install.user_options]:
+        has_user_site = True
+    else:
+        has_user_site = False
+
+    if has_user_site and site.USER_SITE in sys.path:
+        args = ["--user"] + args
+
+    # properly quote arguments if necessary
+    args = map(pipes.quote, args)
+
+    script = """
+import sys
+from setuptools.command.easy_install import main
+sys.exit(main({args!r}))
+"""
+    script = script.format(args=args)
+
+    return python_process(["-c", script], bufsize=bufsize)
+
+
+def python_process(args, script_name=None, cwd=None, env=None, **kwargs):
+    """
+    Run a `sys.executable` in a subprocess with `args`.
+    """
+    executable = sys.executable
+    if os.name == "nt" and os.path.basename(executable) == "pythonw.exe":
+        dirname, _ = os.path.split(executable)
+        executable = os.path.join(dirname, "python.exe")
+        # by default a new console window would show up when executing the
+        # script
+        startupinfo = subprocess.STARTUPINFO()
+        if hasattr(subprocess, "STARTF_USESHOWWINDOW"):
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        else:
+            # This flag was missing in inital releases of 2.7
+            startupinfo.dwFlags |= subprocess._subprocess.STARTF_USESHOWWINDOW
+
+        kwargs["startupinfo"] = startupinfo
+
+    if script_name is not None:
+        script = script_name
+    else:
+        script = executable
+
+    process = subprocess.Popen(
+        [script] + args,
+        executable=executable,
+        cwd=cwd,
+        env=env,
+        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE,
+        **kwargs
+    )
+
+    return process
+
 
 def uninstall(name, progress_callback=None):
     try:
