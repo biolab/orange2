@@ -18,6 +18,7 @@ injection of add-ons into the namespace.
 #TODO Document this module.
 
 import shelve
+import anydbm
 import xmlrpclib
 import warnings
 import re
@@ -30,9 +31,8 @@ import os
 import sys
 import platform
 import subprocess
+import errno
 import urllib2
-import urlparse
-import posixpath
 import site
 import itertools
 
@@ -41,33 +41,57 @@ from contextlib import closing
 
 import Orange.utils.environ
 
-ADDONS_ENTRY_POINT="orange.addons"
+ADDONS_ENTRY_POINT = "orange.addons"
 
 
-OrangeAddOn = namedtuple('OrangeAddOn', ['name', 'available_version', 'installed_version', 'summary', 'description',
-                                         'author', 'docs_url', 'keywords', 'homepage', 'package_url',
-                                         'release_url', 'release_size', 'python_version'])
-#It'd be great if we could somehow read a list and descriptions of widgets, show them in the dialog and enable
-#search of add-ons based on keywords in widget names and descriptions.
+OrangeAddOn = namedtuple(
+    'OrangeAddOn',
+    ['name', 'available_version', 'installed_version', 'summary',
+     'description', 'author', 'docs_url', 'keywords', 'homepage',
+     'package_url', 'release_urls']
+)
+
+ReleaseUrl = namedtuple(
+    "ReleaseUrl",
+    ["filename", "url", "size", "python_version", "packagetype"]
+)
+
+# It'd be great if we could somehow read a list and descriptions of
+# widgets, show them in the dialog and enable search of add-ons
+# based on keywords in widget names and descriptions.
 
 INDEX_RE = "[^a-z0-9-']"  # RE for splitting entries in the search index
 
-AOLIST_FILE = os.path.join(Orange.utils.environ.orange_settings_dir, "addons.shelve")
+AOLIST_FILE = os.path.join(Orange.utils.environ.orange_settings_dir,
+                           "addons_v2.shelve")
 
-def open_addons():
+
+def open_addons(flag="r"):
     try:
-        addons = shelve.open(AOLIST_FILE, 'c')
-        if any(name != name.lower() for name, record in addons.items()):  # Try to read the whole list and check for sanity.
-            raise Exception("Corrupted add-on list.")
-    except:
-        if os.path.isfile(AOLIST_FILE):
-            os.remove(AOLIST_FILE)
-        addons = shelve.open(AOLIST_FILE, 'n')
+        addons = shelve.open(AOLIST_FILE, flag)
+    except anydbm.error as ex:
+        if flag in ["r", "w"] and ex.message.startswith("need 'c'"):
+            # Need to create it it first.
+            s = shelve.open(AOLIST_FILE, "c")
+            s.close()
+            addons = shelve.open(AOLIST_FILE, flag)
+        else:
+            if os.path.isfile(AOLIST_FILE):
+                os.remove(AOLIST_FILE)
+            addons = shelve.open(AOLIST_FILE, 'n')
+    else:
+        # Try to read the whole list and check for sanity.
+        if any(name != name.lower() for name, _ in addons.items()):
+            addons.close()
+            if os.path.isfile(AOLIST_FILE):
+                os.remove(AOLIST_FILE)
+            addons = shelve.open(AOLIST_FILE, 'n')
+
     return addons
 
 
 def addons_corrupted():
-    with closing(open_addons()) as addons:
+    with closing(open_addons(flag="r")) as addons:
         return len(addons) == 0
 
 addon_refresh_callback = []
@@ -78,7 +102,7 @@ def rebuild_index():
     global index
 
     index = defaultdict(list)
-    with closing(open_addons()) as addons:
+    with closing(open_addons(flag="r")) as addons:
         for name, ao in addons.items():
             for s in [name, ao.summary, ao.description, ao.author] + (ao.keywords if ao.keywords else []):
                 if not s:
@@ -89,16 +113,18 @@ def rebuild_index():
                     for i in range(len(word)):
                         index[word[:i+1]].append(name)
 
+
 def search_index(query):
     global index
     result = set()
     words = [word for word in re.split(INDEX_RE, query.lower()) if len(word)>1]
     if not words:
-        with closing(open_addons()) as addons:
+        with closing(open_addons(flag="r")) as addons:
             return addons.keys()
     for word in words:
         result.update(index[word])
     return result
+
 
 def refresh_available_addons(force=False, progress_callback=None):
     pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
@@ -120,66 +146,79 @@ def refresh_available_addons(force=False, progress_callback=None):
 
     docs = {}
     if progress_callback:
-        progress_callback(len(pkg_dict)+1, 1)
-    with closing(open_addons()) as addons:
+        progress_callback(len(pkg_dict) + 1, 1)
+
+    with closing(open_addons(flag="c")) as addons:
         for i, (name, (_, version)) in enumerate(pkg_dict.items()):
-            if force or name not in addons or addons[name.lower()].available_version != version:
+            installed = addons[name.lower()] if name.lower() in addons else None
+            if force or not installed or installed.available_version != version:
                 try:
                     data = pypi.release_data(name, version)
-                    rel = pypi.release_urls(name, version)[0]
-
+                    urls = pypi.release_urls(name, version)
+                    release_urls = \
+                        [ReleaseUrl(url["filename"], url["url"],
+                                    url["size"], url["python_version"],
+                                    url["packagetype"])
+                         for url in urls]
                     if readthedocs:
                         try:
-                            docs = readthedocs.project.get(slug=name.lower())['objects'][0]
+                            docs = readthedocs.project.get(
+                                slug=name.lower())['objects'][0]
                         except:
                             docs = {}
-                    addons[name.lower()] = OrangeAddOn(name = name,
-                                               available_version = data['version'],
-                                               installed_version = addons[name.lower()].installed_version if name.lower() in addons else None,
-                                               summary = data['summary'],
-                                               description = data.get('description', ''),
-                                               author = str((data.get('author', '') or '') + ' ' + (data.get('author_email', '') or '')).strip(),
-                                               docs_url = data.get('docs_url', docs.get('subdomain', '')),
-                                               keywords = data.get('keywords', "").split(","),
-                                               homepage = data.get('home_page', ''),
-                                               package_url = data.get('package_url', ''),
-                                               release_url = rel.get('url', None),
-                                               release_size = rel.get('size', -1),
-                                               python_version = rel.get('python_version', None))
-                except Exception, e:
+                    addons[name.lower()] = OrangeAddOn(
+                        name=name,
+                        available_version=data['version'],
+                        installed_version=installed.installed_version if installed else None,
+                        summary=data['summary'],
+                        description=data.get('description', ''),
+                        author=str((data.get('author', '') or '') + ' ' +
+                                   (data.get('author_email', '') or '')).strip(),
+                        docs_url=data.get('docs_url', docs.get('subdomain', '')),
+                        keywords=data.get('keywords', "").split(","),
+                        homepage=data.get('home_page', ''),
+                        package_url=data.get('package_url', ''),
+                        release_urls=release_urls
+                    )
+                except Exception:
                     import traceback
                     traceback.print_exc()
-                    warnings.warn('Could not load data for the following add-on: %s'%name)
+                    warnings.warn(
+                        'Could not load data for the add-on: %s' % name)
+
             if progress_callback:
-                progress_callback(len(pkg_dict)+1, i+2)
+                progress_callback(len(pkg_dict) + 1, i + 2)
 
     rebuild_index()
 
+
 def load_installed_addons():
     found = set()
-    with closing(open_addons()) as addons:
+    with closing(open_addons(flag="c")) as addons:
         for entry_point in pkg_resources.iter_entry_points(ADDONS_ENTRY_POINT):
-            name, version = entry_point.dist.project_name, entry_point.dist.version
-            #TODO We could import setup.py from entry_point.location and load descriptions and such ...
+            name = entry_point.dist.project_name
+            version = entry_point.dist.version
+
             if name.lower() in addons:
-                addons[name.lower()] = addons[name.lower()]._replace(installed_version = version)
+                addons[name.lower()] = addons[name.lower()]._replace(installed_version=version)
             else:
-                addons[name.lower()] = OrangeAddOn(name = name,
-                    available_version = None,
-                    installed_version = version,
-                    summary = "",
-                    description = "",
-                    author = "",
-                    docs_url = "",
-                    keywords = "",
-                    homepage = "",
-                    package_url = "",
-                    release_url = "",
-                    release_size = None,
-                    python_version = None)
+                addons[name.lower()] = OrangeAddOn(
+                    name=name,
+                    available_version=None,
+                    installed_version=version,
+                    summary="",
+                    description="",
+                    author="",
+                    docs_url="",
+                    keywords="",
+                    homepage="",
+                    package_url="",
+                    release_urls=[])
             found.add(name.lower())
+
         for name in set(addons).difference(found):
-            addons[name.lower()] = addons[name.lower()]._replace(installed_version = None)
+            addons[name.lower()] = addons[name.lower()]._replace(installed_version=None)
+
     rebuild_index()
 
 
@@ -317,28 +356,45 @@ def run_setup(setup_script, args):
 
         extra_kwargs["startupinfo"] = startupinfo
 
-    subprocess.check_output([executable, setup_script] + args,
-                             cwd=source_root,
-                             stderr=subprocess.STDOUT,
-                             **extra_kwargs)
+    process = subprocess.Popen([executable, setup_script] + args,
+                               cwd=source_root,
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT,
+                               bufsize=1,  # line buffered
+                               **extra_kwargs)
+    output = []
+    while process.poll() is None:
+        try:
+            line = process.stdout.readline()
+        except (OSError, IOError) as ex:
+            if ex.errno != errno.EINTR:
+                raise
+        else:
+            output.append(line)
+            print line,
+
+    if process.returncode:
+        raise subprocess.CalledProcessError(
+                  process.returncode,
+                  setup_script,
+                  "".join(output)
+              )
 
 
 def install(name, progress_callback=None):
-    if progress_callback:
-        progress_callback(1, 0)
-
-    with closing(open_addons()) as addons:
+    with closing(open_addons(flag="r")) as addons:
         addon = addons[name.lower()]
-    release_url = addon.release_url
+
+    source_urls = [url for url in addon.release_urls
+                   if url.packagetype == "sdist"]
+    release_url = source_urls[0]
 
     try:
         tmpdir = tempfile.mkdtemp()
 
-        stream = urllib2.urlopen(release_url, timeout=120)
+        stream = urllib2.urlopen(release_url.url, timeout=120)
 
-        parsed_url = urlparse.urlparse(release_url)
-        package_name = posixpath.basename(parsed_url.path)
-        package_path = os.path.join(tmpdir, package_name)
+        package_path = os.path.join(tmpdir, release_url.filename)
 
         progress_cb = (lambda value: progress_callback(value, 0)) \
                       if progress_callback else None
@@ -379,13 +435,22 @@ def uninstall(name, progress_callback=None):
         ao = pip.req.InstallRequirement(name, None)
         ao.uninstall(True)
     except ImportError:
-        raise Exception("Pip is required for add-on uninstallation. Install pip and try again.")
+        raise Exception("Pip is required for add-on uninstallation. "
+                        "Install pip and try again.")
+
 
 def upgrade(name, progress_callback=None):
     install(name, progress_callback)
 
-load_installed_addons()
 
+try:
+    load_installed_addons()
+except Exception as ex:
+    # Do not let an exception propagate during the import phase,
+    # It should not even be called at import only if/when add-ons
+    # db is actually requested.
+    warnings.warn("'load_installed_addons' failed with %s" % ex,
+                  UserWarning)
 
 
 # Support for loading legacy "registered" add-ons
@@ -398,6 +463,11 @@ def __read_addons_list(addons_file, systemwide):
 
 registered = __read_addons_list(os.path.join(Orange.utils.environ.orange_settings_dir, "add-ons.txt"), False) + \
              __read_addons_list(os.path.join(Orange.utils.environ.install_dir, "add-ons.txt"), True)
+
+if registered:
+    warnings.warn("'add-ons.txt' is deprecated. " +
+                  "Please use setuptools/entry points.",
+                  UserWarning)
 
 for name, path in registered:
     for p in [os.path.join(path, "widgets", "prototypes"),
