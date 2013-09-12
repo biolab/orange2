@@ -87,16 +87,21 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
     else {
       if (li == Py_None) {
         *(ei++) = (*vi)->DK();
-      }
-        
-      else if (PyString_Check(li))
+      } else if (PyString_Check(li)) {
           (*vi)->str2val(string(PyString_AsString(li)), *(ei++));
-
-      else if ((*vi)->varType==TValue::INTVAR) {
-        if (PyInt_Check(li))
-          *(ei++)=TValue(int(PyInt_AsLong(li)));
-        else {
-          PyErr_Format(PyExc_TypeError, "attribute no. %i (%s) is ordinal, string value expected", pos, (*vi)->get_name().c_str());
+      } else if ((*vi)->varType==TValue::INTVAR) {
+        if (PyInt_Check(li)) {
+          TEnumVariable * enumvar = dynamic_cast<TEnumVariable *>(vi->getUnwrappedPtr());
+          int value = int(PyInt_AsLong(li));
+          if (value < 0 || value >= enumvar->noOfValues()) {
+            PyErr_Format(PyExc_ValueError,
+                         "value index %i out of range (0 - %i) at attribute no %i (%s)",
+                         value, enumvar->noOfValues() - 1, pos, enumvar->get_name().c_str());
+            return false;
+          }
+          *(ei++) = TValue(value);
+        } else {
+          PyErr_Format(PyExc_TypeError, "attribute no. %i (%s) is ordinal, string or int value expected", pos, (*vi)->get_name().c_str());
           return false;
         }
       }

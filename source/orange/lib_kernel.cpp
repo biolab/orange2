@@ -2933,20 +2933,93 @@ TExampleTable *readListOfExamples(PyObject *args)
 }
 
 
+
+template<typename T>
+int to_int_value(T & value) {
+    return (int)value;
+}
+
+
+template<>
+int to_int_value<float>(float & value) {
+    return (int)floor(0.5 + value);
+}
+
+
+template<>
+int to_int_value<double>(double & value) {
+    return (int)floor(0.5 + value);
+}
+
+
+template<typename T>
+void init_value(TValue & target, TVariable & variable, T & value, bool masked=false) {
+    if (variable.varType == TValue::INTVAR) {
+        TEnumVariable * enumvar = dynamic_cast<TEnumVariable *>(&variable);
+        int ivalue = to_int_value(value);
+        if (enumvar) {
+            if (!masked && (ivalue < 0 || ivalue >= enumvar->noOfValues())) {
+            	PyErr_Format(PyExc_ValueError, "Invalid value for a Discrete variable.");
+            	throw pyexception();
+            }
+        }
+        intValInit(target, ivalue, masked ? valueDK : valueRegular);
+    } else {
+        floatValInit(target, (float)value,  masked ? valueDK : valueRegular);
+    }
+}
+
+
+template<typename T>
+void copy_strided_buffer_to_example(
+        TExample & example,
+        char * buffer, Py_ssize_t stride,
+        char * mask_buffer, Py_ssize_t mask_stride) {
+    PDomain domain = example.domain;
+    PVarList vars = domain->variables, class_vars = domain->classVars;
+    TVarList::iterator var_iter = vars->begin();
+    TValue * value_iter = example.begin();
+    int pos = 0;
+
+    // copy variables part
+    for (; var_iter != vars->end();
+            var_iter++, value_iter++, pos++) {
+        init_value(*value_iter, var_iter->getReference(),
+                   *((T *) buffer), mask_buffer && (*mask_buffer));
+
+        buffer += stride;
+        if (mask_buffer) {
+            mask_buffer += mask_stride;
+        }
+    }
+
+    // copy class vars part
+    for (var_iter = class_vars->begin();
+            var_iter != class_vars->end();
+            var_iter++, value_iter++, pos++) {
+        init_value(*value_iter, var_iter->getReference(),
+                   *((T *) buffer), mask_buffer && (*mask_buffer));
+
+        buffer += stride;
+        if (mask_buffer) {
+        mask_buffer += mask_stride;
+        }
+    }
+}
+
+
 TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMetas)
 {
   PyArrayObject *array = NULL, *mask = NULL;
 
   if (isSomeNumeric_wPrecheck(args)) {
-    array = (PyArrayObject *)(args);
-  }
-  else if (isSomeMaskedNumeric_wPrecheck(args)) {
-    array = (PyArrayObject *)(args);
+    array = (PyArrayObject *)args;
+  } else if (isSomeMaskedNumeric_wPrecheck(args)) {
+    array = (PyArrayObject *)args;
     mask = (PyArrayObject *)PyObject_GetAttrString(args, "mask");
     if (!mask) {
         PyErr_Clear();
-    }
-    else if (!isSomeNumeric_wPrecheck((PyObject *)mask)) {
+    } else if (!isSomeNumeric_wPrecheck((PyObject *)mask)) {
       Py_DECREF((PyObject *)mask);
       mask = NULL;
     }
@@ -3006,74 +3079,36 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
       const int &strideMaskRow = mask ? mask->strides[0] : strideRow;
       const int &strideMaskCol = mask ? mask->strides[1] : strideCol;
 
-      TVarList::const_iterator const vb(variables->begin());
-      TVarList::const_iterator const ve(variables->end());
-      TVarList::const_iterator const cb(domain->classVars->begin());
-      TVarList::const_iterator const ce(domain->classVars->end());
-
       try {
         TExample::iterator ei;
         char *rowPtr = array->data;
         char *maskRowPtr = mask ? mask->data : array->data;
 
-        for(int row = 0, rowe = array->dimensions[0]; row < rowe; row++, rowPtr += strideRow, maskRowPtr += strideMaskRow) {
-          char *elPtr = rowPtr;
-          char *maskPtr = maskRowPtr;
+        for (int row = 0, rowe = array->dimensions[0];
+             row < rowe;
+             row++, rowPtr += strideRow, maskRowPtr += strideMaskRow) {
           TExample *nex = mlnew TExample(domain);
+          char * maskPtr = mask ? maskRowPtr : NULL;
 
-          #define ARRAYTYPE(TYPE) \
-            for(ei = nex->begin(), vi = vb; vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol) \
-              if ((*vi)->varType == TValue::INTVAR) \
-                intValInit(*ei, *(TYPE *)elPtr, mask && !*maskPtr ? valueDK : valueRegular); \
-              else \
-                floatValInit(*ei, *(TYPE *)elPtr, mask && !*maskPtr ? valueDK : valueRegular); \
-            for(vi = cb; vi!=ce; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol) \
-              if ((*vi)->varType == TValue::INTVAR) \
-                intValInit(*ei, *(TYPE *)elPtr, mask && !*maskPtr ? valueDK : valueRegular); \
-              else \
-                floatValInit(*ei, *(TYPE *)elPtr, mask && !*maskPtr ? valueDK : valueRegular); \
-            break;
+          #define COPY_BUFFER(TYPE) \
+                  copy_strided_buffer_to_example<TYPE>(*nex, rowPtr, strideCol, maskPtr, strideMaskCol); \
+                  break;
 
           switch (arrayType) {
             case 'c':
-            case 'b': ARRAYTYPE(char)
-            case 'B': ARRAYTYPE(unsigned char)
-            case 'h': ARRAYTYPE(short)
-            case 'H': ARRAYTYPE(unsigned short)
-            case 'i': ARRAYTYPE(int)
-            case 'I': ARRAYTYPE(unsigned int)
-            case 'l': ARRAYTYPE(long)
-            case 'L': ARRAYTYPE(unsigned long)
-
-            case 'f':
-              for(ei = nex->begin(), vi = vb; vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
-                if ((*vi)->varType == TValue::INTVAR)
-                  intValInit(*ei, int(floor(0.5 + *(float *)elPtr)), mask && !*maskPtr ? valueDK : valueRegular);
-                else
-                  floatValInit(*ei, *(float *)elPtr, mask && !*maskPtr ? valueDK : valueRegular);
-              for(vi = cb; vi!=ce; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
-                if ((*vi)->varType == TValue::INTVAR)
-                  intValInit(*ei, int(floor(0.5 + *(float *)elPtr)), mask && !*maskPtr ? valueDK : valueRegular);
-                else
-                  floatValInit(*ei, *(float *)elPtr, mask && !*maskPtr ? valueDK : valueRegular);
-              break;
-
-            case 'd':
-              for(ei = nex->begin(), vi = variables->begin(); vi!=ve; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
-                if ((*vi)->varType == TValue::INTVAR)
-                  intValInit(*ei, int(floor(0.5 + *(double *)elPtr)), mask && !*maskPtr ? valueDK : valueRegular);
-                else
-                  floatValInit(*ei, *(double *)elPtr, mask && !*maskPtr ? valueDK : valueRegular);
-              for(vi = cb; vi!=ce; vi++, ei++, elPtr += strideCol, maskPtr += strideMaskCol)
-                if ((*vi)->varType == TValue::INTVAR)
-                  intValInit(*ei, int(floor(0.5 + *(double *)elPtr)), mask && !*maskPtr ? valueDK : valueRegular);
-                else
-                  floatValInit(*ei, *(double *)elPtr, mask && !*maskPtr ? valueDK : valueRegular);
-              break;
-
+            case 'b': COPY_BUFFER(char)
+            case 'B': COPY_BUFFER(unsigned char)
+            case 'h': COPY_BUFFER(short)
+            case 'H': COPY_BUFFER(unsigned short)
+            case 'i': COPY_BUFFER(int)
+            case 'I': COPY_BUFFER(unsigned int)
+            case 'l': COPY_BUFFER(long)
+            case 'L': COPY_BUFFER(unsigned long)
+            case 'f': COPY_BUFFER(float)
+            case 'd': COPY_BUFFER(double)
           }
 
-          #undef ARRAYTYPE
+          #undef COPY_BUFFER
 
           table->addExample(nex);
           nex = NULL;
