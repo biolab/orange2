@@ -646,7 +646,11 @@ void TEnumVariable::val2str(const TValue &val, string &str) const
     str += ")";
   }
 
-  str = val.intV<int(values->size()) ? values->operator[](val.intV) : "#RNGE";
+  if (val.intV < values->size() && val.intV >= 0) {
+    str = values->operator[](val.intV);
+  } else {
+    str = "#RNGE";
+  }
 }
 
 
