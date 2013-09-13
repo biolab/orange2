@@ -2892,7 +2892,7 @@ PyObject *ExampleGeneratorList__reduce__(TPyOrange *self, PyObject *) { return L
 
 TExampleTable *readListOfExamples(PyObject *args)
 {
-    if (isSomeNumeric_wPrecheck(args))
+    if (isSomeNumeric_wPrecheck(args) || isSomeMaskedNumeric_wPrecheck(args))
       return readListOfExamples(args, PDomain(), false);
 
 
