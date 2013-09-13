@@ -54,10 +54,13 @@ class TestRegression(unittest.TestCase):
             actual_results = self.get_actual_results(outdir, name)
             self.assertEqual(actual_results, expected_results)
 
-
         self.assertEqual(rv, "ok", "Regression test %s: %s" % (rv, name) \
                         if stderr == "" else \
                         "Regression test %s: %s\n\n%s" % (rv, name, stderr))
+
+        self.assertEqual(p.wait(), 0,
+                         "Test script exited with a non zero error code.")
+
         os.chdir(tmpdir)
 
     def get_expected_results(self, outputdir, name):
