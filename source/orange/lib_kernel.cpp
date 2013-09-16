@@ -336,6 +336,10 @@ PyObject *Variable_get_attributes(TPyOrange *self)
 
 int Variable_set_attributes(TPyOrange *self, PyObject *dict)
 {
+    if (!dict) {
+        PYERROR(PyExc_TypeError, "Cannot delete 'attributes' dict", 0);
+    }
+
     if (!PyDict_Check(dict)) {
         PYERROR(PyExc_TypeError, "'attributes' must be a dict", 0);
     }
