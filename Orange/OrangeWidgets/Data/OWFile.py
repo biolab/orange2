@@ -18,11 +18,11 @@ NAME = "File"
 ID = "orange.widgets.data.file"
 
 DESCRIPTION = """
-Read a data table from a supported file format on the the file system and
-send it to the the output.
+Reads a data from an input file.
 """
 
-LONG_DESCRIPTION = """
+LONG_DESCRIPTION = ""
+"""
 This is the widget you will probably use at the start of every schema to read
 the input data file (data table with examples). The widget maintains a
 history of most recently used data files. For convenience, the history
