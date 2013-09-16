@@ -315,6 +315,34 @@ PyObject *Variable_get_name(PyObject *self)
 }
 
 
+/*
+ * Variable.attributes dictionary getter/setter
+ */
+
+PyObject *Variable_get_attributes(TPyOrange *self)
+{
+    PyObject *res = NULL;
+
+    if (self->orange_dict && (res = PyDict_GetItemString(self->orange_dict, "attributes"))) {
+        Py_INCREF(res);
+        return res;
+    }
+
+    PyObject *dict = PyDict_New();
+    Orange_setattrDictionary(self, "attributes", dict, false);
+    return dict;
+}
+
+
+int Variable_set_attributes(TPyOrange *self, PyObject *dict)
+{
+    if (!PyDict_Check(dict)) {
+        PYERROR(PyExc_TypeError, "'attributes' must be a dict", 0);
+    }
+    return Orange_setattrDictionary(self, "attributes", dict, false);
+}
+
+
 #include "stringvars.hpp"
 C_NAMED(StringVariable - Orange.feature.String, Variable, "([name=])")
 
@@ -365,18 +393,6 @@ PyObject *PythonValue__reduce__(PyObject *self)
   return Py_BuildValue("O(O)", (PyObject *)(self->ob_type), SELF_AS(TPythonValue).value);
 }
 
-
-PyObject *Variable_getattr(TPyOrange *self, PyObject *name)
-{
-  if (PyString_Check(name) && !strcmp(PyString_AsString(name), "attributes")
-      && (!self->orange_dict || !PyDict_Contains(self->orange_dict, name))) {
-    PyObject *dict = PyDict_New();
-    Orange_setattrDictionary(self, name, dict, false);
-    Py_DECREF(dict);
-  }
-
-  return Orange_getattr(self, name);
-}
 
 PyObject *Variable_randomvalue(PyObject *self, PyObject *args) PYARGS(0, "() -> Value")
 { PyTRY
