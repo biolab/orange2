@@ -853,6 +853,9 @@ class AddOnManagerDialog(QDialog):
 
         self.busy(True)
         self.repaint()
+
+        addons = Orange.utils.addons.open_addons(flag="r")
+
         add, remove, upgrade = self.to_install(), self.to_remove(), self.to_upgrade
 
         def errormessage(title, message, details=None, exc_info=None):
@@ -871,25 +874,53 @@ class AddOnManagerDialog(QDialog):
 
             return box.exec_()
 
-        for name in upgrade:
+        def subprocesswait(process):
+            output = []
+            while process.poll() is None:
+                try:
+                    line = process.stdout.readline()
+                except IOError as ex:
+                    if ex.errno != 4:
+                        raise
+                else:
+                    output.append(line)
+                    qApp.processEvents(QEventLoop.ExcludeUserInputEvents)
+                    print line,
+
+            if process.returncode:
+                output = "".join(output)
+                output += process.stdout.read()
+
+                errormessage("Error",
+                             "'easy_install' exited with error code %i" %
+                             process.returncode,
+                             details=output)
+            return process.returncode
+
+        def easy_install(req):
             try:
-                self.busy("Upgrading %s ..." % name)
-                self.repaint()
-                Orange.utils.addons.upgrade(name, self.pcb)
-            except subprocess.CalledProcessError, ex:
-                errormessage("Error",
-                             "setup.py script exited with error code %i" \
-                             % ex.returncode,
-                             details=ex.output)
-            except Exception, e:
-                errormessage("Error",
-                             "Problem upgrading add-on %s: %s" % (name, e),
-                             exc_info=True)
+                process = Orange.utils.addons.easy_install_process([req])
+            except (OSError, IOError):
+                # TODO: Should show some usefull message (executable not
+                # found, permission error, ...
+                raise
+            else:
+                subprocesswait(process)
+
+        for name in upgrade:
+            req = "{0}=={1}".format(
+                name, addons[name.lower()].available_version)
+
+            self.busy("Upgrading %s ..." % name)
+            self.progress.setRange(0, 0)
+            self.repaint()
+
+            easy_install(req)
 
         for name in remove:
+            self.busy("Uninstalling %s ..." % name)
+            self.repaint()
             try:
-                self.busy("Uninstalling %s ..." % name)
-                self.repaint()
                 Orange.utils.addons.uninstall(name, self.pcb)
             except Exception, e:
                 errormessage("Error",
@@ -897,25 +928,19 @@ class AddOnManagerDialog(QDialog):
                              exc_info=True)
 
         for name in add:
-            try:
-                self.busy("Installing %s ..." % name)
-                self.repaint()
-                Orange.utils.addons.install(name, self.pcb)
-            except subprocess.CalledProcessError, ex:
-                errormessage("Error",
-                             "setup.py script exited with error code %i" \
-                             % ex.returncode,
-                             details=ex.output)
+            req = "{0}=={1}".format(
+                name, addons[name.lower()].available_version)
 
-            except Exception, e:
-                errormessage("Error",
-                             "Problem installing add-on %s: %s" % (name, e),
-                             exc_info=True)
+            self.busy("Installing %s ..." % name)
+            self.progress.setRange(0, 0)
+            self.repaint()
 
-        if len(upgrade) > 0:
-            QMessageBox.warning(self, "Restart Orange", "After upgrading add-ons, it is very important to restart Orange to make sure the changes have been applied.")
-        elif len(remove) > 0:  # Don't bother with this if there has already been one (more important) warning.
-            QMessageBox.warning(self, "Restart Orange", "After removal of add-ons, it is suggested that you restart Orange for the changes to become effective.")
+            easy_install(req)
+
+        if len(add) + len(upgrade) + len(remove) > 0:
+            QMessageBox.information(
+                self, "Restart Orange",
+                "Please restart Orange for changes to take effect.")
 
         QDialog.accept(self)
 

@@ -34,7 +34,7 @@ from distutils.extension import Extension
 
 NAME = 'Orange'
 
-VERSION = '2.7.1'
+VERSION = '2.7.2'
 ISRELEASED = False
 
 DESCRIPTION = 'Orange, a component-based data mining framework.'
@@ -57,7 +57,6 @@ CLASSIFIERS = (
     'Environment :: Console',
     'Environment :: Plugins',
     'Programming Language :: Python',
-    'Framework :: Orange',
     'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
     'Operating System :: POSIX',
     'Operating System :: Microsoft :: Windows',
@@ -98,7 +97,7 @@ lib_cfg = namedtuple(
     "lib_cfg", ["libraries", "library_dirs", "include_dirs"])
 
 site_cfg = namedtuple(
-    "site_cfg", ["libsvm", "liblinear", "blas", "R", "qhull"])
+    "site_cfg", ["libsvm", "liblinear", "blas", "qhull"])
 
 
 def libs_parse(text):
@@ -140,10 +139,9 @@ def site_config():
     libsvm = parse_lib_opt(parser, "libsvm")
     liblinear = parse_lib_opt(parser, "liblinear")
     blas = parse_lib_opt(parser, "blas")
-    R = parse_lib_opt(parser, "R")
     qhull = parse_lib_opt(parser, "qhull")
 
-    return site_cfg(libsvm, liblinear, blas, R, qhull)
+    return site_cfg(libsvm, liblinear, blas, qhull)
 
 
 # Get the command for building orangeqt extension from
@@ -585,13 +583,6 @@ if site.blas:
     orange_library_dirs += site.blas.library_dirs
 else:
     orange_sources += get_source_files("source/orange/blas/", "c")
-
-if site.R:
-    # Link external R library (for linpack)
-    orange_libraries += site.R.libraries
-    orange_library_dirs += site.R.library_dirs
-else:
-    orange_sources += get_source_files("source/orange/linpack/", "c")
 
 if site.liblinear:
     # Link external LIBLINEAR library

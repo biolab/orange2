@@ -11,7 +11,6 @@ where the outcome - dependent variable is real-valued:
    Orange.regression.linear
    Orange.regression.lasso
    Orange.regression.pls
-   Orange.regression.earth
    Orange.regression.tree
    Orange.regression.mean
 

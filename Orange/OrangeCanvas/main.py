@@ -109,7 +109,16 @@ def main(argv=None):
     # and write to the old file descriptors)
     fix_win_pythonw_std_stream()
 
-    logging.basicConfig(level=levels[options.log_level])
+    # File handler should always be at least INFO level so we need
+    # the application root level to be at least at INFO.
+    root_level = min(levels[options.log_level], logging.INFO)
+    rootlogger = logging.getLogger(OrangeCanvas.__name__)
+    rootlogger.setLevel(root_level)
+
+    # Standard output stream handler at the requested level
+    stream_hander = logging.StreamHandler()
+    stream_hander.setLevel(level=levels[options.log_level])
+    rootlogger.addHandler(stream_hander)
 
     log.info("Starting 'Orange Canvas' application.")
 
@@ -126,6 +135,17 @@ def main(argv=None):
     log.debug("Starting CanvasApplicaiton with argv = %r.", qt_argv)
     app = CanvasApplication(qt_argv)
 
+    # NOTE: config.init() must be called after the QApplication constructor
+    config.init()
+
+    file_handler = logging.FileHandler(
+        filename=os.path.join(config.log_dir(), "canvas.log"),
+        mode="w"
+    )
+
+    file_handler.setLevel(root_level)
+    rootlogger.addHandler(file_handler)
+
     # intercept any QFileOpenEvent requests until the main window is
     # fully initialized.
     # NOTE: The QApplication must have the executable ($0) and filename
@@ -141,8 +161,6 @@ def main(argv=None):
 
     app.fileOpenRequest.connect(onrequest)
 
-    # Note: config.init must be called after the QApplication constructor
-    config.init()
     settings = QSettings()
 
     stylesheet = options.stylesheet

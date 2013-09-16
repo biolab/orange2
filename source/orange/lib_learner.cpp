@@ -1,24 +1,3 @@
-/*
-    This file is part of Orange.
-    
-    Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
-    Contact: janez.demsar@fri.uni-lj.si
-
-    Orange is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Orange is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Orange.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-
 #ifdef _MSC_VER
   #pragma warning (disable : 4786 4114 4018 4267 4244)
 #endif
@@ -1646,49 +1625,6 @@ PyTRY
 	return WrapOrange(svm);
 PyCATCH
 }
-
-
-/************ EARTH (MARS) ******/
-#include "earth.hpp"
-
-C_CALL(EarthLearner, Learner, "([examples], [weight=] -/-> Classifier)")
-C_NAMED(EarthClassifier, ClassifierFD, " ")
-
-PyObject *EarthClassifier_formatEarth(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
-{
-	PyTRY
-	CAST_TO(TEarthClassifier, classifier);
-	classifier->format_earth();
-	RETURN_NONE;
-	PyCATCH
-}
-
-PyObject *EarthClassifier__reduce__(PyObject *self) PYARGS(METH_VARARGS, "")
-{
-	PyTRY
-	CAST_TO(TEarthClassifier, classifier);
-	TCharBuffer buffer(1024);
-	classifier->save_model(buffer);
-	return Py_BuildValue("O(s#)N", getExportedFunction("__pickleLoaderEarthClassifier"),
-									buffer.buf, buffer.length(),
-									packOrangeDictionary(self));
-	PyCATCH
-}
-
-PyObject *__pickleLoaderEarthClassifier(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(buffer)")
-{
-	PyTRY
-	char * cbuf = NULL;
-	int buffer_size = 0;
-	if (!PyArg_ParseTuple(args, "s#:__pickleLoaderEarthClassifier", &cbuf, &buffer_size))
-		return NULL;
-	TCharBuffer buffer(cbuf);
-	PEarthClassifier classifier = mlnew TEarthClassifier();
-	classifier->load_model(buffer);
-	return WrapOrange(classifier);
-	PyCATCH
-}
-
 
 	
 /************* BAYES ************/

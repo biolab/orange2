@@ -1,24 +1,3 @@
-/*
-    This file is part of Orange.
-    
-    Copyright 1996-2010 Faculty of Computer and Information Science, University of Ljubljana
-    Contact: janez.demsar@fri.uni-lj.si
-
-    Orange is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    Orange is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Orange.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-
 #include "orange.hpp"
 
 class TMLClassDefinition;
@@ -87,16 +66,21 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
     else {
       if (li == Py_None) {
         *(ei++) = (*vi)->DK();
-      }
-        
-      else if (PyString_Check(li))
+      } else if (PyString_Check(li)) {
           (*vi)->str2val(string(PyString_AsString(li)), *(ei++));
-
-      else if ((*vi)->varType==TValue::INTVAR) {
-        if (PyInt_Check(li))
-          *(ei++)=TValue(int(PyInt_AsLong(li)));
-        else {
-          PyErr_Format(PyExc_TypeError, "attribute no. %i (%s) is ordinal, string value expected", pos, (*vi)->get_name().c_str());
+      } else if ((*vi)->varType==TValue::INTVAR) {
+        if (PyInt_Check(li)) {
+          TEnumVariable * enumvar = dynamic_cast<TEnumVariable *>(vi->getUnwrappedPtr());
+          int value = int(PyInt_AsLong(li));
+          if (value < 0 || value >= enumvar->noOfValues()) {
+            PyErr_Format(PyExc_ValueError,
+                         "value index %i out of range (0 - %i) at attribute no %i (%s)",
+                         value, enumvar->noOfValues() - 1, pos, enumvar->get_name().c_str());
+            return false;
+          }
+          *(ei++) = TValue(value);
+        } else {
+          PyErr_Format(PyExc_TypeError, "attribute no. %i (%s) is ordinal, string or int value expected", pos, (*vi)->get_name().c_str());
           return false;
         }
       }

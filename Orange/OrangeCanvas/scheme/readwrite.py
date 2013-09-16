@@ -627,7 +627,7 @@ def scheme_load(scheme, stream, registry=None, error_handler=None):
             raise exc
 
     if desc.version == "1.0":
-        desc = resolve_1_0(desc, registry, error_handler)
+        desc = resolve_1_0(desc, registry)
 
     desc = resolve_replaced(desc, registry)
     nodes_not_found = []

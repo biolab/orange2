@@ -4,12 +4,12 @@ data = Orange.data.Table("housing.tab")
 
 lin = Orange.regression.linear.LinearRegressionLearner()
 lin.name = "lin"
-earth = Orange.regression.earth.EarthLearner()
-earth.name = "mars"
+rf = Orange.ensemble.forest.RandomForestLearner()
+rf.name = "rf"
 tree = Orange.regression.tree.TreeLearner(m_pruning = 2)
 tree.name = "tree"
 
-learners = [lin, earth, tree]
+learners = [lin, rf, tree]
 
 res = Orange.evaluation.testing.cross_validation(learners, data, folds=5)
 rmse = Orange.evaluation.scoring.RMSE(res)

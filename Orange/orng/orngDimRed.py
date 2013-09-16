@@ -15,7 +15,7 @@
 #   - 2003/10/28: project initiated
 #   - 2003/11/20: returning the parameters of the transform
 
-import numpy, mathutil
+import numpy
 import numpy.linalg as LinearAlgebra
 
 # before running PCA, it is helpful to apply the transformation
@@ -88,14 +88,14 @@ class _BCskewness:
         # kurtosis = numpy.average(numpy.power(cv,4))/numpy.power(numpy.average(numpy.power(cv,2)),2)-3
         return skewness**2
 
-def BoxCoxTransform(vector,lambd=None):
-    v = -min(vector)+1+vector
-    print "shifting by ",-min(vector)+1
-    if lambd==None:
-        # find the value of lambda that will minimize skew
-        lambd = mathutil.minimum(_BCskewness(v))
-        print "best-fitting lambda = ",lambd
-    return _BC(v,lambd)
+# def BoxCoxTransform(vector,lambd=None):
+#     v = -min(vector)+1+vector
+#     print "shifting by ",-min(vector)+1
+#     if lambd==None:
+#         # find the value of lambda that will minimize skew
+#         lambd = mathutil.minimum(_BCskewness(v))
+#         print "best-fitting lambda = ",lambd
+#     return _BC(v,lambd)
 
 def RankConversion(vector,reverse=0):
     assert(len(numpy.shape(vector))==1) # this must be a vector
@@ -139,5 +139,5 @@ if __name__== "__main__":
     print MaxScaling(v)
     print "variance scaling"
     print VarianceScaling(v)
-    print "Box-Cox"
-    print BoxCoxTransform(v)
+#    print "Box-Cox"
+#    print BoxCoxTransform(v)

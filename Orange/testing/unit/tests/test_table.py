@@ -45,8 +45,9 @@ class TestLoading(unittest.TestCase):
         table = Orange.data.Table(name)
         s = cPickle.dumps(table)
         table_clone = cPickle.loads(s)
-#        self.assertEqual(table.domain, table_clone.domain)
-#        self.assertEqual(table.domain.class_var, table_clone.domain.class_var)
+
+        self.assertSequenceEqual(list(table.domain),
+                                 list(table_clone.domain))
         self.assertEqual(native(table), native(table_clone),
                          "Native representation is not equal!")
 
@@ -201,6 +202,121 @@ class TestDataOwnership(unittest.TestCase):
 
         del ref
         gc.collect()
+
+
+class TestConstructor(unittest.TestCase):
+    def test_from_list(self):
+        A = [[0., 1., 2.],
+             [3., 4., 5.],
+             [6., 7., 8.]]
+
+        domain = Orange.data.Domain(
+            [Orange.feature.Continuous("F%i" % i)
+             for i in range(1, 4)],
+            None
+        )
+
+        data = Orange.data.Table(domain, A)
+
+        self.assertEqual(native(data), A)
+
+        lenses = Orange.data.Table("lenses")
+        domain = lenses.domain
+
+        A = [[0, 1, 0, 1, 0],
+             [2, 0, 1, 0, 2]]
+
+        data = Orange.data.Table(domain, A)
+
+        self.assertEqual(
+            A,
+            [[int(v) for v in row] for row in data]
+        )
+
+        A[0][0] = 4
+        with self.assertRaises(ValueError):
+            data = Orange.data.Table(domain, A)
+
+        A[0][0] = -1
+        with self.assertRaises(ValueError):
+            data = Orange.data.Table(domain, A)
+
+    def test_from_array(self):
+        """Test Table construction from numpy arrays.
+        """
+        from numpy import array, arange
+
+        A = arange(9).reshape(3, 3)
+        data = Orange.data.Table(A)
+
+        self.assertTrue(all(isinstance(f, Orange.feature.Continuous)
+                            for f in data.domain))
+        self.assertEqual(data.domain.class_var, None)
+
+        self.assertEqual(native(data), A.tolist())
+
+        lenses = Orange.data.Table("lenses")
+        domain = lenses.domain
+
+        A = [[0, 1, 0, 1, 0],
+             [2, 0, 1, 0, 2]]
+
+        data = Orange.data.Table(domain, array(A))
+
+        self.assertEqual(
+            A,
+            [[int(v) for v in row] for row in data]
+        )
+
+        A[0][0] = 4
+        with self.assertRaises(ValueError):
+            data = Orange.data.Table(domain, array(A))
+
+        A[0][0] = -1
+        with self.assertRaises(ValueError):
+            data = Orange.data.Table(domain, array(A))
+
+    def test_from_masked_array(self):
+        """Test Table construction from numpy masked arrays.
+        """
+        from numpy.ma import masked_array, masked, arange
+
+        A = arange(9).reshape(3, 3)
+        A[1, 1] = masked
+
+        data = Orange.data.Table(A)
+
+        self.assertTrue(all(isinstance(f, Orange.feature.Continuous)
+                            for f in data.domain))
+        self.assertEqual(data.domain.class_var, None)
+
+        self.assertTrue(data[1][1].isSpecial())
+
+        lenses = Orange.data.Table("lenses")
+        domain = lenses.domain
+
+        A = masked_array([[0, 1, 0, 1, 0],
+                          [2, 0, 1, 0, 2]])
+
+        data = Orange.data.Table(domain, A)
+
+        self.assertEqual(
+            A.tolist(),
+            [[int(v) for v in row] for row in data]
+        )
+
+        A[0, 0] = 4
+        with self.assertRaises(ValueError):
+            data = Orange.data.Table(domain, A)
+
+        A[0, 0] = -1
+        with self.assertRaises(ValueError):
+            data = Orange.data.Table(domain, A)
+
+        A[0, 0] = masked
+        data = Orange.data.Table(domain, A)
+
+        self.assertTrue(data[0][0].isSpecial())
 
 
 if __name__ == "__main__":

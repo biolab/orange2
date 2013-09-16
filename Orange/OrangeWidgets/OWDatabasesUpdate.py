@@ -3,7 +3,7 @@ from __future__ import with_statement
 import os
 import sys
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import partial
 from collections import namedtuple
 
@@ -17,6 +17,7 @@ from OWWidget import *
 from OWConcurrent import Task, ThreadExecutor, methodinvoke
 
 import OWGUIEx
+import OWGUI
 
 
 #: Update file item states
@@ -61,32 +62,23 @@ class UpdateOptionsWidget(QWidget):
     installClicked = Signal()
     #: Remove button was clicked.
     removeClicked = Signal()
-
+    
     def __init__(self, state=AVAILABLE, parent=None):
         QWidget.__init__(self, parent)
         layout = QHBoxLayout()
         layout.setSpacing(1)
         layout.setContentsMargins(1, 1, 1, 1)
-        self.installButton = UpdateOptionButton(self)
-        self.installButton.setIcon(icon("update.png"))
-        self.installButton.setToolTip("Download")
 
-        self.removeButton = UpdateOptionButton(self)
-        self.removeButton.setIcon(icon("delete.png"))
-        self.removeButton.setToolTip("Remove from system")
-
-        self.installButton.clicked.connect(self.installClicked)
-        self.removeButton.clicked.connect(self.removeClicked)
-
-        layout.addWidget(self.installButton)
-        layout.addWidget(self.removeButton)
+        self.checkButton = QCheckBox()
+         
+        layout.addWidget(self.checkButton)
         self.setLayout(layout)
-
+ 
         self.setMaximumHeight(30)
 
         self.state = -1
         self.setState(state)
-
+        
     def setState(self, state):
         """
         Set the current update state for the widget (AVAILABLE,
@@ -96,30 +88,28 @@ class UpdateOptionsWidget(QWidget):
         if self.state != state:
             self.state = state
             self._update()
-
+ 
     def _update(self):
         if self.state == AVAILABLE:
-            self.installButton.setIcon(icon("update.png"))
-            self.installButton.setToolTip("Download")
-            self.installButton.setEnabled(True)
-            self.removeButton.setEnabled(False)
+            self.checkButton.setChecked(False)
         elif self.state == CURRENT:
-            self.installButton.setIcon(icon("update1.png"))
-            self.installButton.setToolTip("Update")
-            self.installButton.setEnabled(False)
-            self.removeButton.setEnabled(True)
+            self.checkButton.setChecked(True)
         elif self.state == OUTDATED:
-            self.installButton.setIcon(icon("update1.png"))
-            self.installButton.setToolTip("Update")
-            self.installButton.setEnabled(True)
-            self.removeButton.setEnabled(True)
+            self.checkButton.setChecked(True)
         elif self.state == DEPRECATED:
-            self.installButton.setIcon(icon("update.png"))
-            self.installButton.setToolTip("")
-            self.installButton.setEnabled(False)
-            self.removeButton.setEnabled(True)
+            self.checkButton.setChecked(True)
         else:
             raise ValueError("Invalid state %r" % self._state)
+
+        try:
+            self.checkButton.clicked.disconnect()   # Remove old signals if they exist
+        except:
+            pass
+
+        if not self.checkButton.isChecked():        # Switch signals if the file is present or not
+            self.checkButton.clicked.connect(self.installClicked)
+        else:
+            self.checkButton.clicked.connect(self.removeClicked)
 
 
 class UpdateTreeWidgetItem(QTreeWidgetItem):
@@ -166,29 +156,39 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
         self.setData(1, Qt.DisplayRole, item.title)
         self.setData(1, self.EditRole2, item.title)
 
-        self.setData(2, Qt.DisplayRole, sizeof_fmt(item.size))
-        self.setData(2, self.EditRole2, item.size)
+        self.setData(4, Qt.DisplayRole, sizeof_fmt(item.size))
+        self.setData(4, self.EditRole2, item.size)
 
-        if item.latest is not None:
-            self.setData(3, Qt.DisplayRole, item.latest.date().isoformat())
-            self.setData(3, self.EditRole2, item.latest)
+        if item.local is not None:
+            self.setData(3, Qt.DisplayRole, item.local.date().isoformat())
+            self.setData(3, self.EditRole2, item.local)
         else:
-            self.setData(3, Qt.DisplayRole, "N/A")
+            self.setData(3, Qt.DisplayRole, "")
             self.setData(3, self.EditRole2, datetime.now())
 
         self._updateToolTip()
 
     def _updateToolTip(self):
         state_str = self.STATE_STRINGS[self.item.state]
+        try:
+            diff_date = self.item.latest - self.item.local
+        except:
+            diff_date = None
+        
         tooltip = ("State: %s\nTags: %s" %
-                   (state_str,
-                    ", ".join(tag for tag in self.item.tags
-                              if not tag.startswith("#"))))
+                   (state_str, ", ".join(tag for tag in self.item.tags
+                    if not tag.startswith("#"))))
 
         if self.item.state in [CURRENT, OUTDATED, DEPRECATED]:
             tooltip += ("\nFile: %s" %
                         serverfiles.localpath(self.item.domain,
                                               self.item.filename))
+       
+        if self.item.state == 2 and diff_date:
+            tooltip += ("\nServer version: %s\nStatus: old (%d days)" % (self.item.latest, diff_date.days))
+        else:
+            tooltip += ("\nServer version: %s" % self.item.latest)
+
         for i in range(1, 4):
             self.setToolTip(i, tooltip)
 
@@ -401,8 +401,8 @@ class OWDatabasesUpdate(OWWidget):
 
         box = OWGUI.widgetBox(self.controlArea, "Files")
         self.filesView = QTreeWidget(self)
-        self.filesView.setHeaderLabels(["Options", "Title", "Size",
-                                        "Last Updated"])
+        self.filesView.setHeaderLabels(["", "Data Source", "Update",
+                                        "Last Updated", "Size"])
         self.filesView.setRootIsDecorated(False)
         self.filesView.setUniformRowHeights(True)
         self.filesView.setSelectionMode(QAbstractItemView.NoSelection)
@@ -417,13 +417,15 @@ class OWDatabasesUpdate(OWWidget):
         box.layout().addWidget(self.filesView)
 
         box = OWGUI.widgetBox(self.controlArea, orientation="horizontal")
-        OWGUI.button(box, self, "Update all local files",
+        self.updateButton = OWGUI.button(box, self, "Update all",
                      callback=self.UpdateAll,
-                     tooltip="Update all updatable files")
-        OWGUI.button(box, self, "Download filtered",
+                     tooltip="Update all updatable files",
+                     )
+        
+        self.downloadButton = OWGUI.button(box, self, "Download all",
                      callback=self.DownloadFiltered,
                      tooltip="Download all filtered files shown")
-        OWGUI.button(box, self, "Cancel", callback=self.Cancel,
+        self.cancelButton = OWGUI.button(box, self, "Cancel", callback=self.Cancel,
                      tooltip="Cancel scheduled downloads/updates.")
         OWGUI.rubber(box)
         OWGUI.lineEdit(box, self, "accessCode", "Access Code",
@@ -478,6 +480,7 @@ class OWDatabasesUpdate(OWWidget):
 
         self.setEnabled(False)
 
+
     def SetFilesList(self, serverInfo):
         """
         Set the files to show.
@@ -503,7 +506,6 @@ class OWDatabasesUpdate(OWWidget):
             options_widget = UpdateOptionsWidget(item.state)
             options_widget.item = item
 
-            # Connect the actions to the appropriate methods
             options_widget.installClicked.connect(
                 partial(self.SubmitDownloadTask, item.domain, item.filename)
             )
@@ -520,6 +522,22 @@ class OWDatabasesUpdate(OWWidget):
 
         for item, tree_item, options_widget in self.updateItems:
             self.filesView.setItemWidget(tree_item, 0, options_widget)
+            
+            # Add an update button if the file is updateable
+            if item.state == 2:
+                ButtonWidget = QPushButton("Update")
+                layout = QHBoxLayout()
+                layout.setSpacing(1)
+                layout.setContentsMargins(20, 30, 30, 30)
+
+                layout.addWidget(ButtonWidget)                 
+                ButtonWidget.setMaximumHeight(30)
+                ButtonWidget.setMaximumWidth(120)
+                ButtonWidget.setAutoDefault(False)
+
+                ButtonWidget.clicked.connect(partial(self.SubmitDownloadTask, item.domain, item.filename))
+
+                self.filesView.setItemWidget(tree_item, 2, ButtonWidget)
 
         self.progress.advance()
 
@@ -532,8 +550,23 @@ class OWDatabasesUpdate(OWWidget):
                                       if not hint.startswith("#")])
         self.SearchUpdate()
         self.UpdateInfoLabel()
+        self.toggleButtons()
+        self.cancelButton.setEnabled(False)
 
         self.progress.setRange(0, 0)
+
+    def buttonCheck(self, selected_items, state, button):
+        for item in selected_items:
+            if item.state != state:
+                button.setEnabled(False)
+            else:
+                button.setEnabled(True)
+                break
+
+    def toggleButtons(self):
+        selected_items = [item for item, tree_item, _ in self.updateItems if not tree_item.isHidden()]
+        self.buttonCheck(selected_items, OUTDATED, self.updateButton)
+        self.buttonCheck(selected_items, AVAILABLE, self.downloadButton)
 
     def HandleError(self, exception):
         if isinstance(exception, IOError):
@@ -563,8 +596,8 @@ class OWDatabasesUpdate(OWWidget):
         self.infoLabel.setText(text)
 
     def UpdateAll(self):
-        for item, _, _ in self.updateItems:
-            if item.state == OUTDATED:
+        for item, tree_item, _ in self.updateItems:
+            if item.state == OUTDATED and not tree_item.isHidden():
                 self.SubmitDownloadTask(item.domain, item.filename)
 
     def DownloadFiltered(self):
@@ -581,11 +614,14 @@ class OWDatabasesUpdate(OWWidget):
                            for string in strings)
             tree_item.setHidden(hide)
         self.UpdateInfoLabel()
+        self.toggleButtons()
 
     def SubmitDownloadTask(self, domain, filename):
         """
         Submit the (domain, filename) to be downloaded/updated.
         """
+        self.cancelButton.setEnabled(True)
+
         index = self.updateItemIndex(domain, filename)
         _, tree_item, opt_widget = self.updateItems[index]
 
@@ -654,6 +690,7 @@ class OWDatabasesUpdate(OWWidget):
             opt_widget.setState(new_item.state)
 
             self.UpdateInfoLabel()
+            self.cancelButton.setEnabled(False)
 
     def SubmitRemoveTask(self, domain, filename):
         serverfiles.remove(domain, filename)
