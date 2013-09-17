@@ -1,5 +1,0 @@
-usr/bin
-usr/lib/python*/*-packages
-usr/lib/python*/*-packages/orange/orangeqt.so
-usr/share/doc/orange-canvas
-usr/share/pixmaps/orange.xpm
