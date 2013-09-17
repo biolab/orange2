@@ -808,6 +808,7 @@ SETUP_REQUIRES = (
 INSTALL_REQUIRES = (
     'setuptools',
     'numpy',
+    'scipy',
 )
 
 EXTRAS_REQUIRE = {
