@@ -9,6 +9,7 @@
 from OWWidget import *
 import OWGUI, math, re
 import random
+import inspect
 
 re_identifier = re.compile(r'([a-zA-Z_]\w*)|("[^"]+")')
 
@@ -83,7 +84,9 @@ class OWFeatureConstructor(OWWidget):
         self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + sortedFuncs, callback = self.funcListSelected)
         model = self.cbFuncs.model()
         for i, func in enumerate(sortedFuncs):
-            model.item(i + 1).setToolTip(AttrComputer.FUNCTIONS[func].__doc__)
+            model.item(i + 1).setToolTip(
+                inspect.getdoc(AttrComputer.FUNCTIONS[func])
+            )
         
         hb = OWGUI.widgetBox(db, None, "horizontal", addSpace=True)
         OWGUI.button(hb, self, "Add", callback = self.addAttr, autoDefault=True)
