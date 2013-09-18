@@ -145,7 +145,8 @@ TExample::TExample(PDomain dom, PExampleList elist)
   vector<bool> defined(attrs, false);
 
   TValue *vi = values = mlnew TValue[attrs];
-  values_end = values + attrs;
+  values_end = classes_end = values + attrs;
+
   PITERATE(TVarList, di, dom->variables)
     *(vi++) = (*di)->DK();
 
