@@ -394,7 +394,7 @@ class WidgetDescription(object):
             # widget name.
             raise WidgetSpecificationError
 
-        qualified_name = "%s.%s" % (module.__name__, widget_class.__name__)
+        qualified_name = "%s.%s" % (module.__name__, widget_cls_name)
 
         id = getattr(module, "ID", module_name)
         inputs = getattr(module, "INPUTS", [])
