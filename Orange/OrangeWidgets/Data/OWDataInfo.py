@@ -1,6 +1,6 @@
 """<name>Info</name>
-<description>Shows some basic information about data set,
-including sample size, and number and type of features.</description>
+<description>Displays basic information about data set on the input. Shows
+sample size, and number and type of features.</description>
 <icon>icons/DataInfo.svg</icon>
 <priority>80</priority>
 <contact>Ales Erjavec (ales.erjavec@fri.uni-lj.si)</contact>"""
