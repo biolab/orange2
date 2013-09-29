@@ -1,6 +1,7 @@
 """
 <name>Paint Data</name>
-<description>Generate artificial data sets with a simple 'Paint' like interface</description>
+<description>Paints the data on a 2D plane. Place individual data
+points or use brush to paint a larger data sets.</description>
 <contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
 <priority>40</priority>
 <icon>icons/PaintData.svg</icon>

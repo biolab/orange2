@@ -18,7 +18,7 @@ NAME = "File"
 ID = "orange.widgets.data.file"
 
 DESCRIPTION = """
-Reads a data from an input file.
+Reads data from an input file.
 """
 
 LONG_DESCRIPTION = ""

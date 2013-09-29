@@ -21,11 +21,10 @@ import OWColorPalette
 
 NAME = "Data Table"
 
-DESCRIPTION = "Shows data in a spreadsheet."
+DESCRIPTION = "Displays data in a spreadsheet."
 
 LONG_DESCRIPTION = """Data Table widget takes one or more data sets
 on its input and presents them in a spreadsheet format.
-
 """
 
 ICON = "icons/DataTable.svg"
