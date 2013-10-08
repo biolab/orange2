@@ -481,17 +481,6 @@ PyObject *Value_richcmp(TPyValue *i, PyObject *j, int op)
       if (val1.varType != val2.varType)
         PYERROR(PyExc_TypeError, "Value.compare: can't compare values of different types", PYNULL)
 
-      if (val1.isSpecial() || val2.isSpecial())
-        if ((op==Py_EQ) || (op==Py_NE)) {
-          PyObject *res = (val1.valueType==val2.valueType) == (op==Py_EQ) ? Py_True : Py_False;
-          Py_INCREF(res);
-          return res;
-        }
-        else {
-          Py_INCREF(Py_NotImplemented);
-          return Py_NotImplemented;
-        }
-
       // Nominal values of different attributes are treated separately
       PVariable &var1 = i->variable;
       PVariable &var2 = PyValue_AS_Variable(j);
@@ -567,17 +556,6 @@ PyObject *Value_richcmp(TPyValue *i, PyObject *j, int op)
       TValue val2;
       if (!convertFromPython(j, val2, i->variable))
         return PYNULL;
-
-      if (val1.isSpecial() || val2.isSpecial())
-        if ((op==Py_EQ) || (op==Py_NE)) {
-          PyObject *res = (val1.valueType==val2.valueType) == (op==Py_EQ) ? Py_True : Py_False;
-          Py_INCREF(res);
-          return res;
-        }
-        else {
-          Py_INCREF(Py_NotImplemented);
-          return Py_NotImplemented;
-        }
 
       return richcmp_from_sign(val1.compare(val2), op);
     }
