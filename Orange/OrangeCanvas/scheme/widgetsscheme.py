@@ -51,7 +51,7 @@ class WidgetsScheme(Scheme):
         Scheme.__init__(self, parent, title, description)
 
         self.signal_manager = WidgetsSignalManager(self)
-        self.widget_manager = WidgetManager(self)
+        self.widget_manager = WidgetManager()
         self.widget_manager.set_scheme(self)
 
     def widget_for_node(self, node):
@@ -105,7 +105,7 @@ class WidgetManager(QObject):
     #:   * ProcessingUpdate - widget has entered processing state
     InputUpdate, BlockingUpdate, ProcessingUpdate = 1, 2, 4
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         QObject.__init__(self, parent)
         self.__scheme = None
         self.__signal_manager = None
@@ -294,7 +294,7 @@ class WidgetManager(QObject):
         return self.__widget_processing_state[widget]
 
     def eventFilter(self, receiver, event):
-        if receiver is self.__scheme and event.type() == QEvent.Close:
+        if event.type() == QEvent.Close and receiver is self.__scheme:
             self.signal_manager().stop()
 
             # Notify the widget instances.
@@ -708,8 +708,18 @@ class WidgetsSignalManager(SignalManager):
         return SignalManager.event(self, event)
 
     def eventFilter(self, receiver, event):
-        if receiver is self.scheme() and event.type() == QEvent.DeferredDelete:
-            if self.runtime_state() == SignalManager.Processing:
+        if event.type() == QEvent.DeferredDelete and receiver is self.scheme():
+            try:
+                state = self.runtime_state()
+            except AttributeError:
+                # If the scheme (which is a parent of this object) is
+                # already being deleted the SignalManager can also be in
+                # the process of destruction (noticeable by its __dict__
+                # being empty). There is nothing really to do in this
+                # case.
+                state = None
+
+            if state == SignalManager.Processing:
                 log.info("Deferring a 'DeferredDelete' event for the Scheme "
                          "instance until SignalManager exits the current "
                          "update loop.")
