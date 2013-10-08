@@ -103,16 +103,17 @@ def split_by_classifiers(res):
     :obj:`ExperimentResults`, one for each classifier. 
     """
     split_res = []
-    for i in range(len(res.classifierNames)):
-        r = Orange.evaluation.testing.ExperimentResults(res.numberOfIterations,
-                    [res.classifierNames[i]], res.classValues,
+    for i in range(len(res.classifier_names)):
+        r = Orange.evaluation.testing.ExperimentResults(
+                    res.number_of_iterations,
+                    [res.classifier_names[i]], res.class_values,
                     weights=res.weights, base_class=res.base_class,
                     classifiers=[res.classifiers[i]] if res.classifiers else [],
                     test_type=res.test_type, labels=res.labels)
         r.results = []
         for te in res.results:
             r.results.append(Orange.evaluation.testing.TestedExample(
-                te.iterationNumber, te.actualClass, n=1, weight=te.weight))
+                te.iteration_number, te.actual_class, n=1, weight=te.weight))
             r.results[-1].classes = [te.classes[i]]
             r.results[-1].probabilities = [te.probabilities[i]]
 
