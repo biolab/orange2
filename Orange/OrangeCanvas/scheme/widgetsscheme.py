@@ -83,6 +83,12 @@ class WidgetsScheme(Scheme):
         log.debug("Scheme node properties sync (changed: %s)", changed)
         return changed
 
+    def show_report_view(self):
+        from OWReport import get_instance
+        inst = get_instance()
+        inst.show()
+        inst.raise_()
+
 
 class WidgetManager(QObject):
     """

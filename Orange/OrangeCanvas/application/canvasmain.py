@@ -532,6 +532,11 @@ class CanvasMainWindow(QMainWindow):
                     triggered=self.show_output_view,
                     )
 
+        self.show_report_action = \
+            QAction(self.tr("Show Report View"), self,
+                    triggered=self.show_report_view
+                    )
+
         if sys.platform == "darwin":
             # Actions for native Mac OSX look and feel.
             self.minimize_action = \
@@ -641,6 +646,7 @@ class CanvasMainWindow(QMainWindow):
         # Options menu
         self.options_menu = QMenu(self.tr("&Options"), self)
         self.options_menu.addAction(self.show_output_action)
+        self.options_menu.addAction(self.show_report_action)
 #        self.options_menu.addAction("Add-ons")
 #        self.options_menu.addAction("Developers")
 #        self.options_menu.addAction("Run Discovery")
@@ -1521,6 +1527,11 @@ class CanvasMainWindow(QMainWindow):
         """Show a window with application output.
         """
         self.output_dock.show()
+
+    def show_report_view(self):
+        doc = self.current_document()
+        scheme = doc.scheme()
+        scheme.show_report_view()
 
     def output_view(self):
         """Return the output text widget.
