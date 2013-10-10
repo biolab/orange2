@@ -374,6 +374,8 @@ void TExampleTable::erase(TExample **ptr)
     delete *ptr;
   memmove(ptr, ptr+1, sizeof(TExample **)*(_Last - ptr - 1));
   _Last--;
+
+  shrinkTable();
   examplesHaveChanged();
 }
 
@@ -416,7 +418,7 @@ void TExampleTable::insert(const int &sti, const TExample &ex)
 
 TExampleIterator TExampleTable::begin()
 {
-  return TExampleIterator(this, examples ? *examples : NULL, (void *)examples);
+  return TExampleIterator(this, (examples && examples != _Last) ? *examples : NULL, (void *)examples);
 }
 
 
