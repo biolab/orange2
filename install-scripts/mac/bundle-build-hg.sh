@@ -40,6 +40,10 @@ SITE_PACKAGES=${APP}/Contents/Frameworks/Python.framework/Versions/${PY_VER}/lib
 # easy_install script in the bundle
 EASY_INSTALL=${APP}/Contents/MacOS/easy_install
 
+DISTRIBUTE_VERSION="0.6.49"
+echo "Updating distribute to $DISTRIBUTE_VERSION"
+$EASY_INSTALL -U distribute==$DISTRIBUTE_VERSION
+
 # Link Python.app startup script to top bundle
 ln -fs ../Frameworks/Python.framework/Versions/Current/Resources/Python.app/Contents/MacOS/Python ${APP}/Contents/MacOS/PythonAppStart
 
