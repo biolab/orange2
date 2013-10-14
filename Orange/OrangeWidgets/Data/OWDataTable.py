@@ -6,6 +6,7 @@
 <contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
 """
 
+import sys
 from xml.sax.saxutils import escape
 from functools import wraps
 
@@ -611,6 +612,10 @@ class OWDataTable(OWWidget):
                 
                 table.efc = efc()
                 btn.installEventFilter(table.efc)
+
+                if sys.platform == "darwin":
+                    btn.setAttribute(Qt.WA_MacSmallSize)
+
                 table.btn = btn
             except:
                 table.btnfailed = True
