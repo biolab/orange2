@@ -193,7 +193,7 @@ class OWRank(OWWidget):
     settingsList = [
         "nDecimals", "nIntervals", "sortBy", "nSelected",
         "selectMethod", "autoApply", "showDistributions",
-        "distColorRgb"
+        "distColorRgb", "selectedMeasures"
     ]
 
     def __init__(self, parent=None, signalManager=None):
