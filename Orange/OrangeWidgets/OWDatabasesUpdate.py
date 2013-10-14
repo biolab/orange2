@@ -184,7 +184,7 @@ class UpdateTreeWidgetItem(QTreeWidgetItem):
                         serverfiles.localpath(self.item.domain,
                                               self.item.filename))
        
-        if self.item.state == 2 and diff_date:
+        if self.item.state == OUTDATED and diff_date:
             tooltip += ("\nServer version: %s\nStatus: old (%d days)" % (self.item.latest, diff_date.days))
         else:
             tooltip += ("\nServer version: %s" % self.item.latest)
@@ -522,22 +522,24 @@ class OWDatabasesUpdate(OWWidget):
 
         for item, tree_item, options_widget in self.updateItems:
             self.filesView.setItemWidget(tree_item, 0, options_widget)
-            
+
             # Add an update button if the file is updateable
-            if item.state == 2:
-                ButtonWidget = QPushButton("Update")
-                layout = QHBoxLayout()
-                layout.setSpacing(1)
-                layout.setContentsMargins(20, 30, 30, 30)
+            if item.state == OUTDATED:
+                button = QToolButton(
+                    None, text="Update",
+                    maximumWidth=120,
+                    maximumHeight=30
+                )
 
-                layout.addWidget(ButtonWidget)                 
-                ButtonWidget.setMaximumHeight(30)
-                ButtonWidget.setMaximumWidth(120)
-                ButtonWidget.setAutoDefault(False)
+                if sys.platform == "darwin":
+                    button.setAttribute(Qt.WA_MacSmallSize)
 
-                ButtonWidget.clicked.connect(partial(self.SubmitDownloadTask, item.domain, item.filename))
+                button.clicked.connect(
+                    partial(self.SubmitDownloadTask, item.domain,
+                            item.filename)
+                )
 
-                self.filesView.setItemWidget(tree_item, 2, ButtonWidget)
+                self.filesView.setItemWidget(tree_item, 2, button)
 
         self.progress.advance()
 
