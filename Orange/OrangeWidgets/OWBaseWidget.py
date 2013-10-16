@@ -8,8 +8,8 @@ import shutil
 
 from Orange.utils import environ
 from Orange.orng.orngEnviron import directoryNames as old_directory_names
-from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from PyQt4.QtCore import *
 
 # Define  pyqtConfigure not available in PyQt4 versions prior to 4.6
 if not hasattr(QObject, "pyqtConfigure"):
