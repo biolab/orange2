@@ -413,7 +413,8 @@ def install(name, progress_callback=None):
                             "packed.")
 
         switches = []
-        if site.USER_SITE in sys.path:   # we're not in a virtualenv
+        if not hasattr(sys, "real_prefix"):
+            # we're not in a virtualenv
             switches.append('--user')
         run_setup(setup_py, ['install'] + switches)
     finally:
@@ -434,12 +435,13 @@ def install(name, progress_callback=None):
 def easy_install_process(args, bufsize=-1):
     from setuptools.command import easy_install
     # Check if easy_install supports '--user' switch
-    if "user" in [opt[0] for opt in easy_install.easy_install.user_options]:
-        has_user_site = True
-    else:
-        has_user_site = False
+    options = [opt[0] for opt in easy_install.easy_install.user_options]
+    has_user_site = "user" in options
 
-    if has_user_site and site.USER_SITE in sys.path:
+    if has_user_site and not hasattr(sys, "real_prefix"):
+        # we're not in a virtualenv
+        # (why are we assuming we have write permissions in the
+        # virtualenv's site dir?)
         args = ["--user"] + args
 
     # properly quote arguments if necessary
