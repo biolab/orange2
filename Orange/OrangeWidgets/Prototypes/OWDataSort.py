@@ -215,16 +215,10 @@ class OWDataSort(OWWidget):
 
 
 def sort_key(params):
-    def value(val):
-        if val.isSpecial():
-            return float("inf")
-        else:
-            return val
-
     def key(inst):
         return tuple(
-            value(inst[feature]) if order == Qt.AscendingOrder
-                else rev_compare(value(inst[feature]))
+            inst[feature] if order == Qt.AscendingOrder
+                else rev_compare(inst[feature])
             for feature, order in params
         )
     return key
