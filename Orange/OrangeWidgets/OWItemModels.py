@@ -1,13 +1,17 @@
-from __future__ import with_statement
+
+import cPickle
 
 from xml.sax.saxutils import escape
+from functools import wraps, partial
+from collections import defaultdict
+from contextlib import contextmanager
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
-from functools import wraps, partial
-from collections import defaultdict
-from contextlib import contextmanager
+import OWGUI
+import Orange
+
 
 class _store(dict):
     pass
@@ -278,24 +282,6 @@ class PyListModel(QAbstractListModel):
     def supportedDropActions(self):
         return self._supportedDropActions
 
-    def decode_qt_data(self, data):
-        """ Decode internal Qt 'application/x-qabstractitemmodeldatalist'
-        mime data 
-        """
-        stream = QDataStream(data)
-        items = []
-        while not stream.atEnd():
-            row = ds.readInt()
-            col = ds.readInt()
-            item_count = ds.readInt()
-            item = {}
-            for i in range(item_count):
-                role = ds.readInt()
-                value = ds.readQVariant()
-                item[role] = value
-            items.append((row, column, item))
-        return items
-
     def mimeTypes(self):
         return self.MIME_TYPES + list(QAbstractListModel.mimeTypes(self))
 
@@ -324,12 +310,6 @@ class PyListModel(QAbstractListModel):
             vars = cPickle.loads(desc)
 
         return QAbstractListModel.dropMimeData(self, mime, action, row, column, parent)
-
-
-import OWGUI
-import orange
-import Orange
-import cPickle
 
 
 def feature_tooltip(feature):
@@ -433,81 +413,11 @@ class VariableListModel(PyListModel):
         return python_feature_tooltip(var)
 
 
-_html_replace = [("<", "&lt;"), (">", "&gt;")]
 
-def safe_text(text):
-    for old, new in _html_replace:
-        text = text.replace(old, new)
-    return text
+# Back-compatibility
+safe_text = escape
 
-class VariableEditor(QWidget):
-    def __init__(self, var, parent):
-        QWidget.__init__(self, parent)
-        self.var = var
-        layout = QHBoxLayout()
-        self._attrs = OWGUI.getAttributeIcons()
-        self.type_cb = QComboBox(self)
-        for attr, icon in self._attrs.items():
-            if attr != -1:
-                self.type_cb.addItem(icon, str(attr))
-        layout.addWidget(self.type_cb)
-        
-        self.name_le = QLineEdit(self)
-        layout.addWidget(self.name_le)
-        
-        self.setLayout(layout)
-        
-        self.connect(self.type_cb, SIGNAL("currentIndexChanged(int)"), self.edited)
-        self.connect(self.name_le, SIGNAL("editingFinished()"), self.edited)
-    
-    def edited(self, *args):
-        self.emit(SIGNAL("edited()"))
-         
-    def setData(self, type, name):
-        self.type_cb.setCurrentIndex(self._attr.keys().index(type))
-        self.name_le.setText(name)
-        
-class EnumVariableEditor(VariableEditor):
-    def __init__(self, var, parent):
-        VariableEditor.__init__(self, var, parent)
-        
-class FloatVariableEditor(QLineEdit):
-    
-    def setVariable(self, var):
-        self.setText(str(var.name))
-        
-    def getVariable(self):
-        return orange.FloatVariable(str(self.text()))
 
-    
-class StringVariableEditor(QLineEdit):
-    def setVariable(self, var):
-        self.setText(str(var.name))
-        
-    def getVariable(self):
-        return orange.StringVariable(str(self.text()))
-        
-class VariableDelegate(QStyledItemDelegate):
-    def createEditor(self, parent, option, index):
-        var = index.data(Qt.EditRole).toPyObject()
-        if isinstance(var, orange.EnumVariable):
-            return EnumVariableEditor(parent)
-        elif isinstance(var, orange.FloatVariable):
-            return FloatVariableEditor(parent)
-        elif isinstance(var, orange.StringVariable):
-            return StringVariableEditor(parent)
-#        return VariableEditor(var, parent)
-    
-    def setEditorData(self, editor, index):
-        var = index.data(Qt.EditRole).toPyObject()
-        editor.variable = var
-        
-    def setModelData(self, editor, model, index):
-        model.setData(index, QVariant(editor.variable), Qt.EditRole)
-        
-#    def displayText(self, value, locale):
-#        return value.toPyObject().name
-        
 class ListSingleSelectionModel(QItemSelectionModel):
     """ Item selection model for list item models with single selection.
     

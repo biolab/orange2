@@ -16,7 +16,7 @@ from OWWidget import *
 from OWGraph import *
 import OWToolbars
 
-from OWItemModels import VariableListModel, VariableDelegate, PyListModel, ModelActionsWidget
+from OWItemModels import VariableListModel, PyListModel, ModelActionsWidget
 import OWColorPalette
 
 dir = OWToolbars.dir
