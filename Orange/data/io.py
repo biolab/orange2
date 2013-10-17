@@ -596,7 +596,7 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
     """ Load an Orange.data.Table from s csv file.
     """
     import csv, numpy
-    file = as_open_file(file, "rb")
+    file = as_open_file(file, "rU")
     snifer = csv.Sniffer()
 
     # Max 5MB sample

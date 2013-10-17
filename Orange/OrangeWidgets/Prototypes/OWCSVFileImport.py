@@ -337,7 +337,7 @@ class OWCSVFileImport(OWWidget):
 
         self.selected_file = filename
         self.selected_file_head = []
-        with open(self.selected_file, "rb") as f:
+        with open(self.selected_file, "rU") as f:
             for i, line in zip(range(30), f):
                 self.selected_file_head.append(line)
 
@@ -400,7 +400,7 @@ class OWCSVFileImport(OWWidget):
 def sniff_csv(file):
     snifer = csv.Sniffer()
     if isinstance(file, basestring):
-        file = open(file, "rb")
+        file = open(file, "rU")
 
     sample = file.read(2 ** 20)  # max 1MB sample
     dialect = snifer.sniff(sample)
