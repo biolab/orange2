@@ -1,5 +1,7 @@
 from __future__ import with_statement
 
+from xml.sax.saxutils import escape
+
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -329,6 +331,65 @@ import orange
 import Orange
 import cPickle
 
+
+def feature_tooltip(feature):
+    if isinstance(feature, Orange.feature.Discrete):
+        return discrete_feature_tooltip(feature)
+    elif isinstance(feature, Orange.feature.Continuous):
+        return continuous_feature_toltip(feature)
+    elif isinstance(feature, Orange.feature.String):
+        return string_feature_tooltip(feature)
+    elif isinstance(feature, Orange.feature.Python):
+        return python_feature_tooltip(feature)
+    elif isinstance(feature, Orange.feature.Descriptor):
+        return generic_feature_tooltip(feature)
+    else:
+        raise TypeError("Expected an instance of 'Orange.feature.Descriptor'")
+
+
+def feature_labels_tooltip(feature):
+    text = ""
+    if feature.attributes:
+        items = feature.attributes.items()
+        items = [(escape(key), escape(value)) for key, value in items]
+        labels = map("%s = %s".__mod__, items)
+        text += "<br/>Feature Labels:<br/>"
+        text += "<br/>".join(labels)
+    return text
+
+
+def discrete_feature_tooltip(feature):
+    text = ("<b>%s</b><br/>Discrete with %i values: " %
+            (escape(feature.name), len(feature.values)))
+    text += ", ".join("%r" % escape(v) for v in feature.values)
+    text += feature_labels_tooltip(feature)
+    return text
+
+
+def continuous_feature_toltip(feature):
+    text = "<b>%s</b><br/>Continuous" % escape(feature.name)
+    text += feature_labels_tooltip(feature)
+    return text
+
+
+def string_feature_tooltip(feature):
+    text = "<b>%s</b><br/>String" % escape(feature.name)
+    text += feature_labels_tooltip(feature)
+    return text
+
+
+def python_feature_tooltip(feature):
+    text = "<b>%s</b><br/>Python" % escape(feature.name)
+    text += feature_labels_tooltip(feature)
+    return text
+
+
+def generic_feature_tooltip(feature):
+    text = "<b>%s</b><br/>%s" % (escape(feature.name), type(feature).__name__)
+    text += feature_labels_tooltip(feature)
+    return text
+
+
 class VariableListModel(PyListModel):
 
     MIME_TYPE = "application/x-Orange-VariableList"
@@ -357,35 +418,20 @@ class VariableListModel(PyListModel):
             return self.string_variable_tooltip(var)
 
     def variable_labels_tooltip(self, var):
-        text = ""
-        if var.attributes:
-            items = var.attributes.items()
-            items = [(safe_text(key), safe_text(value)) for key, value in items]
-            labels = map("%s = %s".__mod__, items)
-            text += "<br/>Variable Labels:<br/>"
-            text += "<br/>".join(labels)
-        return text
+        return feature_labels_tooltip(var)
 
     def discrete_variable_tooltip(self, var):
-        text = "<b>%s</b><br/>Discrete with %i values: " % (safe_text(var.name), len(var.values))
-        text += ", ".join("%r" % safe_text(v) for v in var.values)
-        text += self.variable_labels_tooltip(var)
-        return text
+        return discrete_feature_tooltip(var)
 
     def continuous_variable_toltip(self, var):
-        text = "<b>%s</b><br/>Continuous" % safe_text(var.name)
-        text += self.variable_labels_tooltip(var)
-        return text
+        return continuous_feature_toltip(var)
 
     def string_variable_tooltip(self, var):
-        text = "<b>%s</b><br/>String" % safe_text(var.name)
-        text += self.variable_labels_tooltip(var)
-        return text
+        return string_feature_tooltip(var)
 
     def python_variable_tooltip(self, var):
-        text = "<b>%s</b><br/>Python" % safe_text(var.name)
-        text += self.variable_labels_tooltip(var)
-        return text
+        return python_feature_tooltip(var)
+
 
 _html_replace = [("<", "&lt;"), (">", "&gt;")]
 
