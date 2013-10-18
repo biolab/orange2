@@ -401,8 +401,9 @@ class OWDatabasesUpdate(OWWidget):
 
         box = OWGUI.widgetBox(self.controlArea, "Files")
         self.filesView = QTreeWidget(self)
-        self.filesView.setHeaderLabels(["", "Data Source", "Update",
-                                        "Last Updated", "Size"])
+        self.filesView.setHeaderLabels(
+            ["", "Data Source", "Update", "Last Updated", "Size"])
+
         self.filesView.setRootIsDecorated(False)
         self.filesView.setUniformRowHeights(True)
         self.filesView.setSelectionMode(QAbstractItemView.NoSelection)
@@ -480,7 +481,6 @@ class OWDatabasesUpdate(OWWidget):
 
         self.setEnabled(False)
 
-
     def SetFilesList(self, serverInfo):
         """
         Set the files to show.
@@ -543,9 +543,12 @@ class OWDatabasesUpdate(OWWidget):
 
         self.progress.advance()
 
-        for column in range(4):
-            whint = self.filesView.sizeHintForColumn(column)
-            width = min(whint, 400)
+        self.filesView.setColumnWidth(0, self.filesView.sizeHintForColumn(0))
+
+        for column in range(1, 4):
+            contents_hint = self.filesView.sizeHintForColumn(column)
+            header_hint = self.filesView.header().sectionSizeHint(column)
+            width = max(min(contents_hint, 400), header_hint)
             self.filesView.setColumnWidth(column, width)
 
         self.lineEditFilter.setItems([hint for hint in sorted(all_tags)
