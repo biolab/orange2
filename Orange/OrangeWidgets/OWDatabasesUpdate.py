@@ -78,17 +78,16 @@ class UpdateOptionsWidget(QWidget):
 
         self.state = -1
         self.setState(state)
-        
+
     def setState(self, state):
         """
         Set the current update state for the widget (AVAILABLE,
         CURRENT, OUTDATED or DEPRECTED).
 
         """
-        if self.state != state:
-            self.state = state
-            self._update()
- 
+        self.state = state
+        self._update()
+
     def _update(self):
         if self.state == AVAILABLE:
             self.checkButton.setChecked(False)
@@ -695,7 +694,6 @@ class OWDatabasesUpdate(OWWidget):
             opt_widget.setState(new_item.state)
 
             self.UpdateInfoLabel()
-            self.cancelButton.setEnabled(False)
 
     def SubmitRemoveTask(self, domain, filename):
         serverfiles.remove(domain, filename)
@@ -730,6 +728,7 @@ class OWDatabasesUpdate(OWWidget):
         OWBaseWidget.onDeleteWidget(self)
 
     def onDownloadFinished(self):
+        # on download completed/canceled/error
         assert QThread.currentThread() is self.thread()
         for task in list(self._tasks):
             future = task.future()
@@ -740,6 +739,8 @@ class OWDatabasesUpdate(OWWidget):
         if not self._tasks:
             # Clear/reset the overall progress
             self.progress.setRange(0, 0)
+
+            self.cancelButton.setEnabled(False)
 
     def onDownloadError(self, exc_info):
         sys.excepthook(*exc_info)
