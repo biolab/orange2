@@ -7,6 +7,11 @@
 """
 
 import sys
+import math
+import csv
+import itertools
+
+from StringIO import StringIO
 from xml.sax.saxutils import escape
 from functools import wraps
 
@@ -16,7 +21,6 @@ import Orange
 
 from OWWidget import *
 import OWGUI
-import math
 from orngDataCaching import *
 import OWColorPalette
 
@@ -95,11 +99,13 @@ class ExampleTableModel(QAbstractItemModel):
         self.attributes = list(examples.domain.attributes)
         self.class_var = self.examples.domain.class_var
         self.class_vars = list(self.examples.domain.class_vars)
-        self.metas = self.examples.domain.getmetas().values()
+        # (meta_id, attribute) list
+        self.metas = self.examples.domain.getmetas().items()
         # Attributes/features for all table columns
         self.all_attrs = (self.attributes +
                           ([self.class_var] if self.class_var else []) +
-                          self.class_vars + self.metas)
+                          self.class_vars +
+                          [attr for _, attr in self.metas])
         # Table roles for all table columns
         self.table_roles = \
             (([ExampleTableModel.Attribute] * len(self.attributes)) +
@@ -263,7 +269,7 @@ class ExampleTableModel(QAbstractItemModel):
         self.emit(SIGNAL("layoutAboutToBeChanged()"))
         attr = self.all_attrs[column] 
         values = [(ex[attr], i) for i, ex in enumerate(self.examples)]
-        values = sorted(values, key=lambda t: t[0] if not t[0].isSpecial() else sys.maxint, reverse=(order!=Qt.AscendingOrder))
+        values = sorted(values, reverse=order != Qt.AscendingOrder)
         self.sorted_map = [v[1] for v in values]
         self.emit(SIGNAL("layoutChanged()"))
         self.emit(SIGNAL("dataChanged(QModelIndex, QModelIndex)"),
@@ -283,41 +289,60 @@ class TableViewWithCopy(QTableView):
                 traceback.print_exc(file=sys.stderr)
         else:
             return QTableView.keyPressEvent(self, event)
-            
+
     def copy_selection_to_clipboard(self, selection_model):
-        """Copy table selection to the clipboard.
+        """
+        Copy table selection to the clipboard.
         """
         # TODO: html/rtf table
-        import csv
-        from StringIO import StringIO
-        rows = selection_model.selectedRows(0)
-        lines = []
-        csv_str = StringIO()
-        csv_writer = csv.writer(csv_str, dialect="excel")
-        tsv_str = StringIO()
-        tsv_writer = csv.writer(tsv_str, dialect="excel-tab")
-        for row in rows:
-            line = []
-            for i in range(self.model().columnCount()):
-                index = self.model().index(row.row(), i)
-                val = index.data(Qt.DisplayRole)
-                line.append(unicode(val.toString()))
-
-            csv_writer.writerow(line)
-            tsv_writer.writerow(line)
-
-        csv_lines = csv_str.getvalue()
-        tsv_lines = tsv_str.getvalue()
-
-        mime = QMimeData()
-        mime.setData("text/csv", QByteArray(csv_lines))
-        mime.setData("text/tab-separated-values", QByteArray(tsv_lines))
-        mime.setData("text/plain", QByteArray(tsv_lines))
+        mime = table_selection_to_mime_data(self)
         QApplication.clipboard().setMimeData(mime, QClipboard.Clipboard)
 
 
+def table_selection_to_mime_data(table):
+    lines = table_selection_to_list(table)
+
+    csv = lines_to_csv_string(lines, dialect="excel")
+    tsv = lines_to_csv_string(lines, dialect="excel-tab")
+
+    mime = QMimeData()
+    mime.setData("text/csv", QByteArray(csv))
+    mime.setData("text/tab-separated-values", QByteArray(tsv))
+    mime.setData("text/plain", QByteArray(tsv))
+    return mime
+
+
+def lines_to_csv_string(lines, dialect="excel"):
+    stream = StringIO()
+    writer = csv.writer(stream, dialect=dialect)
+    writer.writerows(lines)
+    return stream.getvalue()
+
+
+def table_selection_to_list(table):
+    model = table.model()
+    indexes = table.selectedIndexes()
+
+    rows = sorted(set(index.row() for index in indexes))
+    columns = sorted(set(index.column() for index in indexes))
+
+    lines = []
+    for row in rows:
+        line = []
+        for col in columns:
+            val = model.index(row, col).data(Qt.DisplayRole)
+            # TODO: use style item delegate displayText?
+            line.append(unicode(val.toString()))
+        lines.append(line)
+
+    return lines
+
+
 class OWDataTable(OWWidget):
-    settingsList = ["showDistributions", "showMeta", "distColorRgb", "showAttributeLabels", "autoCommit", "selectedSchemaIndex", "colorByClass"]
+    settingsList = [
+        "showDistributions", "showMeta", "distColorRgb",
+        "showAttributeLabels", "autoCommit", "selectedSchemaIndex",
+        "colorByClass", "selectRows"]
 
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Table")
@@ -337,7 +362,8 @@ class OWDataTable(OWWidget):
         self.colorSettings = None
         self.selectedSchemaIndex = 0
         self.colorByClass = True
-        
+        self.selectRows = True
+
         self.loadSettings()
 
         # info box
@@ -371,11 +397,17 @@ class OWDataTable(OWWidget):
         OWGUI.rubber(resizeColsBox)
 
         self.btnResetSort = OWGUI.button(boxSettings, self, "Restore Order of Examples", callback = self.btnResetSortClicked, tooltip = "Show examples in the same order as they appear in the file")
-        
+
         OWGUI.separator(self.controlArea)
-        selectionBox = OWGUI.widgetBox(self.controlArea, "Selection")
-        self.sendButton = OWGUI.button(selectionBox, self, "Send selections", self.commit, default=True)
-        cb = OWGUI.checkBox(selectionBox, self, "autoCommit", "Commit on any change", callback=self.commitIf)
+
+        box = OWGUI.widgetBox(self.controlArea, "Selection")
+        OWGUI.checkBox(box, self, "selectRows", "Select rows",
+                       callback=self.onSelectRowsChanged
+        )
+
+        cb = OWGUI.checkBox(box, self, "autoCommit", "Commit on any change", callback=self.commitIf)
+        self.sendButton = OWGUI.button(box, self, "Send selections", self.commit, default=True)
+
         OWGUI.setStopper(self, self.sendButton, cb, "selectionChangedFlag", self.commit)
 
         OWGUI.rubber(self.controlArea)
@@ -445,7 +477,12 @@ class OWDataTable(OWWidget):
             self.showMetas[id] = (True, [])
 
             table = TableViewWithCopy() #QTableView()
-            table.setSelectionBehavior(QAbstractItemView.SelectRows)
+
+            if self.selectRows:
+                table.setSelectionBehavior(QTableView.SelectRows)
+            else:
+                table.setSelectionBehavior(QTableView.SelectItems)
+
             table.setSortingEnabled(True)
             table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
             table.horizontalHeader().setMovable(True)
@@ -569,7 +606,14 @@ class OWDataTable(OWWidget):
 
         self.drawAttributeLabels(table)
 
-        self.showMetas[id][1].extend([i for i, attr in enumerate(table.model().all_attrs) if attr in table.model().metas])
+        sel_model = BlockSelectionModel(datamodel)
+        sel_model.setSelectBlocks(not self.selectRows)
+        table.setSelectionModel(sel_model)
+
+        # meta column indices
+        metacol = range(len(datamodel.all_attrs) - len(datamodel.metas),
+                        len(datamodel.all_attrs))
+        self.showMetas[id][1].extend(metacol)
         self.connect(table.horizontalHeader(), SIGNAL("sectionClicked(int)"), self.sortByColumn)
         self.connect(table.selectionModel(), SIGNAL("selectionChanged(QItemSelection, QItemSelection)"), self.updateSelection)
         #table.verticalHeader().setMovable(False)
@@ -749,38 +793,160 @@ class OWDataTable(OWWidget):
             else:
                 self.infoClass.setText('Classless domain.')
 
+    def onSelectRowsChanged(self):
+        for table in self.table2id.keys():
+            selection_model = table.selectionModel()
+            selection_model.setSelectBlocks(not self.selectRows)
+            if self.selectRows:
+                table.setSelectionBehavior(QTableView.SelectRows)
+                # Expand the current selection to row selection.
+                selection_model.select(
+                    selection_model.selection(),
+                    QItemSelectionModel.Select | QItemSelectionModel.Rows
+                )
+            else:
+                table.setSelectionBehavior(QTableView.SelectItems)
+
     def updateSelection(self, *args):
-        self.sendButton.setEnabled(bool(self.getCurrentSelection()) and not self.autoCommit)
+        self.sendButton.setEnabled(bool(self.getCurrentSelection()) and
+                                   not self.autoCommit)
         self.commitIf()
-            
+
     def getCurrentSelection(self):
         table = self.tabs.currentWidget()
         if table and table.model():
             model = table.model()
             new = table.selectionModel().selectedIndexes()
             return sorted(set([model.sorted_map[ind.row()] for ind in new]))
-        
+
+    def getCurrentColumnSelection(self):
+        view = self.tabs.currentWidget()
+        if view and view.model():
+            model = view.model()
+            indexes = view.selectionModel().selectedIndexes()
+            cols = sorted(set(ind.column() for ind in indexes))
+            roles = list(enumerate(model.table_roles))
+            roles = [(col, role) for col, role in roles if col in cols]
+
+            def select(role):
+                return [i for i, r in roles if r == role]
+
+            attrs = select(ExampleTableModel.Attribute)
+            class_var = select(ExampleTableModel.ClassVar)
+            class_vars = select(ExampleTableModel.ClassVars)
+            metas = select(ExampleTableModel.Meta)
+
+            return attrs, class_var, class_vars, metas
+        else:
+            return [], [], [], []
+
+    def getOutputDomain(self):
+        view = self.tabs.currentWidget()
+        if view and view.model():
+            model = view.model()
+            attrs, class_var, class_vars, metas = \
+                self.getCurrentColumnSelection()
+
+            domain = model.examples.domain
+            attrs = [domain[i] for i in attrs]
+            class_var = [domain[i] for i in class_var]
+            meta_offset = len(model.all_attrs) - len(model.metas)
+            class_vars_offset = meta_offset - len(model.class_vars)
+
+            class_vars = [domain.class_vars[i - class_vars_offset]
+                          for i in class_vars]
+            # map column indices into (meta_id, attr) tuples
+            metas = [model.metas[i - meta_offset] for i in metas]
+            if class_var:
+                class_var = class_var[0]
+            else:
+                class_var = None
+
+            domain = Orange.data.Domain(
+                attrs, class_var, class_vars=class_vars
+            )
+            domain.addmetas(dict(metas))
+
+            return domain
+
     def commitIf(self):
         if self.autoCommit:
             self.commit()
         else:
             self.selectionChangedFlag = True
-            
+
     def commit(self):
+        selected = other = None
         table = self.tabs.currentWidget()
         if table and table.model():
             model = table.model()
-            selected = self.getCurrentSelection()
-            selection = [1 if i in selected else 0 for i in range(len(model.examples))]
-            data = model.examples.select(selection)
-            self.send("Selected Data", data if len(data) > 0 else None)
-            data = model.examples.select(selection, 0)
-            self.send("Other Data", data if len(data) > 0 else None)
-        else:
-            self.send("Selected Data", None)
-            self.send("Other Data", None)
-            
+            selected = set(self.getCurrentSelection())
+            selection = [1 if i in selected else 0 for
+                         i in range(len(model.examples))]
+
+            selected = model.examples.select(selection)
+            other = model.examples.select(selection, 0)
+
+            if not self.selectRows:
+                domain = self.getOutputDomain()
+                selected = Orange.data.Table(domain, selected)
+                other = Orange.data.Table(domain, other)
+
+            selected = selected if len(selected) > 0 else None
+            other = other if len(other) > 0 else None
+
+        self.send("Selected Data", selected)
+        self.send("Other Data", other)
+
         self.selectionChangedFlag = False
+
+
+class BlockSelectionModel(QItemSelectionModel):
+    def __init__(self, *args, **kwargs):
+        super(QItemSelectionModel, self).__init__(*args, **kwargs)
+        self._selectBlocks = True
+
+    def select(self, selection, flags):
+        if isinstance(selection, QModelIndex):
+            selection = QItemSelection(selection, selection)
+
+        model = self.model()
+        indexes = self.selectedIndexes()
+
+        rows = set(ind.row() for ind in indexes)
+        cols = set(ind.column() for ind in indexes)
+
+        if flags & QItemSelectionModel.Select and \
+                not flags & QItemSelectionModel.Clear and self._selectBlocks:
+            indexes = selection.indexes()
+            sel_rows = set(ind.row() for ind in indexes).union(rows)
+            sel_cols = set(ind.column() for ind in indexes).union(cols)
+
+            selection = QItemSelection()
+
+            for r_start, r_end in ranges(sorted(sel_rows)):
+                for c_start, c_end in ranges(sorted(sel_cols)):
+                    top_left = model.index(r_start, c_start)
+                    bottom_right = model.index(r_end - 1, c_end - 1)
+                    selection.select(top_left, bottom_right)
+
+        QItemSelectionModel.select(self, selection, flags)
+
+    def selectBlock(self):
+        return self._selectBlocks
+
+    def setSelectBlocks(self, state):
+        self._selectBlocks = state
+
+
+def ranges(indices):
+    g = itertools.groupby(enumerate(indices),
+                          key=lambda t: t[1] - t[0])
+    for _, range_ind in g:
+        range_ind = list(range_ind)
+        _, start = range_ind[0]
+        _, end = range_ind[-1]
+        yield start, end + 1
 
 
 def test():
