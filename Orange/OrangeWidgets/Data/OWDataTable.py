@@ -419,10 +419,10 @@ class OWDataTable(OWWidget):
         self.tabs = OWGUI.tabWidget(self.mainArea)
         self.id2table = {}  # key: widget id, value: table
         self.table2id = {}  # key: table, value: widget id
-        self.connect(self.tabs, SIGNAL("currentChanged(QWidget*)"), self.tabClicked)
-        
+        self.connect(self.tabs, SIGNAL("currentChanged(int)"),
+                     self.onCurrentTabChanged)
+
         self.selectionChangedFlag = False
-        
 
     def createColorDialog(self):
         c = OWColorPalette.ColorPaletteDlg(self, "Color Palette")
@@ -690,30 +690,31 @@ class OWDataTable(OWWidget):
         table.oldSortingOrder = order
         #header.setSortIndicator(index, order)
 
-    def tabClicked(self, qTableInstance):
-        """Updates the info box and showMetas checkbox when a tab is clicked.
+    def onCurrentTabChanged(self, index):
         """
-        id = self.table2id.get(qTableInstance,None)
-        self.setInfo(self.data.get(id,None))
-        show_col = self.showMetas.get(id,None)
-        if show_col:
+        Updates the info box and showMetas checkbox when a tab is clicked.
+        """
+        if index == -1:
+            self.setInfo(None)
+            return
+
+        tableview = self.tabs.widget(index)
+        id = self.table2id.get(tableview, None)
+        self.setInfo(self.data.get(id, None))
+        show_col = self.showMetas.get(id, None)
+        if show_col is not None:
             self.cbShowMeta.setChecked(show_col[0])
-            self.cbShowMeta.setEnabled(len(show_col[1])>0)
+            self.cbShowMeta.setEnabled(len(show_col[1]) > 0)
         self.updateSelection()
 
     def cbShowMetaClicked(self):
         table = self.tabs.currentWidget()
         id = self.table2id.get(table, None)
-        if self.showMetas.has_key(id):
-            show,col = self.showMetas[id]
-            self.showMetas[id] = (not show,col)
-        if show:
-            for c in col:
-                table.hideColumn(c)
-        else:
-            for c in col:
-                table.showColumn(c)
-                table.resizeColumnToContents(c)
+        if id in self.showMetas:
+            _, meta_cols = self.showMetas[id]
+            self.showMetas[id] = (self.showMeta, meta_cols)
+            for c in meta_cols:
+                table.setColumnHidden(c, not self.showMeta)
 
     def drawAttributeLabels(self, table):
 #        table.setHorizontalHeaderLabels(table.variableNames)
