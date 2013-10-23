@@ -3124,9 +3124,7 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
   }
 
   if (PyList_Check(args)) {
-    Py_ssize_t size=PyList_Size(args);
-    if (!size)
-      PYERROR(PyExc_TypeError, "can't construct a table from an empty list", (TExampleTable *)NULL);
+    Py_ssize_t size = PyList_Size(args);
 
     TExampleTable *table = mlnew TExampleTable(domain);;
 
