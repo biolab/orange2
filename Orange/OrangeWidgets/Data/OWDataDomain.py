@@ -50,7 +50,7 @@ def delslice(model, start, end):
     """ Delete the start, end slice (rows) from the model. 
     """
     if isinstance(model, PyListModel):
-        model.__delslice__(start, end)
+        del model[start: end]
     elif isinstance(model, QAbstractItemModel):
         model.removeRows(start, end-start)
     else:
@@ -112,7 +112,7 @@ class VariablesListItemModel(VariableListModel):
         if row == -1:
             row = len(self)
             
-        self.__setslice__(row, row, vars)
+        self[row: row] = vars
         
         for i, data in enumerate(item_data):
             self.setItemData(self.index(row + i), data)
