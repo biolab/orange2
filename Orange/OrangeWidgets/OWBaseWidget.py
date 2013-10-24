@@ -152,10 +152,11 @@ class OWBaseWidget(QDialog):
 
     def __init__(self, parent = None, signalManager = None, title="Orange BaseWidget", modal=FALSE, savePosition = False, resizingEnabled = 1, **args):
         if resizingEnabled:
-            QDialog.__init__(self, parent, Qt.Window)
+            QDialog.__init__(self, parent, Qt.Dialog)
         else:
-            QDialog.__init__(self, parent, Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint)# | Qt.WindowMinimizeButtonHint)
-            
+            QDialog.__init__(self, parent, Qt.Dialog |
+                             Qt.MSWindowsFixedSizeDialogHint)
+
         # do we want to save widget position and restore it on next load
         self.savePosition = savePosition
         if savePosition:

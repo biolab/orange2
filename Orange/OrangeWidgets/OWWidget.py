@@ -25,6 +25,10 @@ class OWWidget(OWBaseWidget):
         self.setLayout(QVBoxLayout())
         self.layout().setMargin(2)
 
+        if not resizingEnabled:
+            self.layout().setSizeConstraint(QLayout.SetFixedSize)
+            self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+
         self.topWidgetPart = OWGUI.widgetBox(self, orientation="horizontal", margin=0)
         self.leftWidgetPart = OWGUI.widgetBox(self.topWidgetPart, orientation="vertical", margin=0)
         if wantMainArea:
