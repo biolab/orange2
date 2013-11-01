@@ -1,17 +1,20 @@
-"""
-<name>Feature Constructor</name>
-<description>Construct a new continuous attribute computed from existing attributes.</description>
-<icon>icons/FeatureConstructor.svg</icon>
-<priority>3100</priority>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
-"""
-
 from OWWidget import *
 import OWGUI, math, re
 import random
 import inspect
 
+NAME = "Feature Constructor"
+DESCRIPTION = "Constructs new features computed from existing ones."
+ICON = "icons/FeatureConstructor.svg"
+MAINTAINER = "Janez Demsar"
+MAINTAINER_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
+PRIORITY = 3100
+CATEGORY = "Data"
+INPUTS = [("Data", Orange.data.Table, "setData")]
+OUTPUTS = [("Data", Orange.data.Table, )]
+
 re_identifier = re.compile(r'([a-zA-Z_]\w*)|("[^"]+")')
+
 
 class IdentifierReplacer:
     def __init__(self, reinserted, attributes):
@@ -28,6 +31,7 @@ class IdentifierReplacer:
             return "_ex['%s']" % id
         return id
 
+
 class AttrComputer:
     FUNCTIONS = dict([(key, val) for key, val in math.__dict__.items() if not key.startswith("_")] +\
                       {"normalvariate": random.normalvariate,
@@ -41,6 +45,7 @@ class AttrComputer:
                        "weibullvariate": random.weibullvariate,
                        "triangular": random.triangular,
                        "uniform": random.uniform}.items())
+
     def __init__(self, expression):
         self.expression = expression
 
@@ -49,6 +54,7 @@ class AttrComputer:
             return float(eval(self.expression, self.FUNCTIONS, {"_ex": ex}))
         except Exception, ex:
             return "?"
+
 
 class OWFeatureConstructor(OWWidget):
     contextHandlers = {"": PerfectDomainContextHandler()}
@@ -60,12 +66,12 @@ class OWFeatureConstructor(OWWidget):
         self.outputs = [("Data", ExampleTable)]
 
         self.expression = self.attrname = ""
-        self.selectedDef = []
-        self.defLabels = []
+        self.selected_def = []
+        self.def_labels = []
         self.data = None
         self.definitions = []
 
-        self.selectedAttr = 0
+        self.selected_features = 0
         self.selectedFunc = 0
         self.autosend = True
         self.loadSettings()
@@ -79,7 +85,7 @@ class OWFeatureConstructor(OWWidget):
         vb = OWGUI.widgetBox(hb, None, "vertical", addSpace=True)
         self.leExpression = OWGUI.lineEdit(vb, self, "expression", "Expression")
         hhb = OWGUI.widgetBox(vb, None, "horizontal")
-        self.cbAttrs = OWGUI.comboBox(hhb, self, "selectedAttr", items = ["(all attributes)"], callback = self.attrListSelected)
+        self.cbAttrs = OWGUI.comboBox(hhb, self, "selected_features", items = ["(all attributes)"], callback = self.feature_list_selected)
         sortedFuncs = sorted(m for m in AttrComputer.FUNCTIONS.keys())
         self.cbFuncs = OWGUI.comboBox(hhb, self, "selectedFunc", items = ["(all functions)"] + sortedFuncs, callback = self.funcListSelected)
         model = self.cbFuncs.model()
@@ -91,10 +97,12 @@ class OWFeatureConstructor(OWWidget):
         hb = OWGUI.widgetBox(db, None, "horizontal", addSpace=True)
         OWGUI.button(hb, self, "Add", callback = self.addAttr, autoDefault=True)
         OWGUI.button(hb, self, "Update", callback = self.updateAttr)
-        OWGUI.button(hb, self, "Remove", callback = self.removeAttr)
-        OWGUI.button(hb, self, "Remove All", callback = self.removeAllAttr)
+        OWGUI.button(hb, self, "Remove", callback = self.remove_feature)
+        OWGUI.button(hb, self, "Remove All", callback = self.remove_all_features)
 
-        self.lbDefinitions = OWGUI.listBox(db, self, "selectedDef", "defLabels", callback=self.selectAttr)
+        self.lbDefinitions = OWGUI.listBox(db, self, "selected_def",
+                                           "def_labels",
+                                           callback=self.select_feature)
         self.lbDefinitions.setFixedHeight(160)
 
         hb = OWGUI.widgetBox(self.controlArea, "Apply", "horizontal")
@@ -109,8 +117,8 @@ class OWFeatureConstructor(OWWidget):
 
     def settingsToWidgetCallback(self, handler, context):
         self.definitions = getattr(context, "definitions", [])
-        self.defLabels = ["%s := %s" % t for t in self.definitions]
-        self.selectedDef = []
+        self.def_labels = ["%s := %s" % t for t in self.definitions]
+        self.selected_def = []
 
     def setData(self, data):
         self.closeContext()
@@ -119,7 +127,7 @@ class OWFeatureConstructor(OWWidget):
         self.cbAttrs.addItem("(all attributes)")
         if self.data:
             self.cbAttrs.addItems([attr.name for attr in self.data.domain])
-        self.removeAllAttr()
+        self.remove_all_features()
         self.openContext("", data)
         self.apply()
 
@@ -143,44 +151,44 @@ class OWFeatureConstructor(OWWidget):
         attrexpr = self.getAttrExpression()
         if not attrexpr:
             return
-        self.defLabels = self.defLabels + ["%s := %s" % attrexpr] # should be like this to update the listbox
+        self.def_labels = self.def_labels + ["%s := %s" % attrexpr] # should be like this to update the listbox
         self.definitions.append(attrexpr)
         self.expression = self.attrname = ""
-        self.applyIf()
+        self.apply_if()
 
     def updateAttr(self):
-        if self.selectedDef:
-            selected = self.selectedDef[0]
+        if self.selected_def:
+            selected = self.selected_def[0]
             attrexpr = self.getAttrExpression(selected)
             if not attrexpr:
                 return
              # should be like this to reset the listbox
-            self.defLabels = self.defLabels[:selected] + ["%s := %s" % attrexpr] + self.defLabels[selected+1:]
+            self.def_labels = self.def_labels[:selected] + ["%s := %s" % attrexpr] + self.def_labels[selected+1:]
             self.definitions[selected] = attrexpr
-            self.applyIf()
+            self.apply_if()
 
-    def removeAttr(self):
-        if self.selectedDef:
-            selected = self.selectedDef[0]
+    def remove_feature(self):
+        if self.selected_def:
+            selected = self.selected_def[0]
             if 0 <= selected < self.lbDefinitions.count():
-                self.defLabels = self.defLabels[:selected] + self.defLabels[selected+1:]
+                self.def_labels = self.def_labels[:selected] + self.def_labels[selected+1:]
                 del self.definitions[selected]
-                self.applyIf()
+                self.apply_if()
 
-    def removeAllAttr(self):
-        self.defLabels = []
+    def remove_all_features(self):
+        self.def_labels = []
         self.definitions = []
-        self.selectedDef = []
+        self.selected_def = []
         self.expression = ""
-        self.applyIf()
+        self.apply_if()
 
-    def selectAttr(self):
-        if self.selectedDef:
-            self.attrname, self.expression = self.definitions[self.selectedDef[0]]
+    def select_feature(self):
+        if self.selected_def:
+            self.attrname, self.expression = self.definitions[self.selected_def[0]]
         else:
             self.attrname = self.expression = ""
 
-    def insertIntoExpression(self, what):
+    def insert_into_expression(self, what):
         # Doesn't work: clicking the listbox removes the selection
         if self.leExpression.hasSelectedText():
             self.leExpression.del_()
@@ -188,14 +196,14 @@ class OWFeatureConstructor(OWWidget):
         self.expression = self.expression[:cp] + what + self.expression[cp:]
         self.leExpression.setFocus()
 
-    def attrListSelected(self):
-        if self.selectedAttr:
-            attr = str(self.cbAttrs.itemText(self.selectedAttr))
+    def feature_list_selected(self):
+        if self.selected_features:
+            attr = str(self.cbAttrs.itemText(self.selected_features))
             mo = re_identifier.match(attr)
             if not mo or mo.span()[1] != len(attr):
                 attr = '"%s"' % attr
-            self.insertIntoExpression(attr)
-            self.selectedAttr = 0
+            self.insert_into_expression(attr)
+            self.selected_features = 0
 
     def funcListSelected(self):
         if self.selectedFunc:
@@ -204,16 +212,16 @@ class OWFeatureConstructor(OWWidget):
             if func in ["atan2", "fmod", "ldexp", "log", "pow", "normalvariate",
                         "gauss", "lognormvariate", "betavariate", "gammavariate",
                         "triangular", "uniform", "vonmisesvariate", "weibullvariate"]:
-                self.insertIntoExpression(func + "(,)")
+                self.insert_into_expression(func + "(,)")
                 self.leExpression.cursorBackward(False, 2)
             elif func in ["e", "pi"]:
-                self.insertIntoExpression(func)
+                self.insert_into_expression(func)
             else:
-                self.insertIntoExpression(func + "()")
+                self.insert_into_expression(func + "()")
                 self.leExpression.cursorBackward(False)
             self.selectedFunc = 0
 
-    def applyIf(self):
+    def apply_if(self):
         self.dataChanged = True
         if self.autosend:
             self.apply()

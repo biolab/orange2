@@ -1,15 +1,21 @@
-"""
-<name>Outliers</name>
-<description>Indentification of outliers</description>
-<icon>icons/Outliers.svg</icon>
-<contact>Marko Toplak (marko.toplak(@at@)gmail.com)</contact> 
-<priority>2150</priority>
-"""
-
 from OWWidget import *
 import OWGUI, orange
 import orngOutlier
 from exceptions import Exception
+
+NAME = "Outliers"
+DESCRIPTION = """Identifies data instances distant from other observations."""
+LONG_DESCRIPTION = ""
+ICON = "icons/Outliers.svg"
+PRIORITY = 2150
+AUTHOR = "Marko Toplak"
+AUTHOR_EMAIL = "marko.toplak(@at@)gmail.com"
+INPUTS = [("Data", Orange.data.Table, "cdata", Default),
+          ("Distances", orange.SymMatrix, "cdistance", Default)]
+OUTPUTS = [("Outliers", Orange.data.Table, Default),
+           ("Inliers", Orange.data.Table),
+           ("Data with z-score", Orange.data.Table)]
+
 
 ##############################################################################
 
@@ -17,10 +23,13 @@ class OWOutliers(OWWidget):
     settingsList = ["zscore", "metric", "k"]
     
     def __init__(self, parent=None, signalManager = None, name='Outlier'):
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea=0)
 
-        self.inputs = [("Data", ExampleTable, self.cdata),("Distances", orange.SymMatrix, self.cdistance)]
-        self.outputs = [("Outliers", ExampleTable), ("Inliers", ExampleTable), ("Data with z-score", ExampleTable)]
+        self.inputs = [("Data", ExampleTable, self.cdata),
+                       ("Distances", orange.SymMatrix, self.cdistance)]
+        self.outputs = [("Outliers", ExampleTable),
+                        ("Inliers", ExampleTable),
+                        ("Data with z-score", ExampleTable)]
                
         # Settings
         self.zscore = '4.0'
@@ -36,21 +45,27 @@ class OWOutliers(OWWidget):
         kernelSizeValid = QDoubleValidator(self.controlArea)
 
 
-        self.metrics = [("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),
-                        ("Manhattan", orange.ExamplesDistanceConstructor_Manhattan),
-                        ("Hamming", orange.ExamplesDistanceConstructor_Hamming),
-                        ("Relief", orange.ExamplesDistanceConstructor_Relief)]
+        self.metrics = [("Euclidean",
+                         orange.ExamplesDistanceConstructor_Euclidean),
+                        ("Manhattan",
+                         orange.ExamplesDistanceConstructor_Manhattan),
+                        ("Hamming",
+                         orange.ExamplesDistanceConstructor_Hamming),
+                        ("Relief",
+                         orange.ExamplesDistanceConstructor_Relief)]
 
         self.ks = [("All",0), ("1", 1), ("2",2), ("3",3), ("5",5), ("10",10), ("15",15)]
         items = [x[0] for x in self.metrics]
         itemsk = [x[0] for x in self.ks]
         
-        OWGUI.comboBox(self.controlArea, self, "metric", box="Distance Metrics", items=items,
+        OWGUI.comboBox(self.controlArea, self, "metric",
+                       box="Distance Metrics", items=items,
                        tooltip="Metrics to measure pairwise distance between data instances.",
                        callback=self.dataChange)
 
         OWGUI.separator(self.controlArea)
-        OWGUI.comboBox(self.controlArea, self, "k", box="Nearest Neighbours", items=itemsk,
+        OWGUI.comboBox(self.controlArea, self, "k",
+                       box="Nearest Neighbours", items=itemsk,
                        tooltip="Neighbours considered when computing the distance.",
                        callback=self.applySettings)
 
@@ -125,7 +140,8 @@ class OWOutliers(OWWidget):
             self.haveInput = 1     
         elif self.dataInput is not None:
             self.data = self.dataInput
-            outlier.setExamples(self.data, self.metrics[self.metric][1](self.data))        
+            outlier.setExamples(self.data,
+                                self.metrics[self.metric][1](self.data))
             self.haveInput = 1
         else:
             self.data = None

@@ -1,18 +1,19 @@
-"""
-<name>Continuize</name>
-<description>Transform discrete attributes into continuous. Optionally, normalize the continuous values.</description>
-<icon>icons/Continuize.svg</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
-<priority>2110</priority>
-"""
-#
-# OWContinuize.py
-# Continuize Widget
-# Turns discrete attributes into continuous
-#
+import Orange
 from OWWidget import *
 from orngWrap import PreprocessedLearner
 import OWGUI
+
+NAME = "Continuize"
+DESCRIPTION = """Turns discrete features into continuous.
+Can also normalize existing continuous features."""
+ICON = "icons/Continuize.svg"
+PRIORITY = 2110
+CATEGORY = "Data"
+MAINTAINER = "Janez Demsar"
+MAINTAINER_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "setData")]
+OUTPUTS = [("Data", Orange.data.Table, ),
+           ("Preprocessor", PreprocessedLearner, )]
 
 class OWContinuize(OWWidget):
     settingsList = ["multinomialTreatment", "classTreatment", "zeroBased", "continuousTreatment", "autosend"]
@@ -170,9 +171,7 @@ class OWContinuize(OWWidget):
 if __name__ == "__main__":
     a = QApplication(sys.argv)
     ow = OWContinuize()
-    #data = orange.ExampleTable("d:\\ai\\orange\\test\\iris")
-#    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
-    data = orange.ExampleTable("../../doc/datasets/iris.tab")
+    data = Orange.data.Table("iris.tab")
     ow.setData(data)
     ow.show()
     a.exec_()

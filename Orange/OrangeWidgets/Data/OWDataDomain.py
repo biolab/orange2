@@ -1,17 +1,19 @@
-"""
-<name>Select Attributes</name>
-<description>Manual selection of attributes.</description>
-<icon>icons/SelectAttributes.svg</icon>
-<priority>1100</priority>
-<contact>Ales Erjavec (ales.erjavec@fri.uni-lj.si)</contact>
-"""
-
 import sys
-
+import Orange
 from OWWidget import *
 from OWItemModels import PyListModel, VariableListModel
 
-import Orange
+NAME = "Select Attributes"
+DESCRIPTION = "Supports manual selection of data features."
+ICON = "icons/SelectAttributes.svg"
+PRIORITY = 1100
+CATEGORY = "Data"
+MAINTAINER = "Ales Erjavec"
+MAINTAINER_EMAIL = "ales.erjavec < at > fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "set_data", Default)]
+OUTPUTS = [("Data", Orange.data.Table, ),
+           ("Features", AttributeList, )]
+
 
 def slices(indices):
     """ Group the given integer indices into slices
@@ -26,7 +28,8 @@ def slices(indices):
                 yield first, last + 1
                 first = last = i
         yield first, last + 1
-        
+
+
 def source_model(view):
     """ Return the source model for the Qt Item View if it uses
     the QSortFilterProxyModel.
@@ -37,6 +40,7 @@ def source_model(view):
     else:
         return view.model()
 
+
 def source_indexes(indexes, view):
     """ Map model indexes through a views QSortFilterProxyModel
     """
@@ -46,6 +50,7 @@ def source_indexes(indexes, view):
     else:
         return indexes 
             
+
 def delslice(model, start, end):
     """ Delete the start, end slice (rows) from the model. 
     """
@@ -56,6 +61,7 @@ def delslice(model, start, end):
     else:
         raise TypeError(type(model))
         
+
 class VariablesListItemModel(VariableListModel):
     """ An Qt item model for for list of orange.Variable objects.
     Supports drag operations

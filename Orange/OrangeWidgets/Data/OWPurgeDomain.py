@@ -1,14 +1,18 @@
-"""
-<name>Purge Domain</name>
-<description>Removes redundant values and attributes, sorts values.</description>
-<icon>icons/PurgeDomain.svg</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
-<priority>1105</priority>
-"""
 from OWWidget import *
 import OWGUI
 
 import orange
+
+NAME = "Purge Domain"
+DESCRIPTION = "Removes redundant values and features, sorts domain values."
+LONG_DESCRIPTION = ""
+ICON = "icons/PurgeDomain.svg"
+PRIORITY = 1150
+AUTHOR = "Janez Demsar"
+AUTHOR_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "setData")]
+OUTPUTS = [("Data", Orange.data.Table)]
+
 
 class OWPurgeDomain(OWWidget):
 

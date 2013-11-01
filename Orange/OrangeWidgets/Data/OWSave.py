@@ -1,21 +1,26 @@
-"""
-<name>Save</name>
-<description>Saves data to file.</description>
-<icon>icons/Save.svg</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
-<priority>90</priority>
-"""
-
 from OWWidget import *
 import OWGUI
 import re, os.path
 from exceptions import Exception
 
-class OWSave(OWWidget):
-    settingsList=["recentFiles","selectedFileName"]
+NAME = "Save"
+DESCRIPTION = "Saves data to file."
+LONG_DESCRIPTION = ""
+ICON = "icons/Save.svg"
+PRIORITY = 90
+AUTHOR = "Janez Demsar"
+AUTHOR_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "dataset", Default)]
 
-    savers = {".txt": orange.saveTxt, ".tab": orange.saveTabDelimited,
-              ".names": orange.saveC45, ".test": orange.saveC45, ".data": orange.saveC45,
+
+class OWSave(OWWidget):
+    settingsList = ["recentFiles", "selectedFileName"]
+
+    savers = {".txt": orange.saveTxt,
+              ".tab": orange.saveTabDelimited,
+              ".names": orange.saveC45,
+              ".test": orange.saveC45,
+              ".data": orange.saveC45,
               ".csv": orange.saveCsv
               }
 
@@ -59,7 +64,7 @@ class OWSave(OWWidget):
 
         #self.adjustSize()
         self.setFilelist()
-        self.resize(260,100)
+        self.resize(260, 100)
         self.filecombo.setCurrentIndex(0)
 
         if self.selectedFileName != "":
@@ -120,14 +125,14 @@ class OWSave(OWWidget):
                 return
             self.error()
 
-    def addFileToList(self,fn):
+    def addFileToList(self, fn):
         if fn in self.recentFiles:
             self.recentFiles.remove(fn)
         self.recentFiles.insert(0,fn)
         self.setFilelist()
 
     def setFilelist(self):
-        "Set the GUI filelist"
+        """Set the GUI filelist"""
         self.filecombo.clear()
 
         if self.recentFiles:

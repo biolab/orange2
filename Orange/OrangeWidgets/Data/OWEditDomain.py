@@ -1,18 +1,18 @@
-"""
-<name>Edit Domain</name>
-<description>Edit domain variables</description>
-<icon>icons/EditDomain.svg</icon>
-<contact>Ales Erjavec (ales.erjavec(@ at @)fri.uni-lj.si)</contact>
-<priority>3125</priority>
-<keywords>change,name,variable,domain</keywords>
-"""
-
 from OWWidget import *
 from OWItemModels import VariableListModel, PyListModel
 
 import OWGUI
 
 import Orange
+
+NAME = "Edit Domain"
+DESCRIPTION = """Supports renaming of features and their values."""
+ICON = "icons/EditDomain.svg"
+PRIORITY = 3125
+AUTHOR = "Ales Erjavec"
+AUTHOR_EMAIL = "ales.erjavec(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "set_data")]
+OUTPUTS = [("Data", Orange.data.Table, )]
 
 
 def is_discrete(var):

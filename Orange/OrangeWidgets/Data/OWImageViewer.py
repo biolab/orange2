@@ -1,13 +1,16 @@
-"""<name>Image Viewer</name>
-<description>View images embeded in example table</description>
-<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
-<priority>4050</priority>
-<icon>icons/ImageViewer.svg</icon>
-"""
-
 from OWWidget import *
 
 import OWGUI
+
+NAME = "Image Viewer"
+DESCRIPTION = "Views images embedded in the data."
+LONG_DESCRIPTION = ""
+ICON = "icons/ImageViewer.svg"
+PRIORITY = 4050
+AUTHOR = "Ales Erjavec"
+AUTHOR_EMAIL = "ales.erjavec(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "setData")]
+OUTPUTS = [("Data", Orange.data.Table, )]
 
 
 #def setupShadow(widget):

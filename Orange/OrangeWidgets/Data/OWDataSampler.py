@@ -1,17 +1,24 @@
-r"""
-<name>Data Sampler</name>
-<description>Selects a subset of instances from the data set.</description>
-<icon>icons/DataSampler.svg</icon>
-<contact>Aleksander Sadikov (aleksander.sadikov(@at@)fri.uni-lj.si)</contact>
-<priority>1125</priority>
-"""
-from OWWidget import *
-import OWGUI
 import random
+import Orange
+import OWGUI
+from OWWidget import *
+
+NAME = "Data Sampler"
+DESCRIPTION = "Samples data from a data set."
+ICON = "icons/DataSampler.svg"
+PRIORITY = 1125
+CATEGORY = "Data"
+MAINTAINER = "Aleksander Sadikov"
+MAINTAINER_EMAIL = "aleksander.sadikov(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "setData", Default)]
+OUTPUTS = [("Data Sample", Orange.data.Table, ),
+           ("Remaining Data", Orange.data.Table, )]
+
 
 class OWDataSampler(OWWidget):
     settingsList=["Stratified", "Repeat", "UseSpecificSeed", "RandomSeed",
-    "GroupSeed", "outFold", "Folds", "SelectType", "useCases", "nCases", "selPercentage", "LOO",
+    "GroupSeed", "outFold", "Folds", "SelectType", "useCases", "nCases",
+    "selPercentage", "LOO",
     "CVFolds", "CVFoldsInternal", "nGroups", "pGroups", "GroupText"]
     
     contextHandlers = {"":DomainContextHandler("", ["nCases","selPercentage"])}
@@ -336,7 +343,7 @@ class OWDataSampler(OWWidget):
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWDataSampler()
-    data = orange.ExampleTable('../../doc/datasets/iris.tab')
+    data = Orange.data.Table('iris.tab')
     ow.setData(data)
     ow.show()
     appl.exec_()

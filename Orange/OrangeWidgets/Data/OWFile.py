@@ -1,40 +1,17 @@
-"""
-<name>File</name>
-<description>Reads data from a file.</description>
-<icon>icons/File.svg</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
-<priority>10</priority>
-"""
-
 import os
 import sys
 import warnings
-
 import Orange
-
 from OWWidget import *
 import OWGUI
 
 NAME = "File"
-
-DESCRIPTION = """
-Reads data from an input file.
-"""
-
-LONG_DESCRIPTION = ""
-"""
-This is the widget you will probably use at the start of every schema to read
-the input data file (data table with examples). The widget maintains a
-history of most recently used data files. For convenience, the history
-also includes a directory with the sample data sets that come with Orange.
-"""
-
+DESCRIPTION = "Reads data from an input file."
 ICON = "icons/File.svg"
-AUTHOR = "Janez Demsar"
+MAINTAINER = "Janez Demsar"
 MAINTAINER_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
 PRIORITY = 10
 CATEGORY = "Data"
-
 KEYWORDS = ["data", "file", "load", "read"]
 
 OUTPUTS = (

@@ -1,49 +1,27 @@
-"""
-<name>Data Table</name>
-<description>Shows data in a spreadsheet.</description>
-<icon>icons/DataTable.svg</icon>
-<priority>100</priority>
-<contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
-"""
-
 import sys
 import math
 import csv
 import itertools
-
+import sip
+import Orange
+import OWGUI
 from StringIO import StringIO
 from xml.sax.saxutils import escape
 from functools import wraps
-
-import sip
-
-import Orange
-
 from OWWidget import *
-import OWGUI
 from orngDataCaching import *
 import OWColorPalette
 
 NAME = "Data Table"
-
 DESCRIPTION = "Displays data in a spreadsheet."
-
-LONG_DESCRIPTION = """Data Table widget takes one or more data sets
-on its input and presents them in a spreadsheet format.
-"""
-
+LONG_DESCRIPTION = ""
 ICON = "icons/DataTable.svg"
-
 PRIORITY = 100
-
-AUTHOR = "Peter Juvan"
-
-AUTHOR_EMAIL = "peter.juvan(@at@)fri.uni-lj.si"
-
-INPUTS = [("Data", ExampleTable, "dataset", Multiple + Default)]
-
-OUTPUTS = [("Selected Data", ExampleTable, Default),
-           ("Other Data", ExampleTable)]
+AUTHOR = "Ales Erjavec"
+AUTHOR_EMAIL = "ales.erjavec(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "dataset", Multiple + Default)]
+OUTPUTS = [("Selected Data", Orange.data.Table, Default),
+           ("Other Data", Orange.data.Table, )]
 
 
 def header_text(feature, labels=None):
@@ -949,8 +927,7 @@ def ranges(indices):
         _, end = range_ind[-1]
         yield start, end + 1
 
-
-def test():
+if __name__ == "__main__":
     a = QApplication(sys.argv)
     ow = OWDataTable()
 
@@ -968,7 +945,3 @@ def test():
     ow.dataset(d5, "wine")
     a.exec_()
     ow.saveSettings()
-
-
-if __name__ == "__main__":
-    test()

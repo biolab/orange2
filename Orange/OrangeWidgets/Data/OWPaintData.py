@@ -1,23 +1,22 @@
-"""
-<name>Paint Data</name>
-<description>Paints the data on a 2D plane. Place individual data
-points or use brush to paint a larger data sets.</description>
-<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
-<priority>40</priority>
-<icon>icons/PaintData.svg</icon>
-"""
 import orange
-
 import copy
-
+import OWToolbars
+import OWColorPalette
+import Orange.data
 from PyQt4 import QtCore
-
 from OWWidget import *
 from OWGraph import *
-import OWToolbars
-
 from OWItemModels import VariableListModel, PyListModel, ModelActionsWidget
-import OWColorPalette
+
+NAME = "Paint Data"
+DESCRIPTION = """Paints the data on a 2D plane. Place individual data
+points or use brush to paint a larger data sets."""
+LONG_DESCRIPTION = ""
+ICON = "icons/PaintData.svg"
+PRIORITY = 40
+AUTHOR = "Ales Erjavec"
+AUTHOR_EMAIL = "ales.erjavec(@at@)fri.uni-lj.si"
+OUTPUTS = [("Data", Orange.data.Table, )]
 
 dir = OWToolbars.dir
 icon_magnet = os.path.join(dir, "magnet_64px.png")

@@ -1,21 +1,26 @@
-"""
-<name>Concatenate</name>
-<description>Concatenates Example Tables.</description>
-<icon>icons/Concatenate.svg</icon>
-<priority>1111</priority>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
-"""
-
+import Orange
 from OWWidget import *
 import OWGUI
 from itertools import izip
+
+NAME = "Concatenate"
+DESCRIPTION = "Concatenates data tables."
+ICON = "icons/Concatenate.svg"
+PRIORITY = 1111
+MAINTAINER = "Janez Demsar"
+MAINTAINER_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
+INPUTS = [("Primary Data", Orange.data.Table, "setData"),
+          ("Additional Data", Orange.data.Table, "setMoreData", Multiple)]
+OUTPUTS = [("Data", Orange.data.Table, )]
+
 
 class OWConcatenate(OWWidget):
     settingsList = ["mergeAttributes", "dataSourceSelected", "addIdAs", "dataSourceName"]
     
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Concatenate", wantMainArea=0)
-        self.inputs = [("Primary Data", orange.ExampleTable, self.setData), ("Additional Data", orange.ExampleTable, self.setMoreData, Multiple)]
+        self.inputs = [("Primary Data", orange.ExampleTable, self.setData),
+                       ("Additional Data", orange.ExampleTable, self.setMoreData, Multiple)]
         self.outputs = [("Data", ExampleTable)]
 
         self.mergeAttributes = 0
@@ -189,7 +194,7 @@ class OWConcatenate(OWWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = OWConcatenate()
-    data = orange.ExampleTable("../../doc/datasets/iris.tab")
+    data = Orange.data.Table("iris.tab")
     w.setData(data)
     w.setMoreData(data, 0)
     w.show()

@@ -1,16 +1,18 @@
-"""
-<name>Multi-key Merge Data</name>
-<description>Merge datasets based on values of selected tuples of attributes.</description>
-<icon>icons/MergeData.svg</icon>
-<priority>100</priority>
-<contact>Peter Husen (phusen@bmb.sdu.dk)</contact>
-"""
-
+import Orange
 from OWWidget import *
 from OWItemModels import PyListModel, VariableListModel
 
-#import OWGUI
-import Orange
+NAME = "Multi-Key Merge Data"
+DESCRIPTION = "Merges data sets based on values of selected groups of features."
+LONG_DESCRIPTION = ""
+ICON = "icons/MergeData.svg"
+PRIORITY = 100
+MAINTAINER = "Peter Husen"
+MAINTAINER_EMAIL = "phusen(@at@)bmb.sdu.dk"
+INPUTS = [("Data A", Orange.data.Table, "set_dataA", Default),
+          ("Data B", Orange.data.Table, "set_dataB")]
+OUTPUTS = [("Merged Data A+B", Orange.data.Table, Default),
+           ("Merged Data B+A", Orange.data.Table, )]
 
 
 def slices(indices):
@@ -200,7 +202,7 @@ class OWMultiMergeData(OWWidget):
         layout.setMargin(0)
 
         # Available A attributes
-        box = OWGUI.widgetBox(self.controlArea, "Available A attributes", addToLayout=False)
+        box = OWGUI.widgetBox(self.controlArea, "Features in data set A", addToLayout=False)
         self.available_attrsA = VariablesListItemModel()
         self.available_attrsA_view = VariablesListItemView()
         self.available_attrsA_view.setModel(self.available_attrsA)
@@ -215,7 +217,7 @@ class OWMultiMergeData(OWWidget):
 
 
         # Used A Attributes
-        box = OWGUI.widgetBox(self.controlArea, "Used A attributes", addToLayout=False)
+        box = OWGUI.widgetBox(self.controlArea, "Used features from A", addToLayout=False)
         self.used_attrsA = VariablesListItemModel()
         self.used_attrsA_view = VariablesListItemView()
         self.used_attrsA_view.setModel(self.used_attrsA)
@@ -230,13 +232,13 @@ class OWMultiMergeData(OWWidget):
 
         # Data A info
         box = OWGUI.widgetBox(self, 'Data A', orientation = "vertical", addToLayout=0)
-        self.lblDataAExamples = OWGUI.widgetLabel(box, "num examples")
-        self.lblDataAAttributes = OWGUI.widgetLabel(box, "num attributes")
+        self.lblDataAExamples = OWGUI.widgetLabel(box, "#data instances")
+        self.lblDataAAttributes = OWGUI.widgetLabel(box, "#features")
         layout.addWidget(box, 1, 1, 1, 2)
 
 
         # Available B attributes
-        box = OWGUI.widgetBox(self.controlArea, "Available B attributes", addToLayout=False)
+        box = OWGUI.widgetBox(self.controlArea, "Features in data set B", addToLayout=False)
         self.available_attrsB = VariablesListItemModel()
         self.available_attrsB_view = VariablesListItemView()
         self.available_attrsB_view.setModel(self.available_attrsB)
@@ -251,7 +253,7 @@ class OWMultiMergeData(OWWidget):
 
 
         # Used B Attributes
-        box = OWGUI.widgetBox(self.controlArea, "Used B attributes", addToLayout=False)
+        box = OWGUI.widgetBox(self.controlArea, "Used features from A", addToLayout=False)
         self.used_attrsB = VariablesListItemModel()
         self.used_attrsB_view = VariablesListItemView()
         self.used_attrsB_view.setModel(self.used_attrsB)
@@ -266,8 +268,8 @@ class OWMultiMergeData(OWWidget):
         layout.addWidget(box, 2, 2, 1, 1)
 
         box = OWGUI.widgetBox(self, 'Data B', orientation = "vertical", addToLayout=0)
-        self.lblDataBExamples = OWGUI.widgetLabel(box, "num examples")
-        self.lblDataBAttributes = OWGUI.widgetLabel(box, "num attributes")
+        self.lblDataBExamples = OWGUI.widgetLabel(box, "#data instances")
+        self.lblDataBAttributes = OWGUI.widgetLabel(box, "#features")
         layout.addWidget(box, 3, 1, 1, 2)
 
 

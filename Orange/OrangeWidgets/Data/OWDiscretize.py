@@ -1,30 +1,17 @@
-"""
-<name>Discretize</name>
-<description>Discretization of continuous attributes.</description>
-<icon>icons/Discretize.svg</icon>
-<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
-<priority>2100</priority>
-"""
-
 import orange
 from OWWidget import *
 from OWGraph import *
 import OWGUI
 
-
 NAME = "Discretize"
 DESCRIPTION = "Discretization of continuous attributes."
-
 MAINTAINER = "Ales Erjavec"
 MAINTAINER_EMAIL = "ales.erjavec < at > fri.uni-lj.si"
-
 CATEGORY = "Data"
 PRIORITY = 2100
 ICON = "icons/Discretize.svg"
-
 INPUTS = [("Data", orange.ExampleTable, "setData")]
-OUTPUTS = [("Data", orange.ExampleTable,)]
-
+OUTPUTS = [("Data", orange.ExampleTable, )]
 WIDGET_CLASS = "OWDiscretize"
 
 

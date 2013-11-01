@@ -1,10 +1,3 @@
-"""
-<name>Python Script</name>
-<description>Executes python script.</description>
-<icon>icons/PythonScript.svg</icon>
-<contact>Miha Stajdohar (miha.stajdohar(@at@)gmail.com)</contact>
-<priority>3150</priority>
-"""
 import sys
 import os
 import code
@@ -28,6 +21,26 @@ from OWItemModels import PyListModel, ModelActionsWidget
 
 import OWGUI
 import Orange
+
+NAME = "Python Script"
+DESCRIPTION = "Executes a Python script."
+LONG_DESCRIPTION = ""
+ICON = "icons/PythonScript.svg"
+PRIORITY = 3150
+AUTHOR = "Miha Stajdohar"
+AUTHOR_EMAIL = "miha.stajdohar(@at@)gmail.com"
+
+INPUTS = [("in_data", Orange.data.Table, "setExampleTable", Default),
+          ("in_distance", Orange.misc.SymMatrix, "setDistanceMatrix", Default),
+          ("in_learner", Orange.core.Learner, "setLearner", Default),
+          ("in_classifier", Orange.core.Classifier, "setClassifier", Default),
+          ("in_object", object, "setObject")]
+
+OUTPUTS = [("out_data", Orange.data.Table, ),
+           ("out_distance", Orange.misc.SymMatrix, ),
+           ("out_learner", Orange.core.Learner, ),
+           ("out_classifier", Orange.core.Classifier, Dynamic),
+           ("out_object", object, Dynamic)]
 
 
 class PythonSyntaxHighlighter(QSyntaxHighlighter):

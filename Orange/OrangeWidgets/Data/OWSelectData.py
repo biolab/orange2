@@ -1,24 +1,31 @@
-"""
-<name>Select Data</name>
-<description>Selects instances from the data set based on conditions over attributes.</description>
-<icon>icons/SelectData.svg</icon>
-<priority>1150</priority>
-<contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
-"""
 import orange
 from OWWidget import *
 import OWGUI
 from orngDataCaching import *
 
+NAME = "Select Data"
+DESCRIPTION = "Selects data instances based on conditions over data features."
+LONG_DESCRIPTION = ""
+ICON = "icons/SelectData.svg"
+PRIORITY = 1150
+AUTHOR = "Peter Juvan"
+AUTHOR_EMAIL = "peter.juvan(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "setData")]
+OUTPUTS = [("Matching Data", Orange.data.Table, Default),
+           ("Unmatched Data", Orange.data.Table, )]
+
+
 class OWSelectData(OWWidget):
     settingsList = ["updateOnChange", "purgeAttributes", "purgeClasses"]
-    contextHandlers = {"": PerfectDomainContextHandler(fields = ["Conditions"], matchValues=2)}
+    contextHandlers = {"": PerfectDomainContextHandler(fields=["Conditions"],
+                                                       matchValues=2)}
 
-    def __init__(self, parent = None, signalManager = None, name = "Select data"):
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)  #initialize base class
+    def __init__(self, parent=None, signalManager=None, name="Select data"):
+        OWWidget.__init__(self, parent, signalManager, name, wantMainArea=0)
 
         self.inputs = [("Data", ExampleTable, self.setData)]
-        self.outputs = [("Matching Data", ExampleTable, Default), ("Unmatched Data", ExampleTable)]
+        self.outputs = [("Matching Data", ExampleTable, Default),
+                        ("Unmatched Data", ExampleTable)]
 
         self.name2var = {}   # key: variable name, item: orange.Variable
         self.Conditions = []

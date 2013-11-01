@@ -1,13 +1,19 @@
-"""
-<name>Merge Data</name>
-<description>Merge datasets based on values of selected attributes.</description>
-<icon>icons/MergeData.svg</icon>
-<priority>1110</priority>
-<contact>Peter Juvan (peter.juvan@fri.uni-lj.si)</contact>
-"""
 import orange
 from OWWidget import *
 import OWGUI
+
+NAME = "Merge Data"
+DESCRIPTION = """Merges data sets based on values of selected attributes."""
+LONG_DESCRIPTION = ""
+ICON = "icons/MergeData.svg"
+PRIORITY = 1110
+AUTHOR = "Peter Juvan"
+AUTHOR_EMAIL = "peter.juvan(@at@)fri.uni-lj.si"
+INPUTS = [("Data A", Orange.data.Table, "onDataAInput"),
+          ("Data B", Orange.data.Table, "onDataBInput")]
+OUTPUTS = [("Merged Data A+B", Orange.data.Table, ),
+           ("Merged Data B+A", Orange.data.Table, )]
+
 
 class OWMergeData(OWWidget):
 

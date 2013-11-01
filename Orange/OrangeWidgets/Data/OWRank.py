@@ -1,24 +1,22 @@
-"""
-<name>Rank</name>
-<description>Ranks and filters attributes by their relevance.</description>
-<icon>icons/Rank.svg</icon>
-<contact>Janez Demsar (janez.demsar(@at@)fri.uni-lj.si)</contact>
-<priority>1102</priority>
-"""
-
+import OWGUI
+import Orange
+import pkg_resources
 from collections import namedtuple
 from functools import partial
-
-import pkg_resources
-
 from OWWidget import *
-
-import OWGUI
-
-import Orange
 from Orange.feature import scoring
 from Orange.classification import svm
 from Orange.ensemble import forest
+
+NAME = "Rank"
+DESCRIPTION = "Ranks and filters data features by their relevance."
+LONG_DESCRIPTION = ""
+ICON = "icons/Rank.svg"
+PRIORITY = 1102
+AUTHOR = "Janez Demsar"
+AUTHOR_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "setData")]
+OUTPUTS = [("Reduced Data", Orange.data.Table, Default + Single)]
 
 
 def is_discrete(var):

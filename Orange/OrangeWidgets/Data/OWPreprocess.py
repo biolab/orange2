@@ -1,10 +1,3 @@
-"""<name>Preprocess</name>
-<description>Construct and apply data preprocessors</description>
-<icon>icons/Preprocess.svg</icon>
-<priority>2105</priority>
-<contact>Ales Erjavec (ales.erjavec(@at@)fri.uni-lj.si)</contact>
-"""
-
 from OWWidget import *
 from OWItemModels import PyListModel, ListSingleSelectionModel, ModelActionsWidget
 import OWGUI, OWGUIEx
@@ -13,10 +6,22 @@ import orange
 import orngWrap
 import orngSVM
 
-import sys, os
-import math
+import sys
 
 from Orange.data import preprocess
+
+NAME = "Preprocess"
+DESCRIPTION = """Supports construction of data preprocessors.
+Can apply them on input data sets or offer them to predictors."""
+LONG_DESCRIPTION = ""
+ICON = "icons/Preprocess.svg"
+PRIORITY = 2105
+AUTHOR = "Ales Erjavec"
+AUTHOR_EMAIL = "ales.erjavec(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "setData")]
+OUTPUTS = [("Preprocess", orngWrap.PreprocessedLearner, ),
+           ("Preprocessed Data", Orange.data.Table, )]
+
 
 def _gettype(obj):
     """ Return type of obj. If obj is type return obj.
@@ -25,7 +30,8 @@ def _gettype(obj):
         return obj
     else:
         return type(obj)
-        
+
+
 def _pyqtProperty(type, **kwargs):
     # check for Qt version, 4.4 supports only C++ classes 
     if qVersion() >= "4.5":
@@ -34,6 +40,7 @@ def _pyqtProperty(type, **kwargs):
         if "user" in kwargs:
             del kwargs["user"]
         return property(**kwargs)
+
 
 ## Preprocessor item editor widgets
 class BaseEditor(OWBaseWidget):
@@ -469,8 +476,9 @@ class OWPreprocess(OWWidget):
     def __init__(self, parent=None, signalManager=None, name="Preprocess"):
         OWWidget.__init__(self, parent, signalManager, name)
         
-        self.inputs = [("Data", ExampleTable, self.setData)] #, ("Learner", orange.Learner, self.setLearner)]
-        self.outputs = [("Preprocess", orngWrap.PreprocessedLearner), ("Preprocessed Data", ExampleTable)] #, ("Preprocessor", orange.Preprocessor)]
+        self.inputs = [("Data", Orange.data.Table, self.setData)]
+        self.outputs = [("Preprocess", orngWrap.PreprocessedLearner),
+                        ("Preprocessed Data", Orange.data.Table)]
         
         self.autoCommit = False
         self.changedFlag = False

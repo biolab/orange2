@@ -1,12 +1,17 @@
-"""
-<name>Impute</name>
-<description>Imputes unknown values.</description>
-<icon>icons/Impute.svg</icon>
-<priority>2130</priority>
-<contact>Janez Demsar</contact>
-"""
 import OWGUI
 from OWWidget import *
+
+NAME = "Impute"
+DESCRIPTION = "Imputes missing values in the data table."
+LONG_DESCRIPTION = ""
+ICON = "icons/Impute.svg"
+PRIORITY = 2130
+AUTHOR = "Janez Demsar"
+AUTHOR_EMAIL = "janez.demsar(@at@)fri.uni-lj.si"
+INPUTS = [("Data", Orange.data.Table, "setData"),
+          ("Learner for Imputation", orange.Learner, "setModel")]
+OUTPUTS = [("Data", Orange.data.Table, ),
+           ("Imputer", orange.ImputerConstructor, )]
 
 
 class ImputeListItemDelegate(QItemDelegate):
@@ -48,8 +53,10 @@ class OWImpute(OWWidget):
     def __init__(self,parent=None, signalManager = None, name = "Impute"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea = 0)
 
-        self.inputs = [("Data", ExampleTable, self.setData, Default), ("Learner for Imputation", orange.Learner, self.setModel)]
-        self.outputs = [("Data", ExampleTable), ("Imputer", orange.ImputerConstructor)]
+        self.inputs = [("Data", ExampleTable, self.setData, Default),
+                       ("Learner for Imputation", orange.Learner, self.setModel)]
+        self.outputs = [("Data", ExampleTable),
+                        ("Imputer", orange.ImputerConstructor)]
 
         self.attrIcons = self.createAttributeIconDict()
 
