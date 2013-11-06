@@ -1,17 +1,21 @@
-#define USE_TR1 1
 
-#if USE_TR1
-    #if _MSC_VER
-        #define HAVE_TR1_DIR 0
-    #else
-        #define HAVE_TR1_DIR 1
-    #endif
-    // Diffrent includes required
-    #if HAVE_TR1_DIR
-        #include <tr1/unordered_map>
-    #else
-        #include <unordered_map>
-    #endif
+#include <ciso646>
+#if defined(_LIBCPP_VERSION) || __cplusplus >= 201103L
+    // C++11 support or using libc++
+    #define HAVE_STD_UNORDERED_MAP
+#elif _MSC_VER
+    // At least on supported versions of MSVC (>= 2008)  we have
+    // std::unordered_map
+    #define HAVE_STD_UNORDERED_MAP
+#endif
+
+#ifdef HAVE_STD_UNORDERED_MAP
+    #include <unordered_map>
+    #define _HCLUST_UNORDERED_MAP std::unordered_map
+#else
+    // include and use from tr1 namespace
+    #include <tr1/unordered_map>
+    #define _HCLUST_UNORDERED_MAP std::tr1::unordered_map
 #endif
 
 
@@ -655,13 +659,10 @@ ordering_element::ordering_element(const ordering_element & other):
 {}
 
 
-#if USE_TR1
-	typedef std::tr1::unordered_map<m_element, double, m_element_hash> join_scores;
-	typedef std::tr1::unordered_map<m_element, ordering_element, m_element_hash> cluster_ordering;
-#else
-	typedef std::map<m_element, double> join_scores;
-	typedef std::map<m_element, ordering_element> cluster_ordering;
-#endif
+
+typedef _HCLUST_UNORDERED_MAP<m_element, double, m_element_hash> join_scores;
+typedef _HCLUST_UNORDERED_MAP<m_element, ordering_element, m_element_hash> cluster_ordering;
+
 
 // Return the minimum distance between elements in matrix
 //
