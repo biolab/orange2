@@ -2,16 +2,11 @@
 #include <ciso646>
 #if defined(_LIBCPP_VERSION) || __cplusplus >= 201103L
     // C++11 support or using libc++
-    #define HAVE_STD_UNORDERED_MAP
-#elif _MSC_VER
-    // At least on supported versions of MSVC (>= 2008)  we have
-    // std::unordered_map
-    #define HAVE_STD_UNORDERED_MAP
-#endif
-
-#ifdef HAVE_STD_UNORDERED_MAP
     #include <unordered_map>
     #define _HCLUST_UNORDERED_MAP std::unordered_map
+#elif _MSC_VER
+    #include <unordered_map>
+    #define _HCLUST_UNORDERED_MAP std::tr1::unordered_map
 #else
     // include and use from tr1 namespace
     #include <tr1/unordered_map>
