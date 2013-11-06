@@ -242,6 +242,7 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
 
         """     
         domain = table.domain
+        multitarget = False
         if x_vars is None and y_vars is None:
             # Response variables are defined in the table.
             x_vars = domain.features
@@ -249,12 +250,14 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
                 y_vars = [domain.class_var]
             elif domain.class_vars:
                 y_vars = domain.class_vars
+                multitarget = True
             else:
                 raise TypeError('Class-less domain (x-vars and y-vars needed).')
-            x_table = select_attrs(table, x_vars)
-            y_table = select_attrs(table, y_vars)
+
         elif not (x_vars and y_vars):
             raise ValueError("Both x_vars and y_vars must be defined.")
+        else:
+            multitarget = True
 
         x_table = select_attrs(table, x_vars)
         y_table = select_attrs(table, y_vars)
@@ -271,7 +274,6 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
         y_vars = list(y_table.domain.variables)
         
         domain = Orange.data.Domain(x_vars + y_vars, False)
-        multitarget = True if len(y_vars) > 1 else False
 
         x = x_table.to_numpy()[0]
         y = y_table.to_numpy()[0]
@@ -414,6 +416,11 @@ class PLSRegression(Orange.classification.Classifier):
                  mu_x=None, mu_y=None, x_vars=None, y_vars=None, **kwargs):
         self.domain = domain
         self.multitarget = multitarget
+        if multitarget and y_vars:
+            self.class_vars = y_vars
+        elif y_vars:
+            self.class_var = y_vars[0]
+
         self.coefs = coefs
         self.mu_x, self.mu_y = mu_x, mu_y
         self.sigma_x, self.sigma_y = sigma_x, sigma_y
