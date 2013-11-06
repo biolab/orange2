@@ -147,8 +147,8 @@ class NeuralNetworkLearner(Orange.classification.Learner):
     :param normalize: Normalize the data prior to learning (subtract each column by the mean and divide by the standard deviation)
     :type normalize: bool
 
-    :rtype: :class:`Orange.multitarget.neural.neuralNetworkLearner` or 
-            :class:`Orange.multitarget.chain.NeuralNetworkClassifier`
+    :rtype: :class:`~NeuralNetworkLearner` or
+            :class:`~NeuralNetworkClassifier`
     """
 
     def __new__(cls, data=None, weight = 0, **kwargs):
@@ -160,10 +160,8 @@ class NeuralNetworkLearner(Orange.classification.Learner):
             self.__init__(**kwargs)
             return self(data,weight)
 
-    def __init__(self, name="NeuralNetwork", n_mid=10, reg_fact=1, max_iter=300, normalize=True, rand=None):
-        """
-        Current default values are the same as in the original implementation (neural_networks.py)
-        """
+    def __init__(self, name="NeuralNetwork", n_mid=10, reg_fact=1,
+                 max_iter=300, normalize=True, rand=None):
         self.name = name
         self.n_mid = n_mid
         self.reg_fact = reg_fact
@@ -180,19 +178,16 @@ class NeuralNetworkLearner(Orange.classification.Learner):
         Learn from the given table of data instances.
         
         :param instances: data for learning.
-        :type instances: class:`Orange.data.Table`
+        :type instances: :class:`Orange.data.Table`
 
         :param weight: weight.
         :type weight: int
 
-        :param class_order: list of descriptors of class variables
-        :type class_order: list of :class:`Orange.feature.Descriptor`
-
-        :rtype: :class:`Orange.multitarget.chain.NeuralNetworkClassifier`
+        :rtype: :class:`~NeuralNetworkClassifier`
         """
 
         #converts attribute data
-        X = data.to_numpy()[0] 
+        X = data.to_numpy()[0]
 
         mean = X.mean(axis=0)
         std = X.std(axis=0)
@@ -200,13 +195,9 @@ class NeuralNetworkLearner(Orange.classification.Learner):
             X = (X - mean) / std
 
         #converts multi-target or single-target classes to numpy
-        if data.domain.class_vars:
-            for cv in data.domain.class_vars:
-                if cv.var_type == Orange.feature.Continuous:
-                    raise ValueError("non-discrete classes not supported")
-        else:
-            if data.domain.class_var.var_type == Orange.feature.Continuous:
-                raise ValueError("non-discrete classes not supported")
+        if any(isinstance(var, Orange.feature.Continuous)
+               for var in (data.domain.class_vars or [data.domain.class_var])):
+            raise ValueError("non-discrete classes not supported")
 
         if data.domain.class_vars:
             cvals = [len(cv.values) if len(cv.values) > 2 else 1 for cv in data.domain.class_vars]
@@ -228,28 +219,42 @@ class NeuralNetworkLearner(Orange.classification.Learner):
                 Y = y[:,np.newaxis]
        
         #initializes neural networks
-        self.nn =  _NeuralNetwork([len(X[0]), self.n_mid,len(Y[0])], lambda_=self.reg_fact, maxfun=self.max_iter, iprint=-1)
+        nn =  _NeuralNetwork([len(X[0]), self.n_mid,len(Y[0])], lambda_=self.reg_fact, maxfun=self.max_iter, iprint=-1)
         
-        self.nn.fit(X,Y)
+        nn.fit(X,Y)
                
-        return NeuralNetworkClassifier(classifier=self.nn.predict,
-            domain=data.domain, normalize=self.normalize, mean=mean, std=std)
+        return NeuralNetworkClassifier(domain=data.domain, nn=nn, normalize=self.normalize, mean=mean, std=std)
 
-class NeuralNetworkClassifier():
-    """    
-    Uses the classifier induced by the :obj:`NeuralNetworkLearner`.
-  
-    :param name: name of the classifier.
-    :type name: string
+
+class NeuralNetworkClassifier(Orange.classification.Classifier):
+    """
+    Classifier induced by the :obj:`NeuralNetworkLearner`.
     """
 
-    def __init__(self,**kwargs):
-        self.__dict__.update(**kwargs)
+    def __init__(self, domain, nn, normalize, mean, std, **kwargs):
+        self.domain = domain
+        if domain.class_vars:
+            self.class_vars = domain.class_vars
+            self.class_var = None
+        else:
+            self.class_var = domain.class_var
+        self.nn = nn
+        self.normalize = normalize
+        self.mean = mean
+        self.std = std
 
-    def __call__(self,example, result_type=Orange.core.GetValue):
+        for name, val in kwargs.items():
+            setattr(self, name, val)
+
+    def __reduce__(self):
+        return (type(self),
+                (self.domain, self.nn, self.normalize, self.mean, self.std),
+                dict(self.__dict__))
+
+    def __call__(self, example, result_type=Orange.core.GetValue):
         """
-        :param instance: instance to be classified.
-        :type instance: :class:`Orange.data.Instance`
+        :param example: instance to be classified.
+        :type example: :class:`Orange.data.Instance`
         
         :param result_type: :class:`Orange.classification.Classifier.GetValue` or \
               :class:`Orange.classification.Classifier.GetProbabilities` or
@@ -258,16 +263,17 @@ class NeuralNetworkClassifier():
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
-
+        example = Orange.data.Instance(self.domain, example)
         # transform example to numpy
-        if not self.domain.class_vars: example = [example[i] for i in range(len(example)-1)]
+        if not self.domain.class_vars:
+            example = [example[i] for i in range(len(example)-1)]
         input = np.array([[float(e) for e in example]])
 
         if self.normalize:
             input = (input - self.mean) / self.std
 
         # transform results from numpy
-        results = self.classifier(input).tolist()[0]
+        results = self.nn.predict(input).tolist()[0]
         if len(results) == 1:
             prob_positive = results[0]
             results = [1 - prob_positive, prob_positive]
@@ -288,11 +294,12 @@ class NeuralNetworkClassifier():
 
                 mt_prob.append(cprob)
                 mt_value.append(Orange.data.Value(self.domain.class_vars[cls], cprob.values().index(max(cprob))))
-                                 
-        else:
-            cprob = Orange.statistics.distribution.Discrete(results)
-            cprob.normalize()
 
+        else:
+            assert len(self.domain.class_var.values) == len(results)
+            cprob = Orange.statistics.distribution.Discrete(results)
+            cprob.variable = self.domain.class_var
+            cprob.normalize()
             mt_prob = cprob
             mt_value = Orange.data.Value(self.domain.class_var, cprob.values().index(max(cprob)))
 
