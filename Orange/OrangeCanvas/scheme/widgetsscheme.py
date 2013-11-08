@@ -630,9 +630,9 @@ class WidgetsSignalManager(SignalManager):
         source_node = sink_node = None
 
         if widgetFrom is not None:
-            source_node = scheme.node_for_widget[widgetFrom]
+            source_node = scheme.node_for_widget(widgetFrom)
         if widgetTo is not None:
-            sink_node = scheme.node_for_widget[widgetTo]
+            sink_node = scheme.node_for_widget(widgetTo)
 
         candidates = scheme.find_links(source_node=source_node,
                                        sink_node=sink_node)
