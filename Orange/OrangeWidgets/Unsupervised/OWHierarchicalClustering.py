@@ -895,6 +895,13 @@ class DendrogramScene(QGraphicsScene):
                 self.grid_widget.sizeHint(Qt.PreferredSize)
             )
 
+    def mousePressEvent(self, event):
+        QGraphicsScene.mousePressEvent(self, event)
+        if event.modifiers() == Qt.NoModifier:
+            pos = self.widget.mapFromScene(event.pos())
+            if not self.widget.contains(pos) and self.widget.selected_items:
+                self.widget.set_selected_clusters([])
+
     def _update_scene_rect(self):
         items_rect = reduce(QRectF.united,
                             [item.sceneBoundingRect()

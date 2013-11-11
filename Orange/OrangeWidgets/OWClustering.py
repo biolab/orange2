@@ -741,7 +741,12 @@ class DendrogramWidget(QGraphicsWidget):
         if event.type() == QEvent.LayoutRequest:
             self.emit(SIGNAL("dendrogramLayoutChanged()"))
         return ret
-    
+
+    def mousePressEvent(self, event):
+        QGraphicsWidget.mousePressEvent(self, event)
+        if event.modifiers() == Qt.NoModifier and self.selected_items:
+            self.set_selected_clusters([])
+
     if DEBUG:
         def paint(self, painter, options, widget=0):
             rect =  self.geometry()
