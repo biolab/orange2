@@ -222,6 +222,9 @@ def spin(widget, master, value, min, max, step=1,
 
     if checked:
         return wb, wa
+    elif b is widget:
+        wa.control = wa  # Backward compatibility
+        return wa
     else:
         return b
 
@@ -324,8 +327,8 @@ def doubleSpin(widget, master, value, min, max, step=1,
     if checked:
         return wb, wa
     else:
-        if b==widget:
-            wa.control = b.control # Backward compatibility
+        if b is widget:
+            wa.control = b.control  # Backward compatibility
             return wa
         else:
             return b
