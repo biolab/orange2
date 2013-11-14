@@ -49,12 +49,49 @@ class OWLogisticRegression(OWWidget):
 
         stepwiseCb = OWGUI.checkBox(box, self, "stepwiseLR", "Stepwise attribute selection")
         ibox = OWGUI.indentedBox(box, sep=OWGUI.checkButtonOffsetHint(stepwiseCb))
-        addCritSpin = OWGUI.spin(ibox, self, "addCrit", 1, 50, label="Add threshold [%]", labelWidth=155, tooltip="Requested significance for adding an attribute")
-        remCritSpin = OWGUI.spin(ibox, self, "removeCrit", 1, 50, label="Remove threshold [%]", labelWidth=155, tooltip="Requested significance for removing an attribute")
-        limitAttSpin = OWGUI.checkWithSpin(ibox, self, "Limit number of attributes to ", 1, 100, "limitNumAttr", "numAttr", step=1, labelWidth=155, tooltip="Maximum number of attributes. Algorithm stops when it selects specified number of attributes.")
-        stepwiseCb.disables += [addCritSpin, remCritSpin, limitAttSpin]
+        form = QFormLayout(
+            spacing=8, fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow,
+            labelAlignment=Qt.AlignLeft, formAlignment=Qt.AlignLeft
+        )
+        ibox.layout().addLayout(form)
+
+        addCritSpin = OWGUI.spin(
+            ibox, self, "addCrit", 1, 50,
+            tooltip="Requested significance for adding an attribute"
+        )
+
+        addCritSpin.setSuffix(" %")
+
+        form.addRow("Add threshold", addCritSpin)
+
+        remCritSpin = OWGUI.spin(
+            ibox, self, "removeCrit", 1, 50,
+            tooltip="Requested significance for removing an attribute"
+        )
+        remCritSpin.setSuffix(" %")
+
+        form.addRow("Remove threshold", remCritSpin)
+
+        # Need to wrap the check box in a layout to force vertical centering
+        limitBox = OWGUI.widgetBox(ibox, "")
+        limitCb = OWGUI.checkBox(
+            limitBox, self, "limitNumAttr", "Limit number of attributes to",
+        )
+
+        limitAttSpin = OWGUI.spin(
+            ibox, self, "numAttr", 1, 100,
+            tooltip="Maximum number of attributes. Algorithm stops when it " +
+                    "selects specified number of attributes."
+        )
+
+        limitCb.disables += [limitAttSpin]
+        limitCb.makeConsistent()
+
+        form.addRow(limitBox, limitAttSpin)
+
+        stepwiseCb.disables += [ibox]
         stepwiseCb.makeConsistent()
-        
+
         OWGUI.separator(self.controlArea)
 
         self.imputationCombo = OWGUI.comboBox(self.controlArea, self, "imputation", box="Imputation of unknown values", items=self.imputationMethodsStr)

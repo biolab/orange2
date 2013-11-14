@@ -1,7 +1,7 @@
 """
 <name>Neural Network</name>
 <description>Neural network learner.</description>
-<priority>20<priority>
+<priority>20</priority>
 <icon>icons/NeuralNetwork.svg</icon>
 
 """
@@ -18,7 +18,7 @@ class OWNeuralNetwork(OWWidget):
     def __init__(self, parent=None, signalManager=None,
                  title="Neural Network"):
         OWWidget.__init__(self, parent, signalManager, title,
-                          wantMainArea=False)
+                          wantMainArea=False, resizingEnabled=False)
 
         self.inputs = [("Data", Orange.data.Table, self.set_data),
                        ("Preprocess", PreprocessedLearner,
@@ -39,28 +39,41 @@ class OWNeuralNetwork(OWWidget):
         box = OWGUI.widgetBox(self.controlArea, "Name", addSpace=True)
         OWGUI.lineEdit(box, self, "name")
 
-        box = OWGUI.widgetBox(self.controlArea, "Settings", addSpace=True)
-        OWGUI.spin(box, self, "n_mid", 2, 10000, 1,
-                   label="Hidden layer neurons",
-                   tooltip="Number of neurons in the hidden layer."
-                   )
+        box = OWGUI.widgetBox(self.controlArea, "Settings",
+                              addSpace=True)
 
-        OWGUI.doubleSpin(box, self, "reg_fact", 0.1, 10.0, 0.1,
-                         label="Regularization factor",
-                         )
+        form = QFormLayout(
+            spacing=8, formAlignment=Qt.AlignLeft, labelAlignment=Qt.AlignLeft,
+            fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow
+        )
+        box.layout().addLayout(form)
 
-        OWGUI.spin(box, self, "max_iter", 100, 10000, 1,
-                   label="Max iterations",
-                   tooltip="Maximal number of optimization iterations."
-                   )
+        form.addRow(
+            "Hidden layer neurons",
+            OWGUI.spin(box, self, "n_mid", 2, 10000, 1,
+                       tooltip="Number of neurons in the hidden layer.",
+                       addToLayout=False)
+        )
+
+        form.addRow(
+            "Regularization factor",
+            OWGUI.doubleSpin(box, self, "reg_fact", 0.1, 10.0, 0.1,
+                             addToLayout=False)
+        )
+
+        form.addRow(
+            "Max iterations",
+            OWGUI.spin(box, self, "max_iter", 100, 10000, 1,
+                       tooltip="Maximal number of optimization iterations.",
+                       addToLayout=False)
+        )
+
+        OWGUI.checkBox(box, self, 'normalize', 'Normalize the data')
 
         OWGUI.button(self.controlArea, self, "&Apply",
                      callback=self.apply,
                      tooltip="Create the learner and apply it on input data.",
-                     autoDefault=True
-                     )
-
-        OWGUI.checkBox(box, self, 'normalize', 'Normalize the data')
+                     autoDefault=True)
 
         self.data = None
         self.preprocessor = None

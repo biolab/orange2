@@ -25,7 +25,8 @@ class OWEnsemble(OWWidget):
                ("Bagging", orngEnsemble.BaggedLearner)]
     
     def __init__(self, parent=None, signalManager=None, name="Ensemble"):
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
+        OWWidget.__init__(self, parent, signalManager, name,
+                          wantMainArea=False, resizingEnabled=False)
         
         self.inputs = [("Learner", orange.Learner, self.setLearner), ("Data", ExampleTable, self.setData)]
         self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier)]

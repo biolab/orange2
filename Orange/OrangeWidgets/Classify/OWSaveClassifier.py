@@ -14,7 +14,8 @@ import sys, os
 class OWSaveClassifier(OWWidget):
     settingsList = ["lastSaveFile", "filenameHistory"]
     def __init__(self, parent=None, signalManager=None, name="Save Classifier"):
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
+        OWWidget.__init__(self, parent, signalManager, name,
+                          wantMainArea=False, resizingEnabled=False)
         
         self.inputs = [("Classifier", orange.Classifier, self.setClassifier)]
         
@@ -35,7 +36,8 @@ class OWSaveClassifier(OWWidget):
                                          items=[os.path.basename(f) for f in self.filenameHistory],
                                          tooltip="Select a recently saved file",
                                          callback=self.onRecentSelection)
-        
+        self.filesCombo.setMinimumWidth(200)
+
         self.browseButton = OWGUI.button(box, self, "...",
                                          tooltip="Browse local file system",
                                          callback=self.browse)

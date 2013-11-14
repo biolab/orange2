@@ -64,7 +64,8 @@ class OWCN2(OWWidget):
                   "MinCoverage", "BeamWidth", "Alpha", "Weight", "stepAlpha"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):
-        OWWidget.__init__(self,parent,signalManager,"CN2", wantMainArea = 0, resizingEnabled = 0)
+        OWWidget.__init__(self, parent, signalManager,"CN2",
+                          wantMainArea=False, resizingEnabled=False)
 
         self.inputs = [("Data", ExampleTable, self.dataset), ("Preprocess", PreprocessedLearner, self.setPreprocessor)]
         self.outputs = [("Learner", orange.Learner),("Classifier",orange.Classifier),("Unordered CN2 Classifier", orngCN2.CN2UnorderedClassifier)]
@@ -103,18 +104,9 @@ class OWCN2(OWWidget):
         self.coveringAlgBG = OWGUI.widgetBox(self.controlArea, "Covering algorithm")
         self.coveringAlgBG.buttons = []
 
-        """
-        self.ruleQualityBG=OWGUI.radioButtonsInBox(self.ruleQualityGroup, self, "QualityButton",
-                            btnLabels=["Laplace","m-estimate","WRACC"],
-                            box="Rule quality", callback=self.qualityButtonPressed,
-                            tooltips=["Laplace rule evaluator", "m-estimate rule evaluator",
-                            "WRACC rule evaluator"])
-        self.mSpin=Spin=OWGUI.spin(self.ruleQualityGroup, self, "m", 0, 100, label="m",
-                orientation="horizontal", labelWidth=labelWidth-100, tooltip="m value for m estimate rule evaluator")
-        """
-
-        b1 = QRadioButton("Laplace", self.ruleQualityBG); self.ruleQualityBG.layout().addWidget(b1)
-        g = OWGUI.widgetBox(self.ruleQualityBG, orientation = "horizontal");
+        b1 = QRadioButton("Laplace", self.ruleQualityBG)
+        self.ruleQualityBG.layout().addWidget(b1)
+        g = OWGUI.widgetBox(self.ruleQualityBG, orientation="horizontal")
         b2 = QRadioButton("m-estimate", g)
         g.layout().addWidget(b2)
         self.mSpin = OWGUI.doubleSpin(g,self,"m",0,100)
@@ -127,32 +119,53 @@ class OWCN2(OWWidget):
         for i, button in enumerate([b1, b2, b3, b4]):
             self.connect(button, SIGNAL("clicked()"), lambda v=i: self.qualityButtonPressed(v))
 
-        OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.001, label="Alpha (vs. default rule)",
-                orientation="horizontal", labelWidth=labelWidth,
-                tooltip="Required significance of the difference between the class distribution on all example and covered examples")
-        OWGUI.doubleSpin(self.ruleValidationGroup, self, "stepAlpha", 0, 1,0.001, label="Stopping Alpha (vs. parent rule)",
-                orientation="horizontal", labelWidth=labelWidth,
-                tooltip="Required significance of each specialization of a rule.")
-        OWGUI.spin(self.ruleValidationGroup, self, "MinCoverage", 0, 100,label="Minimum coverage",
-                orientation="horizontal", labelWidth=labelWidth, tooltip=
-                "Minimum number of examples a rule must\ncover (use 0 for not setting the limit)")
-        OWGUI.checkWithSpin(self.ruleValidationGroup, self, "Maximal rule length", 0, 100, "useMaxRuleLength", "MaxRuleLength", labelWidth=labelWidth,
-                            tooltip="Maximal number of conditions in the left\npart of the rule (use 0 for don't care)")
+        form = QFormLayout(
+            labelAlignment=Qt.AlignLeft, formAlignment=Qt.AlignLeft,
+            fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow
+        )
 
-        """
-        self.coveringAlgBG=OWGUI.radioButtonsInBox(self.coveringAlgGroup, self, "CoveringButton",
-                            btnLabels=["Exclusive covering ","Weighted Covering"],
-                            tooltips=["Each example will only be used once\n for the construction of a rule",
-                                      "Examples can take part in the construction\n of many rules(CN2-SD Algorithm)"],
-                            box="Covering algorithm", callback=self.coveringAlgButtonPressed)
-        self.weightSpin=OWGUI.doubleSpin(self.coveringAlgGroup, self, "Weight",0, 0.95,0.05,label= "Weight",
-                orientation="horizontal", labelWidth=labelWidth, tooltip=
-                "Multiplication constant by which the weight of\nthe example will be reduced")
-        """
+        self.ruleValidationGroup.layout().addLayout(form)
 
-        B1 = QRadioButton("Exclusive covering", self.coveringAlgBG); self.coveringAlgBG.layout().addWidget(B1)
-        g = OWGUI.widgetBox(self.coveringAlgBG, orientation = "horizontal")
-        B2 = QRadioButton("Weighted covering", g); g.layout().addWidget(B2)
+        alpha_spin = OWGUI.doubleSpin(
+            self.ruleValidationGroup, self, "Alpha", 0, 1, 0.001,
+            tooltip="Required significance of the difference between the " +
+                    "class distribution on all examples and covered examples")
+
+        step_alpha_spin = OWGUI.doubleSpin(
+            self.ruleValidationGroup, self, "stepAlpha", 0, 1, 0.001,
+            tooltip="Required significance of each specialization of a rule.")
+
+        min_coverage_spin = OWGUI.spin(
+            self.ruleValidationGroup, self, "MinCoverage", 0, 100,
+            tooltip="Minimum number of examples a rule must cover " +
+                    "(use 0 for not setting the limit)")
+
+        min_coverage_spin.setSpecialValueText("Unlimited")
+
+        # Check box needs to be in alayout for the form layout to center it
+        # in the vertical direction.
+        max_rule_box = OWGUI.widgetBox(self.ruleValidationGroup, "")
+        max_rule_cb = OWGUI.checkBox(
+            max_rule_box, self, "useMaxRuleLength", "Maximal rule length")
+
+        max_rule_spin = OWGUI.spin(
+            self.ruleValidationGroup, self, "MaxRuleLength", 0, 100,
+            tooltip="Maximal number of conditions in the left\n" +
+                    "part of the rule (use 0 for don't care)")
+        max_rule_spin.setSpecialValueText("Unlimited")
+        max_rule_cb.disables += [max_rule_spin]
+        max_rule_cb.makeConsistent()
+
+        form.addRow("Alpha (vs. default rule)", alpha_spin)
+        form.addRow("Stopping Alpha (vs. parent rule)", step_alpha_spin)
+        form.addRow("Minimum coverage", min_coverage_spin)
+        form.addRow(max_rule_box, max_rule_spin)
+
+        B1 = QRadioButton("Exclusive covering", self.coveringAlgBG)
+        self.coveringAlgBG.layout().addWidget(B1)
+        g = OWGUI.widgetBox(self.coveringAlgBG, orientation="horizontal")
+        B2 = QRadioButton("Weighted covering", g)
+        g.layout().addWidget(B2)
         self.coveringAlgBG.buttons = [B1, B2]
         self.weightSpin=OWGUI.doubleSpin(g,self,"Weight",0,0.95,0.05)
 

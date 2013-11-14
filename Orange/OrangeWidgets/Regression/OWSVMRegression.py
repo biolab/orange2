@@ -20,7 +20,8 @@ class OWSVMRegression(OWSVM):
     settingsList = OWSVM.settingsList + ["C_epsilon", "C_nu"]
 
     def __init__(self, parent=None, signalManager=None, title="SVM Regression"):
-        OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
+        OWWidget.__init__(self, parent, signalManager, title,
+                          wantMainArea=False, resizingEnabled=False)
 
         self.inputs=[("Data", Orange.data.Table, self.setData), 
                      ("Preprocess", PreprocessedLearner, self.setPreprocessor)]

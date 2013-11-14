@@ -19,7 +19,8 @@ class OWPLS(OWWidget):
     settingsList = ["name", "n_comp", "deflation_mode", "mode", "algorithm"]
     
     def __init__(self, parent=None, signalManager=None, title="PLS Regression"):
-        OWWidget.__init__(self, parent, signalManager, title, wantMainArea=False)
+        OWWidget.__init__(self, parent, signalManager, title,
+                          wantMainArea=False, resizingEnabled=False)
         
         self.inputs = [("Data", Orange.data.Table, self.set_data),
                        ("Preprocessor", PreprocessedLearner, self.set_preprocessor)]

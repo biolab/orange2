@@ -15,7 +15,8 @@ class OWLoadClassifier(OWWidget):
     settingsList = ["filenameHistory", "selectedFileIndex", "lastFile"]
     
     def __init__(self, parent=None, signalManager=None, name="Load Classifier"):
-        OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
+        OWWidget.__init__(self, parent, signalManager, name,
+                          wantMainArea=False, resizingEnabled=False)
         
         self.outputs = [("Classifier", orange.Classifier, Dynamic)]
         
@@ -36,7 +37,8 @@ class OWLoadClassifier(OWWidget):
                                          items = [os.path.basename(p) for p in self.filenameHistory],
                                          tooltip="Select a recent file", 
                                          callback=self.onRecentSelection)
-        
+        self.filesCombo.setMinimumWidth(200)
+
         self.browseButton = OWGUI.button(box, self, "...", callback=self.browse,
                                          tooltip = "Browse file system")
 
