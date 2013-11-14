@@ -184,8 +184,12 @@ class CanvasMainWindow(QMainWindow):
         self.last_scheme_dir = QDesktopServices.StandardLocation(
             QDesktopServices.DocumentsLocation
         )
+        try:
+            self.recent_schemes = config.recent_schemes()
+        except Exception:
+            log.error("Failed to load recent scheme list.", exc_info=True)
+            self.recent_schemes = []
 
-        self.recent_schemes = config.recent_schemes()
         self.num_recent_schemes = 15
 
         self.open_in_external_browser = False
