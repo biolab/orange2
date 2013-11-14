@@ -18,7 +18,8 @@ class OWConcatenate(OWWidget):
     settingsList = ["mergeAttributes", "dataSourceSelected", "addIdAs", "dataSourceName"]
     
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Concatenate", wantMainArea=0)
+        OWWidget.__init__(self, parent, signalManager, "Concatenate",
+                          wantMainArea=False, resizingEnabled=False)
         self.inputs = [("Primary Data", orange.ExampleTable, self.setData),
                        ("Additional Data", orange.ExampleTable, self.setMoreData, Multiple)]
         self.outputs = [("Data", ExampleTable)]
@@ -37,18 +38,29 @@ class OWConcatenate(OWWidget):
         OWGUI.widgetLabel(bg, "When there is no primary table, the domain should be")
         OWGUI.appendRadioButton(bg, self, "mergeAttributes", "Union of attributes appearing in all tables")
         OWGUI.appendRadioButton(bg, self, "mergeAttributes", "Intersection of attributes in all tables")
-        OWGUI.widgetLabel(bg, "The resulting table will have class only if there is no conflict between input classes.")
+        bg.layout().addSpacing(6)
+        label = OWGUI.widgetLabel(bg, "The resulting table will have class only if there is no conflict between input classes.")
+        label.setWordWrap(True)
 
         OWGUI.separator(self.controlArea)
         box = OWGUI.widgetBox(self.controlArea, "Data source IDs", addSpace=True)
         cb = OWGUI.checkBox(box, self, "dataSourceSelected", "Append data source IDs")
         self.classificationBox = ib = OWGUI.indentedBox(box, sep=OWGUI.checkButtonOffsetHint(cb))
-        le = OWGUI.lineEdit(ib, self, "dataSourceName", "Name" + "  ", orientation='horizontal', valueType = str)
-        OWGUI.separator(ib, height = 4)
-        aa = OWGUI.comboBox(ib, self, "addIdAs", label = "Place" + "  ", orientation = 'horizontal', items = ["Class attribute", "Attribute", "Meta attribute"])
+
+        form = QFormLayout(
+            spacing=8, labelAlignment=Qt.AlignLeft, formAlignment=Qt.AlignLeft,
+            fieldGrowthPolicy=QFormLayout.AllNonFixedFieldsGrow
+        )
+        ib.layout().addLayout(form)
+
+        form.addRow("Name",
+                    OWGUI.lineEdit(ib, self, "dataSourceName", valueType=str))
+
+        aa = OWGUI.comboBox(ib, self, "addIdAs", items=["Class attribute", "Attribute", "Meta attribute"])
         cb.disables.append(ib)
         cb.makeConsistent()
-        
+        form.addRow("Place", aa)
+
         OWGUI.button(self.controlArea, self, "Apply Changes", callback = self.apply, default=True)
         
         OWGUI.rubber(self.controlArea)
@@ -190,7 +202,8 @@ class OWConcatenate(OWWidget):
         if not self.additional:
             self.reportData(None, "Additional table")
         self.reportData(self.dataReport, "Merged data")
-        
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     w = OWConcatenate()
