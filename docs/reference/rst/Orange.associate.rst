@@ -32,7 +32,7 @@ The code reports on support and confidence first five rules found::
      0.4  1.0  Cola Milk -> Diapers
 
 In Apriori, association rule induction is two-stage algorithm first finds itemsets that frequently appear in
-the data and have sufficient support, and then splits them to rules of sufficient confidence. Function `getItemsets`
+the data and have sufficient support, and then splits them to rules of sufficient confidence. Function `get_itemsets`
 reports on itemsets alone and skips rule induction:
 
 .. literalinclude:: code/associate-frequent-itemsets.py
