@@ -94,22 +94,24 @@ class OWSelectData(OWWidget):
         self.cbNot = OWGUI.checkBox(boxOper, self, "NegateCondition", "Negate")
 
         self.boxIndices = {}
-        self.valuesStack = QStackedWidget(self)
-        glac.addWidget(self.valuesStack, 0, 2)
+        boxValues = OWGUI.widgetBox(self, "Values", addToLayout=0)
+        self.valuesStack = QStackedWidget()
+        boxValues.layout().addWidget(self.valuesStack)
+        glac.addWidget(boxValues, 0, 2)
 
         # values 0: empty
-        boxVal = OWGUI.widgetBox(self, "Values", addToLayout = 0)
+        boxVal = OWGUI.widgetBox(self.valuesStack, addToLayout = 0)
         self.boxIndices[0] = boxVal
         self.valuesStack.addWidget(boxVal)
 
         # values 1: discrete
-        boxVal = OWGUI.widgetBox(self, "Values", addToLayout = 0)
+        boxVal = OWGUI.widgetBox(self.valuesStack, addToLayout = 0)
         self.boxIndices[orange.VarTypes.Discrete] = boxVal
         self.valuesStack.addWidget(boxVal)
         self.lbVals = OWGUI.listBox(boxVal, self, callback = self.lbValsChange)
 
         # values 2: continuous between num and num
-        boxVal = OWGUI.widgetBox(self, "Values", addToLayout = 0)
+        boxVal = OWGUI.widgetBox(self.valuesStack, addToLayout = 0)
         self.boxIndices[orange.VarTypes.Continuous] = boxVal
         self.valuesStack.addWidget(boxVal)
         self.leNum1 = OWGUI.lineEdit(boxVal, self, "Num1", validator=QDoubleValidator(self))
@@ -123,7 +125,7 @@ class OWSelectData(OWWidget):
         OWGUI.rubber(boxAttrStat)
 
         # values 6: string between str and str
-        boxVal = OWGUI.widgetBox(self, "Values", addToLayout = 0)
+        boxVal = OWGUI.widgetBox(self.valuesStack, addToLayout=0)
         self.boxIndices[orange.VarTypes.String] = boxVal
         self.valuesStack.addWidget(boxVal)
         self.leStr1 = OWGUI.lineEdit(boxVal, self, "Str1")
@@ -901,9 +903,8 @@ class Operator:
 
 if __name__=="__main__":
     import sys
-    #data = orange.ExampleTable('dicty_800_genes_from_table07.tab')
-    data = orange.ExampleTable('../../doc/datasets/adult_sample.tab')
-#    data = orange.ExampleTable(r"E:\Development\Orange Datasets\UCI\iris.tab")
+
+    data = orange.ExampleTable('brown-selected.tab')
     # add meta attribute
     #data.domain.addmeta(orange.newmetaid(), orange.StringVariable("workclass_name"))
 
