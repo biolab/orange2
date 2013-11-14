@@ -149,10 +149,9 @@ class OWCN2(OWWidget):
             max_rule_box, self, "useMaxRuleLength", "Maximal rule length")
 
         max_rule_spin = OWGUI.spin(
-            self.ruleValidationGroup, self, "MaxRuleLength", 0, 100,
-            tooltip="Maximal number of conditions in the left\n" +
-                    "part of the rule (use 0 for don't care)")
-        max_rule_spin.setSpecialValueText("Unlimited")
+            self.ruleValidationGroup, self, "MaxRuleLength", 1, 100,
+            tooltip="Maximal number of conditions in the left " +
+                    "part of the rule")
         max_rule_cb.disables += [max_rule_spin]
         max_rule_cb.makeConsistent()
 
