@@ -500,44 +500,55 @@ class OWParallelGraph(OWPlot, orngScaleData):
         return (selected, unselected)
 
 
-
 # ####################################################################
 # a curve that is able to draw several series of lines
 class ParallelCoordinatesCurve(OWCurve):
-    def __init__(self, attrCount, yData, color, name = ""):
+    def __init__(self, n_attributes, y_values, color, name=""):
         OWCurve.__init__(self, tooltip=name)
-	self._item = QGraphicsPathItem(self)
+        self._item = QGraphicsPathItem(self)
+        self.path = QPainterPath()
         self.fitted = False
+
+        self.n_attributes = n_attributes
+        self.n_rows = int(len(y_values) / n_attributes)
+
         self.set_style(OWCurve.Lines)
-
-        lineCount = len(yData) / attrCount
-        self.attrCount = attrCount
-
-        if type(color) == tuple:
+        if isinstance(color,  tuple):
             self.set_pen(QPen(QColor(*color)))
         else:
             self.set_pen(QPen(QColor(color)))
-            
-	self.set_data(range(attrCount) * lineCount, yData)
+
+        x_values = list(range(n_attributes)) * self.n_rows
+        self.set_data(x_values, y_values)
 
     def update_properties(self):
-	if self.fitted:
-	    path = self.cubicPath()
-	else:
-	    path = QPainterPath()
-	    for x, y in self.data():
-		path.lineTo(x, y)
-        self._item.setPath(self.graph_transform().map(path))
+        self.redraw_path()
+
+    def redraw_path(self):
+        self.path = QPainterPath()
+        for segment in self.segment(self.data()):
+            if self.fitted:
+                self.draw_cubic_path(segment)
+            else:
+                self.draw_normal_path(segment)
+        self._item.setPath(self.graph_transform().map(self.path))
         self._item.setPen(self.pen())
-	
-    def cubicPath(self):
-        path = QPainterPath()
-        data = self.data()
-        for i in range(len(data) / self.attrCount):
-            segment = data[i*self.attrCount: (i + 1)*self.attrCount]
-            for i, p in enumerate(segment[:-1]):
-                x1, y1 = p
-                x2, y2 = segment[i + 1]
-                path.moveTo(x1, y1)
-                path.cubicTo(QPointF(x1 + 0.5, y1), QPointF(x2 - 0.5, y2), QPointF(x2, y2))
-        return path
+
+    def segment(self, data):
+        for i in range(self.n_rows):
+            yield data[i * self.n_attributes:(i + 1) * self.n_attributes]
+
+    def draw_cubic_path(self, segment):
+        for (x1, y1), (x2, y2) in zip(segment, segment[1:]):
+            self.path.moveTo(x1, y1)
+            self.path.cubicTo(QPointF(x1 + 0.5, y1),
+                              QPointF(x2 - 0.5, y2), QPointF(x2, y2))
+
+    def draw_normal_path(self, segment):
+        if not segment:
+            return
+
+        x, y = segment[0]
+        self.path.moveTo(x, y)
+        for x, y in segment[1:]:
+            self.path.lineTo(x, y)
