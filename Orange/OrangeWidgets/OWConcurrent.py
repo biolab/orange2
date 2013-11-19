@@ -319,8 +319,8 @@ class Future(object):
     def _set_state(self, state):
         if self._state != state:
             self._state = state
-            for w in self._watchers:
-                w(self, state)
+            for watcher in self._watchers:
+                watcher(self, state)
 
     def cancel(self):
         """
@@ -334,7 +334,7 @@ class Future(object):
             elif self._state == Future.Canceled:
                 return True
             else:
-                self._state = Future.Canceled
+                self._set_state(Future.Canceled)
                 self._condition.notify_all()
 
         return True
@@ -417,7 +417,7 @@ class Future(object):
         """
         with self._condition:
             self._result = result
-            self._state = Future.Finished
+            self._set_state(Future.Finished)
             self._condition.notify_all()
 
     def set_exception(self, exception):
@@ -428,7 +428,7 @@ class Future(object):
         """
         with self._condition:
             self._exception = exception
-            self._state = Future.Finished
+            self._set_state(Future.Finished)
             self._condition.notify_all()
 
     def set_running_or_notify_cancel(self):
@@ -436,7 +436,7 @@ class Future(object):
             if self._state == Future.Canceled:
                 return False
             elif self._state == Future.Pending:
-                self._state = Future.Running
+                self._set_state(Future.Running)
                 return True
             else:
                 raise Exception()
