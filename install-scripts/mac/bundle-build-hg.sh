@@ -40,6 +40,9 @@ SITE_PACKAGES=${APP}/Contents/Frameworks/Python.framework/Versions/${PY_VER}/lib
 # easy_install script in the bundle
 EASY_INSTALL=${APP}/Contents/MacOS/easy_install
 
+# pip script in the bundle
+PIP=${APP}/Contents/MacOS/pip
+
 DISTRIBUTE_VERSION="0.6.49"
 echo "Updating distribute to $DISTRIBUTE_VERSION"
 $EASY_INSTALL -U distribute==$DISTRIBUTE_VERSION
@@ -134,7 +137,7 @@ $EASY_INSTALL slumber
 
 echo "Installing PIL"
 echo "++++++++++++++"
-$EASY_INSTALL PIL
+$PIP install PIL
 
 
 echo "Removing unnecessary files."
