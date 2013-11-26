@@ -68,6 +68,7 @@ cat <<-'EOF' > $APP/Contents/MacOS/ENV
 
 	export PYTHONEXECUTABLE
 	export PYTHONHOME
+	export PYTHONNOUSERSITE=1
 
 	export DYLD_FRAMEWORK_PATH
 
@@ -130,6 +131,11 @@ echo "==================================="
 echo "Instaling slumber library"
 echo "+++++++++++++++++++++++++"
 $EASY_INSTALL slumber
+
+echo "Installing PIL"
+echo "++++++++++++++"
+$EASY_INSTALL PIL
+
 
 echo "Removing unnecessary files."
 find $TMP_BUNDLE_DIR \( -name '*~' -or -name '*.bak' -or -name '*.pyc' -or -name '*.pyo' -or -name '*.pyd' \) -exec rm -rf {} ';'

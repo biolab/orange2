@@ -132,6 +132,7 @@ function create_template {
 
 		export PYTHONEXECUTABLE
 		export PYTHONHOME
+		export PYTHONNOUSERSITE=1
 
 		export DYLD_FRAMEWORK_PATH
 
