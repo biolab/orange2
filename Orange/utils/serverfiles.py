@@ -119,6 +119,9 @@ timeout = 120
 import urllib
 import urllib2
 import base64
+import functools
+
+from contextlib import contextmanager
 
 from Orange.utils import ConsoleProgressBar
 import time, threading
@@ -434,8 +437,88 @@ class ServerFiles(object):
             data["access_code"] = self.access_code
         return data
 
-def download(domain, filename, serverfiles=None, callback=None, 
-    extract=True, verbose=True):
+
+def _keyed_lock(lock_constructor=threading.Lock):
+    lock = threading.Lock()
+    locks = {}
+
+    def get_lock(key):
+        with lock:
+            if key not in locks:
+                locks[key] = lock_constructor()
+
+            return locks[key]
+    return get_lock
+
+
+class _Lock(object):
+    """
+    Like :class:`threading.Lock` but raises an error on reentrant acquire.
+    """
+    def __init__(self):
+        self.__lock = threading.RLock()
+        self.__locking_thread = None
+
+    def acquire(self, blocking=True):
+        if self.__lock.acquire(blocking):
+            if self.__locking_thread is None:
+                self.__locking_thread = threading.current_thread()
+            else:
+                assert self.__locking_thread == threading.current_thread()
+                self.__lock.release()
+                raise Exception("Recursive lock acquire!")
+
+            return True
+        else:
+            return False
+
+    def release(self):
+        assert self.__locking_thread is not None
+        self.__locking_thread = None
+        self.__lock.release()
+
+    def locked(self):
+        return self.__lock.locked()
+
+    def __enter__(self):
+        self.acquire()
+
+    def __exit__(self, *arg):
+        self.release()
+
+# _get_lock = _keyed_lock(threading.RLock)
+_get_lock = _keyed_lock(_Lock)
+
+
+@contextmanager
+def _lock_file(domain, filename, blocking=False):
+    path = localpath(domain, filename)
+    path = os.path.normpath(os.path.realpath(path))
+#     log.debug("locking: %s", path)
+    lock = _get_lock(path)
+    if lock.acquire(blocking):
+#         log.debug("got lock on: %s", path)
+        try:
+            yield
+        finally:
+            lock.release()
+#             log.debug("Released lock on: %s",  path)
+    else:
+        raise Exception("Could not acquire lock")
+
+
+def _locked(f):
+    @functools.wraps(f)
+    def func(domain, filename, *args, **kwargs):
+        with _lock_file(domain, filename, blocking=True):
+            return f(domain, filename, *args, **kwargs)
+    func.unwraped = f
+    return func
+
+
+@_locked
+def download(domain, filename, serverfiles=None, callback=None,
+             extract=True, verbose=True):
     """Downloads file from the repository to local orange installation.
     To download files as an authenticated user you should also pass an
     instance of ServerFiles class. Callback can be a function without
@@ -478,6 +561,8 @@ def download(domain, filename, serverfiles=None, callback=None,
     if type(callback) == DownloadProgress:
         callback.finish()
 
+
+@_locked
 def localpath_download(domain, filename, **kwargs):
     """ 
     Return local path for the given domain and file. If file does not exist, 
@@ -485,7 +570,7 @@ def localpath_download(domain, filename, **kwargs):
     """
     pathname = localpath(domain, filename)
     if not os.path.exists(pathname):
-        download(domain, filename, **kwargs)
+        download.unwraped(domain, filename, **kwargs)
     return pathname
 
 def listfiles(domain):
@@ -509,6 +594,8 @@ def listfiles(domain):
 
     return okfiles
 
+
+@_locked
 def remove(domain, filename):
     """Remove a file from local repository."""
     filename = localpath(domain, filename)
