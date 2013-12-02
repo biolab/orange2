@@ -3,7 +3,7 @@
 Principal Component Analysis
 ============================
 
-.. image:: ../../../../Orange/OrangeWidgets/icons/Unknown.png
+.. image:: ../../../../Orange/OrangeWidgets/Unsupervised/icons/PCA.svg
     :alt: PCA
 
 Channels

@@ -3,7 +3,7 @@
 Survey Plot
 ===========
 
-.. image:: ../icons/SurveyPlot.png
+.. image:: ../../../../Orange/OrangeWidgets/Visualize/icons/SurveyPlot.svg
 
 Displays a Survey Plot.
 

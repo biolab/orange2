@@ -3,7 +3,7 @@
 Test Learners
 =============
 
-.. image:: ../icons/TestLearners.png
+.. image:: ../../../../Orange/OrangeWidgets/Evaluate/icons/TestLearners1.svg
 
 Tests learning algorithms on data.
 

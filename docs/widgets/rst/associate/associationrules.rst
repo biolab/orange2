@@ -3,7 +3,7 @@
 Association Rules
 =================
 
-.. image:: ../icons/AssociationRules.png
+.. image:: ../../../../Orange/OrangeWidgets/Associate/icons/AssociationRules.svg
 
 Construction of Association Rules
 

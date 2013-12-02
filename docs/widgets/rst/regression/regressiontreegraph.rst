@@ -3,7 +3,7 @@
 Regression Tree Viewer
 ======================
 
-.. image:: ../icons/RegressionTreeGraph.png
+.. image:: ../../../../Orange/OrangeWidgets/Regression/icons/RegressionTreeGraph.svg
 
 Regression Tree Graph
 

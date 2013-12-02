@@ -3,7 +3,7 @@
 Interactive Tree Builder
 ========================
 
-.. image:: ../icons/InteractiveTreeBuilder.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/InteractiveTreeBuilder.svg
 
 A widget for manual construction and/or editing of classification trees
 

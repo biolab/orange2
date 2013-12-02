@@ -3,7 +3,7 @@
 Random Forest
 =============
 
-.. image:: ../icons/RandomForest.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/RandomForest.svg
 
 Random forest learner
 

@@ -3,7 +3,7 @@
 Impute
 ======
 
-.. image:: ../icons/Impute.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/Impute.svg
 
 Replaces unknown values in the data.
 

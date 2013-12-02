@@ -650,3 +650,16 @@ img.image-float-left {
 .stamp-list li.list-item-10 {
 	list-style-image: url(./images/10.png)
 }
+
+table.widget-catalog-table td{
+    text-align: center;
+}
+
+table.widget-catalog-table td a img {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+table.widget-catalog-table td a,cite {
+    display: block;
+}

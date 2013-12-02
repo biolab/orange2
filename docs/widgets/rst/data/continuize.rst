@@ -3,7 +3,7 @@
 Continuize
 ==========
 
-.. image:: ../icons/Continuize.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/Continuize.svg
 
 Turns discrete attributes into continuous dummy variables.
 

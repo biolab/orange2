@@ -3,7 +3,7 @@
 Save
 ====
 
-.. image:: ../icons/Save.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/Save.svg
 
 Saves data to a file.
 

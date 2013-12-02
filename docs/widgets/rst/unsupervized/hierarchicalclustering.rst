@@ -3,7 +3,7 @@
 Hierarchical Clustering
 =======================
 
-.. image:: ../icons/HierarchicalClustering.png
+.. image:: ../../../../Orange/OrangeWidgets/Unsupervised/icons/HierarchicalClustering.svg
 
 Groups items using a hierarchical clustering algorithm.
 

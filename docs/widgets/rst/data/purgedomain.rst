@@ -3,7 +3,7 @@
 Purge Domain
 ============
 
-.. image:: ../icons/PurgeDomain.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/PurgeDomain.svg
 
 Removes the unused attribute values and useless attributes, sorts values of
 the remaining.

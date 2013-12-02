@@ -30,98 +30,82 @@ Data
       -
       -
 
-.. |File_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/File_48.png
-	:align: middle
+.. |File_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/File.svg
 	:alt: File
 	:width: 48
 	:height: 48
 
-.. |DataTable_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/DataTable_48.png
-	:align: middle
+.. |DataTable_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/DataTable.svg
 	:alt: Data Table
 	:width: 48
 	:height: 48
 	
-.. |SelectAttributes_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/SelectAttributes_48.png
-	:align: middle
+.. |SelectAttributes_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/SelectAttributes.svg
 	:alt: Select Attributes
 	:width: 48
 	:height: 48
 	
-.. |Rank_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Rank_48.png
-	:align: middle
+.. |Rank_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Rank.svg
 	:alt: Rank
 	:width: 48
 	:height: 48
 	
-.. |PurgeDomain_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/PurgeDomain_48.png
-	:align: middle
+.. |PurgeDomain_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/PurgeDomain.svg
 	:alt: Purge Domain
 	:width: 48
 	:height: 48
 	
-.. |MergeData_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/MergeData_48.png
-	:align: middle
+.. |MergeData_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/MergeData.svg
 	:alt: Merge Data
 	:width: 48
 	:height: 48
 
-.. |Concat_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Concatenate_48.png
-	:align: middle
+.. |Concat_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Concatenate.svg
 	:alt: Merge Data
 	:width: 48
 	:height: 48
 
-.. |DataSampler_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/DataSampler_48.png
-	:align: middle
+.. |DataSampler_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/DataSampler.svg
 	:alt: Merge Data
 	:width: 48
 	:height: 48
 
-.. |SelectData_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/SelectData_48.png
-	:align: middle
+.. |SelectData_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/SelectData.svg
 	:alt: Merge Data
 	:width: 48
 	:height: 48
 
-.. |Save_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Save_48.png
-	:align: middle
+.. |Save_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Save.svg
 	:alt: Merge Data
 	:width: 48
 	:height: 48
 
-.. |Discretize_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Discretize_48.png
-	:align: middle
+.. |Discretize_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Discretize.svg
 	:alt: Merge Data
 	:width: 48
 	:height: 48
 
-.. |Cont_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Continuize_48.png
-	:align: middle
+.. |Cont_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Continuize.svg
 	:alt: Merge Data
 	:width: 48
 	:height: 48
 	
-.. |Impute_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Impute_48.png
-	:align: middle
+.. |Impute_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Impute.svg
 	:alt: Merge Data
 	:width: 48
 	:height: 48
 	
-.. |Outliers_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Outliers_48.png
-	:align: middle
+.. |Outliers_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/Outliers.svg
 	:alt: Merge Data
 	:width: 48
 	:height: 48
 
-.. |EditDomain_icon| image:: ../../../Orange/OrangeWidgets/icons/Unknown.png
-   :align: middle
+.. |EditDomain_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/EditDomain.svg
    :alt: Edit Domain
    :width: 48
    :height: 48
 
-.. |PythonScript_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/PythonScript_48.png
-   :align: middle
+.. |PythonScript_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/PythonScript.svg
    :alt: Edit Domain
    :width: 48
    :height: 48
@@ -144,71 +128,60 @@ Visualize
       - |SurveyPlot_icon| :ref:`Survey Plot`
       - |MosaicDisplay_icon| :ref:`Mosaic Display`
     * - |SieveDiagram_icon| :ref:`Sieve Diagram`
-      - |SieveMultigram_icon| Sieve Multigram 
+      - |SieveMultigram_icon| `Sieve Multigram`
       -
 
-.. |Distributions_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/Distribution_48.png
-	:align: middle
+.. |Distributions_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/Distribution.svg
 	:alt: Distributions
 	:width: 48
 	:height: 48
 	
-.. |ScatterPlot_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/ScatterPlot_48.png
-	:align: middle
+.. |ScatterPlot_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/ScatterPlot.svg
 	:alt: Scatter Plot
 	:width: 48
 	:height: 48
 	
-.. |AttributeStatistics_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/AttributeStatistics_48.png
-	:align: middle
+.. |AttributeStatistics_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/AttributeStatistics.svg
 	:alt: AttributeStatistics
 	:width: 48
 	:height: 48
 	
-.. |LinearProjection_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/LinearProjection_48.png
-	:align: middle
+.. |LinearProjection_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/LinearProjection.svg
 	:alt: Linear Projection
 	:width: 48
 	:height: 48
 	
-.. |Radviz_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/Radviz_48.png
-	:align: middle
+.. |Radviz_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/Radviz.svg
 	:alt: Rad Viz
 	:width: 48
 	:height: 48
 	
-.. |Polyviz_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/Polyviz_48.png
-	:align: middle
+.. |Polyviz_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/Polyviz.svg
 	:alt: Poly Viz
 	:width: 48
 	:height: 48
 	
-.. |ParallelCoords_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/ParallelCoordinates_48.png
-	:align: middle
+.. |ParallelCoords_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/ParallelCoordinates.svg
 	:alt: Parallel Coordinates
 	:width: 48
 	:height: 48
-	
-.. |SurveyPlot_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/SurveyPlot_48.png
-	:align: middle
+
+.. |SurveyPlot_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/SurveyPlot.svg
 	:alt: Survey Plot
 	:width: 48
 	:height: 48
 	
-.. |MosaicDisplay_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/MosaicDisplay_48.png
-	:align: middle
+.. |MosaicDisplay_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/MosaicDisplay.svg
 	:alt: Mosaic Display
 	:width: 48
 	:height: 48
 	
-.. |SieveDiagram_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/SieveDiagram_48.png
-	:align: middle
+.. |SieveDiagram_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/SieveDiagram.svg
 	:alt: Sieve Diagram
 	:width: 48
 	:height: 48
 	
-.. |SieveMultigram_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/SieveMultigram_48.png
-	:align: middle
+.. |SieveMultigram_icon| image:: ../../../Orange/OrangeWidgets/Visualize/icons/SieveMultigram.svg
 	:alt: Sieve Multigram
 	:width: 48
 	:height: 48
@@ -237,86 +210,72 @@ Classify
       - |ITreeBuilder_icon| :ref:`Interactive Tree Builder`
       -
 
-.. |NaiveBayes_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/NaiveBayes_48.png
-    :align: middle
+.. |NaiveBayes_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/NaiveBayes.svg
     :alt: Naive Bayes
     :width: 48
     :height: 48
 
-.. |SVM_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/BasicSVM_48.png
-    :align: middle
+.. |SVM_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/SVM.svg
     :alt: Support Vector Machines
     :width: 48
     :height: 48
 
-.. |LogReg_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/LogisticRegression_48.png
-    :align: middle
+.. |LogReg_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/LogisticRegression.svg
     :alt: Logistic Regression
     :width: 48
     :height: 48
 
-.. |Majority_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/Majority_48.png
-    :align: middle
+.. |Majority_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/Majority.svg
     :alt: Majority
     :width: 48
     :height: 48
 
-.. |ClassificationTree_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/ClassificationTree_48.png
-    :align: middle
+.. |ClassificationTree_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/ClassificationTree.svg
     :alt: Classification Tree
     :width: 48
     :height: 48
 
-.. |ClassificationTreeGraph_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/ClassificationTreeGraph_48.png
-    :align: middle
+.. |ClassificationTreeGraph_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/ClassificationTreeGraph.svg
     :alt: Classification Tree Graph
     :width: 48
     :height: 48
 
-.. |ClsTreeViewer_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/ClassificationTreeViewer_48.png
-    :align: middle
+.. |ClsTreeViewer_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/ClassificationTreeViewer.svg
     :alt: Classification Tree Viewer
     :width: 48
     :height: 48
 
-.. |CN2Rules_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/CN2_48.png
-    :align: middle
+.. |CN2Rules_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/CN2.svg
     :alt: CN2 Rules
     :width: 48
     :height: 48
 
-.. |CN2RulesViewer_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/CN2RulesViewer_48.png
-    :align: middle
+.. |CN2RulesViewer_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/CN2RulesViewer.svg
     :alt: CN2 Rules Viewer
     :width: 48
     :height: 48
 
-.. |kNN_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/kNearestNeighbours_48.png
-    :align: middle
+.. |kNN_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/kNearestNeighbours.svg
     :alt: k-Nearest Neighbours
     :width: 48
     :height: 48
 
-.. |Nomogram_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/Nomogram_48.png
-    :align: middle
+.. |Nomogram_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/Nomogram.svg
     :alt: Nomogram
     :width: 48
     :height: 48
 
-.. |RandomForest_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/RandomForest_48.png
-    :align: middle
+.. |RandomForest_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/RandomForest.svg
     :alt: Random Forest
     :width: 48
     :height: 48
 
-.. |C4.5_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/C45_48.png
-    :align: middle
+.. |C4.5_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/C4.5.svg
     :alt: C4.5
     :width: 48
     :height: 48
 
-.. |ITreeBuilder_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/ITree_48.png
-    :align: middle
+.. |ITreeBuilder_icon| image:: ../../../Orange/OrangeWidgets/Classify/icons/InteractiveTreeBuilder.svg
     :alt: Interactive Tree Builder
     :width: 48
     :height: 48
@@ -331,43 +290,33 @@ Regression
     
     * - |Mean_icon| :ref:`Mean`
       - |LinearRegression_icon| :ref:`Linear Regression`
-      - |Earth_icon| :ref:`Earth`
-    * - |RegressionTree_icon| :ref:`Regression Tree`
-      - |RegressionTreeGraph_icon| :ref:`Regression Tree Graph`
+      - |RegressionTree_icon| :ref:`Regression Tree`
+    * - |RegressionTreeGraph_icon| :ref:`Regression Tree Graph`
       - |Pade_icon| :ref:`Pade`
+      -
 
-.. |Mean_icon| image:: ../../../Orange/OrangeWidgets/icons/Unknown.png
-    :align: middle
+
+.. |Mean_icon| image:: ../../../Orange/OrangeWidgets/Regression/icons/Mean.svg
     :alt: Mean
     :width: 48
     :height: 48
 
-.. |LinearRegression_icon| image:: ../../../Orange/OrangeWidgets/icons/Unknown.png
-    :align: middle
+.. |LinearRegression_icon| image:: ../../../Orange/OrangeWidgets//Regression/icons/LinearRegression.svg
     :alt: Linear Regression
     :width: 48
     :height: 48
 
-.. |Earth_icon| image:: ../../../Orange/OrangeWidgets/icons/Unknown.png
-    :align: middle
-    :alt: Earth
-    :width: 48
-    :height: 48
-
-.. |RegressionTree_icon| image:: ../../../Orange/OrangeWidgets/Regression/icons/RegressionTree.png
-    :align: middle
+.. |RegressionTree_icon| image:: ../../../Orange/OrangeWidgets/Regression/icons/RegressionTree.svg
     :alt: Regression Tree
     :width: 48
     :height: 48
 
-.. |RegressionTreeGraph_icon| image:: ../../../Orange/OrangeWidgets/Regression/icons/RegressionTreeGraph.png
-    :align: middle
+.. |RegressionTreeGraph_icon| image:: ../../../Orange/OrangeWidgets/Regression/icons/RegressionTreeGraph.svg
     :alt: Regression Tree Graph
     :width: 48
     :height: 48
 
-.. |Pade_icon| image:: ../../../Orange/OrangeWidgets/Regression/icons/Pade.png 
-    :align: middle
+.. |Pade_icon| image:: ../../../Orange/OrangeWidgets/Regression/icons/Pade.svg
     :alt: Pade
     :width: 48
     :height: 48
@@ -388,38 +337,32 @@ Evaluate
       - |Predictions_icon| :ref:`Predictions`
 
 
-.. |ConfusionMatrix_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/ConfusionMatrix_48.png 
-    :align: middle
+.. |ConfusionMatrix_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/ConfusionMatrix.svg
     :alt: Confusion Matrix
     :width: 48
     :height: 48
 
-.. |ROCAnalysis_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/ROCAnalysis_48.png 
-    :align: middle
+.. |ROCAnalysis_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/ROCAnalysis.svg
     :alt: Pade
     :width: 48
     :height: 48
 
-.. |LiftCurve_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/LiftCurve_48.png 
-    :align: middle
+.. |LiftCurve_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/LiftCurve.svg
     :alt: Lift Curve
     :width: 48
     :height: 48
 
-.. |CalibrationPlot_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/CalibrationPlot_48.png 
-    :align: middle
+.. |CalibrationPlot_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/CalibrationPlot.svg
     :alt: Calibration Plot
     :width: 48
     :height: 48
 
-.. |TestLearners_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/TestLearners_48.png 
-    :align: middle
+.. |TestLearners_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/TestLearners1.svg
     :alt: Test Learners
     :width: 48
     :height: 48
 
-.. |Predictions_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/Predictions_48.png 
-    :align: middle
+.. |Predictions_icon| image:: ../../../Orange/OrangeWidgets/Evaluate/icons/Predictions.svg
     :alt: Predictions
     :width: 48
     :height: 48
@@ -439,32 +382,27 @@ Associate
       - |ItemSetsExplorer_icon| `Item Sets Explorer`
       -
 
-.. |AssociationRules_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/AssociationRules_48.png
-    :align: middle
+.. |AssociationRules_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/AssociationRules.svg
     :alt: Association Rules
     :width: 48
     :height: 48
 
-.. |AssociationRulesFilter_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/AssociationRulesViewer_48.png
-    :align: middle
+.. |AssociationRulesFilter_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/AssociationRulesFilter.svg
     :alt: AssociationRulesFilter
     :width: 48
     :height: 48
 
-.. |AssociationRulesExplorer_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/AssociationRulesTreeViewer_48.png
-    :align: middle
+.. |AssociationRulesExplorer_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/AssociationRulesExplorer.svg
     :alt: Association Rules Explorer
     :width: 48
     :height: 48
 
-.. |ItemSets_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/Itemsets_48.png
-    :align: middle
+.. |ItemSets_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/Itemsets.svg
     :alt: Item Sets
     :width: 48
     :height: 48
 
-.. |ItemSetsExplorer_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/ItemsetsExplorer_48.png
-    :align: middle
+.. |ItemSetsExplorer_icon| image:: ../../../Orange/OrangeWidgets/Associate/icons/ItemsetsExplorer.svg
     :alt: Item Sets Explorer
     :width: 48
     :height: 48
@@ -493,104 +431,72 @@ Unsupervised
       - |SOMVisualizer_icon| `SOM Visualizer`
       -
 
-.. |DistanceFile_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/DistanceFile_48.png
-    :align: middle
+.. |DistanceFile_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/LoadDistances.svg
     :alt: Distance File
     :width: 48
     :height: 48
 
-.. |SaveDistanceFile_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/SaveDistanceFile_48.png
-    :align: middle
+.. |SaveDistanceFile_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/SaveDistances.svg
     :alt: Save Distance File
     :width: 48
     :height: 48
 
-.. |MatrixTransformation_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/MatrixTransformation_48.png
-    :align: middle
+.. |MatrixTransformation_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/MatrixTransformation.svg
     :alt: Matrix Transformation
     :width: 48
     :height: 48
 
 .. |DistanceMatrixFilter_icon| image:: ../../../Orange/OrangeWidgets/icons/DistanceFilter.png
-    :align: middle
     :alt: Distance Matrix Filter
     :width: 48
     :height: 48
 
-.. |DistanceMap_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/DistanceMap_48.png
-    :align: middle
+.. |DistanceMap_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/DistanceMatrix.svg
     :alt: Distance Map
     :width: 48
     :height: 48
 
-.. |ExampleDistance_icon| image:: ../../../Orange/OrangeWidgets/icons/ExampleDistance.png
-    :align: middle
+.. |ExampleDistance_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/Distance.svg
     :alt: Example Distance
     :width: 48
     :height: 48
 
-.. |AttributeDistance_icon| image:: ../../../Orange/OrangeWidgets/icons/AttributeDistance.png
-    :align: middle
+.. |AttributeDistance_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/Distance.svg
     :alt: Attribute Distance
     :width: 48
     :height: 48
 
-.. |HierarchicalClustering_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/HierarchicalClustering_48.png
-    :align: middle
+.. |HierarchicalClustering_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/HierarchicalClustering.svg
     :alt: Hierarchical Clustering
     :width: 48
     :height: 48
 
 .. |InteractionGraph_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/InteractionGraph_48.png
-    :align: middle
     :alt: Interaction Graph
     :width: 48
     :height: 48
 
-.. |kMeansClustering_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/KMeans_48.png
-    :align: middle
+.. |kMeansClustering_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/kMeansClustering.svg
     :alt: k-Means Clustering
     :width: 48
     :height: 48
 
-.. |MDS_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/MDS_48.png
-    :align: middle
+.. |MDS_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/MDS.svg
     :alt: MDS
     :width: 48
     :height: 48
 
-.. |PCA_icon| image:: ../../../Orange/OrangeWidgets/icons/Unknown.png
-    :align: middle
+.. |PCA_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/PCA.svg
     :alt: PCA
     :width: 48
     :height: 48
 
-.. |NetworkFile_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/NetworkFile_48.png
-    :align: middle
-    :alt: NetworkFile
-    :width: 48
-    :height: 48
-
-.. |NetExplorer_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/Network_48.png
-    :align: middle
-    :alt: Net Explorer
-    :width: 48
-    :height: 48
-
-.. |NetworkFromDistances_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/NetworkFromDistances_48.png
-    :align: middle
-    :alt: Network From Distances
-    :width: 48
-    :height: 48
-
-.. |SOM_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/SOM_48.png
-    :align: middle
+.. |SOM_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/SOM.svg
     :alt: SOM
     :width: 48
     :height: 48
 
-.. |SOMVisualizer_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/SOMVisualizer_48.png
-    :align: middle
+.. |SOMVisualizer_icon| image:: ../../../Orange/OrangeWidgets/Unsupervised/icons/SOMVisualizer.svg
     :alt: SOM Visualizer
     :width: 48
     :height: 48
@@ -616,6 +522,7 @@ Index:
    data/impute.rst
    data/outliers.rst
    data/editdomain.rst
+   data/pythonscript.rst
 
    visualize/distributions.rst
    visualize/scatterplot.rst

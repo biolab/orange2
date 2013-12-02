@@ -3,7 +3,7 @@
 Distributions
 =============
 
-.. image:: ../icons/Distributions.png
+.. image:: ../../../../Orange/OrangeWidgets/Visualize/icons/Distribution.svg
 
 Displays value distributions for a single attribute.
 

@@ -3,7 +3,7 @@
 Data Sampler
 ============
 
-.. image:: ../icons/DataSampler.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/DataSampler.svg
 
 Selects a subset of data instances from the input data set.
 

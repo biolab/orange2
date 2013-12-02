@@ -3,7 +3,7 @@
 Calibration Plot
 ================
 
-.. image:: ../icons/CalibrationPlot.png
+.. image:: ../../../../Orange/OrangeWidgets/Evaluate/icons/CalibrationPlot.svg
 
 Shows the match between the classifiers' probability predictions and actual
 class probabilities.

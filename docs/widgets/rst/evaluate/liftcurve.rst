@@ -3,7 +3,7 @@
 Lift Curve
 ==========
 
-.. image:: ../icons/LiftCurve.png
+.. image:: ../../../../Orange/OrangeWidgets/Evaluate/icons/LiftCurve.svg
 
 Shows the lift curves and analyzes them.
 

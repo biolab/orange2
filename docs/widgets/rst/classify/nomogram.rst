@@ -3,7 +3,7 @@
 Nomogram
 ========
 
-.. image:: ../icons/Nomogram.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/Nomogram.svg
 
 Nomogram
 

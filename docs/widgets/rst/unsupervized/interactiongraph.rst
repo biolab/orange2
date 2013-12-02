@@ -3,7 +3,7 @@
 Interaction Graph
 =================
 
-.. image:: ../icons/MDS.png
+.. image:: ../../../../Orange/OrangeWidgets/Unsupervised/icons/InteractionGraph_48.png
 
 Graph of interactions between attributes
 

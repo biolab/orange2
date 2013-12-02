@@ -3,7 +3,7 @@
 Scatter Plot
 ============
 
-.. image:: ../icons/Distributions.png
+.. image:: ../../../../Orange/OrangeWidgets/Visualize/icons/ScatterPlot.svg
 
 A standard scatterplot visualization with explorative analysis and  intelligent
 data visualization enhancements.

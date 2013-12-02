@@ -3,7 +3,7 @@
 Concatenate
 ===========
 
-.. image:: ../icons/Concatenate.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/Concatenate.svg
 
 Concatenates data from multiple sources.
 

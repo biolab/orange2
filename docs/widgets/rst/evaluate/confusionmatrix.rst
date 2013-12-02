@@ -3,7 +3,7 @@
 Confusion Matrix
 ================
 
-.. image:: ../icons/ConfusionMatrix.png
+.. image:: ../../../../Orange/OrangeWidgets/Evaluate/icons/ConfusionMatrix.svg
 
 Shows a confusion matrix.
 

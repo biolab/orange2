@@ -3,7 +3,7 @@
 Linear Projection
 =================
 
-.. image:: ../icons/LinearProjection.png
+.. image:: ../../../../Orange/OrangeWidgets/Visualize/icons/LinearProjection.svg
 
 Various linear projection methods with explorative data analysis and
 intelligent data visualization enhancements.

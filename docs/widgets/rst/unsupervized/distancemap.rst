@@ -3,7 +3,7 @@
 Distance Map
 ============
 
-.. image:: ../icons/DistanceMap.png
+.. image:: ../../../../Orange/OrangeWidgets/Unsupervised/icons/DistanceMatrix.svg
 
 Visualizes distances between items
 

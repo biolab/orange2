@@ -3,7 +3,7 @@
 Parallel Coordinates
 ====================
 
-.. image:: ../icons/ParallelCoordinates.png
+.. image:: ../../../../Orange/OrangeWidgets/Visualize/icons/ParallelCoordinates.svg
 
 Parallel Coordinates visualization with some explorative data analysis and
 intelligent data visualization enhancements.

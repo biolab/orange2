@@ -3,7 +3,7 @@
 Radviz
 ======
 
-.. image:: ../icons/Radviz.png
+.. image:: ../../../../Orange/OrangeWidgets/Visualize/icons/Radviz.svg
 
 Radviz vizualization with explorative data analysis and intelligent data
 visualization enhancements.

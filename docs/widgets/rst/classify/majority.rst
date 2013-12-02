@@ -3,7 +3,7 @@
 Majority Learner
 ================
 
-.. image:: ../icons/majority.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/Majority.svg
 
 A Learner that returns the majority class, disregarding the example's
 attributes.

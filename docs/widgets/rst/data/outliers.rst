@@ -3,7 +3,7 @@
 Outliers
 ========
 
-.. image:: ../icons/Outliers.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/Outliers.svg
 
 Simple outlier detection by comparing distances between examples.
 

@@ -3,7 +3,7 @@
 Linear Regression Learner
 =========================
 
-.. image:: ../../../../Orange/OrangeWidgets/icons/Unknown.png
+.. image:: ../../../../Orange/OrangeWidgets/Regression/icons/LinearRegression.svg
 	:alt: Linear Regression
 
 Learns a linear function of its input data.

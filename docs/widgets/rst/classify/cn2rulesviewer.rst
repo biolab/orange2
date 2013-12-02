@@ -3,7 +3,7 @@
 Rule Viewer
 ===========
 
-.. image:: ../icons/CN2RulesViewer.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/CN2RulesViewer.svg
 
 Widget for visualization of rules.
 

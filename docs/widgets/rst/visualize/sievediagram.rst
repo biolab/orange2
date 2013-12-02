@@ -3,7 +3,7 @@
 Sieve Diagram
 =============
 
-.. image:: ../icons/SieveDiagram.png
+.. image:: ../../../../Orange/OrangeWidgets/Visualize/icons/SieveDiagram.svg
 
 Plots a sieve diagram for a pair of attributes.
 

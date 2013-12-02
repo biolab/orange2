@@ -3,7 +3,7 @@
 Classification Tree Graph
 =========================
 
-.. image:: ../icons/ClassificationTreeGraph.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/ClassificationTreeGraph.svg
 
 Visualization of classification tree.
 

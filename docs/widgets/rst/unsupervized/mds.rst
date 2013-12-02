@@ -3,7 +3,7 @@
 MDS
 ===
 
-.. image:: ../icons/MDS.png
+.. image:: ../../../../Orange/OrangeWidgets/Unsupervised/icons/MDS.svg
 
 Multidimensional scaling (MDS) - a projection into a plane fitted to the given
 distances between the points

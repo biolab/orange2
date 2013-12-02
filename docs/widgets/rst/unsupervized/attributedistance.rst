@@ -3,7 +3,7 @@
 Attribute Distance
 ==================
 
-.. image:: ../icons/AttributeDistance.png
+.. image:: ../../../../Orange/OrangeWidgets/Unsupervised/icons/Distance.svg
 
 Computes distances between examples in the data set
 

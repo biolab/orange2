@@ -3,7 +3,7 @@
 Naive Bayesian Learner
 ======================
 
-.. image:: ../icons/NaiveBayes.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/NaiveBayes.svg
 
 Naive Bayesian Learner
 

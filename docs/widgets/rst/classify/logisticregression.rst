@@ -3,7 +3,7 @@
 Logistic Regression Learner
 ===========================
 
-.. image:: ../icons/LogisticRegression.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/LogisticRegression.svg
 
 Logistic Regression Learner
 

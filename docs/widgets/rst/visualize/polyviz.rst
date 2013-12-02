@@ -3,7 +3,7 @@
 Polyviz
 =======
 
-.. image:: ../icons/Polyviz.png
+.. image:: ../../../../Orange/OrangeWidgets/Visualize/icons/Polyviz.svg
 
 Polyviz visualization with explorative data analysis and intelligent data
 visualization enhancements.

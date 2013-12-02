@@ -3,7 +3,7 @@
 File
 ====
 
-.. image:: ../../../../Orange/OrangeWidgets/Data/icons/File_48.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/File.svg
    :alt: File widget icon
    
 Signals

@@ -3,7 +3,7 @@
 Mosaic Display
 ==============
 
-.. image:: ../icons/MosaicDisplay.png
+.. image:: ../../../../Orange/OrangeWidgets/Visualize/icons/MosaicDisplay.svg
 
 Shows a mosaic display of n-way tables.
 

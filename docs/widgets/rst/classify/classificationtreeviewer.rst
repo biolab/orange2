@@ -3,7 +3,7 @@
 Classification Tree Viewer
 ==========================
 
-.. image:: ../icons/ClassificationTreeViewer.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/ClassificationTreeViewer.svg
 
 A hierarchical browser for classification trees
 

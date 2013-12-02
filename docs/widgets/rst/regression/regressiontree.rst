@@ -3,7 +3,7 @@
 Regression Tree Learner
 =======================
 
-.. image:: ../icons/RegressionTree.png
+.. image:: ../../../../Orange/OrangeWidgets/Regression/icons/RegressionTree.svg
 
 Regression Tree Learner
 

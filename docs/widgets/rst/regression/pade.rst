@@ -3,7 +3,7 @@
 Pade
 ====
 
-.. image:: ../icons/Pade.png
+.. image:: ../../../../Orange/OrangeWidgets/Regression/icons/Pade.svg
 
 Replaces a continuous class with a derivative or a MQC by one or more
 continuous attributes.

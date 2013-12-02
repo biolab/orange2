@@ -3,7 +3,7 @@
 K-Means Clustering
 ==================
 
-.. image:: ../icons/K-MeansClustering.png
+.. image:: ../../../../Orange/OrangeWidgets/Unsupervised/icons/kMeansClustering.svg
 
 Groups the examples using the K-Means clustering algorithm.
 

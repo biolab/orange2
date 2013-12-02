@@ -3,7 +3,7 @@
 Attribute Statistics
 ====================
 
-.. image:: ../icons/AttributeStatistics.png
+.. image:: ../../../../Orange/OrangeWidgets/Visualize/icons/AttributeStatistics.svg
 
 Shows basic distribution of attribute values.
 

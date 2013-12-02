@@ -3,7 +3,7 @@
 Rank
 ====
 
-.. image:: ../icons/Rank.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/Rank.svg
 
 A widget for ranking the attributes and selecting attribute subsets.
 

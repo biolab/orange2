@@ -3,7 +3,7 @@
 Association Rules Filter
 ========================
 
-.. image:: ../icons/AssociationRulesFilter.png
+.. image:: ../../../../Orange/OrangeWidgets/Associate/icons/AssociationRulesFilter.svg
 
 A widget for printing out the rules and for their manual exploration and
 selection.

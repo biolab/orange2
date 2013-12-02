@@ -3,7 +3,7 @@
 k-Nearest Neighbours Learner
 ============================
 
-.. image:: ../icons/k-NearestNeighbours.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/kNearestNeighbours.svg
 
 k-Nearest Neighbours (kNN) learner
 

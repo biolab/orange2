@@ -3,7 +3,7 @@
 Select Data
 ===========
 
-.. image:: ../icons/SelectData.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/SelectData.svg
 
 Selects instances from input data sets based on conditions on attributes.
 

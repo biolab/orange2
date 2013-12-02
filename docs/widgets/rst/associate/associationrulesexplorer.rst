@@ -3,7 +3,7 @@
 Association Rules Tree Viewer
 =============================
 
-.. image:: ../icons/AssociationRulesExplorer.png
+.. image:: ../../../../Orange/OrangeWidgets/Associate/icons/AssociationRulesExplorer.svg
 
 A tree-like association rules viewer
 

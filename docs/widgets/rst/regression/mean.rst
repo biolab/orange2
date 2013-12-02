@@ -3,7 +3,7 @@
 Mean Learner
 ============
 
-.. image:: ../../../../Orange/OrangeWidgets/icons/Unknown.png
+.. image:: ../../../../Orange/OrangeWidgets/Regression/icons/Mean.svg
    :alt: Mean Learner
 
 Channels

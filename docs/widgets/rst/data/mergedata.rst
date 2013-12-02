@@ -3,7 +3,8 @@
 Merge Data
 ==========
 
-.. image:: ../icons/MergeData.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/MergeData.svg
+   :alt: Merge Data widget icon
 
 Merges two data sets based on the values of selected attributes.
 

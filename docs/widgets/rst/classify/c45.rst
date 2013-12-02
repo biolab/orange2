@@ -3,7 +3,7 @@
 C4.5 Learner
 ============
 
-.. image:: ../icons/C4.5.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/C4.5.svg
 
 C4.5 learner by Ross Quinlan
 

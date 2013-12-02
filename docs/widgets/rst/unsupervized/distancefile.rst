@@ -3,7 +3,7 @@
 Distance File
 =============
 
-.. image:: ../icons/DistanceFile.png
+.. image:: ../../../../Orange/OrangeWidgets/Unsupervised/icons/LoadDistances.svg
 
 Computes distances between examples in the data set
 

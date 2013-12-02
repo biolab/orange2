@@ -3,7 +3,7 @@
 CN2 Rule Learner
 ================
 
-.. image:: ../icons/CN2.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/CN2.svg
 
 CN2: A widget for learning an unordered set of classification if-then rules.
 

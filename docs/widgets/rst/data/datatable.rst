@@ -3,7 +3,7 @@
 Data Table
 ==========
 
-.. image:: ../../../../Orange/OrangeWidgets/Data/icons/DataTable_48.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/DataTable.svg
    :alt: Data Table icon
 
 Signals

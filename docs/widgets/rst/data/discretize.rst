@@ -3,7 +3,7 @@
 Discretize
 ==========
 
-.. image:: ../icons/Discretize.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/Discretize.svg
 
 Discretizes continuous attrbutes from input data set.
 

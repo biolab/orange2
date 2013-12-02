@@ -3,7 +3,7 @@
 ROC Analysis
 ============
 
-.. image:: ../icons/ROCAnalysis.png
+.. image:: ../../../../Orange/OrangeWidgets/Evaluate/icons/ROCAnalysis.svg
 
 Shows the ROC curves and analyzes them.
 

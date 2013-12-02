@@ -3,8 +3,9 @@
 Select Attributes
 =================
 
-.. image:: images/SelectAttributes_icon.png
+.. image:: ../../../../Orange/OrangeWidgets/Data/icons/SelectAttributes.svg
    :alt: Select Attributes icon
+
 
 Signals
 -------

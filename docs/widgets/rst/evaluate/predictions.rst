@@ -3,7 +3,7 @@
 Predictions
 ===========
 
-.. image:: ../icons/Predictions.png
+.. image:: ../../../../Orange/OrangeWidgets/Evaluate/icons/Predictions.svg
 
 Shows the model's prediction on data.
 

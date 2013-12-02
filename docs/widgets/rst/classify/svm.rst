@@ -3,7 +3,7 @@
 SVM Learner
 ===========
 
-.. image:: ../icons/SVM.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/SVM.svg
 
 Support vector machine learner (classification)
 

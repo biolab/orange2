@@ -3,7 +3,7 @@
 Example Distance
 ================
 
-.. image:: ../icons/ExampleDistance.png
+.. image:: ../../../../Orange/OrangeWidgets/Unsupervised/icons/Distance.svg
 
 Computes distances between examples in the data set
 

@@ -3,7 +3,7 @@
 Classification Tree Learner
 ===========================
 
-.. image:: ../icons/ClassificationTree.png
+.. image:: ../../../../Orange/OrangeWidgets/Classify/icons/ClassificationTree.svg
 
 Classification Tree Learner
 
