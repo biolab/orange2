@@ -1,5 +1,7 @@
-import orange
+import unicodedata
 import copy
+
+import orange
 import OWToolbars
 import OWColorPalette
 import Orange.data
@@ -743,7 +745,8 @@ class OWPaintData(OWWidget):
         addClassLabel.pyqtConfigure(toolTip="Add class label")#, icon=QIcon(icon_put))
         self.connect(addClassLabel, SIGNAL("triggered()"), self.addNewClassLabel)
         
-        self.removeClassLabel = removeClassLabel = QAction("-", self)
+        self.removeClassLabel = removeClassLabel = QAction(
+            unicodedata.lookup("MINUS SIGN"), self)
         removeClassLabel.pyqtConfigure(toolTip="Remove class label")#, icon=QIcon(icon_remove))
         self.connect(removeClassLabel, SIGNAL("triggered()"), self.removeSelectedClassLabel)
         

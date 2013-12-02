@@ -1,3 +1,6 @@
+import sys
+import unicodedata
+
 from OWWidget import *
 from OWItemModels import PyListModel, ListSingleSelectionModel, ModelActionsWidget
 import OWGUI, OWGUIEx
@@ -5,8 +8,6 @@ import OWGUI, OWGUIEx
 import orange
 import orngWrap
 import orngSVM
-
-import sys
 
 from Orange.data import preprocess
 
@@ -510,7 +511,8 @@ class OWPreprocess(OWWidget):
         
         self.addPreprocessorAction = QAction("+",self)
         self.addPreprocessorAction.pyqtConfigure(toolTip="Add a new preprocessor to the list")
-        self.removePreprocessorAction = QAction("-", self)
+        self.removePreprocessorAction = QAction(
+                unicodedata.lookup("MINUS SIGN"), self)
         self.removePreprocessorAction.pyqtConfigure(toolTip="Remove selected preprocessor from the list")
         self.removePreprocessorAction.setEnabled(False)
         
@@ -551,7 +553,7 @@ class OWPreprocess(OWWidget):
         self.addSchemaAction.pyqtConfigure(toolTip="Add a new preprocessor schema")
         self.updateSchemaAction = QAction("Update", self)
         self.updateSchemaAction.pyqtConfigure(toolTip="Save changes made in the current schema")
-        self.removeSchemaAction = QAction("-", self)
+        self.removeSchemaAction = QAction(unicodedata.lookup("MINUS SIGN"), self)
         self.removeSchemaAction.pyqtConfigure(toolTip="Remove selected schema")
         
         self.updateSchemaAction.setEnabled(False)

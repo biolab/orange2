@@ -3,6 +3,7 @@ import os
 import code
 import keyword
 import itertools
+import unicodedata
 
 from PyQt4.QtGui import (
     QSyntaxHighlighter, QPlainTextEdit, QTextCharFormat, QTextCursor,
@@ -434,7 +435,7 @@ class OWPythonScript(OWWidget):
         self.connect(action, SIGNAL("triggered()"), self.onAddScript)
         w.addAction(action)
 
-        self.removeAction = action = QAction("-", self)
+        self.removeAction = action = QAction(unicodedata.lookup("MINUS SIGN"), self)
         action.setToolTip("Remove script from library")
         self.connect(action, SIGNAL("triggered()"), self.onRemoveScript)
         w.addAction(action)

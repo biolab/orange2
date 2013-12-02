@@ -1,3 +1,5 @@
+import unicodedata
+
 from OWWidget import *
 from OWItemModels import VariableListModel, PyListModel
 
@@ -174,7 +176,8 @@ class VariableEditor(QWidget):
                         enabled=False,
                         shortcut=QKeySequence(QKeySequence.New))
 
-        self.remove_label_action = QAction("-", self,
+        self.remove_label_action = QAction(
+                        unicodedata.lookup("MINUS SIGN"), self,
                         toolTip="Remove selected label.",
                         triggered=self.on_remove_label,
                         enabled=False,
