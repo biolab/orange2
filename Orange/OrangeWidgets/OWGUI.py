@@ -546,14 +546,14 @@ def rubber(widget):
     widget.layout().addStretch(100)
 
 def createAttributePixmap(char, color=Qt.black):
-    pixmap = QPixmap(13,13)
     rect = QRect(0, 0, 13, 13)
-    painter = QPainter()
+    pixmap = QPixmap(rect.size())
+    pixmap.fill(Qt.transparent)
+    painter = QPainter(pixmap)
     painter.setRenderHint(QPainter.Antialiasing)
-    painter.begin(pixmap)
     painter.setPen(color)
     painter.setBrush(color)
-    painter.drawRoundedRect(rect, 4, 4)
+    painter.drawRoundedRect(rect, 3, 3)
     painter.setPen(QColor(Qt.white))
     painter.drawText(rect, Qt.AlignCenter, char)
     painter.end()
