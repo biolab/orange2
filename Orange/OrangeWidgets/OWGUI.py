@@ -545,15 +545,17 @@ def separator(widget, width=4, height=4):
 def rubber(widget):
     widget.layout().addStretch(100)
 
-def createAttributePixmap(char, color = Qt.black):
+def createAttributePixmap(char, color=Qt.black):
     pixmap = QPixmap(13,13)
+    rect = QRect(0, 0, 13, 13)
     painter = QPainter()
+    painter.setRenderHint(QPainter.Antialiasing)
     painter.begin(pixmap)
-    painter.setPen( color );
-    painter.setBrush( color );
-    painter.drawRect( 0, 0, 13, 13 );
-    painter.setPen( QColor(Qt.white))
-    painter.drawText(3, 11, char)
+    painter.setPen(color)
+    painter.setBrush(color)
+    painter.drawRoundedRect(rect, 4, 4)
+    painter.setPen(QColor(Qt.white))
+    painter.drawText(rect, Qt.AlignCenter, char)
     painter.end()
     return QIcon(pixmap)
 
@@ -564,10 +566,12 @@ def getAttributeIcons():
     import orange
     global attributeIconDict
     if not attributeIconDict:
-        attributeIconDict = {orange.VarTypes.Continuous: createAttributePixmap("C", QColor(202,0,32)),
-                     orange.VarTypes.Discrete: createAttributePixmap("D", QColor(26,150,65)),
-                     orange.VarTypes.String: createAttributePixmap("S", Qt.black),
-                     -1: createAttributePixmap("?", QColor(128, 128, 128))}
+        attributeIconDict = {
+            orange.VarTypes.Continuous: createAttributePixmap("C", QColor(202,0,32)),
+            orange.VarTypes.Discrete: createAttributePixmap("D", QColor(26,150,65)),
+            orange.VarTypes.String: createAttributePixmap("S", Qt.black),
+            -1: createAttributePixmap("?", QColor(128, 128, 128))
+        }
     return attributeIconDict
 
 
