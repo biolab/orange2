@@ -194,7 +194,7 @@ TValueFilter_continuous::TValueFilter_continuous(const int &pos, const int &op, 
 {}
 
 
-#define EQUAL(x,y)  (fabs(x-y) <= y*1e-10) ? 1 : 0
+#define EQUAL(x,y)  (fabs(x-y) <= fabs(y)*1e-10) ? 1 : 0
 #define LESS_EQUAL(x,y) (x-y <= y*1e-10) ? 1 : 0
 #define TO_BOOL(x) (x) ? 1 : 0;
 
