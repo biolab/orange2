@@ -28,8 +28,6 @@ DESCRIPTION = "Executes a Python script."
 LONG_DESCRIPTION = ""
 ICON = "icons/PythonScript.svg"
 PRIORITY = 3150
-AUTHOR = "Miha Stajdohar"
-AUTHOR_EMAIL = "miha.stajdohar(@at@)gmail.com"
 
 INPUTS = [("in_data", Orange.data.Table, "setExampleTable", Default),
           ("in_distance", Orange.misc.SymMatrix, "setDistanceMatrix", Default),
@@ -44,20 +42,21 @@ OUTPUTS = [("out_data", Orange.data.Table, ),
            ("out_object", object, Dynamic)]
 
 
+def text_format(foreground=Qt.black, weight=QFont.Normal):
+    fmt = QTextCharFormat()
+    fmt.setForeground(QBrush(foreground))
+    fmt.setFontWeight(weight)
+    return fmt
+
+
 class PythonSyntaxHighlighter(QSyntaxHighlighter):
     def __init__(self, parent=None):
-        self.keywordFormat = QTextCharFormat()
-        self.keywordFormat.setForeground(QBrush(Qt.blue))
-        self.keywordFormat.setFontWeight(QFont.Bold)
-        self.stringFormat = QTextCharFormat()
-        self.stringFormat.setForeground(QBrush(Qt.darkGreen))
-        self.defFormat = QTextCharFormat()
-        self.defFormat.setForeground(QBrush(Qt.black))
-        self.defFormat.setFontWeight(QFont.Bold)
-        self.commentFormat = QTextCharFormat()
-        self.commentFormat.setForeground(QBrush(Qt.lightGray))
-        self.decoratorFormat = QTextCharFormat()
-        self.decoratorFormat.setForeground(QBrush(Qt.darkGray))
+
+        self.keywordFormat = text_format(Qt.blue, QFont.Bold)
+        self.stringFormat = text_format(Qt.darkGreen)
+        self.defFormat = text_format(Qt.black, QFont.Bold)
+        self.commentFormat = text_format(Qt.lightGray)
+        self.decoratorFormat = text_format(Qt.darkGray)
 
         self.keywords = list(keyword.kwlist)
 
@@ -320,7 +319,6 @@ class Script(object):
         self.script = script
         self.flags = flags
         self.sourceFileName = sourceFileName
-        self.modifiedScript = None
 
 
 class ScriptItemDelegate(QStyledItemDelegate):
@@ -354,9 +352,18 @@ class ScriptItemDelegate(QStyledItemDelegate):
         model[index.row()].name = str(editor.text())
 
 
+def select_row(view, row):
+    """
+    Select a `row` in an item view
+    """
+    selmodel = view.selectionModel()
+    selmodel.select(view.model().index(row, 0),
+                    QItemSelectionModel.ClearAndSelect)
+
+
 class OWPythonScript(OWWidget):
 
-    settingsList = ["codeFile", "libraryListSource", "currentScriptIndex",
+    settingsList = ["libraryListSource", "currentScriptIndex",
                     "splitterState", "auto_execute"]
 
     def __init__(self, parent=None, signalManager=None):
@@ -385,7 +392,6 @@ class OWPythonScript(OWWidget):
         self.in_object = None
         self.auto_execute = False
 
-        self.codeFile = ''
         self.libraryListSource = [Script("Hello world",
                                          "print 'Hello world'\n")]
         self.currentScriptIndex = 0
@@ -400,63 +406,63 @@ class OWPythonScript(OWWidget):
         self.infoBox = OWGUI.widgetBox(self.controlArea, 'Info')
         OWGUI.label(
             self.infoBox, self,
-            "<p>Execute python script.</p><p>Input variables:<ul><li> " + \
-            "<li>".join(t[0] for t in self.inputs) + \
-            "</ul></p><p>Output variables:<ul><li>" + \
-            "<li>".join(t[0] for t in self.outputs) + \
+            "<p>Execute python script.</p><p>Input variables:<ul><li> " +
+            "<li>".join(t[0] for t in self.inputs) +
+            "</ul></p><p>Output variables:<ul><li>" +
+            "<li>".join(t[0] for t in self.outputs) +
             "</ul></p>"
         )
 
-        self.libraryList = PyListModel([], self, flags=Qt.ItemIsSelectable | \
-                                       Qt.ItemIsEnabled | Qt.ItemIsEditable)
+        self.libraryList = PyListModel(
+           [], self,
+           flags=Qt.ItemIsSelectable | Qt.ItemIsEnabled | Qt.ItemIsEditable
+        )
 
         self.libraryList.wrap(self.libraryListSource)
 
         self.controlBox = OWGUI.widgetBox(self.controlArea, 'Library')
         self.controlBox.layout().setSpacing(1)
 
-        self.libraryView = QListView()
-        self.libraryView.setEditTriggers(QListView.DoubleClicked | \
-                                         QListView.EditKeyPressed)
-        self.libraryView.setSizePolicy(QSizePolicy.Ignored,
-                                       QSizePolicy.Preferred)
+        self.libraryView = QListView(
+            editTriggers=QListView.DoubleClicked |
+                         QListView.EditKeyPressed,
+            sizePolicy=QSizePolicy(QSizePolicy.Ignored,
+                                   QSizePolicy.Preferred)
+        )
         self.libraryView.setItemDelegate(ScriptItemDelegate(self))
         self.libraryView.setModel(self.libraryList)
 
-        self.connect(self.libraryView.selectionModel(),
-                     SIGNAL("selectionChanged(QItemSelection, QItemSelection)"),
-                     self.onSelectedScriptChanged)
+        self.libraryView.selectionModel().selectionChanged.connect(
+            self.onSelectedScriptChanged
+        )
         self.controlBox.layout().addWidget(self.libraryView)
 
         w = ModelActionsWidget()
 
         self.addNewScriptAction = action = QAction("+", self)
         action.setToolTip("Add a new script to the library")
-        self.connect(action, SIGNAL("triggered()"), self.onAddScript)
+        action.triggered.connect(self.onAddScript)
         w.addAction(action)
 
-        self.removeAction = action = QAction(unicodedata.lookup("MINUS SIGN"), self)
+        action = QAction(unicodedata.lookup("MINUS SIGN"), self)
         action.setToolTip("Remove script from library")
-        self.connect(action, SIGNAL("triggered()"), self.onRemoveScript)
+        action.triggered.connect(self.onRemoveScript)
         w.addAction(action)
 
         action = QAction("Update", self)
         action.setToolTip("Save changes in the editor to library")
         action.setShortcut(QKeySequence(QKeySequence.Save))
-        self.connect(action, SIGNAL("triggered()"),
-                     self.commitChangesToLibrary)
+        action.triggered.connect(self.commitChangesToLibrary)
         w.addAction(action)
 
-        action = QAction("More", self)
-        action.pyqtConfigure(toolTip="More actions")
+        action = QAction("More", self, toolTip="More actions")
 
         new_from_file = QAction("Import a script from a file", self)
         save_to_file = QAction("Save selected script to a file", self)
         save_to_file.setShortcut(QKeySequence(QKeySequence.SaveAs))
 
-        self.connect(new_from_file, SIGNAL("triggered()"),
-                     self.onAddScriptFromFile)
-        self.connect(save_to_file, SIGNAL("triggered()"), self.saveScript)
+        new_from_file.triggered.connect(self.onAddScriptFromFile)
+        save_to_file.triggered.connect(self.saveScript)
 
         menu = QMenu(w)
         menu.addAction(new_from_file)
@@ -475,52 +481,37 @@ class OWPythonScript(OWWidget):
                        tooltip=("Run the script automatically whenever "
                                 "the inputs to the widget change."))
 
-        self.splitCanvas = QSplitter(Qt.Vertical, self.mainArea)
-        self.mainArea.layout().addWidget(self.splitCanvas)
+        self.splitter = QSplitter(Qt.Vertical, self.mainArea)
+        self.mainArea.layout().addWidget(self.splitter)
 
         self.defaultFont = defaultFont = \
             "Monaco" if sys.platform == "darwin" else "Courier"
 
         self.textBox = OWGUI.widgetBox(self, 'Python script')
-        self.splitCanvas.addWidget(self.textBox)
+        self.splitter.addWidget(self.textBox)
         self.text = PythonScriptEditor(self)
         self.textBox.layout().addWidget(self.text)
 
         self.textBox.setAlignment(Qt.AlignVCenter)
         self.text.setTabStopWidth(4)
 
-        self.connect(self.text, SIGNAL("modificationChanged(bool)"),
-                     self.onModificationChanged)
-
-        self.saveAction = action = QAction("&Save", self.text)
-        action.setToolTip("Save script to file")
-        action.setShortcut(QKeySequence(QKeySequence.Save))
-        action.setShortcutContext(Qt.WidgetWithChildrenShortcut)
-        self.connect(action, SIGNAL("triggered()"), self.saveScript)
+        self.text.modificationChanged[bool].connect(self.onModificationChanged)
 
         self.consoleBox = OWGUI.widgetBox(self, 'Console')
-        self.splitCanvas.addWidget(self.consoleBox)
+        self.splitter.addWidget(self.consoleBox)
         self.console = PythonConsole(self.__dict__, self)
         self.consoleBox.layout().addWidget(self.console)
         self.console.document().setDefaultFont(QFont(defaultFont))
         self.consoleBox.setAlignment(Qt.AlignBottom)
         self.console.setTabStopWidth(4)
 
-        self.openScript(self.codeFile)
-        try:
-            self.libraryView.selectionModel().select(
-                self.libraryList.index(self.currentScriptIndex),
-                QItemSelectionModel.ClearAndSelect
-            )
-        except Exception:
-            pass
+        select_row(self.libraryView, self.currentScriptIndex)
 
-        self.splitCanvas.setSizes([2, 1])
+        self.splitter.setSizes([2, 1])
         if self.splitterState is not None:
-            self.splitCanvas.restoreState(QByteArray(self.splitterState))
+            self.splitter.restoreState(QByteArray(self.splitterState))
 
-        self.connect(self.splitCanvas, SIGNAL("splitterMoved(int, int)"),
-                     self.onSpliterMoved)
+        self.splitter.splitterMoved[int, int].connect(self.onSpliterMoved)
         self.controlArea.layout().addStretch(1)
         self.resize(800, 600)
 
@@ -551,9 +542,7 @@ class OWPythonScript(OWWidget):
             return None
 
     def setSelectedScript(self, index):
-        selection = self.libraryView.selectionModel()
-        selection.select(self.libraryList.index(index),
-                         QItemSelectionModel.ClearAndSelect)
+        select_row(self.libraryView, index)
 
     def onAddScript(self, *args):
         self.libraryList.append(Script("New script", "", 0))
@@ -562,7 +551,7 @@ class OWPythonScript(OWWidget):
     def onAddScriptFromFile(self, *args):
         filename = QFileDialog.getOpenFileName(
             self, 'Open Python Script',
-            self.codeFile,
+            os.path.expanduser("~/"),
             'Python files (*.py)\nAll files(*.*)'
         )
 
@@ -577,25 +566,12 @@ class OWPythonScript(OWWidget):
         index = self.selectedScriptIndex()
         if index is not None:
             del self.libraryList[index]
-
-            self.libraryView.selectionModel().select(
-                self.libraryList.index(max(index - 1, 0)),
-                QItemSelectionModel.ClearAndSelect
-            )
-
-    def onSaveScriptToFile(self, *args):
-        index = self.selectedScriptIndex()
-        if index is not None:
-            self.saveScript()
+            select_row(self.libraryView, max(index - 1, 0))
 
     def onSelectedScriptChanged(self, selected, deselected):
         index = [i.row() for i in selected.indexes()]
         if index:
             current = index[0]
-            if current >= len(self.libraryList):
-                self.addNewScriptAction.trigger()
-                return
-
             self.text.setDocument(self.documentForScript(current))
             self.currentScriptIndex = current
 
@@ -609,8 +585,7 @@ class OWPythonScript(OWWidget):
             doc.setPlainText(script.script)
             doc.setDefaultFont(QFont(self.defaultFont))
             doc.highlighter = PythonSyntaxHighlighter(doc)
-            self.connect(doc, SIGNAL("modificationChanged(bool)"),
-                         self.onModificationChanged)
+            doc.modificationChanged[bool].connect(self.onModificationChanged)
             doc.setModified(False)
             self._cachedDocuments[script] = doc
         return self._cachedDocuments[script]
@@ -618,7 +593,7 @@ class OWPythonScript(OWWidget):
     def commitChangesToLibrary(self, *args):
         index = self.selectedScriptIndex()
         if index is not None:
-            self.libraryList[index].script = self.text.toPlainText()
+            self.libraryList[index].script = unicode(self.text.toPlainText())
             self.text.document().setModified(False)
             self.libraryList.emitDataChanged(index)
 
@@ -629,49 +604,15 @@ class OWPythonScript(OWWidget):
             self.libraryList.emitDataChanged(index)
 
     def onSpliterMoved(self, pos, ind):
-        self.splitterState = str(self.splitCanvas.saveState())
-
-    def updateSelecetdScriptState(self):
-        index = self.selectedScriptIndex()
-        if index is not None:
-            script = self.libraryList[index]
-            self.libraryList[index] = Script(script.name,
-                                             self.text.toPlainText(),
-                                             0)
-
-    def openScript(self, filename=None):
-        if filename == None:
-            filename = QFileDialog.getOpenFileName(
-                self, 'Open Python Script',
-                self.codeFile,
-                'Python files (*.py)\nAll files(*.*)'
-            )
-
-            filename = unicode(filename)
-            self.codeFile = filename
-        else:
-            self.codeFile = filename
-
-        if self.codeFile == "":
-            return
-
-        self.error(0)
-        try:
-            f = open(self.codeFile, 'r')
-        except (IOError, OSError), ex:
-            self.text.setPlainText("")
-            return
-
-        self.text.setPlainText(f.read())
-        f.close()
+        self.splitterState = str(self.splitter.saveState())
 
     def saveScript(self):
         index = self.selectedScriptIndex()
+        filename = os.path.expanduser("~/")
         if index is not None:
             script = self.libraryList[index]
-            filename = script.sourceFileName or self.codeFile
-        else:
-            filename = self.codeFile
+            filename = script.sourceFileName or filename
+
         filename = QFileDialog.getSaveFileName(
             self, 'Save Python Script',
             filename,
@@ -703,8 +644,8 @@ class OWPythonScript(OWWidget):
 
 
 if __name__ == "__main__":
-    appl = QApplication(sys.argv)
+    app = QApplication(sys.argv)
     ow = OWPythonScript()
     ow.show()
-    appl.exec_()
+    app.exec_()
     ow.saveSettings()
