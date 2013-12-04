@@ -318,13 +318,10 @@ H2, div.body h2 {
     font-size: 18px;
     padding-left: 5px;
     padding-bottom: 3px;
-/*	width: 204px;*/
-/*	background-color: #F69810;*/
-/*	background-color: #e8e8e8;*/
 	vertical-align: middle;
 	white-space: nowrap;
     /*clear: both;*/
-	border-bottom: 1px black solid;
+	border-bottom: 1px solid #606060;
     margin-left: -5px;
     margin-bottom: 20px;
 }
@@ -486,10 +483,8 @@ div.note {
 
 div.sphinxsidebarwrapper {
     padding: 0px 10px 0px 10px;
-    border-bottom: 1px solid #c8c8c8; //#ac9;
-    border-left: 1px solid #c8c8c8; //#ac9;
-    border-top: 1px solid #e8e8e8; //#ac9;
-    border-right: 1px solid #e8e8e8; //#ac9;
+    border: 1px solid #e8e8e8;
+    border-radius: 3px;
     background-color: #f8f8f8;
     padding-top: 2px;
     margin: 10px 0px 20px 20px;
@@ -592,12 +587,7 @@ table.field-list th.field-name {
 }
 
 table.docutils {
-/*	border-bottom: 1px solid #e0e0e0;
-    border-top: 1px solid #e0e0e0;*/
-    border-bottom: 1px solid #c8c8c8; //#ac9;
-    border-left: 1px solid #c8c8c8; //#ac9;
-    border-top: 1px solid #e8e8e8; //#ac9;
-    border-right: 1px solid #e8e8e8; //#ac9;
+    border-color: #E8E8E8;
     width: 100%;
 }
    
@@ -651,8 +641,14 @@ img.image-float-left {
 	list-style-image: url(./images/10.png)
 }
 
-table.widget-catalog-table td{
+table.widget-catalog-table {
+    background-color: #FBFBFB;
+    border: 1px solid #E8E8E8;
+}
+
+table.widget-catalog-table td {
     text-align: center;
+    border-bottom: 1px solid #E8E8E8;
 }
 
 table.widget-catalog-table td a img {
@@ -660,6 +656,14 @@ table.widget-catalog-table td a img {
     margin-right: auto;
     display: block;
 }
-table.widget-catalog-table td a,cite {
+
+table.widget-catalog-table td a,
+table.widget-catalog-table td cite {
     display: block;
+}
+
+/* code fragments */
+div.highlight {
+    /* Needs to clear the floating sidebar */
+    clear: both;
 }
