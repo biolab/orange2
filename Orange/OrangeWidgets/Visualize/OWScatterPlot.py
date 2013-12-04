@@ -255,6 +255,8 @@ class OWScatterPlot(OWWidget):
 
         self.closeContext()
         sameDomain = self.data and data and data.domain.checksum() == self.data.domain.checksum() # preserve attribute choice if the domain is the same
+        if not hasattr(data, "name"):
+            data.name = "data"
         self.data = data
         self.vizrank.clearResults()
         if not sameDomain:
@@ -303,9 +305,16 @@ class OWScatterPlot(OWWidget):
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
+        if not self.data:
+            return
         (selected, unselected) = self.graph.getSelectionsAsExampleTables([self.attrX, self.attrY])
-        self.send("Selected Data",selected)
-        self.send("Other Data",unselected)
+        if selected:
+            if not hasattr(selected, "name"):
+                selected.name = self.data.name + " (selected)"
+            if not hasattr(unselected, "name"):
+                selected.name = self.data.name + " (other)"
+        self.send("Selected Data", selected)
+        self.send("Other Data", unselected)
 
 
     # ##############################################################################################################################################################
@@ -396,6 +405,7 @@ class OWScatterPlot(OWWidget):
     # ##############################################################################################################################################################
     # SCATTERPLOT SETTINGS
     # ##############################################################################################################################################################
+
     def saveSettings(self):
         OWWidget.saveSettings(self)
         self.vizrank.saveSettings()

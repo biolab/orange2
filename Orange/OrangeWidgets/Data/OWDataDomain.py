@@ -4,7 +4,7 @@ from OWWidget import *
 from OWItemModels import PyListModel, VariableListModel
 
 NAME = "Select Attributes"
-DESCRIPTION = "Supports manual selection of data features."
+DESCRIPTION = "Supports manual selection of data features and compostion."
 ICON = "icons/SelectAttributes.svg"
 PRIORITY = 1100
 CATEGORY = "Data"

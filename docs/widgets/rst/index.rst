@@ -2,6 +2,15 @@
 Orange Widgets
 ##############
 
+Orange widgets are building blocks of data analysis workflows that are
+assembled in Orange's visual programming environment.
+
+.. image:: images/simple-workflow.png
+	:alt: Orange Workflow
+
+Widgets are grouped into classes according to their function. A typical
+workflow may mix widgets for data input and filtering, visualization,
+and predictive data mining.
 
 Data
 ----
