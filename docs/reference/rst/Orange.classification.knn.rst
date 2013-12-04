@@ -118,7 +118,7 @@ probability of classes. Voting can be a product of two weights:
 weights of training instances, if they are given, and weights that
 reflect the distance from ``inst``. Nearer neighbors have a greater
 impact on the prediction: the weight is computed as
-exp(-t:sup:`2`/s:sup:`2`), where the meaning of `t` depends on the
+:math:`-exp(-t^2 / s^2)` , where the meaning of `t` depends on the
 setting of :obj:`rank_weight`.
 
 * if :obj:`rank_weight` is :obj:`False`, :obj:`t` is the distance from the
