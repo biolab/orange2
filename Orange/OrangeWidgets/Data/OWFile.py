@@ -305,17 +305,22 @@ class OWFile(OWWidget):
                 self.warnings.setText(str(ex))
                 return
 
-        self.infoa.setText('%d example(s), ' % len(data) +
-                           '%d attribute(s), ' % len(data.domain.attributes) +
-                           '%d meta attribute(s).' % len(data.domain.getmetas()))
+        self.infoa.setText("%d data instance%s, " %
+                           (len(data), 's' if len(data) > 1 else '') +
+                           "%d feature%s, " %
+                           (len(data.domain.attributes),
+                            's' if len(data.domain.attributes) > 1 else '') +
+                           '%d meta attribute%s.' %
+                           (len(data.domain.getmetas()),
+                            's' if len(data.domain.getmetas()) > 1 else ''))
         cl = data.domain.class_var
         if cl is not None:
             if isinstance(cl, Orange.feature.Continuous):
                 self.infob.setText('Regression; Numerical class.')
             elif isinstance(cl, Orange.feature.Discrete):
                 self.infob.setText(
-                    'Classification; Discrete class with %d value(s).' %
-                    len(cl.values)
+                    'Classification; Discrete class with %d value%s.' %
+                    (len(cl.values), 's' if len(cl.values) > 1 else '')
                 )
             else:
                 self.infob.setText("Class is neither discrete nor continuous.")
