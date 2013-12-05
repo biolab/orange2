@@ -7,23 +7,24 @@ Select Attributes
    :alt: Select Attributes icon
 
 
+
 Signals
 -------
 
 Input:
-  - Examples (ExampleTable)
+  - Data
       Attribute-valued data set.
 
 Outputs:
-  - Examples (ExampleTable)
+  - Data
       Attribute-valued data set composed using the domain
-      specification constructed using the widget.
+      specification from the widget.
 
 Description
 -----------
 
 Select Attributes widget is used to manually compose your data
-domain, that is, to decide which attributes will be used and how.
+domain. User can decide which attributes will be used and how.
 Orange distinguishes between ordinary attributes, an (optional) class
 attributes and meta attributes. For instance, for building a classification
 model, the domain would be composed of a set of attributes and a discrete class
@@ -34,20 +35,36 @@ Orange attributes are typed and are either discrete, continuous or
 a character string. The attribute type is marked with a symbol appearing
 before the name of the attribute (D, C, S, respectively).
 
-Changes made to the domain are propagated to the output by pressing an
-Apply button. Reset will present the attributes as defined in original
-domain in the data set from the input signal
+.. image:: images/SelectAttributes-stamped.png
+   :alt: Select Attributes widget
 
-.. image:: images/SelectAttributes.png
-   :alt: Select Attributes widget example
+1. Left-out data attributes from the input data file that will not be in the
+   data domain of the output data file.
+#. Data attributes in the new data file.
+#. A class attribute. If none, the new data set will be classless.
+#. Meta attributes of the new data file. The attributes are included in the
+   data set but are, for most of the methods, not considered in data analysis.
+#. Apply change of the data domain and send the new data file to the output
+   channel of the widget.
+#. Reset the domain composition to that of the input data file.
+#. Add an entry on domain data composition to the current report.
 
-Examples
---------
 
-Below is a simple example how to use this widget. The input is fed directly
-from  the :ref:`File` widget, and the output to the :ref:`Data Table` widget.
-We have also linked the former to the File widget so that one can inspect the
-difference in the domain composition.
+Example
+-------
 
-.. image:: images/SelectAttributes_schema.png
+In a workflow below an input data from the :ref:`File` widget
+is fed to the Select Attributes widget, which outputs the data to
+the :ref:`Data Table`.
+
+.. image:: images/SelectAttributes-Schema.png
    :alt: Select Attributes schema
+
+We used the schema to redefine the classification problem in
+heart disease data set. Originally, the task was to predict if the patient
+has a coronary artery diameter narrowing. We change the problem to that
+of gender classification based on age, chest pain and cholesterol level,
+and informatively kept the diameter narrowing attribute as a meta attribute.
+
+.. image:: images/SelectAttributes-Example.png
+   :alt: An example with Select Attributes widget
