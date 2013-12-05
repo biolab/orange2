@@ -5,6 +5,8 @@ File
 
 .. image:: ../../../../Orange/OrangeWidgets/Data/icons/File.svg
    :alt: File widget icon
+
+Reads attribute-value data from an input file.
    
 Signals
 -------
@@ -19,13 +21,14 @@ Outputs:
 Description
 -----------
 
-This is the widget you will probably use in every schema. It reads the input data file
-(data table with examples) and sends the data set to the output channel. It maintains
-a history of most recently used data files. For convenience, the history also includes
-a directory with the sample data sets that come with Orange.
+File widget reads the input data file (data table with data instances)
+and sends the data set to its output channel. It maintains
+a history of most recently opened files. For convenience, the history also includes
+a directory with the sample data sets that come pre-installed with Orange.
 
-File can read data from simple tab-delimited or comma-separated files, as well as
-files Weka's .arrf format.
+The widget reads data from simple tab-delimited or comma-separated files,
+as well as files in
+`Weka's arrf format <http://www.cs.waikato.ac.nz/~ml/weka/arff.html>`_.
 
 .. image:: images/File-stamped.png
    :alt: File widget with loaded Iris data set
@@ -77,7 +80,7 @@ with great care (if at all).
 Example
 -------
 
-Most Orange workflows would probably start with the :ref:`File` widget. In the schema below,
+Most Orange workflows would probably start with the File widget. In the schema below,
 the widget is used to read the data that is sent to both :ref:`Data Table` widget and
 to widget that displays :ref:`Attribute Statistics`.
 
