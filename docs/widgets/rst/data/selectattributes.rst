@@ -6,7 +6,7 @@ Select Attributes
 .. image:: ../../../../Orange/OrangeWidgets/Data/icons/SelectAttributes.svg
    :alt: Select Attributes icon
 
-
+Manual selection of data attributes and composition of data domain.
 
 Signals
 -------
