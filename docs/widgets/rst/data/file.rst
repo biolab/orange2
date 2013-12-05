@@ -5,6 +5,7 @@ File
 
 .. image:: ../../../../Orange/OrangeWidgets/Data/icons/File.svg
    :alt: File widget icon
+   :class: widget-category-data widget-icon
 
 Reads attribute-value data from an input file.
    

@@ -17,7 +17,7 @@ Data
 
 
 .. list-table::
-    :class: widget-catalog-table
+    :class: widget-catalog-table widget-category-data
     :widths: 1 1 1
     
     * - |File_icon| :ref:`File`

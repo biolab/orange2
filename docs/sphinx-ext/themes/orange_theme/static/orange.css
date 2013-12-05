@@ -667,3 +667,10 @@ div.highlight {
     /* Needs to clear the floating sidebar */
     clear: both;
 }
+
+img.widget-category-data.widget-catalog-table ,
+img.widget-category-data.widget-icon {
+    background: #FFD39F;
+    border-radius: 100%;
+    padding: 6px;
+}
