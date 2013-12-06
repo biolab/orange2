@@ -673,48 +673,54 @@ table.widget-catalog-table img,
 img.widget-icon {
     border-radius: 100%;
     padding: 6px;
-    /*box-shadow: 0px 0px 5px #888888;*/
+    box-shadow: 0px 0px 5px #888888;
 }
 
 /* Data */
 table.widget-catalog-table.widget-category-data img,
 img.widget-category-data.widget-icon {
     background: #FFD39F;
-    /*background: radial-gradient(#FFDEB7 1%, #FDBE74 80%);*/
+    background: radial-gradient(#FFDEB7 0%, #FFDCB5 50%, #FFC178 100%);
 }
 
 /* Visualize */
 table.widget-catalog-table.widget-category-visualize img,
 img.widget-category-visualize.widget-icon {
     background: #FFB7B1;
+    background: radial-gradient(#FFC9C5 0%, #FFC9C5 50%, #FF9991 100%);
 }
 
 /* Classify */
 table.widget-catalog-table.widget-category-classify img,
 img.widget-category-classify.widget-icon {
     background: #FAC1D9;
+    background: radial-gradient(#FAD0E2 0%, #FAD0E2 50%, #FAA8CA 100%);
 }
 
 /* Regression */
 table.widget-catalog-table.widget-category-regression img,
 img.widget-category-regression.widget-icon {
     background: #E5BBFB;
+    background: radial-gradient(#EBCBFB 0%, #EBCBFB 50%, #DB9FFB 100%);
 }
 
 /* Evaluate */
 table.widget-catalog-table.widget-category-evaluate img,
 img.widget-category-evaluate.widget-icon {
     background: #C3F3F3;
+    background: radial-gradient(#CFF3F3 0%, #CFF3F3 50%, #ADF3F3 100%);
 }
 
 /* Associate */
 table.widget-catalog-table.widget-category-associate img,
 img.widget-category-associate.widget-icon {
     background: #ACE3CE;
+    background: radial-gradient(#BAE3D4 0%, #BAE3D4 50%, #95E3C5 100%);
 }
 
 /* Unsupervised */
 table.widget-catalog-table.widget-category-unsupervised img,
 img.widget-category-unsupervised.widget-icon {
     background: #CAE1EF;
+    background: radial-gradient(#D4E5EF 0%, #D4E5EF 50%, #BBD8E9 100%);
 }

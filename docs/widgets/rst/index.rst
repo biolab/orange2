@@ -124,7 +124,7 @@ Visualize
 ---------
 
 .. list-table::
-    :class: widget-catalog-table
+    :class: widget-catalog-table widget-category-visualize
     :widths: 1 1 1
     
     * - |Distributions_icon| :ref:`Distributions`
@@ -200,7 +200,7 @@ Classify
 --------
     
 .. list-table::
-    :class: widget-catalog-table
+    :class: widget-catalog-table widget-category-classify
     :widths: 1 1 1
     
     * - |NaiveBayes_icon| :ref:`Naive Bayes`
@@ -295,7 +295,7 @@ Regression
 
 .. list-table::
     :widths: 1 1 1
-    :class: widget-catalog-table
+    :class: widget-catalog-table widget-category-regression
     
     * - |Mean_icon| :ref:`Mean`
       - |LinearRegression_icon| :ref:`Linear Regression`
@@ -336,7 +336,7 @@ Evaluate
 
 .. list-table::
     :widths: 1 1 1
-    :class: widget-catalog-table
+    :class: widget-catalog-table widget-category-evaluate
     
     * - |ConfusionMatrix_icon| :ref:`Confusion Matrix`
       - |ROCAnalysis_icon| :ref:`ROC Analysis`
@@ -382,7 +382,7 @@ Associate
 
 .. list-table::
     :widths: 1 1 1
-    :class: widget-catalog-table
+    :class: widget-catalog-table widget-category-associate
     
     * - |AssociationRules_icon| :ref:`Association Rules`
       - |AssociationRulesFilter_icon| :ref:`Association Rules Filter`
@@ -422,7 +422,7 @@ Unsupervised
 
 .. list-table::
     :widths: 1 1 1
-    :class: widget-catalog-table
+    :class: widget-catalog-table widget-category-unsupervised
     
     * - |DistanceFile_icon| :ref:`Distance File`
       - |SaveDistanceFile_icon| `Save Distance File`
