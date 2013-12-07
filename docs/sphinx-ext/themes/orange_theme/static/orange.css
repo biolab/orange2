@@ -600,44 +600,47 @@ img.image-float-left {
 	float:left;
 }
 
-	
-.stamp-list li.list-item-1 {
-	list-style-image: url(./images/1.png)
+.stamp-list {
+    padding-left:20px;
 }
 
-.stamp-list li.list-item-2 {
+.stamp-list li:nth-child(1) {
+	list-style-image: url(./images/1.png);
+}
+
+.stamp-list li:nth-child(2) {
 	list-style-image: url(./images/2.png)
 }
 
-.stamp-list li.list-item-3 {
+.stamp-list li:nth-child(3) {
 	list-style-image: url(./images/3.png)
 }
 
-.stamp-list li.list-item-4 {
+.stamp-list li:nth-child(4) {
 	list-style-image: url(./images/4.png)
 }
 
-.stamp-list li.list-item-5 {
+.stamp-list li:nth-child(5) {
 	list-style-image: url(./images/5.png)
 }
 
-.stamp-list li.list-item-6 {
+.stamp-list li:nth-child(6) {
 	list-style-image: url(./images/6.png)
 }
 
-.stamp-list li.list-item-7 {
+.stamp-list li:nth-child(7) {
 	list-style-image: url(./images/7.png)
 }
 
-.stamp-list li.list-item-8 {
+.stamp-list li:nth-child(8) {
 	list-style-image: url(./images/8.png)
 }
 
-.stamp-list li.list-item-9 {
+.stamp-list li:nth-child(9) {
 	list-style-image: url(./images/9.png)
 }
 
-.stamp-list li.list-item-10 {
+.stamp-list li:nth-child(10) {
 	list-style-image: url(./images/10.png)
 }
 

@@ -29,14 +29,16 @@ class.
 
 .. image:: images/Rank-stamped.png
 
-1. Attributes (rows) and their scores by different scoring methods
-   (columns).
-#. Scoring techniques and their (optional) parameters.
-#. For scoring techniques that require discrete attributes this is the number
-   of intervals to which continues attributes will be discretized to.
-#. Number of decimals used in reporting the score.
-#. Toggles the bar-based visualisation of the feature scores.
-#. Adds a score table to the current report.
+.. rst-class:: stamp-list
+
+   1. Attributes (rows) and their scores by different scoring methods
+      (columns).
+   #. Scoring techniques and their (optional) parameters.
+   #. For scoring techniques that require discrete attributes this is the number
+      of intervals to which continues attributes will be discretized to.
+   #. Number of decimals used in reporting the score.
+   #. Toggles the bar-based visualisation of the feature scores.
+   #. Adds a score table to the current report.
 
 Example: Attribute Ranking and Selection
 ----------------------------------------

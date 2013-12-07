@@ -35,14 +35,16 @@ as well as files in
    :alt: File widget with loaded Iris data set
    :align: right
 
-1. Browse for a data file.
-#. Browse through previously opened data files, or load any of the sample data
-   files.
-#. Reloads currently selected data file.
-#. Information on loaded data set (data set size, number and types of
-   data features).
-#. Opens a sub-window with advanced settings.
-#. Adds a report on data set info (size, features).
+.. rst-class:: stamp-list
+
+   1. Browse for a data file.
+   #. Browse through previously opened data files, or load any of the sample data
+      files.
+   #. Reloads currently selected data file.
+   #. Information on loaded data set (data set size, number and types of
+      data features).
+   #. Opens a sub-window with advanced settings.
+   #. Adds a report on data set info (size, features).
 
 .. container:: clearer
 
@@ -55,9 +57,11 @@ Advanced Options
    :alt: Advanced options of File widget
    :align: right
 
-1. Symbol for don't care data entry.
-#. Symbol for don't know data entry.
-#. Settings for treatment of feature names in the feature space of Orange.
+.. rst-class:: stamp-list
+
+   1. Symbol for don't care data entry.
+   #. Symbol for don't know data entry.
+   #. Settings for treatment of feature names in the feature space of Orange.
 
 .. container:: clearer
 
