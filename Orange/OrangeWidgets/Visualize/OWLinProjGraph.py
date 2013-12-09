@@ -260,9 +260,11 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             anchorRadius = numpy.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
             validSubData = self.getValidSubsetList(indices)
             # jitter points if Radviz
-            projSubData = self.createProjectionAsNumericArray(indices, validData = validSubData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = self.jitter_size if self.normalizeExamples else -1, useAnchorData = 1, removeMissingData = 0, useSubsetData = 1).T
-            sub_x_positions = projSubData[0]
-            sub_y_positions = projSubData[1]
+            projSubData = self.createProjectionAsNumericArray(indices, validData = validSubData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = self.jitter_size if self.normalizeExamples else -1, useAnchorData = 1, removeMissingData = 0, useSubsetData = 1)
+            if projSubData is not None:
+                projSubData = projSubData.T
+                sub_x_positions = projSubData[0]
+                sub_y_positions = projSubData[1]
 
             for i in range(len(self.rawSubsetData)):
                 if not validSubData[i]: # check if has missing values
