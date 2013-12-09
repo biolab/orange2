@@ -764,6 +764,8 @@ class OWBaseWidget(QDialog):
 
         """
         old = self.__progressBarValue
+        self.__progressBarValue = value
+
         if value > 0:
             if self.__progressState != 1:
                 warnings.warn("progressBarSet() called without a "
@@ -772,7 +774,6 @@ class OWBaseWidget(QDialog):
                 self.__progressState = 1
                 self.processingStateChanged.emit(1)
 
-            self.__progressBarValue = value
             usedTime = max(1, time.time() - self.startTime)
             totalTime = (100.0 * usedTime) / float(value)
             remainingTime = max(0, totalTime - usedTime)
