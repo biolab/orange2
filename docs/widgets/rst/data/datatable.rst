@@ -5,6 +5,8 @@ Data Table
 
 .. image:: ../../../../Orange/OrangeWidgets/Data/icons/DataTable.svg
    :alt: Data Table icon
+   :class: widget-category-data widget-icon
+
 
 Displays attribute-value data in a spreadsheet.
 
@@ -28,6 +30,8 @@ values. Widget also supports manual selection of data instances.
 
 .. image:: images/DataTable-stamped.png
    :alt: Data table with Iris data set
+
+.. rst-class:: stamp-list
 
 1. The name of the data set (e.g., inherited from the name of the
    input data file) with a table of data instances (in rows)

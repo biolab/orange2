@@ -744,3 +744,7 @@ object.widget-category-unsupervised.widget-icon {
     background: #CAE1EF;
     background: radial-gradient(#D4E5EF 0%, #D4E5EF 50%, #BBD8E9 100%);
 }
+
+dd {
+    margin-left: 0px;
+}

@@ -11,14 +11,12 @@ Signals
 -------
 
 Inputs:
-
    - Data
-      Input data set.
+        Input data set.
 
 Outputs:
-
    - Reduced Data
-      Data set which selected attributes.
+        Data set which selected attributes.
 
 Description
 -----------
