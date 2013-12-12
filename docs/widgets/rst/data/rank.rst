@@ -4,6 +4,7 @@ Rank
 ====
 
 .. image:: ../../../../Orange/OrangeWidgets/Data/icons/Rank.svg
+   :class: widget-category-data widget-icon
 
 Ranking of attributes in classification or regression data sets.
 
