@@ -109,9 +109,21 @@ C_CALL(CostLearner - Orange.wrappers.CostLearner, Learner, "([examples] [, weigh
 
 
 #include "costwrapper.hpp"
-C_CALL(CostWrapperLearner - Orange.wrappers.CostWrapperLearner, Learner, "([examples] [, weight=, costs=]) -/-> Classifier")
-C_NAMED(CostWrapperClassifier - Orange.wrappers.CostWrapperClassifier, Classifier, "([classifier=, costs=])")
+C_CALL(CostWrapperLearner - Orange.wrappers.CostWrapperLearner, Learner, "([examples] [, weight=, cost_matrix=]) -/-> Classifier")
+C_NAMED(CostWrapperClassifier - Orange.wrappers.CostWrapperClassifier, Classifier, "(classifier, cost_matrix)")
 
+
+PyObject *CostWrapperClassifier_new(PyTypeObject *type, PyObject *args)
+{
+  PyTRY
+    PClassifier classifier;
+    PCostMatrix costMatrix;
+    if (!PyArg_ParseTuple(args, "O&O&:CostWrapperClassifier.__new__", cc_Classifier, &classifier, cc_CostMatrix, &costMatrix)) {
+        raiseError("A Classifier and CostMatrix expected.");
+    }
+    return WrapNewOrange(mlnew TCostWrapperClassifier(costMatrix, classifier), type);
+  PyCATCH
+}
 
 /************* ASSOCIATION RULES ************/
 

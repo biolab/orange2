@@ -16,7 +16,7 @@ PClassifier TCostWrapperLearner::operator ()(PExampleGenerator gen, const int &w
 
 
 TCostWrapperClassifier::TCostWrapperClassifier(PCostMatrix cm, PClassifier bc)
-: TClassifier(bc->classVar, false),
+: TClassifier((bc? bc->classVar: PVariable()), false),
   classifier(bc),
   costMatrix(cm)
 {}

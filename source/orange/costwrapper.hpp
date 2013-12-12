@@ -10,7 +10,7 @@ class ORANGE_API TCostWrapperLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
-  PLearner basicLearner; //P basic learner
+  PLearner basicLearner; //P(+base_learner) basic learner
   PCostMatrix costMatrix; //P cost matrix
 
   TCostWrapperLearner(PCostMatrix =PCostMatrix(), PLearner = PLearner());
