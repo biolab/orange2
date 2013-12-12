@@ -42,7 +42,6 @@ Data
     :alt: File
     :width: 36
     :height: 36
-    :target: data/file.html#file
 
 .. |DataTable_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/DataTable.svg
 	:alt: Data Table

@@ -5,6 +5,7 @@ Select Attributes
 
 .. image:: ../../../../Orange/OrangeWidgets/Data/icons/SelectAttributes.svg
    :alt: Select Attributes icon
+   :class: widget-category-data widget-icon
 
 Manual selection of data attributes and composition of data domain.
 
@@ -38,16 +39,18 @@ before the name of the attribute (D, C, S, respectively).
 .. image:: images/SelectAttributes-stamped.png
    :alt: Select Attributes widget
 
-1. Left-out data attributes from the input data file that will not be in the
-   data domain of the output data file.
-#. Data attributes in the new data file.
-#. A class attribute. If none, the new data set will be classless.
-#. Meta attributes of the new data file. The attributes are included in the
-   data set but are, for most of the methods, not considered in data analysis.
-#. Apply change of the data domain and send the new data file to the output
-   channel of the widget.
-#. Reset the domain composition to that of the input data file.
-#. Add an entry on domain data composition to the current report.
+.. rst-class:: stamp-list
+
+    1. Left-out data attributes from the input data file that will not be in the
+       data domain of the output data file.
+    #. Data attributes in the new data file.
+    #. A class attribute. If none, the new data set will be classless.
+    #. Meta attributes of the new data file. The attributes are included in the
+       data set but are, for most of the methods, not considered in data analysis.
+    #. Apply change of the data domain and send the new data file to the output
+       channel of the widget.
+    #. Reset the domain composition to that of the input data file.
+    #. Add an entry on domain data composition to the current report.
 
 
 Example
