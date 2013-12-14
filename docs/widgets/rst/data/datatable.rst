@@ -14,11 +14,11 @@ Signals
 -------
 
 Inputs:
-    - Data
+    - :obj:`Data`
         Attribute-valued data set.
 
 Outputs:
-    - Selected Data
+    - :obj:`Selected Data`
         Selected data instances.
 
 Description

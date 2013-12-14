@@ -12,11 +12,11 @@ Signals
 -------
 
 Inputs:
-   - Data
+   - :obj:`Data`
         Input data set.
 
 Outputs:
-   - Reduced Data
+   - :obj:`Reduced Data`
         Data set which selected attributes.
 
 Description

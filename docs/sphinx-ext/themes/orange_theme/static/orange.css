@@ -600,6 +600,18 @@ img.image-float-left {
 	float:left;
 }
 
+/* Lists for channel signals */
+
+.signal-list {
+    padding-left: 20px;
+}
+
+dd {
+    margin-left: 0px;
+}
+
+/* Stamped lists for enumerated descriptions of widgets */
+
 .stamp-list {
     padding-left:20px;
 }

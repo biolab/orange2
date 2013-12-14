@@ -13,11 +13,22 @@ Signals
 -------
 
 Inputs:
-   - None
+   - (None)
 
 Outputs:
-   - Data
+   - :obj:`Data`
          Attribute-valued data set read from the input file.
+
+
+.. _my-reference-label:
+
+Section to cross-reference
+--------------------------
+
+This is the text of the section.
+
+It refers to the section itself, see :ref:`my-reference-label`.
+
 
 Description
 -----------

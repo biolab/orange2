@@ -13,13 +13,13 @@ Signals
 -------
 
 Inputs:
-    - Data
+    - :obj:`Data`
         Input data set to be sampled.
 
 Outputs:
-    - Data Sample
+    - :obj:`Data Sample`
         A set of sampled data instances.
-    - Remaining Data
+    - :obj:`Remaining Data`
         All other data instances from input data set that are not included
         in the sample.
 

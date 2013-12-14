@@ -13,13 +13,13 @@ Signals
 -------
 
 Input:
-  - Data
-      Attribute-valued data set.
+    - :obj:`Data`
+        Attribute-valued data set.
 
 Outputs:
-  - Data
-      Attribute-valued data set composed using the domain
-      specification from the widget.
+    - :obj:`Data`
+        Attribute-valued data set composed using the domain
+        specification from the widget.
 
 Description
 -----------
