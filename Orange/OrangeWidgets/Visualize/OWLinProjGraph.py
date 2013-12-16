@@ -143,7 +143,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if self.dataHasDiscreteClass:
             self.discPalette.setNumberOfColors(len(self.dataDomain.classVar.values))
 
-        useDifferentSymbols = self.useDifferentSymbols and self.dataHasDiscreteClass and len(self.dataDomain.classVar.values) < len(self.curveSymbols)
+        useDifferentSymbols = self.useDifferentSymbols and self.dataHasDiscreteClass and len(self.dataDomain.classVar.values) <= len(self.curveSymbols)
         dataSize = len(self.rawData)
         validData = self.getValidList(indices)
         # jitter point if Radviz
@@ -239,7 +239,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 else:
                     newColor = (0,0,0)
 
-                if self.useDifferentSymbols and self.dataHasDiscreteClass:
+                if useDifferentSymbols:
                     curveSymbol = self.curveSymbols[int(self.originalData[self.dataClassIndex][i])]
                 else:
                     curveSymbol = self.curveSymbols[0]
@@ -280,7 +280,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     else:
                         newColor = self.contPalette.getRGB(self.noJitteringScaledSubsetData[self.dataClassIndex][i])
 
-                if self.useDifferentSymbols and self.dataHasDiscreteClass and self.validSubsetDataArray[self.dataClassIndex][i]:
+                if useDifferentSymbols and self.validSubsetDataArray[self.dataClassIndex][i]:
                     curveSymbol = self.curveSymbols[int(self.originalSubsetData[self.dataClassIndex][i])]
                 else:
                     curveSymbol = self.curveSymbols[0]
@@ -319,11 +319,16 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         # ##############################################################
         elif self.dataHasDiscreteClass:
             for i in range(dataSize):
-                if not validData[i]: continue
-                if self.useDifferentColors: newColor = self.discPalette.getRGB(self.originalData[self.dataClassIndex][i])
-                else:                       newColor = (0,0,0)
-                if self.useDifferentSymbols: curveSymbol = self.curveSymbols[int(self.originalData[self.dataClassIndex][i])]
-                else:                        curveSymbol = self.curveSymbols[0]
+                if not validData[i]:
+                    continue
+                if self.useDifferentColors:
+                    newColor = self.discPalette.getRGB(self.originalData[self.dataClassIndex][i])
+                else:
+                    newColor = (0, 0, 0)
+                if useDifferentSymbols:
+                    curveSymbol = self.curveSymbols[int(self.originalData[self.dataClassIndex][i])]
+                else:
+                    curveSymbol = self.curveSymbols[0]
                 if not xPointsToAdd.has_key((newColor, curveSymbol, self.showFilledSymbols)):
                     xPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)] = []
                     yPointsToAdd[(newColor, curveSymbol, self.showFilledSymbols)] = []
@@ -359,8 +364,10 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                     else:                       color = QColor(Qt.black)
                     y = 1.0 - index * 0.05
 
-                    if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
-                    else:                             curveSymbol = self.curveSymbols[index]
+                    if not useDifferentSymbols:
+                        curveSymbol = self.curveSymbols[0]
+                    else:
+                        curveSymbol = self.curveSymbols[index]
 
                     self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95], yData = [y], penAlpha = self.alphaValue, brushAlpha = self.alphaValue)
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft | Qt.AlignVCenter)

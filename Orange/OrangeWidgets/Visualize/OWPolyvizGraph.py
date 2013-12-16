@@ -153,7 +153,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         indices = [self.attributeNameIndex[label] for label in labels]
 
         # will we show different symbols?
-        useDifferentSymbols = self.useDifferentSymbols and self.dataHasDiscreteClass and len(self.dataDomain.classVar.values) < len(self.curveSymbols)
+        useDifferentSymbols = self.useDifferentSymbols and self.dataHasDiscreteClass and len(self.dataDomain.classVar.values) <= len(self.curveSymbols)
 
         # ##########
         # draw text at lines
@@ -268,7 +268,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
             for i in range(dataSize):
                 if not validData[i]: continue
                 if self.dataHasClass:
-                    if self.useDifferentSymbols:
+                    if useDifferentSymbols:
                         symbol = self.curveSymbols[int(self.originalData[self.dataClassIndex][i])]
                     if useDifferentColors:
                         color = self.discPalette.getRGB(self.originalData[self.dataClassIndex][i])
@@ -307,8 +307,10 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
                     else:                       color = QColor(0,0,0)
                     y = 1.0 - index * 0.05
 
-                    if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
-                    else:                             curveSymbol = self.curveSymbols[index]
+                    if not useDifferentSymbols:
+                        curveSymbol = self.curveSymbols[0]
+                    else:
+                        curveSymbol = self.curveSymbols[index]
 
                     self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95, 0.95], yData = [y, y])
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft | Qt.AlignVCenter)
