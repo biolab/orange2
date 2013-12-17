@@ -95,7 +95,7 @@ class ORANGE_API TMakeRandomIndicesMultiple : public TMakeRandomIndices {
 public:
   __REGISTER_CLASS
 
-  float p0; // proportion/number of examples
+  float p0; //P proportion/number of examples
 
   TMakeRandomIndicesMultiple(const float &p0=1.0, const int &stratified=TMakeRandomIndices::STRATIFIED_IF_POSSIBLE, const int &randseed=-1);
   TMakeRandomIndicesMultiple(const float &p0, const int &stratified, PRandomGenerator);

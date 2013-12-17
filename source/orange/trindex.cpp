@@ -439,6 +439,18 @@ PRandomIndices TMakeRandomIndicesMultiple::operator()(PExampleGenerator gen, con
   if (stratified==TMakeRandomIndices::NOT_STRATIFIED)
      return operator()(gen->numberOfExamples(), ap0);
 
+  if (!gen->domain->classVar)
+     if (stratified==TMakeRandomIndices::STRATIFIED_IF_POSSIBLE)
+       return operator()(gen->numberOfExamples(), ap0);
+     else
+       raiseError("invalid example generator or class-less domain");
+
+   if (gen->domain->classVar->varType!=TValue::INTVAR)
+     if (stratified==TMakeRandomIndices::STRATIFIED_IF_POSSIBLE)
+       return operator()(gen->numberOfExamples(), ap0);
+     else
+       raiseError("cannot prepare stratified indices (non-discrete class values)");
+
   if (!randomGenerator && (randseed<0))
     raiseCompatibilityWarning("object always returns the same indices unless either 'randomGenerator' or 'randseed' is set");
 
@@ -457,7 +469,7 @@ PRandomIndices TMakeRandomIndicesMultiple::operator()(PExampleGenerator gen, con
     else
       byclasses[(*ei).getClass().intV].push_back(nexamples++);
 
-  int no= (p0<=1.0) ? int(p0*nexamples+0.5) : int(p0+0.5);
+  int no= (ap0 <= 1.0) ? int(ap0 * nexamples + 0.5) : int(ap0 + 0.5);
   rsrgen rg(randomGenerator, randseed);
 
   PRandomIndices indices(mlnew TFoldIndices());
