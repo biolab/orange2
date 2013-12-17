@@ -78,12 +78,12 @@ BUNDLE_LITE=$SCRIPT_DIR_NAME/bundle-lite/Orange.app
 
 # Versions of included 3rd party software
 
-PYTHON_VER=2.7.5
-PIP_VER=1.3.1
+PYTHON_VER=2.7.6
+PIP_VER=1.4.1
 DISTRIBUTE_VER=0.6.49
-NUMPY_VER=1.7.1
-SCIPY_VER=0.12.0
-QT_VER=4.7.4
+NUMPY_VER=1.8.0
+SCIPY_VER=0.13.1
+QT_VER=4.8.5
 SIP_VER=4.14.6
 PYQT_VER=4.10.1
 PYQWT_VER=5.2.0
@@ -95,7 +95,12 @@ PYTHON=$APP/Contents/MacOS/python
 EASY_INSTALL=$APP/Contents/MacOS/easy_install
 PIP=$APP/Contents/MacOS/pip
 
-export MACOSX_DEPLOYMENT_TARGET=10.5
+export MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET:-10.6}
+
+if [[ $MACOSX_DEPLOYMENT_TARGET < 10.6 ]]; then
+	# This is the last Qt version that builds against 10.5 sdk
+	QT_VER=4.7.4
+fi
 
 SDK=/Developer/SDKs/MacOSX$MACOSX_DEPLOYMENT_TARGET.sdk
 
@@ -227,11 +232,23 @@ function install_ipython {
 function install_qt4 {
 	QT_VER_SHORT=${QT_VER%%\.[0-9]}
 
-	# 4.8.* (4.8 does not compile for x86_64 using 10.5 SDK)
-	#download_and_extract "http://download.qt-project.org/official_releases/qt/$QT_VER_SHORT/$QT_VER/qt-everywhere-opensource-src-$QT_VER.tar.gz"
+	# The official releases seem to only include the latest
+	# and the archive the rest
+	OFFICIAL="http://download.qt-project.org/official_releases/qt/$QT_VER_SHORT/$QT_VER/qt-everywhere-opensource-src-$QT_VER.tar.gz"
 
-	# 4.7 or older
-	download_and_extract "http://download.qt-project.org/archive/qt/$QT_VER_SHORT/qt-everywhere-opensource-src-$QT_VER.tar.gz"
+	if [[ $QT_VER_SHORT < 4.8 ]]; then
+		ARCHIVE="http://download.qt-project.org/archive/qt/$QT_VER_SHORT/qt-everywhere-opensource-src-$QT_VER.tar.gz"
+	else
+		ARCHIVE="http://download.qt-project.org/archive/qt/$QT_VER_SHORT/$QT_VER/qt-everywhere-opensource-src-$QT_VER.tar.gz"
+	fi
+
+	if curl --fail --head --silent -o /dev/null $OFFICIAL ; then
+		QT_URL=$OFFICIAL
+	else
+		QT_URL=$ARCHIVE
+	fi
+
+	download_and_extract $QT_URL
 
 	pushd qt-everywhere-opensource-src-$QT_VER
 
