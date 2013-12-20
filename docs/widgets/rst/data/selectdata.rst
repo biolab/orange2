@@ -79,5 +79,5 @@ In a toy example below we used the car data from imports-85 data set and
 compared the prices of all the cars in the data set to those of BMW and
 Marcedes-Benz.
 
-.. image:: images/SelectData-Example.png
+.. image:: images/SelectData-Workflow.png
    :alt: A workflow with Data Sampler

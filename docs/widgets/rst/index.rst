@@ -20,25 +20,30 @@ Data
     :widths: 1 1 1
     
     * - |File_icon| :ref:`File`
+      - |PaintData_icon| :ref:`Paint Data`
       - |DataTable_icon| :ref:`Data Table`
-      - |SelectAttributes_icon| :ref:`Select Attributes`
-    * - |Rank_icon| :ref:`Rank`
+    * - |SelectAttributes_icon| :ref:`Select Attributes`
+      - |Rank_icon| :ref:`Rank`
       - |PurgeDomain_icon| :ref:`Purge Domain`
-      - |MergeData_icon| :ref:`Merge Data`
-    * - |Concat_icon| :ref:`Concatenate`
+    * - |MergeData_icon| :ref:`Merge Data`
+      - |Concat_icon| :ref:`Concatenate`
       - |DataSampler_icon| :ref:`Data Sampler`
-      - |SelectData_icon| :ref:`Select Data`
-    * - |Save_icon| :ref:`Save`
+    * - |SelectData_icon| :ref:`Select Data`
+      - |Save_icon| :ref:`Save`
       - |Discretize_icon| :ref:`Discretize`
-      - |Cont_icon| :ref:`Continuize`
-    * - |Impute_icon| :ref:`Impute`
+    * - |Cont_icon| :ref:`Continuize`
+      - |Impute_icon| :ref:`Impute`
       - |Outliers_icon| :ref:`Outliers`
-      - |EditDomain_icon| :ref:`Edit Domain`
-    * - |PythonScript_icon| :ref:`Python Script`
-      -
+    * - |EditDomain_icon| :ref:`Edit Domain`
+      - |PythonScript_icon| :ref:`Python Script`
       -
 
 .. |File_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/File.svg
+    :alt: File
+    :width: 36
+    :height: 36
+
+.. |PaintData_icon| image:: ../../../Orange/OrangeWidgets/Data/icons/PaintData.svg
     :alt: File
     :width: 36
     :height: 36
@@ -516,6 +521,7 @@ Index:
    :maxdepth: 1
    
    data/file.rst
+   data/paintdata.rst
    data/datatable.rst
    data/selectattributes.rst
    data/rank.rst

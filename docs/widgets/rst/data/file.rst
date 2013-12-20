@@ -96,5 +96,5 @@ the schema below, the widget is used to read the data that is sent to
 both :ref:`Data Table` widget and to widget that displays
 :ref:`Attribute Statistics`.
 
-.. image:: images/File_schema.png
+.. image:: images/File-Workflow.png
    :alt: Example schema with File widget

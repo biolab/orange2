@@ -57,5 +57,5 @@ In the workflow below we load the data into a :ref:`Scatter Plot`
 widget, where we select a subset of the data instances and push them
 to Save widget to store them in a data file.
 
-.. image:: images/Save-Example.png
+.. image:: images/Save-Workflow.png
    :alt: Schema with Save widget

@@ -60,7 +60,7 @@ In a workflow below an input data from the :ref:`File` widget
 is fed to the Select Attributes widget, which outputs the data to
 the :ref:`Data Table`.
 
-.. image:: images/SelectAttributes-Schema.png
+.. image:: images/SelectAttributes-Workflow.png
    :alt: Select Attributes schema
 
 We used the schema to redefine the classification problem in
