@@ -9,9 +9,19 @@
 #
 # Show data using parallel coordinates visualization method
 #
-from OWVisWidget import *
-from OWParallelGraph import *
-import OWToolbars, OWGUI, OWColorPalette, orngVisFuncts
+import os
+from Orange.orange import ExampleTable
+from PyQt4.QtCore import SIGNAL, Qt, QSize
+from PyQt4.QtGui import QColor, QRadioButton, QFileDialog, QMessageBox, qApp
+from PyQt4.Qwt5.Qwt import QwtPlot
+from Orange.OrangeCanvas.registry.description import Default
+from Orange.OrangeWidgets import OWToolbars, OWGUI, OWColorPalette
+from Orange.OrangeWidgets.OWBaseWidget import AttributeList
+from Orange.OrangeWidgets.OWContexts import DomainContextHandler, ContextField
+from Orange.OrangeWidgets.OWVisWidget import OWVisWidget
+from Orange.OrangeWidgets.OWWidget import OWWidget
+from Orange.OrangeWidgets.Visualize.OWParallelGraph import OWParallelGraph
+from Orange.orng import orngVisFuncts
 from sys import getrecursionlimit, setrecursionlimit
 
 ###########################################################################################
@@ -26,7 +36,7 @@ class OWParallelCoordinates(OWVisWidget):
     contextHandlers = {"": DomainContextHandler("", [ContextField("shownAttributes", DomainContextHandler.RequiredList, selected="selectedShown", reservoir="hiddenAttributes")])}
 
     def __init__(self,parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Parallel Coordinates", TRUE)
+        OWWidget.__init__(self, parent, signalManager, "Parallel Coordinates", True)
 
         #add a graph widget
         self.graph = OWParallelGraph(self, self.mainArea)
@@ -292,7 +302,7 @@ class ParallelOptimization(OWWidget):
                     "numberOfAttributes", "orderAllAttributes", "optimizationMeasure"]
 
     def __init__(self, parallelWidget, parent=None, signalManager = None):
-        OWWidget.__init__(self, parent, signalManager, "Parallel Optimization Dialog", FALSE)
+        OWWidget.__init__(self, parent, signalManager, "Parallel Optimization Dialog", False)
         self.setCaption("Parallel Optimization Dialog")
         self.parallelWidget = parallelWidget
 
@@ -647,14 +657,18 @@ class ParallelOptimization(OWWidget):
 
 #test widget appearance
 if __name__=="__main__":
+    import sys
+    from PyQt4.QtGui import QApplication
+    from Orange.OrangeWidgets.OWColorPalette import ColorPaletteGenerator
+
     a=QApplication(sys.argv)
     ow=OWParallelCoordinates()
     ow.show()
     ow.graph.discPalette = ColorPaletteGenerator(rgbColors = [(127, 201, 127), (190, 174, 212), (253, 192, 134)])
-    data = orange.ExampleTable("../../doc/datasets/iris.tab")
-#    data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\wine.tab")
-    #data = orange.ExampleTable(r"e:\Development\Orange Datasets\UCI\zoo.tab")
+    data = ExampleTable("iris.tab")
     ow.setData(data)
     ow.handleNewSignals()
     
     a.exec_()
+
+    ow.saveSettings()
