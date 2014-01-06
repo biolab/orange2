@@ -538,6 +538,11 @@ class OWGraph(QwtPlot):
             if handled: return
         QwtPlot.mousePressEvent(self, e)
         canvasPos = self.canvas().mapFrom(self, e.pos())
+
+        if not self.canvas().contentsRect().contains(canvasPos):
+            # Press on the legend or axis widget.
+            return
+
         xFloat = self.invTransform(QwtPlot.xBottom, canvasPos.x())
         yFloat = self.invTransform(QwtPlot.yLeft, canvasPos.y())
         self.xpos = canvasPos.x()
