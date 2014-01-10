@@ -8,6 +8,7 @@ It currently supports:
 - `MySql <http://www.mysql.com/>`_  through `MySQL for Python <http://sourceforge.net/projects/mysql-python/>`_,
 - `Postgres <http://www.postgresql.org>`_ through `Psycopg <http://initd.org/psycopg/>`_,
 - `sqlite <http://www.sqlite.org/>`_ through `sqlite3 <http://docs.python.org/library/sqlite3.html>`_.
+- `odbc <http://en.wikipedia.org/wiki/ODBC>`_ through `pyodbc <https://code.google.com/p/pyodbc/>`_.
 
 :class:`SQLReader` and :class:`SQLWriter` classes require connection string based on
 standard format scheme://[user[:password]@]host[:port]/database[?parameters].
@@ -19,6 +20,7 @@ Examples of valid connection strings:
 - mysql://host/database?debug=1
 - postgres://user@host/database?debug=&cache=
 - postgres://host:5432/database
+- odbc://user:password@host:port/database?DSN=dsn
 
 Attribute Names and Types
 -------------------------

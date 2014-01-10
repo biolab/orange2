@@ -81,6 +81,20 @@ class __PostgresQuirkFix(object):
     def beforeCreate(self, cursor):
         pass
 
+class __ODBCQuirkFix(object):
+    def __init__(self, dbmod):
+        self.dbmod = dbmod
+        self.typeDict = {
+            Descriptor.Continuous:'FLOAT',
+            Descriptor.Discrete:'VARCHAR', Descriptor.String:'VARCHAR'}
+
+    def beforeWrite(self, cursor):
+        pass
+
+    def beforeCreate(self, cursor):
+        pass
+
+
 def _connection(uri):
         (schema, user, password, host, port, path, args) = _parseURI(uri)
         argTrans = {
@@ -91,19 +105,12 @@ def _connection(uri):
             'database':'db'
             }
         if schema == 'postgres':
-            import psycopg2 as dbmod
             argTrans["database"] = "db"
-            quirks = __PostgresQuirkFix(dbmod)
-            quirks.parameter = "%s"
-        elif schema == 'mysql':
-            import MySQLdb as dbmod
-            quirks = __MySQLQuirkFix(dbmod)
-            quirks.parameter = "%s"
-        elif schema == "sqlite":
-            import sqlite3 as dbmod
-            quirks = __PostgresQuirkFix(dbmod)
-            quirks.parameter = "?"
-            return (quirks, dbmod.connect(host))
+        elif schema == 'odbc':
+            argTrans["host"] = "server"
+            argTrans["user"] = "uid"
+            argTrans["password"] = "pwd"
+            argTrans['database'] = 'database'
 
         dbArgDict = {}
         if user:
@@ -116,9 +123,37 @@ def _connection(uri):
             dbArgDict[argTrans['port']] = port
         if path:
             dbArgDict[argTrans['database']] = path[1:]
-        return (quirks, dbmod.connect(**dbArgDict))
 
-
+        if schema == 'postgres':
+            import psycopg2 as dbmod
+            quirks = __PostgresQuirkFix(dbmod)
+            quirks.parameter = "%s"
+            return (quirks, dbmod.connect(**dbArgDict))
+        elif schema == 'mysql':
+            import MySQLdb as dbmod
+            quirks = __MySQLQuirkFix(dbmod)
+            quirks.parameter = "%s"
+            return (quirks, dbmod.connect(**dbArgDict))
+        elif schema == "sqlite":
+            import sqlite3 as dbmod
+            quirks = __PostgresQuirkFix(dbmod)
+            quirks.parameter = "?"
+            return (quirks, dbmod.connect(host))
+        elif schema == "odbc":
+            import pyodbc as dbmod
+            quirks = __ODBCQuirkFix(dbmod)
+            quirks.parameter = "?"
+            if args.has_key('DSN'):
+                connectionString = 'DSN=%s' % (args['DSN'])
+            elif args.has_key('Driver'):
+                connectionString = 'Driver=%s' % (args['Driver'])
+            else:
+                raise ValueError, "ODBC url schema must have DSN or Driver parameter"
+            for k in args:
+                if k not in ['DSN','Driver']:
+                    connectionString +=';%s=%s' % (k,args[k])
+            #print connectionString, dbArgDict
+            return (quirks, dbmod.connect(connectionString,**dbArgDict))
 
 class SQLReader(object):
     """
@@ -226,7 +261,7 @@ class SQLReader(object):
         self._dirty = True
 
     def get_domain(self):
-        if not hasattr(self, '_domain'):
+        if not hasattr(self, '_domain') or self._domain is None:
             self._createDomain()
         return self._domain
 
@@ -244,7 +279,7 @@ class SQLReader(object):
         self.update()
 
     def _createDomain(self):
-        if hasattr(self, '_domain'):
+        if hasattr(self, '_domain') and not self._domain is None:
             return
         attrNames = []
         if not hasattr(self, '_discreteNames'):
@@ -262,11 +297,11 @@ class SQLReader(object):
             typ = i[1]
             if name in discreteNames:
                 attrName = 'D#' + name
-            elif typ is None or typ in [self.quirks.dbmod.STRING, self.quirks.dbmod.DATETIME]:
+            elif typ is None or typ in [unicode, self.quirks.dbmod.STRING, self.quirks.dbmod.DATETIME]:
                     attrName = 'S#' + name
             else:
                 attrName = 'C#' + name
-            
+
             if name == className:
                 attrName = "c" + attrName
             elif name in metaNames:
@@ -281,7 +316,7 @@ class SQLReader(object):
         """
         Execute a pending SQL query.
         """
-        if not self._dirty and hasattr(self, '_domain'):
+        if not self._dirty and hasattr(self, '_domain') and not self._domain is None:
             return self.exampleTable
         self.exampleTable = None
         try:
@@ -297,7 +332,7 @@ class SQLReader(object):
             self._createDomain()
             attrNames = []
             for i, name in enumerate(self.desc):
-            #    print name[0], '->', self.domain.index(name[0])
+                #print name[0], '->', self._domain.index(name[0])
                 domainIndexes[self._domain.index(name[0])] = i
                 attrNames.append(name[0])
             self.exampleTable = Orange.data.Table(self.domain)
