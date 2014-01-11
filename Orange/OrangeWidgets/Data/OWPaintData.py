@@ -343,9 +343,22 @@ class SelectTool(DataTool):
             QFrame.__init__(self, parent)
             self.tool = tool
             layout = QHBoxLayout()
-            delete = QToolButton(self, text="Delete",
-                                 toolTip="Delete selected instances")
-            delete.clicked.connect(self.tool.deleteSelected)
+            action = QAction(
+                 "Delete", self,
+                 toolTip="Delete selected instances.",
+                 shortcut=QKeySequence.Delete,
+                 shortcutContext=Qt.WindowShortcut,
+            )
+            if sys.platform == "darwin":
+                action.setShortcuts(
+                    [QKeySequence(Qt.ControlModifier + Qt.Key_Backspace),
+                     QKeySequence(QKeySequence.Delete)]
+                )
+
+            delete = QToolButton(self)
+            delete.setDefaultAction(action)
+
+            action.triggered.connect(self.tool.deleteSelected)
 
             layout.addWidget(delete)
             layout.addStretch(10)
@@ -1058,11 +1071,6 @@ class OWPaintData(OWWidget):
 
     def onDataChanged(self):
         self.dataChangedFlag = True
-
-    def keyPressEvent(self, event):
-        if event.key() == QtCore.Qt.Key_Delete and \
-                isinstance(self.currentTool, SelectTool):
-            self.currentTool.deleteSelected()
 
     def commitIf(self):
         if self.commitOnChange and self.dataChangedFlag:
