@@ -285,7 +285,12 @@ if site_cfg.qt_conf.framework:
         extra_link_args += ["-framework", lib]
     qt_libs = []
 else:
-    include_dirs = [site_cfg.qt_conf.include_dir] + \
+    if type(site_cfg.qt_conf.include_dir) == list:
+        include_dirs = site_cfg.qt_conf.include_dir + \
+                [pjoin(d, lib)
+                for lib in qt_libs for d in site_cfg.qt_conf.include_dir]
+    else:
+        include_dirs = [site_cfg.qt_conf.include_dir] + \
                    [pjoin(site_cfg.qt_conf.include_dir, lib)
                     for lib in qt_libs]
     library_dirs += [site_cfg.qt_conf.library_dir]
