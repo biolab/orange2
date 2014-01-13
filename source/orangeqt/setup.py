@@ -1,20 +1,32 @@
-#!usr/bin/env python
+#!/usr/bin/env python
 
-import os, sys
+import os
+import sys
+import shlex
+from collections import namedtuple
+from ConfigParser import SafeConfigParser
 
-try:
-    from setuptools import setup
-    have_setuptools = True
-except ImportError:
-    from distutils.core import setup
-    have_setuptools = False
+from setuptools import setup
 
 from distutils.core import Extension
-from distutils import log
+from distutils import dir_util, spawn, log
 
-import subprocess
 import glob
 import numpy
+
+import sipdistutils
+
+try:
+    from PyQt4 import pyqtconfig
+except ImportError:
+    pyqtconfig = None
+
+try:
+    from PyQt4.QtCore import PYQT_CONFIGURATION
+except ImportError:
+    PYQT_CONFIGURATION = None
+
+pjoin = os.path.join
 
 NAME                = 'orangeqt-qt'
 DESCRIPTION         = 'orangeqt ploting library'
@@ -25,20 +37,130 @@ AUTHOR_EMAIL        = "orange@fri.uni-lj.si"
 VERSION             = '0.0.1a'
 
 
+pyqt_conf = namedtuple(
+    "pyqt_conf",
+    ["sip_flags",
+     "sip_dir"]
+)
 
-import PyQt4.QtCore
+qt_conf = namedtuple(
+    "qt_conf",
+    ["prefix",
+     "include_dir",
+     "library_dir",
+     "framework",
+     "framework_dir"]
+)
 
-from PyQt4 import pyqtconfig 
+config = namedtuple(
+    "config",
+    ["sip",
+     "pyqt_conf",
+     "qt_conf"]
+)
 
-cfg = pyqtconfig.Configuration()
-pyqt_sip_dir = cfg.pyqt_sip_dir
+pyqt_sip_dir = None
+pyqt_sip_flags = None
 
-import sipdistutils
+qt_dir = None
+qt_include_dir = None
+qt_lib_dir = None
+qt_framework = False
+
+# use PyQt4 build time config if provided
+if pyqtconfig is not None:
+    cfg = pyqtconfig.Configuration()
+    pyqt_sip_dir = cfg.pyqt_sip_dir
+    pyqt_sip_flags = cfg.pyqt_sip_flags
+
+    qt_dir = cfg.qt_dir
+    qt_include_dir = cfg.qt_inc_dir
+    qt_lib_dir = cfg.qt_lib_dir
+    qt_framework = bool(cfg.qt_framework)
+    qt_framework_dir = qt_lib_dir
+
+elif PYQT_CONFIGURATION is not None:
+    pyqt_sip_flags = PYQT_CONFIGURATION["sip_flags"]
+
+
+# if QTDIR env is defined use it
+if "QTDIR" in os.environ:
+    qt_dir = os.environ["QTDIR"]
+    if sys.platform == "darwin":
+        if glob(pjoin(qt_dir, "lib", "Qt*.framework")):
+            # This is the standard Qt4 framework layout
+            qt_framework = True
+            qt_framework_dir = pjoin(qt_dir, "lib")
+        elif glob(pjoin(qt_dir, "Frameworks", "Qt*.framework")):
+            # Also worth checking (standard for bundled apps)
+            qt_framework = True
+            qt_framework_dir = pjoin(qt_dir, "Frameworks")
+
+    if not qt_framework:
+        # Assume standard layout
+        qt_framework = False
+        qt_include_dir = pjoin(qt_dir, "include")
+        qt_lib_dir = pjoin(qt_dir, "lib")
+
 
 extra_compile_args = []
 extra_link_args = []
 include_dirs = []
 library_dirs = []
+
+
+def site_config():
+    parser = SafeConfigParser(dict(os.environ))
+    parser.read(["site.cfg",
+                 os.path.expanduser("~/.orangeqt-site.cfg")])
+
+    def get(section, option, default=None, type=None):
+        if parser.has_option(section, option):
+            if type is None:
+                return parser.get(section, option)
+            elif type is bool:
+                return parser.getboolean(section, option)
+            elif type is int:
+                return parser.getint(section, option)
+            else:
+                raise TypeError
+        else:
+            return default
+
+    sip_bin = get("sip", "sip_bin")
+
+    sip_flags = get("pyqt", "sip_flags", default=pyqt_sip_flags)
+    sip_dir = get("pyqt", "sip_dir", default=pyqt_sip_dir)
+
+    if sip_flags is not None:
+        sip_flags = shlex.split(sip_flags)
+    else:
+        sip_flags = []
+
+    prefix = get("qt", "qt_dir", default=qt_dir)
+    include_dir = get("qt", "include_dir", default=qt_include_dir)
+    library_dir = get("qt", "library_dir", default=qt_lib_dir)
+    framework = get("qt", "framework", default=qt_framework, type=bool)
+    framework_dir = get("qt", "framework_dir", default=qt_framework_dir)
+
+    def path_list(path):
+        if path and path.strip():
+            return path.split(os.pathsep)
+        else:
+            return []
+
+    include_dir = path_list(include_dir)
+    library_dir = path_list(library_dir)
+
+    conf = config(
+        sip_bin,
+        pyqt_conf(sip_flags, sip_dir),
+        qt_conf(prefix, include_dir, library_dir,
+                framework, framework_dir)
+    )
+    return conf
+
+site_cfg = site_config()
 
 if sys.platform == "darwin":
     sip_plaftorm_tag = "WS_MACX"
@@ -49,62 +171,99 @@ elif sys.platform.startswith("linux"):
 else:
     sip_plaftorm_tag = ""
 
+def which(name):
+    """
+    Return the path of program named 'name' on the $PATH.
+    """
+    if os.name == "nt" and not name.endswith(".exe"):
+        name = name + ".exe"
+
+    for path in os.environ["PATH"].split(os.pathsep):
+        path = os.path.join(path, name)
+        if os.path.isfile(path) and os.access(path, os.X_OK):
+            return path
+
+    return None
+
+
 class PyQt4Extension(Extension):
     pass
 
+
 class build_pyqt_ext(sipdistutils.build_ext):
+    """
+    A build_ext command for building PyQt4 sip based extensions
+    """
     description = "Build a orangeqt PyQt4 extension."
-    
-    user_options = sipdistutils.build_ext.user_options + \
-        [("required", None,  
-          "orangeqt is required (failure to build will raise an error)")]
-        
-    boolean_options = sipdistutils.build_ext.boolean_options + \
-        ["required"]
-    
-    def initialize_options(self):
-        sipdistutils.build_ext.initialize_options(self)
-        self.required = False
-        
+
     def finalize_options(self):
         sipdistutils.build_ext.finalize_options(self)
-        self.sip_opts = self.sip_opts + ["-k", "-j", "1", "-t", 
-                        sip_plaftorm_tag, "-t",
-                        "Qt_" + PyQt4.QtCore.QT_VERSION_STR.replace('.', '_')]
-        if self.required is not None:
-            self.required = True
+        self.sip_opts = self.sip_opts + \
+                        site_cfg.pyqt_conf.sip_flags + \
+                        ["-j", "1"]  # without -j1 it does not build (??)
 
     def build_extension(self, ext):
         if not isinstance(ext, PyQt4Extension):
             return
-        cppsources = [source for source in ext.sources if source.endswith(".cpp")]
-        if not os.path.exists(self.build_temp):
-            os.makedirs(self.build_temp)
+
+        cppsources = [source for source in ext.sources
+                      if source.endswith(".cpp")]
+
+        dir_util.mkpath(self.build_temp, dry_run=self.dry_run)
+
+        # Run moc on all header files.
         for source in cppsources:
             header = source.replace(".cpp", ".h")
             if os.path.exists(header):
                 moc_file = os.path.basename(header).replace(".h", ".moc")
-                call_arg = ["moc", "-o", os.path.join(self.build_temp, moc_file), header]
-                log.info("Calling: " + " ".join(call_arg))
-                try:
-                    subprocess.call(call_arg)
-                except OSError:
-                    raise OSError("Could not locate 'moc' executable.")
-        ext.extra_compile_args = ext.extra_compile_args + ["-I" + self.build_temp]
+                out_file = os.path.join(self.build_temp, moc_file)
+                call_arg = ["moc", "-o", out_file, header]
+                spawn.spawn(call_arg, dry_run=self.dry_run)
+
+        # Add the temp build directory to include path, for compiler to find
+        # the created .moc files
+        ext.include_dirs = ext.include_dirs + [self.build_temp]
+
         sipdistutils.build_ext.build_extension(self, ext)
-    
-    def run(self):
-        try:
-            sipdistutils.build_ext.run(self)
-        except Exception as ex:
-            if self.required:
-                raise
-            else:
-                log.info("Could not build orangeqt extension (%r)\nSkipping." % ex)
+
+    def _find_sip(self):
+        if site_cfg.sip:
+            log.info("Using sip at %r (from .cfg file)" % site_cfg.sip)
+            return site_cfg.sip
+
+        # Try the base implementation
+        sip = sipdistutils.build_ext._find_sip(self)
+        if os.path.isfile(sip):
+            return sip
+
+        log.warn("Could not find sip executable at %r." % sip)
+
+        # Find sip on $PATH
+        sip = which("sip")
+
+        if sip:
+            log.info("Found sip on $PATH at: %s" % sip)
+            return sip
+
+        return sip
 
     # For sipdistutils to find PyQt4's .sip files
     def _sip_sipfiles_dir(self):
-        return pyqt_sip_dir
+        if site_cfg.pyqt_conf.sip_dir:
+            return site_cfg.pyqt_conf.sip_dir
+
+        if os.path.isdir(pyqt_sip_dir):
+            return pyqt_sip_dir
+
+        log.warn("The default sip include directory %r does not exist" %
+                 pyqt_sip_dir)
+
+        path = os.path.join(sys.prefix, "share/sip/PyQt4")
+        if os.path.isdir(path):
+            log.info("Found sip include directory at %r" % path)
+            return path
+
+        return "."
 
 
 def get_source_files(path, ext="cpp", exclude=[]):
@@ -113,23 +272,23 @@ def get_source_files(path, ext="cpp", exclude=[]):
     return files
 
 
-# Used Qt4 libs
-qt_libs = ["QtCore", "QtGui", "QtOpenGL"]
+# Used Qt4 libraries
+qt_libs = ["QtCore", "QtGui"]
 
-
-if cfg.qt_framework:
-    extra_compile_args = ["-F%s" % cfg.qt_lib_dir]
-    extra_link_args = ["-F%s" % cfg.qt_lib_dir]
+if site_cfg.qt_conf.framework:
+    framework_dir = site_cfg.qt_conf.framework_dir
+    extra_compile_args = ["-F%s" % framework_dir]
+    extra_link_args = ["-F%s" % framework_dir]
     for lib in qt_libs:
-        include_dirs += [os.path.join(cfg.qt_lib_dir,
+        include_dirs += [os.path.join(framework_dir,
                                       lib + ".framework", "Headers")]
         extra_link_args += ["-framework", lib]
-#    extra_link_args += ["-framework", "OpenGL"]
     qt_libs = []
 else:
-    include_dirs = [cfg.qt_inc_dir] + \
-                   [os.path.join(cfg.qt_inc_dir, lib) for lib in qt_libs]
-    library_dirs += [cfg.qt_lib_dir]
+    include_dirs = [site_cfg.qt_conf.include_dir] + \
+                   [pjoin(site_cfg.qt_conf.include_dir, lib)
+                    for lib in qt_libs]
+    library_dirs += [site_cfg.qt_conf.library_dir]
 
 if sys.platform == "win32":
     # Qt libs on windows have a 4 added
@@ -137,17 +296,19 @@ if sys.platform == "win32":
 
 include_dirs += [numpy.get_include(), "./"]
 
-orangeqt_ext = PyQt4Extension("orangeqt",
-                              ["orangeqt.sip"] + get_source_files("", "cpp",
-                               exclude=["canvas3d.cpp", "plot3d.cpp", "glextensions.cpp"]
-                               ),
-                              include_dirs=include_dirs,
-                              extra_compile_args=extra_compile_args + \
-                                                   ["-DORANGEQT_EXPORTS"],
-                              extra_link_args=extra_link_args,
-                              libraries = qt_libs,
-                              library_dirs=library_dirs
-                             )
+orangeqt_ext = PyQt4Extension(
+    "orangeqt",
+    ["orangeqt.sip"] + get_source_files(
+        "", "cpp",
+        exclude=["canvas3d.cpp", "plot3d.cpp", "glextensions.cpp"]
+     ),
+    include_dirs=include_dirs,
+    extra_compile_args=extra_compile_args + \
+                         ["-DORANGEQT_EXPORTS"],
+    extra_link_args=extra_link_args,
+    libraries=qt_libs,
+    library_dirs=library_dirs
+)
 
 ENTRY_POINTS = {
     'orange.addons': (
@@ -155,17 +316,18 @@ ENTRY_POINTS = {
     ),
 }
 
+
 def setup_package():
-    setup(name = NAME,
-          description = DESCRIPTION,
-          version = VERSION,
-          author = AUTHOR,
-          author_email = AUTHOR_EMAIL,
-          url = URL,
-          license = LICENSE,
-          ext_modules = [orangeqt_ext],
+    setup(name=NAME,
+          description=DESCRIPTION,
+          version=VERSION,
+          author=AUTHOR,
+          author_email=AUTHOR_EMAIL,
+          url=URL,
+          license=LICENSE,
+          ext_modules=[orangeqt_ext],
           cmdclass={"build_ext": build_pyqt_ext},
-          entry_points = ENTRY_POINTS,
+          entry_points=ENTRY_POINTS,
           )
 
 if __name__ == '__main__':

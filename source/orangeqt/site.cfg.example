@@ -1,0 +1,36 @@
+###################
+# sip configuration
+###################
+
+[sip]
+#sip_bin = /usr/local/bin/sip
+
+
+#####################
+# PyQt4 configuration
+#####################
+
+[pyqt4]
+
+## Directory where PyQt4's .sip interface files are installed
+#sip_dir = /usr/local/share/sip
+
+## sip flags used to build PyQt4
+#sip_flags = -t Qt_4_8_5
+
+
+
+###################
+# Qt4 configuration
+###################
+
+[qt4]
+
+## Base Qt installation dir (QTDIR can be passed by env vars)
+#prefix = %(QTDIR)
+#include_dir = %(qt_dir)/include
+#library_dir = %(qt_dir)/lib
+
+## OSX specific; will override the default include/library dirs
+#framework = true
+#framework_dir = %(qt_dir)/lib
