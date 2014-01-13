@@ -1,6 +1,9 @@
 rem # input arguments
 rem # %1 - folder with 3rd party software
 rem # - HG repository is updated to head
+rem # Required env variables:
+rem #    PUBLISH_URL - url (user@host) of the publish server
+rem #    ID_KEY - identity key file for logging into publish server
 
 call updateSetVariables__.btm snapshot
 set WIN_SNAPSHOT=orange-win-snapshot-hg-%daystr
@@ -32,35 +35,38 @@ e:\Python27\python.exe setup.py sdist
 
 break_on_error
 
-rem # build msi file (disabled due to StrictVersion requirement for .msi)
-rem e:\Python27\python.exe setup.py bdist_msi
+move /z dist\Orange-?.*.zip %TMPDIR\%SOURCE_SNAPSHOT
 
-break_on_error
+cd %TMPDIR
+rem # remember new filenames
+call "%SCRIPTDIR\updateVersionsPy__.btm" filenames_win.set
 
 rem # if no errors then publish on web (everything at the same time)
-rem # remove any old files  
-rem # leave 10 latest versions.
-e:\Python27\python.exe -c"import os,glob; [os.remove(f) for f in sorted(glob.glob('%DOWNLOADDIR\orange-win-snapshot-hg-*.exe'), reverse=True)[30:]]"
-e:\Python27\python.exe -c"import os,glob; [os.remove(f) for f in sorted(glob.glob('%DOWNLOADDIR\orange-win-w-python-snapshot-hg-*.exe'), reverse=True)[30:]]"
-e:\Python27\python.exe -c"import os,glob; [os.remove(f) for f in sorted(glob.glob('%DOWNLOADDIR\orangeAddOn-bioinformatics-snapshot-hg-*.exe'), reverse=True)[30:]]"
-e:\Python27\python.exe -c"import os,glob; [os.remove(f) for f in sorted(glob.glob('%DOWNLOADDIR\orangeAddOn-text-snapshot-hg-*.exe'), reverse=True)[30:]]"
 
-e:\Python27\python.exe -c"import os,glob; [os.remove(f) for f in sorted(glob.glob('%DOWNLOADDIR\orange-source-snapshot-hg-*.zip'), reverse=True)[10:]]"
-e:\Python27\python.exe -c"import os,glob; [os.remove(f) for f in sorted(glob.glob('%DOWNLOADDIR\orange-win-snapshot-hg-*.exe'), reverse=True)[10:]]"
-e:\Python27\python.exe -c"import os,glob; [os.remove(f) for f in sorted(glob.glob('%DOWNLOADDIR\orange-win-snapshot-hg-*.msi'), reverse=True)[10:]]"
+rem # Create a ftp batch script "move.scr".
+rem # (problem is sftp does not support an atomic move operation)
 
-rem except (%DOWNLOADDIR\orange*-snapshot-%daystr-*.exe) del %DOWNLOADDIR\orange*-snapshot-????-??-??-*.exe
+echo cd files > move.scr
 
-rem # publish
+for %FILENAME in (*.exe) do (
+	echo put %FILENAME %FILENAME.tmp >> move.scr
+	echo rm %FILENAME >> move.scr
+	echo rename %FILENAME.tmp %FILENAME >> move.scr
+)
 
-move /z dist\Orange-?.*.zip %DOWNLOADDIR\%SOURCE_SNAPSHOT
-move /z dist\Orange-?.*.msi %DOWNLOADDIR\%WIN_SNAPSHOT.msi
+echo put %SOURCE_SNAPSHOT %SOURCE_SNAPSHOT.tmp >> move.scr
+echo rm  %SOURCE_SNAPSHOT >> move.scr
+echo rename %SOURCE_SNAPSHOT.tmp %SOURCE_SNAPSHOT >> move.scr
 
-cdd %TMPDIR
-move /z *.exe %DOWNLOADDIR
-if not direxist %DOWNLOADDIR\binaries mkdir %DOWNLOADDIR\binaries
-move /sdz binaries %DOWNLOADDIR\binaries
+echo put filenames_win.set filenames_win.set.tmp >> move.scr
+echo rm filenames_win.set >> move.scr
+echo rename filenames_win.set.tmp filenames_win.set >> move.scr
 
-rem # remember new filenames
-cdd %SCRIPTDIR
-call updateVersionsPy__.btm
+echo exit >> move.scr
+
+rem # Finally move all the files
+psftp -i "%ID_KEY%" %PUBLISH_URL% -batch -be -b move.scr
+
+rem # Cleanup
+del /Q *.exe
+del /Q *.zip

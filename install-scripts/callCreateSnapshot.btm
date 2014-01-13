@@ -1,3 +1,7 @@
+rem # Required env variables:
+rem #    PUBLISH_URL - url (user@host) of the publish server
+rem #    ID_KEY - identity key file for logging into publish server
+
 @echo off
 set QTVER=qt44-3rdparty
 call createSnapshot.btm %QTVER >& win-snapshot-create.%QTVER.log
@@ -13,8 +17,10 @@ cdd %SCRIPTDIR
 sendmail %MAIL_TO %subj @%SCRIPTDIR\win-snapshot-create.%QTVER.log
 
 rem # copy log(s) to web in any case (success or error)
-set BUILDLOGDIR=%DOWNLOADDIR\buildLogs\winxp
-if not direxist %BUILDLOGDIR mkdir /s %BUILDLOGDIR
-del /eq %BUILDLOGDIR\win-snapshot-*.log
-move /z %SCRIPTDIR\win-snapshot-create.%QTVER.log %BUILDLOGDIR
-move /z %TMPDIR\win-snapshot*.log %BUILDLOGDIR
+rem # create a ftp script for moving the logs
+
+echo cd files/buildLogs/winxp > move.scr
+echo put %SCRIPTDIR%\win-snapshot-create.%QTVER%.log >> move.scr
+echo exit >> move.scr
+
+psftp -i "%ID_KEY%" "%PUBLISH_URL%" -batch -b move.scr
