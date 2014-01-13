@@ -1,4 +1,0 @@
-cdd c:\orange\scripts
-"C:\Program Files\cvsnt\cvs.exe" -d :sspi;username=cvso;password=cvs0cvs0;hostname=estelle.fri.uni-lj.si:/cvs update
-call callRegression.btm
-shutdown -s

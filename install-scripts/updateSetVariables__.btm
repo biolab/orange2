@@ -7,10 +7,6 @@ REM # set paths to orange sources and format date
 set SCRIPTDIR=%_CWD
 set TMPDIR=%SCRIPTDIR\%1
 set SOURCEDIR=%TMPDIR\source
-set DOWNLOADDIR=Z:\Volumes\download\
-
-REM # read filenames of current packages
-set /r %DOWNLOADDIR\filenames_win.set
 
 set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
 set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
@@ -26,14 +22,11 @@ alias break_on_error=`if %errorlevel != 0 (set ERRORS=%errorlevel %+ quit %error
 REM # python, packaging and compiling
 set PYTHONBASE=e:\Python
 set PYTHONVERSIONS=26 27
-REM # text mining can not be compiled for Python 23
-set PYTHONVERSIONS_ADDONs=25 26 27
+
+set PYTHONVERSIONS_ADDONs=26 27
 alias python="%PYTHONBASE%27\python.exe"
-set .py="%PYTHONBASE%25\python.exe"
 
 alias nsis="c:\program files\nsis\makensis.exe"
-alias winrar="c:\program files\winrar\winrar.exe"
-alias upx="c:\program files\upx.exe"
 alias cmake="c:\program files\cmake 2.8\bin\cmake.exe"
 set QTVARS="e:\Qt\4.7.3\bin\qtvars.bat"
 call "c:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
