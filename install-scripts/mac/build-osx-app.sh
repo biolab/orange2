@@ -160,6 +160,11 @@ echo "=================="
 "$PIP" install --egg hg+https://bitbucket.org/biolab/orange-bioinformatics
 "$PIP" install --egg hg+https://bitbucket.org/biolab/orange-text
 
+echo "Installing optional dependencies"
+echo "================================"
+"$PIP" install slumber
+"$PIP" install PIL
+
 
 if [[ ! $INPLACE ]]; then
     echo "Moving the application to $APP"
