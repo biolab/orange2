@@ -87,7 +87,7 @@ elif PYQT_CONFIGURATION is not None:
 if "QTDIR" in os.environ:
     qt_dir = os.environ["QTDIR"]
     if sys.platform == "darwin":
-        if glob(pjoin(qt_dir, "lib", "Qt*.framework")):
+        if glob.glob(pjoin(qt_dir, "lib", "Qt*.framework")):
             # This is the standard Qt4 framework layout
             qt_framework = True
             qt_framework_dir = pjoin(qt_dir, "lib")
