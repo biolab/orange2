@@ -37,13 +37,24 @@ class TestRegression(unittest.TestCase):
             if os.path.exists(remname):
                 os.remove(remname)
 
-        tmpdir = os.getcwd().replace("\\", "/")
-        os.chdir(indir)
+        # Add the current dir to PYTHONPATH because the cwd will
+        # be changed in subprocess call.
+        cwd = os.getcwd()
+        env = dict(os.environ)
+        pypath = env.get("PYTHONPATH", "")
+        if pypath:
+            pypath = os.path.pathsep.join([cwd, pypath])
+        else:
+            pypath = cwd
+        env["PYTHONPATH"] = pypath
+
         p = subprocess.Popen([sys.executable,
                               os.path.join(roottest, "xtest_one.py"),
                               name, "1", outdir],
                               stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
+                              stderr=subprocess.PIPE,
+                              env=env,
+                              cwd=indir)
 
         stdout, stderr = p.communicate()
         rv = stdout.strip().lower()
@@ -60,8 +71,6 @@ class TestRegression(unittest.TestCase):
 
         self.assertEqual(p.wait(), 0,
                          "Test script exited with a non zero error code.")
-
-        os.chdir(tmpdir)
 
     def get_expected_results(self, outputdir, name):
         expected_results = "%s/%s.%s.%s.txt" % (outputdir, name, sys.platform, sys.version[:3])
