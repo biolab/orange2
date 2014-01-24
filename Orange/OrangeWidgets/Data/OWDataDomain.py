@@ -442,6 +442,44 @@ class OWDataDomain(OWWidget):
         self.output_report = None
         self.original_completer_items = []
 
+        # Actions for keyboard shortcuts
+        self.remove_action = QAction(
+            "Remove from domain", self,
+            shortcut=QKeySequence.Delete,
+            shortcutContext=Qt.WidgetShortcut,
+            triggered=self.remove_selected
+        )
+
+        self.add_to_attributes_action = QAction(
+            "Add to attributes", self,
+            shortcut=QKeySequence(Qt.AltModifier | Qt.Key_A),
+            shortcutContext=Qt.WidgetShortcut,
+            triggered=self.add_to_attributes
+        )
+
+        self.add_to_class_action = QAction(
+            "Add to class", self,
+            shortcut=QKeySequence(Qt.AltModifier | Qt.Key_C),
+            shortcutContext=Qt.WidgetShortcut,
+            triggered=self.add_to_class,
+        )
+        self.add_to_meta_action = QAction(
+            "Add to meta", self,
+            shortcut=QKeySequence(Qt.AltModifier | Qt.Key_M),
+            shortcutContext=Qt.WidgetShortcut,
+            triggered=self.add_to_meta
+        )
+
+        for view in [self.used_attrs_view, self.class_attrs_view,
+                     self.meta_attrs_view]:
+            view.addAction(self.remove_action)
+
+        self.available_attrs_view.addActions(
+            [self.add_to_attributes_action,
+             self.add_to_class_action,
+             self.add_to_meta_action]
+        )
+
         self.resize(500, 600)
         
         # For automatic widget testing using
@@ -561,7 +599,51 @@ class OWDataDomain(OWWidget):
             del dst_model[0]
             
         dst_model.extend(attrs)
-        
+
+    def remove_selected(self):
+        """
+        Remove the selected features from the right (focused) view
+        (output domain) and place them in the "Available attributes".
+        """
+        views = [self.used_attrs_view, self.class_attrs_view,
+                 self.meta_attrs_view]
+        focused = find(
+            lambda v: v.hasFocus(), views
+        )
+        if focused:
+            self.move_selected_from_to(
+                focused.val, self.available_attrs_view
+            )
+
+    def add_to_attributes(self):
+        """
+        Add (move) selected available features to output `attributes`.
+        """
+        if self.selected_rows(self.available_attrs_view):
+            self.move_selected_from_to(
+                self.available_attrs_view, self.used_attrs_view
+            )
+
+    def add_to_class(self):
+        """
+        Add (move) selected available feature to output `class_var`
+        """
+        if self.selected_rows(self.available_attrs_view):
+            self.move_selected_from_to(
+                self.available_attrs_view,
+                self.class_attrs_view,
+                exclusive=True
+            )
+
+    def add_to_meta(self):
+        """
+        Add (move) selected available feature to output's `metas`.
+        """
+        if self.selected_rows(self.available_attrs_view):
+            self.move_selected_from_to(
+                self.available_attrs_view, self.meta_attrs_view
+            )
+
     def update_interface_state(self, focus=None, selected=None, deselected=None):
         for view in [self.available_attrs_view, self.used_attrs_view,
                      self.class_attrs_view, self.meta_attrs_view]:
@@ -663,7 +745,19 @@ class OWDataDomain(OWWidget):
             if len(all_vars) != len(used_vars):
                 removed = set(all_vars).difference(set(used_vars))
                 self.reportSettings("", [("Removed", "%i (%s)" % (len(removed), ", ".join(x.name for x in removed)))])
-    
+
+
+from collections import namedtuple
+Some = namedtuple("Some", ["val"])
+
+
+def find(predicate, iterable):
+    for el in iterable:
+        if predicate(el):
+            return Some(el)
+    return None
+
+
 if __name__ == "__main__":    
     app = QApplication(sys.argv)
     w = OWDataDomain()
