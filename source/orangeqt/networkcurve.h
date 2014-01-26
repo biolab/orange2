@@ -24,6 +24,7 @@
 #include "plot.h"
 #include <deque>
 #include <algorithm>
+#include <ostream>
 
 class QueueVertex
 {
@@ -86,7 +87,7 @@ public:
 
     virtual void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = 0);
     virtual int type() const {return Type;}
-    
+
     void set_coordinates(double x, double y);
 
 
@@ -95,12 +96,12 @@ public:
 
     void set_y(double y);
     double y() const;
-    
+
     void set_image(QPixmap* im);
 
     virtual void set_graph_transform(const QTransform& transform);
     virtual QTransform graph_transform() const;
-    
+
     void set_index(int index);
     int index() const;
 
@@ -108,12 +109,12 @@ public:
 
     void set_uuid(int uuid);
     int uuid() const;
-    
+
     QList<NodeItem*> neighbors();
 
     /**
      * @brief Connect an edge to this node
-     * 
+     *
      * A connected edge is automatically updated whenever this node is moved
      *
      * @param edge the edge to be connected
@@ -121,7 +122,7 @@ public:
     void add_connected_edge(EdgeItem* edge);
     void remove_connected_edge(EdgeItem* edge);
     QList<EdgeItem*> connected_edges();
-    
+
     double m_size_value;
 
 protected:
@@ -130,10 +131,10 @@ protected:
 private:
     double m_x;
     double m_y;
-    
+
     int m_index;
     int m_uuid;
-    
+
     QList<EdgeItem*> m_connected_edges;
     QTransform m_graph_transform;
 };
@@ -169,7 +170,7 @@ public:
         ArrowV = 0x02
     };
     Q_DECLARE_FLAGS(Arrows, Arrow)
-    
+
     EdgeItem(NodeItem* u, NodeItem* v, QGraphicsItem* parent = 0, QGraphicsScene* scene = 0);
     virtual ~EdgeItem();
 
@@ -181,21 +182,21 @@ public:
     NodeItem* u();
     void set_v(NodeItem* item);
     NodeItem* v();
-    
+
     void set_label(const QString& label);
     QString label() const;
     void set_tooltip(const QString& tooltip);
-    
+
     void set_links_index(int index);
     int links_index() const;
-    
+
     void set_weight(double weight);
     double weight() const;
-    
+
     void set_arrows(Arrows arrows);
     void set_arrow(Arrow arrow, bool enable);
     Arrows arrows();
-    
+
     static QHash<ArrowData, QPixmap> arrow_cache;
 
 private:
@@ -229,18 +230,18 @@ public:
     virtual void update_properties();
     virtual QRectF data_rect() const;
     virtual void register_points();
-    
+
     int random();
     int circular(CircularLayoutType type);
     int circular_crossing_reduction();
     int fr(int steps, bool weighted, bool smooth_cooling);
-    
+
     Nodes nodes() const;
     void set_nodes(const Nodes& nodes);
     void add_nodes(const Nodes& nodes);
     void remove_node(int index);
     void remove_nodes(const QList< int >& nodes);
-    
+
     Edges edges() const;
     void set_edges(const Edges& edges);
     void add_edges(const Edges& edges);
