@@ -44,6 +44,17 @@ def running_in_ipython():
         return False
 
 
+def fix_osx_10_9_private_font():
+    """Temporary fix for QTBUG-32789."""
+    from PyQt4.QtCore import QSysInfo
+    if sys.platform == "darwin":
+        try:
+            if QSysInfo.MacintoshVersion > QSysInfo.MV_10_8:
+                QFont.insertSubstitution(".Lucida Grande UI", "Lucida Grande")
+        except AttributeError:
+            pass
+
+
 def fix_win_pythonw_std_stream():
     """
     On windows when running without a console (using pythonw.exe) the
@@ -108,6 +119,9 @@ def main(argv=None):
     # Fix streams before configuring logging (otherwise it will store
     # and write to the old file descriptors)
     fix_win_pythonw_std_stream()
+
+    # Try to fix fonts on OSX Mavericks
+    fix_osx_10_9_private_font()
 
     # File handler should always be at least INFO level so we need
     # the application root level to be at least at INFO.
