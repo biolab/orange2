@@ -1352,29 +1352,29 @@ class ScalePolyvizData(ScaleLinProjData):
             xanchors = self.create_xanchors(len(attr_indices))
             yanchors = self.create_yanchors(len(attr_indices))
 
-        xanchors = numpy.zeros(numpy.shape(selected_data), numpy.float)
-        yanchors = numpy.zeros(numpy.shape(selected_data), numpy.float)
+        xanchorpos = numpy.zeros(numpy.shape(selected_data), numpy.float)
+        yanchorpos = numpy.zeros(numpy.shape(selected_data), numpy.float)
         length = len(attr_indices)
 
         for i in range(length):
             if attribute_reverse[i]:
-                xanchors[i] = selected_data[i] * xanchors[i] + (1-selected_data[i]) * xanchors[(i+1)%length]
-                yanchors[i] = selected_data[i] * yanchors[i] + (1-selected_data[i]) * yanchors[(i+1)%length]
+                xanchorpos[i] = selected_data[i] * xanchors[i] + (1 - selected_data[i]) * xanchors[(i + 1) % length]
+                yanchorpos[i] = selected_data[i] * yanchors[i] + (1 - selected_data[i]) * yanchors[(i + 1) % length]
             else:
-                xanchors[i] = (1-selected_data[i]) * xanchors[i] + selected_data[i] * xanchors[(i+1)%length]
-                yanchors[i] = (1-selected_data[i]) * yanchors[i] + selected_data[i] * yanchors[(i+1)%length]
+                xanchorpos[i] = (1 - selected_data[i]) * xanchors[i] + selected_data[i] * xanchors[(i + 1) % length]
+                yanchorpos[i] = (1 - selected_data[i]) * yanchors[i] + selected_data[i] * yanchors[(i + 1) % length]
 
-        x_positions = numpy.sum(numpy.multiply(xanchors, selected_data), axis=0)/sum_i
-        y_positions = numpy.sum(numpy.multiply(yanchors, selected_data), axis=0)/sum_i
-        #x_positions = numpy.sum(numpy.transpose(xanchors* numpy.transpose(selectedData)), axis=0) / sum_i
-        #y_positions = numpy.sum(numpy.transpose(yanchors* numpy.transpose(selectedData)), axis=0) / sum_i
+        x_positions = numpy.sum(numpy.multiply(xanchorpos, selected_data), axis=0) / sum_i
+        y_positions = numpy.sum(numpy.multiply(yanchorpos, selected_data), axis=0) / sum_i
+        #x_positions = numpy.sum(numpy.transpose(xanchorpos * numpy.transpose(selectedData)), axis=0) / sum_i
+        #y_positions = numpy.sum(numpy.transpose(yanchorpos * numpy.transpose(selectedData)), axis=0) / sum_i
 
         if scale_factor != 1.0:
             x_positions = x_positions * scale_factor
             y_positions = y_positions * scale_factor
         if jitter_size > 0.0:
-            x_positions += (numpy.random.random(len(x_positions))-0.5)*jitter_size
-            y_positions += (numpy.random.random(len(y_positions))-0.5)*jitter_size
+            x_positions += (numpy.random.random(len(x_positions)) - 0.5) * jitter_size
+            y_positions += (numpy.random.random(len(y_positions)) - 0.5) * jitter_size
 
         if class_list != None:
             return numpy.transpose(numpy.array((x_positions, y_positions, class_list)))
