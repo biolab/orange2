@@ -73,43 +73,16 @@ DMG_NAME=Orange-$VER-$REV.dmg
 
 ./install-scripts/mac/create-dmg-installer.sh --app dist/Orange.app dist/$DMG_NAME
 
+
 echo "Removing old versions"
 # Note: project name is prepended to the pattern so the dmg image must
 # be named Orange-*.dmg
 python setup.py rotate --keep=10 --dist-dir="$PUBLISH_DIR" --match=".dmg"
 
-MD5=$(md5 -q "dist/$DMG_NAME")
-
-echo "Moving dmg installer into place"
-echo "==============================="
-mv dist/$DMG_NAME "$PUBLISH_DIR"/$DMG_NAME.new
-
-# Check integrity (buggy sshfs??)
-
-MD5_D=$(md5 -q "$PUBLISH_DIR/$DMG_NAME.new")
-if [[ $MD5 != $MD5_D ]]; then
-    echo "Error moving the bundle in place"
-    rm "$PUBLISH_DIR"/$DMG_NAME.new
-    exit 1
-else
-    mv "$PUBLISH_DIR"/$DMG_NAME.new "$PUBLISH_DIR"/$DMG_NAME
-fi
-
-
-echo "Registering new dmg installer"
-echo "============================="
-
-if [[ ! -e "$PUBLISH_DIR"/filenames_mac.set ]]; then
-    touch "$PUBLISH_DIR"/filenames_mac.set
-fi
-
-egrep -v '^(MAC_DAILY)=' "$PUBLISH_DIR"/filenames_mac.set > "$PUBLISH_DIR"/filenames_mac.set.new || true
-
-
-echo "MAC_DAILY=$DMG_NAME" >> "$PUBLISH_DIR"/filenames_mac.set.new
-echo "MAC_DAILY=$DMG_NAME"
-
-mv "$PUBLISH_DIR"/filenames_mac.set.new "$PUBLISH_DIR"/filenames_mac.set
+./install-scripts/mac/build-publish.sh \
+    --dist-dir "$PUBLISH_DIR" \
+    --key MAC_DAILY \
+    "dist/$DMG_NAME"
 
 if [[ $BOOTSTRAP ]]; then
     rm -rf $WORK_DIR
