@@ -806,6 +806,8 @@ class OWBaseWidget(QDialog):
         fget=progressBarValue
     )
 
+    processingState = pyqtProperty(int, fget=lambda self: self.__progressState)
+
     def progressBarAdvance(self, value, processEventsFlags=QEventLoop.AllEvents):
         self.progressBarSet(self.progressBarValue + value, processEventsFlags)
 
