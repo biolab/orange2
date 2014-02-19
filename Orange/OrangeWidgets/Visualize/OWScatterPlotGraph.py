@@ -364,6 +364,15 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         if legendKeys != self.oldLegendKeys:
             self.oldLegendKeys = legendKeys
             self.legend().clear()
+
+            # Need to also remove all previous legend items.
+            # The QwtLegend.clear only clears its own 'cache' and in
+            # some circumstances the old items can reappear in the legend.
+            items = [item for item in self.itemList()
+                     if item.testItemAttribute(QwtPlotItem.Legend)]
+            for item in items:
+                item.detach()
+
             for val in legendKeys.values():       # add new curve keys
                 for i in range(len(val[1])):
                     self.addCurve(val[0][i], val[1][i], val[1][i], val[2][i], symbol = val[3][i], enableLegend = 1)
