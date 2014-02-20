@@ -333,7 +333,7 @@ class OWMDS(OWWidget):
                     if check(data[i], attr):
                         self.colors[i][attrI] = c.getColor((data[i][attr] - minVal) / span)
                         self.names[i][attrI] = " " + str(data[i][attr])
-                        self.sizes[i][contI] = int(self.data[i][attr] / maxVal * 9) + 1
+                        self.sizes[i][contI] = int(9 * (self.data[i][attr] - minVal) / span) + 1
                     else:
                         self.colors[i][attrI] = Qt.black
                         self.names[i][attrI] = ""
