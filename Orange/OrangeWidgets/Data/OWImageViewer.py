@@ -118,6 +118,7 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
 
     def setPixmap(self, pixmap):
         self.pixmapWidget.setPixmap(pixmap)
+        self._updatePixmapSize()
 
     def pixmap(self):
         return self.pixmapWidget.pixmap()
@@ -136,7 +137,7 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
     def setThumbnailSize(self, size):
         if self._size != size:
             self._size = size
-            self.pixmapWidget.setPixmapSize(size)
+            self._updatePixmapSize()
             self.labelWidget.setTextWidth(max(100, size.width()))
 
     def setTitleWidth(self, width):
@@ -155,6 +156,11 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
             painter.drawRoundedRect(QRectF(contents.topLeft(),
                                            self.geometry().size()), 3, 3)
             painter.restore()
+
+    def _updatePixmapSize(self):
+        pixsize = QSizeF(self.pixmap().size())
+        pixsize.scale(self._size, Qt.KeepAspectRatio)
+        self.pixmapWidget.setPixmapSize(pixsize)
 
 
 class ThumbnailWidget(QGraphicsWidget):
