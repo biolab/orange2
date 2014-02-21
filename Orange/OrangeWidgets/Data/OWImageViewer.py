@@ -23,33 +23,40 @@ class GraphicsPixmapWidget(QGraphicsWidget):
     def __init__(self, pixmap, parent=None):
         QGraphicsWidget.__init__(self, parent)
         self.setCacheMode(QGraphicsItem.ItemCoordinateCache)
-        self.pixmap = pixmap
-        self.pixmapSize = QSizeF(100, 100)
+        self._pixmap = pixmap
+        self._pixmapSize = QSizeF(100, 100)
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
     def setPixmap(self, pixmap):
-        if self.pixmap != pixmap:
-            self.pixmap = pixmap
+        if self._pixmap != pixmap:
+            self._pixmap = pixmap
             self.update()
 
+    def pixmap(self):
+        return self._pixmap
+
     def setPixmapSize(self, size):
-        if self.pixmapSize != size:
-            self.pixmapSize = size
+        if self._pixmapSize != size:
+            self._pixmapSize = size
             self.updateGeometry()
 
+    def pixmapSize(self):
+        return self._pixmapSize
+
     def sizeHint(self, which, contraint=QSizeF()):
-        return self.pixmapSize
+        return self._pixmapSize
 
     def paint(self, painter, option, widget=0):
+        if self._pixmap.isNull():
+            return
+
         painter.save()
         painter.setPen(QPen(QColor(0, 0, 0, 50), 3))
         painter.drawRoundedRect(self.boundingRect(), 2, 2)
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
-        if self.pixmap.isValid():
-            pixmapRect = QRectF(QPointF(0, 0), self.pixmapSize)
-            painter.drawPixmap(pixmapRect, self.pixmap,
-                               QRectF(QPointF(0, 0),
-                                      QSizeF(self.pixmap.size())))
+        target = QRectF(QPointF(0, 0), self._pixmapSize)
+        source = QRectF(QPointF(0, 0), QSizeF(self._pixmap.size()))
+        painter.drawPixmap(target, self._pixmap, source)
         painter.restore()
 
 
@@ -84,6 +91,10 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
 
     def __init__(self, pixmap, title="", parent=None):
         QGraphicsWidget.__init__(self, parent)
+
+        self._title = None
+        self._size = None
+
         layout = QGraphicsLinearLayout(Qt.Vertical, self)
         layout.setSpacing(2)
         layout.setContentsMargins(5, 5, 5, 5)
@@ -93,6 +104,7 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
 
         layout.addItem(self.pixmapWidget)
         layout.addItem(self.labelWidget)
+
         layout.setAlignment(self.pixmapWidget, Qt.AlignCenter)
         layout.setAlignment(self.labelWidget, Qt.AlignCenter)
         self.setLayout(layout)
@@ -107,13 +119,25 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
     def setPixmap(self, pixmap):
         self.pixmapWidget.setPixmap(pixmap)
 
-    def setTitle(self, text):
-        self.labelWidget.setHtml('<center>' + escape(text) + '</center>')
-        self.layout().invalidate()
+    def pixmap(self):
+        return self.pixmapWidget.pixmap()
+
+    def setTitle(self, title):
+        if self._title != title:
+            self._title = title
+            self.labelWidget.setHtml(
+                '<center>' + escape(title) + '</center>'
+            )
+            self.layout().invalidate()
+
+    def title(self):
+        return self._title
 
     def setThumbnailSize(self, size):
-        self.pixmapWidget.setPixmapSize(size)
-        self.labelWidget.setTextWidth(max(100, size.width()))
+        if self._size != size:
+            self._size = size
+            self.pixmapWidget.setPixmapSize(size)
+            self.labelWidget.setTextWidth(max(100, size.width()))
 
     def setTitleWidth(self, width):
         self.labelWidget.setTextWidth(width)
