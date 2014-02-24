@@ -1,3 +1,4 @@
+import weakref
 import logging
 from xml.sax.saxutils import escape
 from collections import namedtuple
@@ -551,16 +552,27 @@ class OWImageViewer(OWWidget):
 
 
 class ImageLoader(QObject):
+
+    #: A weakref to a QNetworkAccessManager used for image retrieval.
+    #: (we can only have only one QNetworkDiskCache opened on the same
+    #: directory)
+    _NETMANAGER_REF = None
+
     def __init__(self, parent=None):
         QObject.__init__(self, parent=None)
+        assert QThread.currentThread() is QApplication.instance().thread()
 
-        self._netmanager = QNetworkAccessManager()
-        self._cache = QNetworkDiskCache()
-        self._cache.setCacheDirectory(
-            os.path.join(environ.widget_settings_dir,
-                         __name__ + ".ImageLoader.Cache")
-        )
-        self._netmanager.setCache(self._cache)
+        netmanager = self._NETMANAGER_REF and self._NETMANAGER_REF()
+        if netmanager is None:
+            netmanager = QNetworkAccessManager()
+            cache = QNetworkDiskCache()
+            cache.setCacheDirectory(
+                os.path.join(environ.widget_settings_dir,
+                             __name__ + ".ImageLoader.Cache")
+            )
+            netmanager.setCache(cache)
+            ImageLoader._NETMANAGER_REF = weakref.ref(netmanager)
+        self._netmanager = netmanager
 
     def get(self, url):
         future = Future()
