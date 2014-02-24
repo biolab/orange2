@@ -61,13 +61,17 @@ class GraphicsPixmapWidget(QGraphicsWidget):
         if self._pixmap.isNull():
             return
 
+        rect = self.contentsRect()
+        pixsize = self._pixmapSize
+        pixrect = QRectF(QPointF(0, 0), pixsize)
+        pixrect.moveCenter(rect.center())
+
         painter.save()
         painter.setPen(QPen(QColor(0, 0, 0, 50), 3))
-        painter.drawRoundedRect(self.boundingRect(), 2, 2)
+        painter.drawRoundedRect(pixrect, 2, 2)
         painter.setRenderHint(QPainter.SmoothPixmapTransform)
-        target = QRectF(QPointF(0, 0), self._pixmapSize)
         source = QRectF(QPointF(0, 0), QSizeF(self._pixmap.size()))
-        painter.drawPixmap(target, self._pixmap, source)
+        painter.drawPixmap(pixrect, self._pixmap, source)
         painter.restore()
 
 
@@ -117,7 +121,7 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
         layout.addItem(self.labelWidget)
 
         layout.setAlignment(self.pixmapWidget, Qt.AlignCenter)
-        layout.setAlignment(self.labelWidget, Qt.AlignCenter)
+        layout.setAlignment(self.labelWidget, Qt.AlignHCenter | Qt.AlignBottom)
         self.setLayout(layout)
 
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -155,9 +159,6 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
         self.labelWidget.setTextWidth(width)
         self.layout().invalidate()
 
-    def setGeometry(self, rect):
-        QGraphicsWidget.setGeometry(self, rect)
-
     def paint(self, painter, option, widget=0):
         contents = self.contentsRect()
         if self.isSelected():
@@ -172,6 +173,7 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
         pixsize = QSizeF(self.pixmap().size())
         pixsize.scale(self._size, Qt.KeepAspectRatio)
         self.pixmapWidget.setPixmapSize(pixsize)
+        self.pixmapWidget.setPreferredSize(self._size)
 
 
 class ThumbnailWidget(QGraphicsWidget):
@@ -414,14 +416,14 @@ class OWImageViewer(OWWidget):
                 self.items.append(_ImageItem(thumbnail, url, future))
 
             widget.show()
+            widget.geometryChanged.connect(self._updateSceneRect)
+
             self.info.setText("Retrieving...\n")
             self.sceneLayout = layout
 
         self.scene.blockSignals(False)
         if self.sceneLayout:
             self.sceneLayout.activate()
-
-        self.scene.setSceneRect(self.scene.itemsBoundingRect())
 
     def filenameFromValue(self, value):
         variable = value.variable
@@ -473,14 +475,10 @@ class OWImageViewer(OWWidget):
         if self.sceneLayout:
             self.sceneLayout.activate()
 
-        self.scene.setSceneRect(self.scene.itemsBoundingRect())
-
     def updateTitles(self):
         titleAttr = self.allAttrs[self.titleAttr]
         for item in self.items:
             item.widget.setTitle(str(item.widget.instance[titleAttr]))
-
-        self.scene.setSceneRect(self.scene.itemsBoundingRect())
 
     def onSelectionChanged(self):
         selected = [item.widget for item in self.items
@@ -544,6 +542,9 @@ class OWImageViewer(OWWidget):
                 self.error(0,
                            "No images found! Make sure the '%s' attribute "
                            "is tagged with 'type=image'" % attr.name)
+
+    def _updateSceneRect(self):
+        self.scene.setSceneRect(self.scene.itemsBoundingRect())
 
     def onDeleteWidget(self):
         for item in self.items:
