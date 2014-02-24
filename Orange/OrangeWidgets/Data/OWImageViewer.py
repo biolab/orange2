@@ -1,11 +1,21 @@
+import logging
 from xml.sax.saxutils import escape
+from collections import namedtuple
+from functools import partial
 
 from PyQt4.QtCore import pyqtSignal as Signal
+from PyQt4.QtNetwork import (
+    QNetworkAccessManager, QNetworkDiskCache, QNetworkRequest, QNetworkReply
+)
 
 from OWWidget import *
 from OWItemModels import VariableListModel
+from OWConcurrent import Future, FutureWatcher
 
 import OWGUI
+
+_log = logging.getLogger(__name__)
+
 
 NAME = "Image Viewer"
 DESCRIPTION = "Views images embedded in the data."
@@ -217,6 +227,14 @@ class GraphicsScene(QGraphicsScene):
         self.selectionRectPointChanged.emit(pos)
 
 
+_ImageItem = namedtuple(
+    "_ImageItem",
+    ["widget",    # GraphicsThumbnailWidget belonging to this item.
+     "url",       # Composed final url.
+     "future"]    # Future instance yielding an QImage
+)
+
+
 class OWImageViewer(OWWidget):
     contextHandlers = {
         "": DomainContextHandler("", ["imageAttr", "titleAttr"])
@@ -241,11 +259,16 @@ class OWImageViewer(OWWidget):
 
         self.loadSettings()
 
+        self.info = OWGUI.widgetLabel(
+            OWGUI.widgetBox(self.controlArea, "Info"),
+            "Waiting for input\n"
+        )
+
         self.imageAttrCB = OWGUI.comboBox(
             self.controlArea, self, "imageAttr",
             box="Image Filename Attribute",
             tooltip="Attribute with image filenames",
-            callback=self.setupScene,
+            callback=[self.clearScene, self.setupScene],
             addSpace=True
         )
 
@@ -297,7 +320,14 @@ class OWImageViewer(OWWidget):
         self.sceneLayout = None
         self.selectedExamples = []
 
+        #: List of _ImageItems
+        self.items = []
+
+        self._errcount = 0
+        self._successcount = 0
+
         self.updateZoom()
+        self.loader = ImageLoader(self)
 
     def setData(self, data):
         self.data = data
@@ -328,6 +358,8 @@ class OWImageViewer(OWWidget):
 
             if self.stringAttrs:
                 self.setupScene()
+        else:
+            self.info("Waiting for input\n")
 
     def setupScene(self):
         self.scene.blockSignals(True)
@@ -337,36 +369,57 @@ class OWImageViewer(OWWidget):
         if self.data:
             attr = self.stringAttrs[self.imageAttr]
             titleAttr = self.allAttrs[self.titleAttr]
-            examples = [ex for ex in self.data if not ex[attr].isSpecial()]
+            instances = [inst for inst in self.data
+                         if not inst[attr].isSpecial()]
             widget = ThumbnailWidget()
             layout = QGraphicsGridLayout()
             layout.setSpacing(10)
             widget.setLayout(layout)
             widget.setPos(10, 10)
             self.scene.addItem(widget)
-            fileExistsCount = 0
-            for i, ex in enumerate(examples):
-                filename = self.filenameFromValue(ex[attr])
-                if os.path.exists(filename):
-                    fileExistsCount += 1
-                title = str(ex[titleAttr])
-                pixmap = self.pixmapFromFile(filename)
-                thumbnail = GraphicsThumbnailWidget(pixmap, title=title, parent=widget)
-                thumbnail.setToolTip(filename)
+
+            for i, inst in enumerate(instances):
+                url = self.urlFromValue(inst[attr])
+                title = str(inst[titleAttr])
+
+                thumbnail = GraphicsThumbnailWidget(
+                    QPixmap(), title=title, parent=widget
+                )
+
+                thumbnail.setToolTip(unicode(url.toString()))
                 thumbnail.setThumbnailSize(QSizeF(thumbnailSize, thumbnailSize))
-                thumbnail.example = ex
+                thumbnail.instance = inst
                 layout.addItem(thumbnail, i / 5, i % 5)
+
+                if url.isValid():
+                    future = self.loader.get(url)
+                    watcher = FutureWatcher(future, parent=thumbnail)
+
+                    def set_pixmap(thumb=thumbnail, future=future):
+                        if future.cancelled():
+                            return
+                        if future.exception():
+                            # Should be some generic error image.
+                            pixmap = QPixmap()
+                        else:
+                            pixmap = QPixmap.fromImage(future.result())
+                        thumb.setPixmap(pixmap)
+
+                        self._updateStatus(future)
+
+                    watcher.finished.connect(set_pixmap, Qt.QueuedConnection)
+                else:
+                    future = None
+                self.items.append(_ImageItem(thumbnail, url, future))
+
             widget.show()
-            layout.invalidate()
+            self.info.setText("Retrieving...\n")
             self.sceneLayout = layout
-            if fileExistsCount == 0 and not "type" in attr.attributes:
-                self.error(0, "No images found!\nMake sure the '%s' attribute is tagged with 'type=image'" % attr.name)
-            elif fileExistsCount < len(examples):
-                self.information(0, "Only %i out of %i images found." % (fileExistsCount, len(examples)))
 
         self.scene.blockSignals(False)
+        if self.sceneLayout:
+            self.sceneLayout.activate()
 
-        qApp.processEvents()
         self.scene.setSceneRect(self.scene.itemsBoundingRect())
 
     def filenameFromValue(self, value):
@@ -375,29 +428,39 @@ class OWImageViewer(OWWidget):
         name = str(value)
         return os.path.join(origin, name)
 
-    def pixmapFromFile(self, filename):
-        pixmap = QPixmap(filename)
-        if pixmap.isNull():
-            try:
-                import Image, ImageQt
-                img = Image.open(filename)
-#                print img.format, img.mode, img.size
-#                data = img.tostring()
-#                pixmap = QPixmap.loadFromData(data)
-                pixmap = QPixmap.fromImage(ImageQt.ImageQt(img))
-            except Exception, ex:
-                print ex
-        return pixmap
+    def urlFromValue(self, value):
+        variable = value.variable
+        origin = variable.attributes.get("origin", "")
+        if origin and QDir(origin).exists():
+            origin = QUrl.fromLocalFile(origin)
+        elif origin:
+            origin = QUrl(origin)
+            if not origin.scheme():
+                origin.setScheme("file")
+        else:
+            origin = QUrl("")
+        if not unicode(origin.path()).endswith("/"):
+            origin.setPath(unicode(origin.path()) + "/")
+
+        name = QUrl(str(value))
+        return origin.resolved(name)
 
     def clearScene(self):
+        for item in self.items:
+            if item.future:
+                item.future._reply.close()
+                item.future.cancel()
+
+        self.items = []
+
+        self._errcount = 0
+        self._successcount = 0
+
         self.scene.clear()
         self.sceneLayout = None
-        qApp.processEvents()
 
     def thumbnailItems(self):
-        for item in self.scene.items():
-            if isinstance(item, GraphicsThumbnailWidget):
-                yield item
+        return [item.widget for item in self.items]
 
     def updateZoom(self):
         self.scene.blockSignals(True)
@@ -405,30 +468,24 @@ class OWImageViewer(OWWidget):
         for item in self.thumbnailItems():
             item.setThumbnailSize(QSizeF(scale * 150, scale * 150))
 
+        self.scene.blockSignals(False)
         if self.sceneLayout:
             self.sceneLayout.activate()
-        qApp.processEvents()
-        self.scene.blockSignals(False)
 
         self.scene.setSceneRect(self.scene.itemsBoundingRect())
 
     def updateTitles(self):
         titleAttr = self.allAttrs[self.titleAttr]
-        for item in self.scene.items():
-            if isinstance(item, GraphicsThumbnailWidget):
-                item.setTitle(str(item.example[titleAttr]))
+        for item in self.items:
+            item.widget.setTitle(str(item.widget.instance[titleAttr]))
 
-        qApp.processEvents()
         self.scene.setSceneRect(self.scene.itemsBoundingRect())
 
     def onSelectionChanged(self):
-        try:
-            items = self.scene.selectedItems()
-            items = [item for item in items if isinstance(item, GraphicsThumbnailWidget)]
-            self.selectedExamples = [item.example for item in items]
-            self.commitIf()
-        except RuntimeError, err:
-            pass
+        selected = [item.widget for item in self.items
+                    if item.widget.isSelected()]
+        self.selectedExamples = [item.instance for item in selected]
+        self.commitIf()
 
     def onSelectionRectPointChanged(self, point):
         self.sceneView.ensureVisible(QRectF(point, QSizeF(1, 1)), 5, 5)
@@ -454,6 +511,92 @@ class OWImageViewer(OWWidget):
         from OWDlgs import OWChooseImageSizeDlg
         sizeDlg = OWChooseImageSizeDlg(self.scene, parent=self)
         sizeDlg.exec_()
+
+    def _updateStatus(self, future):
+        if future.cancelled():
+            return
+
+        if future.exception():
+            self._errcount += 1
+            _log.debug("Error: %r", future.exception())
+        else:
+            self._successcount += 1
+
+        count = len([item for item in self.items if item.future is not None])
+        self.info.setText(
+            "Retrieving:\n" +
+            "{} of {} images" .format(self._successcount, count))
+
+        if self._errcount + self._successcount == count:
+            if self._errcount:
+                self.info.setText(
+                    "Done:\n" +
+                    "{} images, {} errors".format(count, self._errcount)
+                )
+            else:
+                self.info.setText(
+                    "Done:\n" +
+                    "{} images".format(count)
+                )
+            attr = self.stringAttrs[self.imageAttr]
+            if self._errcount == count and not "type" in attr.attributes:
+                self.error(0,
+                           "No images found! Make sure the '%s' attribute "
+                           "is tagged with 'type=image'" % attr.name)
+
+    def onDeleteWidget(self):
+        for item in self.items:
+            item.future._reply.abort()
+            item.future.cancel()
+
+
+class ImageLoader(QObject):
+    def __init__(self, parent=None):
+        QObject.__init__(self, parent=None)
+
+        self._netmanager = QNetworkAccessManager()
+        self._cache = QNetworkDiskCache()
+        self._cache.setCacheDirectory(
+            os.path.join(environ.widget_settings_dir,
+                         __name__ + ".ImageLoader.Cache")
+        )
+        self._netmanager.setCache(self._cache)
+
+    def get(self, url):
+        future = Future()
+        url = url = QUrl(url)
+        request = QNetworkRequest(url)
+        request.setAttribute(
+            QNetworkRequest.CacheLoadControlAttribute,
+            QNetworkRequest.PreferCache
+        )
+
+        # Future yielding a QNetworkReply when finished.
+        reply = self._netmanager.get(request)
+        future._reply = reply
+
+        def on_reply_ready(reply, future):
+            if reply.error() == QNetworkReply.OperationCanceledError:
+                # The network request itself was canceled
+                future.cancel()
+                return
+
+            if reply.error() != QNetworkReply.NoError:
+                # XXX Maybe convert the error into standard
+                # http and urllib exceptions.
+                future.set_exception(Exception(reply.errorString()))
+                return
+
+            reader = QImageReader(reply)
+            image = reader.read()
+
+            if image.isNull():
+                future.set_exception(Exception(reader.errorString()))
+            else:
+                future.set_result(image)
+
+        reply.finished.connect(partial(on_reply_ready, reply, future))
+        return future
 
 
 if __name__ == "__main__":
