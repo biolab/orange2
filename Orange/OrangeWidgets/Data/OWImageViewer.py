@@ -360,7 +360,7 @@ class OWImageViewer(OWWidget):
             if self.stringAttrs:
                 self.setupScene()
         else:
-            self.info("Waiting for input\n")
+            self.info.setText("Waiting for input\n")
 
     def setupScene(self):
         self.scene.blockSignals(True)
