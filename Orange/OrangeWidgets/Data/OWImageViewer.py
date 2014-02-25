@@ -35,27 +35,30 @@ class GraphicsPixmapWidget(QGraphicsWidget):
         QGraphicsWidget.__init__(self, parent)
         self.setCacheMode(QGraphicsItem.ItemCoordinateCache)
         self._pixmap = pixmap
-        self._pixmapSize = QSizeF(100, 100)
+        self._pixmapSize = QSizeF(50, 50)
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 
     def setPixmap(self, pixmap):
         if self._pixmap != pixmap:
-            self._pixmap = pixmap
-            self.update()
+            self._pixmap = QPixmap(pixmap)
+            self.updateGeometry()
 
     def pixmap(self):
-        return self._pixmap
+        return QPixmap(self._pixmap)
 
     def setPixmapSize(self, size):
         if self._pixmapSize != size:
-            self._pixmapSize = size
+            self._pixmapSize = QSizeF(size)
             self.updateGeometry()
 
     def pixmapSize(self):
-        return self._pixmapSize
+        return QSizeF(self._pixmapSize)
 
-    def sizeHint(self, which, contraint=QSizeF()):
-        return self._pixmapSize
+    def sizeHint(self, which, constraint=QSizeF()):
+        if which == Qt.PreferredSize:
+            return QSizeF(self._pixmapSize)
+        else:
+            return QGraphicsWidget.sizeHint(self, which, constraint)
 
     def paint(self, painter, option, widget=0):
         if self._pixmap.isNull():
@@ -124,12 +127,13 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
         layout.setAlignment(self.labelWidget, Qt.AlignHCenter | Qt.AlignBottom)
         self.setLayout(layout)
 
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setSizePolicy(QSizePolicy.MinimumExpanding,
+                           QSizePolicy.MinimumExpanding)
 
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setTitle(title)
-        self.setTitleWidth(150)
-        self.setThumbnailSize(QSizeF(150, 150))
+        self.setTitleWidth(100)
+        self.setThumbnailSize(QSizeF(100, 100))
 
     def setPixmap(self, pixmap):
         self.pixmapWidget.setPixmap(pixmap)
@@ -151,7 +155,7 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
 
     def setThumbnailSize(self, size):
         if self._size != size:
-            self._size = size
+            self._size = QSizeF(size)
             self._updatePixmapSize()
             self.labelWidget.setTextWidth(max(100, size.width()))
 
@@ -170,10 +174,13 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
             painter.restore()
 
     def _updatePixmapSize(self):
-        pixsize = QSizeF(self.pixmap().size())
-        pixsize.scale(self._size, Qt.KeepAspectRatio)
+        pixmap = self.pixmap()
+        if not pixmap.isNull():
+            pixsize = QSizeF(self.pixmap().size())
+            pixsize.scale(self._size, Qt.KeepAspectRatio)
+        else:
+            pixsize = QSizeF()
         self.pixmapWidget.setPixmapSize(pixsize)
-        self.pixmapWidget.setPreferredSize(self._size)
 
 
 class ThumbnailWidget(QGraphicsWidget):
@@ -393,6 +400,7 @@ class OWImageViewer(OWWidget):
                 thumbnail.setThumbnailSize(QSizeF(thumbnailSize, thumbnailSize))
                 thumbnail.instance = inst
                 layout.addItem(thumbnail, i / 5, i % 5)
+                layout.setAlignment(thumbnail, Qt.AlignTop)
 
                 if url.isValid():
                     future = self.loader.get(url)
