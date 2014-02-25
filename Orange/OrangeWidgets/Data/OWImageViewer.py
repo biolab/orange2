@@ -412,6 +412,8 @@ class OWImageViewer(OWWidget):
                         if future.exception():
                             # Should be some generic error image.
                             pixmap = QPixmap()
+                            thumb.setToolTip(unicode(thumb.toolTip()) + "\n" +
+                                             str(future.exception()))
                         else:
                             pixmap = QPixmap.fromImage(future.result())
                         thumb.setPixmap(pixmap)
@@ -450,11 +452,15 @@ class OWImageViewer(OWWidget):
                 origin.setScheme("file")
         else:
             origin = QUrl("")
-        if not unicode(origin.path()).endswith("/"):
-            origin.setPath(unicode(origin.path()) + "/")
+        base = unicode(origin.path())
+        if base.strip() and not base.endswith("/"):
+            origin.setPath(base + "/")
 
         name = QUrl(str(value))
-        return origin.resolved(name)
+        url = origin.resolved(name)
+        if not url.scheme():
+            url.setScheme("file")
+        return url
 
     def clearScene(self):
         for item in self.items:
