@@ -116,6 +116,7 @@ class GraphicsThumbnailWidget(QGraphicsWidget):
         layout = QGraphicsLinearLayout(Qt.Vertical, self)
         layout.setSpacing(2)
         layout.setContentsMargins(5, 5, 5, 5)
+        self.setContentsMargins(0, 0, 0, 0)
 
         self.pixmapWidget = GraphicsPixmapWidget(pixmap, self)
         self.labelWidget = GraphicsTextWidget(title, self)
@@ -188,6 +189,44 @@ class ThumbnailWidget(QGraphicsWidget):
     def __init__(self, parent=None):
         QGraphicsWidget.__init__(self, parent)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.setContentsMargins(10, 10, 10, 10)
+        layout = QGraphicsGridLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
+        self.setLayout(layout)
+
+        self._thumbSize = QSizeF(50, 50)
+
+    def setThumbnailSize(self, size):
+        if self._thumbSize != size:
+            self._thumbSize = QSizeF(size)
+            self.reflow()
+
+    def reflow(self, width=None):
+        if width is None:
+            width = self.size().width()
+
+        left, right, _, _ = self.getContentsMargins()
+        layout = self.layout()
+        width -= left + right
+        # thumbnail size + margins
+        thumbwidth = max(100, self._thumbSize.width()) + 2 * 5
+        spacing = layout.horizontalSpacing()
+
+        ncol = (width + spacing) // (thumbwidth + spacing)
+        ncol = max(ncol, 1)
+
+        if ncol == layout.columnCount():
+            return
+
+        items = [layout.itemAt(i) for i in range(layout.count())]
+
+        # first remove all items from the layout
+        for item in items:
+            layout.removeItem(item)
+        # add them back in updated positions
+        for i, item in enumerate(items):
+            layout.addItem(item, i // ncol, i % ncol)
 
 
 class GraphicsScene(QGraphicsScene):
@@ -318,6 +357,8 @@ class OWImageViewer(OWWidget):
         self.sceneView.setRenderHint(QPainter.Antialiasing, True)
         self.sceneView.setRenderHint(QPainter.TextAntialiasing, True)
         self.sceneView.setFocusPolicy(Qt.WheelFocus)
+        self.sceneView.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.sceneView.installEventFilter(self)
         self.mainArea.layout().addWidget(self.sceneView)
 
         self.scene.selectionChanged.connect(self.onSelectionChanged)
@@ -327,6 +368,7 @@ class OWImageViewer(OWWidget):
         self.graphButton.clicked.connect(self.saveScene)
         self.resize(800, 600)
 
+        self.thumbnailWidget = None
         self.sceneLayout = None
         self.selectedExamples = []
 
@@ -336,7 +378,6 @@ class OWImageViewer(OWWidget):
         self._errcount = 0
         self._successcount = 0
 
-        self.updateZoom()
         self.loader = ImageLoader(self)
 
     def setData(self, data):
@@ -372,8 +413,8 @@ class OWImageViewer(OWWidget):
             self.info.setText("Waiting for input\n")
 
     def setupScene(self):
-        self.scene.blockSignals(True)
         thumbnailSize = self.zoom / 25.0 * 150.0
+        thumbnailSize = QSizeF(thumbnailSize, thumbnailSize)
         self.information(0)
         self.error(0)
         if self.data:
@@ -382,10 +423,10 @@ class OWImageViewer(OWWidget):
             instances = [inst for inst in self.data
                          if not inst[attr].isSpecial()]
             widget = ThumbnailWidget()
-            layout = QGraphicsGridLayout()
-            layout.setSpacing(10)
-            widget.setLayout(layout)
-            widget.setPos(10, 10)
+            widget.setThumbnailSize(thumbnailSize)
+
+            layout = widget.layout()
+
             self.scene.addItem(widget)
 
             for i, inst in enumerate(instances):
@@ -397,10 +438,9 @@ class OWImageViewer(OWWidget):
                 )
 
                 thumbnail.setToolTip(unicode(url.toString()))
-                thumbnail.setThumbnailSize(QSizeF(thumbnailSize, thumbnailSize))
+                thumbnail.setThumbnailSize(thumbnailSize)
                 thumbnail.instance = inst
                 layout.addItem(thumbnail, i / 5, i % 5)
-                layout.setAlignment(thumbnail, Qt.AlignTop)
 
                 if url.isValid():
                     future = self.loader.get(url)
@@ -425,14 +465,18 @@ class OWImageViewer(OWWidget):
                     future = None
                 self.items.append(_ImageItem(thumbnail, url, future))
 
+            widget.setThumbnailSize(thumbnailSize)
             widget.show()
             widget.geometryChanged.connect(self._updateSceneRect)
+            self.thumbnailWidget = widget
 
             self.info.setText("Retrieving...\n")
             self.sceneLayout = layout
 
-        self.scene.blockSignals(False)
         if self.sceneLayout:
+            width = (self.sceneView.width() -
+                     self.sceneView.verticalScrollBar().width())
+            self.thumbnailWidget.reflow(width)
             self.sceneLayout.activate()
 
     def filenameFromValue(self, value):
@@ -469,23 +513,30 @@ class OWImageViewer(OWWidget):
                 item.future.cancel()
 
         self.items = []
-
         self._errcount = 0
         self._successcount = 0
 
         self.scene.clear()
+        self.thumbnailWidget = None
         self.sceneLayout = None
 
     def thumbnailItems(self):
         return [item.widget for item in self.items]
 
     def updateZoom(self):
-        self.scene.blockSignals(True)
         scale = self.zoom / 25.0
+        size = QSizeF(scale * 150, scale * 150)
         for item in self.thumbnailItems():
-            item.setThumbnailSize(QSizeF(scale * 150, scale * 150))
+            item.setThumbnailSize(size)
 
-        self.scene.blockSignals(False)
+        if self.thumbnailWidget:
+            self.thumbnailWidget.setThumbnailSize(size)
+
+            width = self.sceneView.width()
+            width -= self.sceneView.verticalScrollBar().width()
+
+            self.thumbnailWidget.reflow(width)
+
         if self.sceneLayout:
             self.sceneLayout.activate()
 
@@ -564,6 +615,15 @@ class OWImageViewer(OWWidget):
         for item in self.items:
             item.future._reply.abort()
             item.future.cancel()
+
+    def eventFilter(self, receiver, event):
+        if receiver == self.sceneView and event.type() == QEvent.Resize \
+                and self.thumbnailWidget:
+            width = (self.sceneView.width() -
+                     self.sceneView.verticalScrollBar().width())
+            self.thumbnailWidget.reflow(width)
+
+        return super(OWImageViewer, self).eventFilter(receiver, event)
 
 
 class ImageLoader(QObject):
