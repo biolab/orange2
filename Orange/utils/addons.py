@@ -508,16 +508,6 @@ def upgrade(name, progress_callback=None):
     install(name, progress_callback)
 
 
-try:
-    load_installed_addons()
-except Exception as ex:
-    # Do not let an exception propagate during the import phase,
-    # It should not even be called at import only if/when add-ons
-    # db is actually requested.
-    warnings.warn("'load_installed_addons' failed with %s" % ex,
-                  UserWarning)
-
-
 # Support for loading legacy "registered" add-ons
 def __read_addons_list(addons_file, systemwide):
     if os.path.isfile(addons_file):

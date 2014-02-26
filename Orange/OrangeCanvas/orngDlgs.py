@@ -737,6 +737,8 @@ class AddOnManagerDialog(QDialog):
         QDialog.__init__(self, *args)
         self.setModal(True)
 
+        Orange.utils.addons.load_installed_addons()
+
         self.canvasDlg = canvasDlg
         self.setWindowTitle("Add-on Management")
         self.topLayout = QVBoxLayout(self)
