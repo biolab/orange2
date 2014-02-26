@@ -413,7 +413,7 @@ class OWImageViewer(OWWidget):
             self.info.setText("Waiting for input\n")
 
     def setupScene(self):
-        thumbnailSize = self.zoom / 25.0 * 150.0
+        thumbnailSize = self.pixmapSize()
         thumbnailSize = QSizeF(thumbnailSize, thumbnailSize)
         self.information(0)
         self.error(0)
@@ -506,6 +506,12 @@ class OWImageViewer(OWWidget):
             url.setScheme("file")
         return url
 
+    def pixmapSize(self):
+        """
+        Return the preferred pixmap size based on the current `zoom` value.
+        """
+        return (111.0 / 11.0) * (self.zoom - 1) + 25.0
+
     def clearScene(self):
         for item in self.items:
             if item.future:
@@ -524,8 +530,8 @@ class OWImageViewer(OWWidget):
         return [item.widget for item in self.items]
 
     def updateZoom(self):
-        scale = self.zoom / 25.0
-        size = QSizeF(scale * 150, scale * 150)
+        size = self.pixmapSize()
+        size = QSizeF(size, size)
         for item in self.thumbnailItems():
             item.setThumbnailSize(size)
 
