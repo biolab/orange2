@@ -746,7 +746,6 @@ class OWBaseWidget(QDialog):
     """Processing state has changed"""
 
     def progressBarInit(self):
-        self.progressBarValue = 0
         self.startTime = time.time()
         self.setWindowTitle(self.captionTitle + " (0% complete)")
         if self.progressBarHandler:
@@ -755,6 +754,8 @@ class OWBaseWidget(QDialog):
         if self.__progressState != 1:
             self.__progressState = 1
             self.processingStateChanged.emit(1)
+
+        self.progressBarValue = 0
 
     def progressBarSet(self, value, processEventsFlags=QEventLoop.AllEvents):
         """
