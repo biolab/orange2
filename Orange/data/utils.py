@@ -17,37 +17,18 @@ from Orange.data import Table, Domain, Instance
 
 import Orange.feature as variable
 
+
 def table_map(table, attrs, exclude_special=True):
-    map = defaultdict(list)
+    mapping = defaultdict(list)
     for i, ex in enumerate(table):
         key = [ex[a] for a in attrs]
         if exclude_special and any(k.isSpecial() for k in key):
             continue
         key = tuple([str(k) for k in key])
-        map[key].append(i)
-    return map
-    
-def join_domains(domain1, domain2):
-    variables = domain1.variables + domain1.variables
-    used_set = set()
-    def used(vars):
-        mask = []
-        for var in vars:
-            mask.append(var not in used_set)
-            used_set.add(var)
-            
-    used_mask1 = used(domain1.variables)
-    used_mask2 = used(domain2.variables)
-    if domain2.classVar:
-        used_mask2[-1] = True
-        
-    variables = [v for v, used in zip(variables, used_mask1 + used_mask2)]
-    
-    joined_domain = Domain(variables, domain2.classVar)
-    joined_domain.add_metas(domain1.get_metas())
-    joined_domain.add_metas(domain2.get_metas())
-    return joined_domain, used_mask1, used_mask2
-    
+        mapping[key].append(i)
+    return mapping
+
+
 def left_join(table1, table2, on_attrs1, on_attrs2):
     """ Left join table1 and table2 on attributes attr1 and attr2
     """
@@ -57,8 +38,7 @@ def left_join(table1, table2, on_attrs1, on_attrs2):
         on_attrs2 = [on_attrs2]
     key_map1 = table_map(table1, on_attrs1)
     key_map2 = table_map(table2, on_attrs2)
-    domain1, domain2 = table1.domain, table2.domain
-    
+
     left_examples = []
     right_examples = []
     for ex in table1:
@@ -68,12 +48,16 @@ def left_join(table1, table2, on_attrs1, on_attrs2):
                 ex2 = table2[ind]
                 left_examples.append(ex)
                 right_examples.append(ex2)
-                
+        else:
+            left_examples.append(ex)
+            right_examples.append(Instance(table2.domain))
+
     left_table = Table(left_examples)
     right_table = Table(right_examples)
     new_table = Table([left_table, right_table])
     return new_table
-    
+
+
 def right_join(table1, table2, on_attrs1, on_attrs2):
     """ Right join table1 and table2 on attributes attr1 and attr2
     """
@@ -83,7 +67,6 @@ def right_join(table1, table2, on_attrs1, on_attrs2):
         on_attrs2 = [on_attrs2]
     key_map1 = table_map(table1, on_attrs1)
     key_map2 = table_map(table2, on_attrs2)
-    domain1, domain2 = table1.domain, table2.domain
 
     left_examples = []
     right_examples = []
@@ -94,21 +77,27 @@ def right_join(table1, table2, on_attrs1, on_attrs2):
                 ex1 = table1[ind]
                 left_examples.append(ex1)
                 right_examples.append(ex)
-                
+        else:
+            left_examples.append(Instance(table1.domain))
+            right_examples.append(ex)
+
     left_table = Table(left_examples)
     right_table = Table(right_examples)
     new_table = Table([left_table, right_table])
     return new_table
-    
+
+
 def hstack(table1, table2):
-    """ Horizontally stack ``table1`` and ``table2`` 
+    """ Horizontally stack ``table1`` and ``table2``
     """
     return Table([table1, table2])
+
 
 def vstack(table1, table2):
     """ Stack ``table1`` and ``table2`` vertically.
     """
     return Table(table1[:] + table2[:])
+
 
 def take(table, indices, axis=0):
     """ Take values form the ``table`` along the ``axis``. 
