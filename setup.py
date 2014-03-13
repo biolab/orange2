@@ -516,11 +516,10 @@ class orange_install_lib(install_lib):
     def install(self):
         """ Copy build_dir to install_dir
         """
-        # A Hack to unlink liborange.so -> orange.so if it already exists,
+        # Unlink liborange.so -> orange.so if it already exists,
         # because copy_tree fails to overwrite it
-        #
         liborange = os.path.join(self.install_dir, "Orange", "liborange.so")
-        if os.path.exists(liborange) and os.path.islink(liborange):
+        if os.path.islink(liborange):
             log.info("unlinking %s -> %s", liborange,
                      os.path.join(self.install_dir, "orange.so"))
 
