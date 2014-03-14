@@ -44,12 +44,26 @@ Submodules
 
 """
 
+import sys
+import os
+import types
+import random
+import time
+import urllib2
+import posixpath
+import warnings
+import StringIO
+
+from functools import wraps
+from contextlib import contextmanager
+
+from . import environ
+
 __all__ = ["deprecated_members", "deprecated_keywords",
            "deprecated_attribute", "deprecation_warning",
            "deprecated_function_name",
            "counters", "render", "serverfiles"]
 
-import environ
 
 def deprecation_warning(old, new, stacklevel=-2):
     """ Raise a deprecation warning of an obsolete attribute access.
@@ -74,8 +88,7 @@ class universal_set(set):
     """
     def __contains__(self, value):
         return True
-    
-from functools import wraps
+
 
 def deprecated_members(name_map, wrap_methods="all", in_place=True):
     """ Decorate a class with properties for accessing attributes, and methods
@@ -432,8 +445,6 @@ def progress_bar_milestones(count, iterations=100):
 
 progressBarMilestones = deprecated_function_name(progress_bar_milestones)
 
-import random, types, sys
-import time
 
 def getobjectname(x, default=""):
     if type(x)==types.StringType:
@@ -494,10 +505,9 @@ def lru_cache(maxsize=100):
     """
     
     def decorating_function(func):
-        import functools
         cache = {}
         
-        @functools.wraps(func)
+        @wraps(func)
         def wrapped(*args, **kwargs):
             key = args + tuple(sorted(kwargs.items()))
             if key not in cache:
@@ -521,8 +531,6 @@ def lru_cache(maxsize=100):
         return wrapped
     return decorating_function
 
-#from Orange.misc.render import contextmanager
-from contextlib import contextmanager
 
 @contextmanager
 def member_set(obj, name, val):
@@ -557,7 +565,7 @@ Some utility functions common to Orange classes.
 
 def _orange_learner__new__(base):
     """Return an 'schizophrenic' __new__ class method following
-    `Orange.core.Lerner.__new__` calling convention.
+    `Orange.core.Learner.__new__` calling convention.
 
     :param base: base class.
     :type base: type
@@ -625,12 +633,6 @@ def _orange__reduce__(self):
 demangleExamples = deprecated_function_name(demangle_examples)
 printVerbose = deprecated_function_name(print_verbose)
 
-import urllib2
-import posixpath
-import os
-
-from contextlib import contextmanager
-import StringIO
 
 @contextmanager
 def finishing(obj):
@@ -692,10 +694,7 @@ def wget(url, directory=".", dst_obj=None, progress=None):
     else:
         copyfileobj(stream, dst_obj, buffer=2**10, content_len=length,
                     progress=progress)
-    
 
-import warnings
 
-import selection
-
-import render
+from . import selection
+from . import render
