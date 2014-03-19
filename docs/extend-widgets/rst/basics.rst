@@ -63,9 +63,9 @@ Widgets communicate. They use typed channels, and exchange
 tokens. Each widget would define its input and output channels in
 something like::
 
-    self.inputs = [("Test Data Set", ExampleTable, self.cdata),
-                   ("Learner", orange.Learner, self.learner, 0)]
-    self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
+    self.inputs = [("Test Data Set", Orange.data.Table, self.set_data),
+                   ("Learner", Orange.classification.Learner, self.set_learner)]
+    self.outputs = [("Evaluation Results", Orange.evaluation.testing.ExperimentResults)]
 
 
 We will go over the syntax of channel definitions later, but for
@@ -136,25 +136,13 @@ with a question mark).
 
 Orange Widgets are all derived from the class OWWidget. The name of
 the class should match the file name, so the lines following the
-header in our Data Sampler widget should look something like::
+header in our Data Sampler widget should look something like
 
-    import Orange
-    from OWWidget import *
-    import OWGUI
 
-    class OWDataSamplerA(OWWidget):
+.. literalinclude:: OWDataSamplerA.py
+   :start-after: start-snippet-1
+   :end-before: end-snippet-1
 
-        def __init__(self, parent=None, signalManager=None):
-            OWWidget.__init__(self, parent, signalManager)
-
-            self.inputs = [("Data", Orange.data.Table, self.data)]
-            self.outputs = [("Sampled Data", Orange.data.Table)]
-
-            # GUI
-            box = OWGUI.widgetBox(self.controlArea, "Info")
-            self.infoa = OWGUI.widgetLabel(box, 'No data on input yet, waiting to get something.')
-            self.infob = OWGUI.widgetLabel(box, '')
-            self.resize(100,50)
 
 In initialization, the widget calls the :func:`__init__` method
 of a base class. Widget then defines inputs and outputs. For input,
@@ -162,7 +150,7 @@ this is a *Data* channel, accepting tokens of the type
 :class:`Orange.data.Table` and specifying that :func:`data` method will
 be used to handle them. For now, we will use a single output channel
 called "Sampled Data", which will be of the same type
-(Orange.data.Table).
+(:class:`Orange.data.Table`).
 
 Notice that the types of the channels are specified by a class;
 you can use any class here, but if your widgets need to talk with
@@ -193,20 +181,11 @@ place the two labels in the control area and surround it with the box
 In order to complete our widget, we now need to define how will it
 handle the input data. This is done in a method called :func:`data`
 (remember, we did introduce this name in the specification of the
-input channel)::
+input channel)
 
-    def data(self, dataset):
-        if dataset:
-            self.infoa.setText('%d instances in input data set' % len(dataset))
-            indices = orange.MakeRandomIndices2(p0=0.1)
-            ind = indices(dataset)
-            sample = dataset.select(ind, 0)
-            self.infob.setText('%d sampled instances' % len(sample))
-            self.send("Sampled Data", sample)
-        else:
-            self.infoa.setText('No data on input yet, waiting to get something.')
-            self.infob.setText('')
-            self.send("Sampled Data", None)
+.. literalinclude:: OWDataSamplerA.py
+   :start-after: start-snippet-2
+   :end-before: end-snippet-2
 
 The :obj:`dataset` argument is the token sent through the input
 channel which our method needs to handle.
@@ -233,7 +212,7 @@ will call it :download:`DataSamplerA.svg <DataSamplerA.svg>` and will
 put it in `icons` subdirectory of `orangedemo` directory.
 
 With this we cen now go ahead and install the orangedemo package. We
-will do this by running :code:`python setup.py develop` command from
+will do this by running ``python setup.py develop`` command from
 the `Demo` directory.
 
 .. note::
@@ -283,15 +262,11 @@ When prototyping a single widget, for a fast test I often get
 bored of running Orange Canvas, setting the schema and clicking on
 icons to get widget windows. There are two options to bypass this. The
 first one is to add a testing script at the end of your widget. To do
-this, we finished Data Sampler with::
+this, we finished Data Sampler with
 
-    if __name__=="__main__":
-        appl = QApplication(sys.argv)
-        ow = OWDataSamplerA()
-        ow.show()
-        dataset = Orange.data.Table('iris.tab')
-        ow.data(dataset)
-        appl.exec_()
+.. literalinclude:: OWDataSamplerA.py
+   :start-after: start-snippet-3
+   :end-before: end-snippet-3
 
 These are essentially some calls to Qt routines that run GUI for our
 widgets. Notice that we call the :func:`data` method directly.
