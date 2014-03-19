@@ -41,18 +41,19 @@ variables can store any complex object, as long as it is
 picklable. In our widget, we will use two settings variables, and we
 declare this just after the widget class definition.
 
-::
+.. literalinclude:: OWDataSamplerB.py
+   :start-after: start-snippet-1
+   :end-before: end-snippet-1
 
-    class OWDataSamplerB(OWWidget):
-        settingsList = ['proportion', 'commitOnChange']
 
 Any setting has to be initialized, and then we need to call
 :obj:`loadSettings()` to override defaults in case we have used
-the widget before and the settings have been saved::
+the widget before and the settings have been saved
 
-    self.proportion = 50
-    self.commitOnChange = 0
-    self.loadSettings()
+.. literalinclude:: OWDataSamplerB.py
+   :start-after: start-snippet-2
+   :end-before: end-snippet-2
+
 
 Now anything we do with the two variables (:obj:`self.proportion` and
 :obj:`self.commitOnChange`) will be saved upon exiting our
@@ -67,21 +68,14 @@ Now we could tell you how to put different Qt controls on the
 widgets and write callback functions that set our settings
 appropriately. This is what we have done before we got bored with it,
 since the GUI part spanned over much of the widget's code. Instead, we
-wrote a library called OWGUI (I never liked the name, but could never
+wrote a library called :mod:`OWGUI` (I never liked the name, but could never
 come up with something better). With this library, the GUI definition
-part of the options box is a bit dense but rather very short::
+part of the options box is a bit dense but rather very short
 
-    box = OWGUI.widgetBox(self.controlArea, "Info")
-    self.infoa = OWGUI.widgetLabel(box, 'No data on input yet, waiting to get something.')
-    self.infob = OWGUI.widgetLabel(box, '')
+.. literalinclude:: OWDataSamplerB.py
+   :start-after: start-snippet-3
+   :end-before: end-snippet-3
 
-    OWGUI.separator(self.controlArea)
-    self.optionsBox = OWGUI.widgetBox(self.controlArea, "Options")
-    OWGUI.spin(self.optionsBox, self, 'proportion', min=10, max=90, step=10,
-               label='Sample Size [%]:', callback=[self.selection, self.checkCommit])
-    OWGUI.checkBox(self.optionsBox, self, 'commitOnChange', 'Commit data on selection change')
-    OWGUI.button(self.optionsBox, self, "Commit", callback=self.commit)
-    self.optionsBox.setDisabled(1)
 
 We are already familiar with the first part - the Info group
 box. To make widget nicer, we put a separator between this and Options
@@ -124,41 +118,20 @@ the controls in the Options box. This is because at the start of the
 widget, there is no data to sample from. But this also means that when
 process the input tokens, we should take care for enabling and
 disabling. The data processing and token sending part of our widget
-now is::
+now is
 
-    def data(self, dataset):
-        if dataset:
-            self.dataset = dataset
-            self.infoa.setText('%d instances in input data set' % len(dataset))
-            self.optionsBox.setDisabled(0)
-            self.selection()
-            self.commit()
-        else:
-            self.send("Sampled Data", None)
-            self.optionsBox.setDisabled(1)
-            self.infoa.setText('No data on input yet, waiting to get something.')
-            self.infob.setText('')
+.. literalinclude:: OWDataSamplerB.py
+   :start-after: start-snippet-4
+   :end-before: end-snippet-4
 
-    def selection(self):
-        indices = orange.MakeRandomIndices2(p0=self.proportion / 100.)
-        ind = indices(self.dataset)
-        self.sample = self.dataset.select(ind, 0)
-        self.infob.setText('%d sampled instances' % len(self.sample))
-
-    def commit(self):
-        self.send("Sampled Data", self.sample)
-
-    def checkCommit(self):
-        if self.commitOnChange:
-            self.commit()
 
 You can now also inspect the :download:`complete code <OWDataSamplerB.py>`
 of this widget. To distinguish it with a widget we have developed in the
 previous section, we have designed a special
 :download:`icon <DataSamplerB.svg>` for it. If you wish to test is
-widget in the Orange Canvas, put its code in the Test directory we
-have created for the previous widget, update the Canvas registry, and
-try it out using a schema with a File and Data Table widget.
+widget in the Orange Canvas, put its code in the `orangedemo` directory we
+have created for the previous widget and try it out using a schema with
+a File and Data Table widget.
 
 .. image:: schemawithdatasamplerB.png
 
@@ -221,10 +194,9 @@ that handles the data signal. This is how it looks in the scatter plot
 
 ::
 
-    def cdata(self, data, clearResults = 1):
+    def cdata(self, data):
         self.closeContext()
 
-        exData = self.data
         self.data = data
         self.graph.setData(data)
         self.graph.insideColors = None

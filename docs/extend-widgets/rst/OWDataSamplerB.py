@@ -8,19 +8,22 @@ import Orange
 from OWWidget import *
 import OWGUI
 
+# [start-snippet-1]
 class OWDataSamplerB(OWWidget):
     settingsList = ['proportion', 'commitOnChange']
+# [end-snippet-1]
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager)
 
-        self.inputs = [("Data", Orange.data.Table, self.data)]
+        self.inputs = [("Data", Orange.data.Table, self.set_data)]
         self.outputs = [("Sampled Data", Orange.data.Table)]
-
+# [start-snippet-2]
         self.proportion = 50
         self.commitOnChange = 0
         self.loadSettings()
-
+# [end-snippet-2]
         # GUI
+# [start-snippet-3]
         box = OWGUI.widgetBox(self.controlArea, "Info")
         self.infoa = OWGUI.widgetLabel(box, 'No data on input yet, waiting to get something.')
         self.infob = OWGUI.widgetLabel(box, '')
@@ -32,11 +35,12 @@ class OWDataSamplerB(OWWidget):
         OWGUI.checkBox(self.optionsBox, self, 'commitOnChange', 'Commit data on selection change')
         OWGUI.button(self.optionsBox, self, "Commit", callback=self.commit)
         self.optionsBox.setDisabled(1)
-
+# [end-snippet-3]
         self.resize(100,50)
 
-    def data(self, dataset):
-        if dataset:
+# [start-snippet-4]
+    def set_data(self, dataset):
+        if dataset is not None:
             self.dataset = dataset
             self.infoa.setText('%d instances in input data set' % len(dataset))
             self.optionsBox.setDisabled(0)
@@ -60,12 +64,12 @@ class OWDataSamplerB(OWWidget):
     def checkCommit(self):
         if self.commitOnChange:
             self.commit()
-
+# [end-snippet-4]
 
 if __name__=="__main__":
     appl = QApplication(sys.argv)
     ow = OWDataSamplerB()
     ow.show()
     dataset = Orange.data.Table('iris.tab')
-    ow.data(dataset)
+    ow.set_data(dataset)
     appl.exec_()

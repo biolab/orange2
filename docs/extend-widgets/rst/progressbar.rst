@@ -30,15 +30,11 @@ computation, and we would only like to advance the progress bar for
 some constant at the end of the iteration. For this, we use
 :class:`ProgressBar` class in :mod:`OWGUI`, and the code in
 the learning curve widget described in the previous lesson that does
-it is as follows::
+it is as follows
 
-    def getLearningCurve(self, learners):
-        pb = OWGUI.ProgressBar(self, iterations=self.steps * self.folds)
-        curve = Orange.evaluation.testing.learning_curve_n(
-            learners, self.data, folds=self.folds,
-            proportions=self.curvePoints, callback=pb.advance)
-        pb.finish()
-        return curve
+.. literalinclude:: OWLearningCurveA.py
+   :pyobject: OWLearningCurveA.getLearningCurve
+
 
 :class:`ProgressBar` class removes the need to define any special
 function to compute the percent of the task done and set the

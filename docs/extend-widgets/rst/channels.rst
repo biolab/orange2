@@ -46,17 +46,19 @@ like:
 .. image:: learningcurve-output.png
 
 Now back to channels and tokens. Input and output channels for our
-widget are defined by::
+widget are defined by
 
-    self.inputs = [("Data", Orange.data.Table, self.dataset),
-                   ("Learner", Orange.classification.Learner,
-                    self.learner, Multiple + Default)]
+.. literalinclude:: OWLearningCurveA.py
+   :start-after: start-snippet-1
+   :end-before: end-snippet-1
+
 
 Notice that everything is pretty much the same as it was with
 widgets from previous lessons, the only difference being
-``Multiple + Default`` as the last value in the list that defines
-the :obj:`Learner` channel. This ``Multiple + Default`` says
-that this is a multi-input channel and is the default input for its type.
+``Multiple + Default`` (importable from  the OWWidget namespace)
+as the last value in the list that defines the :obj:`Learner`
+channel. This ``Multiple + Default`` says that this
+is a multi-input channel and is the default input for its type.
 If it would be unspecified then by default value of
 ``Single + NonDefault`` would be used. That would mean that the
 widget can receive the input only from one widget and is not the default input
@@ -72,49 +74,12 @@ In Orange, tokens are sent around with an id of a widget that is
 sending the token, and having a multi-input channel only tells Orange to
 send a token together with sending widget id, the two arguments with
 which the receiving function is called. For our *"Learner"*
-channel the receiving function is :func:`learner`, and this looks
-like the following::
+channel the receiving function is :func:`set_learner`, and this looks
+like the following
 
-    def learner(self, learner, id=None):
-        ids = [x[0] for x in self.learners]
-        if not learner: # remove a learner and corresponding results
-            if not ids.count(id):
-                return # no such learner, removed before
-            indx = ids.index(id)
-            for i in range(self.steps):
-                self.curves[i].remove(indx)
-            del self.scores[indx]
-            del self.learners[indx]
-            self.setTable()
-        else:
-            if ids.count(id): # update
-                       # (already seen a learner from this source)
-                indx = ids.index(id)
-                self.learners[indx] = (id, learner)
-                if self.data:
-                    curve = self.getLearningCurve([learner])
-                    score = [self.scoring[self.scoringF][1](x)[0] for x in curve]
-                    self.scores[indx] = score
-                    for i in range(self.steps):
-                        self.curves[i].add(curve[i], 0, replace=indx)
-            else: # add new learner
-                self.learners.append((id, learner))
-                if self.data:
-                    curve = self.getLearningCurve([learner])
-                    score = [self.scoring[self.scoringF][1](x)[0] for x in curve]
-                    self.scores.append(score)
-                    if len(self.curves):
-                        for i in range(self.steps):
-                            self.curves[i].add(curve[i], 0)
-                    else:
-                        self.curves = curve
-        if len(self.learners):
-            self.infob.setText("%d learners on input." % len(self.learners))
-        else:
-            self.infob.setText("No learners.")
-        self.commitBtn.setEnabled(len(self.learners))
-        if self.data:
-            self.setTable()
+.. literalinclude:: OWLearningCurveA.py
+   :pyobject: OWLearningCurveA.set_learner
+
 
 OK, this looks like one long and complicated function. But be
 patient! Learning curve is not the simplest widget there is, so
@@ -147,14 +112,12 @@ the rest of the widget does some simple GUI management, and calls
 learning curve routines from testing and performance
 scoring functions from stats. I rather like
 the easy by which new scoring functions are added to the widget, since
-all that is needed is the augmenting the list::
+all that is needed is the augmenting the list
 
-    self.scoring = [("Classification Accuracy", Orange.evaluation.scoring.CA),
-                    ("AUC", Orange.evaluation.scoring.AUC),
-                    ("BrierScore", Orange.evaluation.scoring.Brier_score),
-                    ("Information Score", Orange.evaluation.scoring.IS),
-                    ("Sensitivity", Orange.evaluation.scoring.Sensitivity),
-                    ("Specificity", Orange.evaluation.scoring.Specificity)]
+.. literalinclude:: OWLearningCurveA.py
+   :start-after: start-snippet-2
+   :end-before: end-snippet-2
+
 
 which is defined in the initialization part of the widget. The
 other useful trick in this widget is that evaluation (k-fold cross
@@ -176,25 +139,23 @@ default channels in the next section. For this purpose, we will modify
 our sampling widget as defined in previous lessons such that it will
 send out the sampled data to one channel, and all other data to
 another channel. The corresponding channel definition of this widget
-is::
+is
 
-    self.outputs = [("Sampled Data", Orange.data.Table),
-                    ("Other Data", Orange.data.Table)]
+.. literalinclude:: OWDataSamplerC.py
+   :start-after: start-snippet-1
+   :end-before: end-snippet-1
+
 
 We used this in the third incarnation of :download:`data sampler widget <OWDataSamplerC.py>`,
 with essentially the only other change in the code in the :func:`selection` and
-:func:`commit` functions::
+:func:`commit` functions
 
-    def selection(self):
-        indices = Orange.data.sample.SubsetIndices2(p0=self.proportion / 100.)
-        ind = indices(self.dataset)
-        self.sample = self.dataset.select(ind, 0)
-        self.otherdata = self.dataset.select(ind, 1)
-        self.infob.setText('%d sampled instances' % len(self.sample))
+.. literalinclude:: OWDataSamplerC.py
+   :pyobject: OWDataSamplerC.selection
 
-    def commit(self):
-        self.send("Sampled Data", self.sample)
-        self.send("Other Data", self.otherdata)
+.. literalinclude:: OWDataSamplerC.py
+   :pyobject: OWDataSamplerC.commit
+
 
 If a widget that has multiple channels of the same type is
 connected to a widget that accepts such tokens, Orange Canvas opens a
@@ -226,11 +187,12 @@ training data set channel will be the default one.
 When enlisting the input channel of the same type, the default
 channels have a special flag in the channel specification list. So for
 our new :download:`learning curve <OWLearningCurveB.py>` widget, the
-channel specification is::
+channel specification is
 
-    self.inputs = [("Train Data", Orange.data.Table, self.trainset, Default),
-                   ("Test Data", Orange.data.Table, self.testset),
-                   ("Learner", Orange.classification.Learner, self.learner, Multiple)]
+.. literalinclude:: OWLearningCurveB.py
+   :start-after: start-snippet-1
+   :end-before: end-snippet-1
+
 
 That is, the :obj:`Train Data` channel is a single-token
 channel which is a default one (third parameter). Note that the flags can

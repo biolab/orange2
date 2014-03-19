@@ -34,7 +34,7 @@ class OWLearningCurveC(OWWidget):
 
         warnings.filterwarnings("ignore", ".*builtin attribute.*", orange.AttributeWarning)
 
-        self.setCurvePoints() # sets self.curvePoints, self.steps equidistantpoints from 1/self.steps to 1
+        self.updateCurvePoints() # sets self.curvePoints, self.steps equidistantpoints from 1/self.steps to 1
         self.scoring = [("Classification Accuracy", orngStat.CA), ("AUC", orngStat.AUC), ("BrierScore", orngStat.BrierScore), ("Information Score", orngStat.IS), ("Sensitivity", orngStat.sens), ("Specificity", orngStat.spec)]
         self.learners = [] # list of current learners from input channel, tuples (id, learner)
         self.data = None   # data on which to construct the learning curve
@@ -64,10 +64,11 @@ class OWLearningCurveC(OWWidget):
         box = OWGUI.widgetBox(self.controlArea, "Options")
         OWGUI.spin(box, self, 'folds', 2, 100, step=1,
                    label='Cross validation folds:  ',
-                   callback=lambda: self.computeCurve(self.commitOnChange))
+                   callback=lambda: self.computeCurve() if self.commitOnChange else None)
         OWGUI.spin(box, self, 'steps', 2, 100, step=1,
                    label='Learning curve points:  ',
-                   callback=[self.setCurvePoints, lambda: self.computeCurve(self.commitOnChange)])
+                   callback=[self.updateCurvePoints,
+                             lambda: self.computeCurve() if self.commitOnChange else None])
 
         OWGUI.checkBox(box, self, 'commitOnChange', 'Apply setting on any change')
         self.commitBtn = OWGUI.button(box, self, "Apply Setting", callback=self.computeCurve, disabled=1)
@@ -95,10 +96,10 @@ class OWLearningCurveC(OWWidget):
     # slots: handle input signals
 
     def dataset(self, data):
-        if data:
+        if data is not None:
             self.infoa.setText('%d instances in input data set' % len(data))
             self.data = data
-            if (len(self.learners)):
+            if len(self.learners):
                 self.computeCurve()
             self.replotGraph()
         else:
@@ -170,11 +171,10 @@ class OWLearningCurveC(OWWidget):
     # learning curve table, callbacks
 
     # recomputes the learning curve
-    def computeCurve(self, condition=1):
-        if condition:
-            learners = [x[1] for x in self.learners]
-            self.curves = self.getLearningCurve(learners)
-            self.computeScores()
+    def computeCurve(self):
+        learners = [x[1] for x in self.learners]
+        self.curves = self.getLearningCurve(learners)
+        self.computeScores()
 
     def computeScores(self):
         self.scores = [[] for i in range(len(self.learners))]
@@ -192,7 +192,7 @@ class OWLearningCurveC(OWWidget):
         pb.finish()
         return curve
 
-    def setCurvePoints(self):
+    def updateCurvePoints(self):
         self.curvePoints = [(x+1.)/self.steps for x in range(self.steps)]
 
     def setTable(self):

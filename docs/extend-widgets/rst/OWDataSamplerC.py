@@ -14,10 +14,11 @@ class OWDataSamplerC(OWWidget):
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'SampleDataC')
         
-        self.inputs = [("Data", Orange.data.Table, self.data)]
+        self.inputs = [("Data", Orange.data.Table, self.set_data)]
+# [start-snippet-1]
         self.outputs = [("Sampled Data", Orange.data.Table),
                         ("Other Data", Orange.data.Table)]
-
+# [end-snippet-1]
         self.proportion = 50
         self.commitOnChange = 0
         self.loadSettings()
@@ -37,8 +38,8 @@ class OWDataSamplerC(OWWidget):
 
         self.resize(100,50)
 
-    def data(self, dataset):
-        if dataset:
+    def set_data(self, dataset):
+        if dataset is not None:
             self.dataset = dataset
             self.infoa.setText('%d instances in input data set' % len(dataset))
             self.optionsBox.setDisabled(0)
@@ -71,5 +72,5 @@ if __name__=="__main__":
     ow = OWDataSamplerC()
     ow.show()
     dataset = Orange.data.Table('iris.tab')
-    ow.data(dataset)
+    ow.set_data(dataset)
     appl.exec_()
