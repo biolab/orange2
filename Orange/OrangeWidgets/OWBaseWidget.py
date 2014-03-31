@@ -132,6 +132,9 @@ class ExampleList(list):
 
 widgetId = 0
 
+
+_SETTINGS_VERSION_KEY = "__settingsDataVersion"
+
 class OWBaseWidget(QDialog):
     def __new__(cls, *arg, **args):
         self = QDialog.__new__(cls)
@@ -411,26 +414,37 @@ class OWBaseWidget(QDialog):
             else:
                 raise AttributeError, "'%s' has no attribute '%s'" % (self, attr)
 
+    def setSettings(self, settings):
+        """
+        Set/restore the widget settings.
 
-    # Set all settings
-    # settings - the map with the settings
-    def setSettings(self,settings):
-        for key in settings:
-            self.__setattr__(key, settings[key])
-        #self.__dict__.update(settings)
+        :param dict settings: A settings dictionary.
 
-    # Get all settings
-    # returns map with all settings
-    def getSettings(self, alsoContexts = True, globalContexts=False):
+        """
+
+        if settings.get(_SETTINGS_VERSION_KEY, None) == \
+                getattr(self, "settingsDataVersion", None):
+            if _SETTINGS_VERSION_KEY in settings:
+                settings = settings.copy()
+                del settings[_SETTINGS_VERSION_KEY]
+
+            for key in settings:
+                self.__setattr__(key, settings[key])
+
+    def getSettings(self, alsoContexts=True, globalContexts=False):
+        """
+        Return a dictionary with all settings for serialization.
+        """
         settings = {}
         if hasattr(self, "settingsList"):
             for name in self.settingsList:
                 try:
-                    settings[name] =  self.getdeepattr(name)
-                except:
+                    settings[name] = self.getdeepattr(name)
+                except Exception:
                     #print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.captionTitle)
                     pass
-        
+            settings[_SETTINGS_VERSION_KEY] = getattr(self, "settingsDataVersion", None)
+
         if alsoContexts:
             self.synchronizeContexts()
             contextHandlers = getattr(self, "contextHandlers", {})
@@ -458,7 +472,13 @@ class OWBaseWidget(QDialog):
         """
         settings_dir = self.widgetSettingsDir
         class_ = type(self)
-        basename = "%s.%s.pck" % (class_.__module__, class_.__name__)
+        version = getattr(class_, "settingsDataVersion", None)
+        if version is not None:
+            version = ".".join(str(subv) for subv in version)
+            basename = "%s.%s.%s.pck" % (class_.__module__, class_.__name__,
+                                         version)
+        else:
+            basename = "%s.%s.pck" % (class_.__module__, class_.__name__)
         filename = os.path.join(settings_dir, basename)
 
         if os.path.exists(filename):
