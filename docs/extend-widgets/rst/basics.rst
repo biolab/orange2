@@ -147,7 +147,7 @@ header in our Data Sampler widget should look something like
 In initialization, the widget calls the :func:`__init__` method
 of a base class. Widget then defines inputs and outputs. For input,
 this is a *Data* channel, accepting tokens of the type
-:class:`Orange.data.Table` and specifying that :func:`data` method will
+:class:`Orange.data.Table` and specifying that :func:`set_data` method will
 be used to handle them. For now, we will use a single output channel
 called "Sampled Data", which will be of the same type
 (:class:`Orange.data.Table`).
@@ -179,7 +179,7 @@ place the two labels in the control area and surround it with the box
 "Info".
 
 In order to complete our widget, we now need to define how will it
-handle the input data. This is done in a method called :func:`data`
+handle the input data. This is done in a method called :func:`set_data`
 (remember, we did introduce this name in the specification of the
 input channel)
 
@@ -269,4 +269,4 @@ this, we finished Data Sampler with
    :end-before: end-snippet-3
 
 These are essentially some calls to Qt routines that run GUI for our
-widgets. Notice that we call the :func:`data` method directly.
+widgets. Notice that we call the :func:`set_data` method directly.
