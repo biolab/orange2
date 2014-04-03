@@ -437,6 +437,8 @@ class OWEditDomain(OWWidget):
                          callback=self.commit)
 
         self._editor_cache = {}
+        self.data = None
+        self.edited_variable_index = -1
 
         self.resize(600, 500)
 
