@@ -80,6 +80,10 @@ def open_addons(flag="r"):
             if os.path.isfile(AOLIST_FILE):
                 os.remove(AOLIST_FILE)
             addons = shelve.open(AOLIST_FILE, 'n')
+    except ImportError:
+        if os.path.isfile(AOLIST_FILE):
+            os.remove(AOLIST_FILE)
+        addons = shelve.open(AOLIST_FILE, 'n')
     else:
         # Try to read the whole list and check for sanity.
         if any(name != name.lower() for name, _ in addons.items()):
