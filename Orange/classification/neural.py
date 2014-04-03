@@ -192,7 +192,8 @@ class NeuralNetworkLearner(Orange.classification.Learner):
         mean = X.mean(axis=0)
         std = X.std(axis=0)
         if self.normalize:
-            X = (X - mean) / std
+            X -= mean
+            X[:, std > 0] /= std[std > 0]
 
         #converts multi-target or single-target classes to numpy
         if any(isinstance(var, Orange.feature.Continuous)
@@ -270,7 +271,8 @@ class NeuralNetworkClassifier(Orange.classification.Classifier):
         input = np.array([[float(e) for e in example]])
 
         if self.normalize:
-            input = (input - self.mean) / self.std
+            input -= self.mean
+            input[:, self.std > 0] /= self.std[self.std > 0]
 
         # transform results from numpy
         results = self.nn.predict(input).tolist()[0]
