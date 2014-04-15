@@ -694,6 +694,12 @@ object.widget-icon {
     box-shadow: 0px 0px 5px #888888;
 }
 
+img.widget-icon,
+object.widget-icon {
+    height: 48px;
+    width: 48px;
+}
+
 /* Data */
 table.widget-catalog-table.widget-category-data img,
 img.widget-category-data.widget-icon,
