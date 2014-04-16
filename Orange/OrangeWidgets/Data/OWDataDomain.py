@@ -1,4 +1,6 @@
 import sys
+from functools import partial
+
 import Orange
 from OWWidget import *
 from OWItemModels import PyListModel, VariableListModel
@@ -281,22 +283,30 @@ class CompleterNavigator(QObject):
             return True
         else:
             return False
-    
-    
-from functools import partial
+
+
+def has_settings_from_scheme(widget):
+    return hasattr(widget, "_settingsFromSchema")
+
+
 class OWDataDomain(OWWidget):
+    settingsList = ["output_name"]
     contextHandlers = {"": DomainContextHandler("", [ContextField("domain_role_hints")])}
-    
+
     def __init__(self, parent=None, signalManager=None, name="Select Attributes"):
         OWWidget.__init__(self, parent, signalManager, name, wantMainArea=False)
-        
+
         self.inputs = [("Data", ExampleTable, self.set_data)]
         self.outputs = [("Data", ExampleTable), ("Features", AttributeList)]
-        
+
         self.domain_role_hints = {}
-        
+        self.output_name = ""
         self.loadSettings()
-        
+
+        if not has_settings_from_scheme(self):
+            # reset the output name for a new widget.
+            self.output_name = ""
+
         # ####
         # GUI
         # ####
@@ -425,13 +435,29 @@ class OWDataDomain(OWWidget):
                     callback = partial(self.move_selected, self.meta_attrs_view))
         self.down_meta_button = OWGUI.button(bbox, self, "Down",
                     callback = partial(self.move_down, self.meta_attrs_view))
-        
-        bbox = OWGUI.widgetBox(self.controlArea, orientation="horizontal", addToLayout=False, margin=0)
-        applyButton = OWGUI.button(bbox, self, "Apply", callback=self.commit)
-        resetButton = OWGUI.button(bbox, self, "Reset", callback=self.reset)
-        
+
+        bbox = OWGUI.widgetBox(self.controlArea, orientation="horizontal",
+                               addToLayout=False, margin=0)
+        self.name_edit = OWGUI.lineEdit(
+            bbox, self, "output_name", "Output data set name:",
+            orientation="horizontal"
+        )
+        self.name_edit.setPlaceholderText("")
+        # 3-rd row, spanning all columns
         layout.addWidget(bbox, 3, 0, 1, 3)
-        
+        bbox = OWGUI.widgetBox(self.controlArea, orientation="horizontal",
+                               addToLayout=False, margin=0)
+        applyButton = OWGUI.button(bbox, self, "Apply", callback=self.commit,
+                                   default=True)
+        resetButton = OWGUI.button(bbox, self, "Reset", callback=self.reset)
+
+        # Move the "Report" button (if it exists) to the same horizontal layer.
+        # (trying to save on vertical space)
+        if hasattr(self, "reportButton"):
+            bbox.layout().addWidget(self.reportButton)
+        # 4-th row spanning all columns
+        layout.addWidget(bbox, 4, 0, 1, 3)
+
         layout.setRowStretch(0, 4)
         layout.setRowStretch(1, 0)
         layout.setRowStretch(2, 2)
@@ -523,12 +549,13 @@ class OWDataDomain(OWWidget):
             self.class_attrs[:] = classes
             self.meta_attrs[:] = metas
             self.available_attrs[:] = available
+            self.name_edit.setPlaceholderText(data.name)
         else:
             self.used_attrs[:] = []
             self.class_attrs[:] = []
             self.meta_attrs[:] = []
             self.available_attrs[:] = []
-        
+            self.name_edit.setPlaceholderText("")
         self.commit()
         
     def update_domain_role_hints(self):
@@ -718,7 +745,8 @@ class OWDataDomain(OWWidget):
                 else:
                     mid = Orange.feature.Descriptor.new_meta_id()
                 domain.addmeta(mid, meta)
-            newdata = Orange.data.Table(domain, self.data)
+            name = self.output_name if self.output_name else self.data.name
+            newdata = Orange.data.Table(domain, self.data, name=name)
             self.output_report = self.prepareDataReport(newdata)
             self.output_domain = domain
             self.send("Data", newdata)
