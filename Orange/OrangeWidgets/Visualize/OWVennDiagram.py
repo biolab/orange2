@@ -36,6 +36,7 @@ INPUTS = [("Data", Orange.data.Table, "setData", Multiple)]
 
 OUTPUTS = [("Data", Orange.data.Table)]
 
+REPLACES = ["orangecontrib.bio.widgets.OWVennDiagram.OWVennDiagram"]
 
 _InputData = namedtuple("_InputData", ["key", "name", "table"])
 _ItemSet = namedtuple("_ItemSet", ["key", "name", "title", "items"])
