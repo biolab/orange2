@@ -13,6 +13,18 @@ import orngInteract
 import warnings
 warnings.filterwarnings("ignore", module="orngInteract")
 
+
+NAME = "Attribute Distance"
+DESCRIPTION = "Computes attribute distance for given data set"
+ICON = "icons/Distance.svg"
+
+INPUTS = [("Data", ExampleTable, "dataset")]
+OUTPUTS = [("Distances", orange.SymMatrix)]
+
+REPLACES = [
+    "Orange.OrangeWidgets.Unsupervised.OWAttributeDistance.OWAttributeDistance"
+]
+
 ##############################################################################
 # main class
 

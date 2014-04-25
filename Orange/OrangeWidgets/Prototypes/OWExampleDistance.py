@@ -15,6 +15,17 @@ from Orange import distance
 from Orange.utils import progress_bar_milestones
 
 
+NAME = "Example Distance"
+DESCRIPTION = "Computes a distance matrix from a set of data examples."
+ICON = "icons/Distance.svg"
+
+INPUTS = [("Data", Orange.data.Table, "dataset")]
+OUTPUTS = [("Distances", Orange.misc.SymMatrix)]
+
+REPLACES = [
+    "Orange.OrangeWidgets.Unsupervised.OWExampleDistance.OWExampleDistance"
+]
+
 class OWExampleDistance(OWWidget):
     settingsList = ["Metrics", "Normalize"]
     contextHandlers = {"": DomainContextHandler("", ["Label"])}
@@ -46,7 +57,7 @@ class OWExampleDistance(OWWidget):
         cb = OWGUI.comboBox(
             self.controlArea, self, "Metrics", box="Distance Metrics",
             items=[x[0] for x in self.metrics],
-            tooltip=("Choose metrics to measure pairwise distance between "
+            tooltip=("Choose metric to measure pairwise distances between "
                      "examples."),
             callback=self.distMetricChanged,
             valueType=str
