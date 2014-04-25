@@ -268,7 +268,6 @@ def distance_matrix(data, distance_constructor=Euclidean, progress_callback=None
     dist = distance_constructor(data)
 
     iter_count = matrix.dim * (matrix.dim - 1) / 2
-    print max(100, 10 ** int(math.floor(math.log10(iter_count)) - 2))
     milestones = progress_bar_milestones(
         iter_count, max(100, 10 ** int(math.floor(math.log10(iter_count)) - 2))
     )
