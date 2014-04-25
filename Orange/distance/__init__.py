@@ -1,3 +1,5 @@
+import math
+
 import Orange
 
 from Orange.core import \
@@ -256,7 +258,7 @@ def distance_matrix(data, distance_constructor=Euclidean, progress_callback=None
     :type distance_constructor: :obj:`Orange.distances.DistanceConstructor`
 
     :param progress_callback: A function (taking one argument) to use for
-        reporting the on the progress.
+        reporting on the progress.
     :type progress_callback: function
     
     :rtype: :class:`Orange.misc.SymMatrix`
@@ -266,8 +268,11 @@ def distance_matrix(data, distance_constructor=Euclidean, progress_callback=None
     dist = distance_constructor(data)
 
     iter_count = matrix.dim * (matrix.dim - 1) / 2
-    milestones = progress_bar_milestones(iter_count, 100)
-    
+    print max(100, 10 ** int(math.floor(math.log10(iter_count)) - 2))
+    milestones = progress_bar_milestones(
+        iter_count, max(100, 10 ** int(math.floor(math.log10(iter_count)) - 2))
+    )
+
     for count, ((i, ex1), (j, ex2)) in enumerate(_pairs(enumerate(data))):
         matrix[i, j] = dist(ex1, ex2)
         if progress_callback and count in milestones:

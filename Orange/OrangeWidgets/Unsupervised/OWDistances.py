@@ -12,7 +12,7 @@ from Orange import distance
 NAME = "Distances"
 DESCRIPTION = "Computes a distance matrix from a set of data instances."
 ICON = "icons/Distance.svg"
-# PRIORITY = 1300
+PRIORITY = 1300
 
 INPUTS = [("Data", Orange.data.Table, "set_data")]
 OUTPUTS = [("Distances", Orange.misc.SymMatrix)]
@@ -36,6 +36,10 @@ METRICS = [
 ]
 
 
+class _CanceledError(Exception):
+    pass
+
+
 class OWDistances(OWWidget):
     settingsList = ["axis", "metric", "normalize", "label", "autocommit"]
     contextHandlers = {"": DomainContextHandler("", ["label"])}
@@ -49,6 +53,7 @@ class OWDistances(OWWidget):
         self.normalize = True
         self.label = 0
         self.autocommit = False
+        self._canceled = False
         self.loadSettings()
 
         self.labels = []
@@ -71,7 +76,7 @@ class OWDistances(OWWidget):
         cb = OWGUI.comboBox(
             box, self, "metric",
             items=[m.name for m in METRICS],
-            tooltip=("Choose metrics to measure pairwise distance between "
+            tooltip=("Choose metric to measure pairwise distances between "
                      "examples."),
             callback=self.distMetricChanged,
             valueType=str
@@ -201,6 +206,12 @@ class OWDistances(OWWidget):
 
         return items
 
+    def progressBarSet(self, value):
+        if self._canceled:
+            raise _CanceledError
+
+        super(OWDistances, self).progressBarSet(value)
+
     def computeMatrix(self):
         self.warning(1)
 
@@ -248,7 +259,10 @@ class OWDistances(OWWidget):
 
     def commit(self):
         if self.matrix is None:
-            self.matrix = self.computeMatrix()
+            try:
+                self.matrix = self.computeMatrix()
+            except _CanceledError:
+                return
 
         matrix = self.matrix
         if matrix is not None:
@@ -272,6 +286,10 @@ class OWDistances(OWWidget):
             self.labelCombo.clear()
             self.labels = []
             self.send("Distances", None)
+
+    def onDeleteWidget(self):
+        super(OWDistances, self).onDeleteWidget()
+        self._canceled = True
 
 
 def domain_has_discrete_attributes(domain):
