@@ -20,7 +20,8 @@ from PyQt4.QtGui import (
     QButtonGroup, QStackedWidget, QHBoxLayout, QVBoxLayout, QSizePolicy,
     QStandardItemModel, QSortFilterProxyModel, QStyleOptionToolButton,
     QStylePainter, QStyle, QApplication, QStyledItemDelegate,
-    QStyleOptionViewItemV4, QSizeGrip, QPolygon, QRegion, QItemSelectionModel
+    QStyleOptionViewItemV4, QSizeGrip, QPolygon, QRegion, QItemSelectionModel,
+    QBrush
 )
 
 from PyQt4.QtCore import pyqtSignal as Signal
@@ -36,7 +37,7 @@ from ..gui.framelesswindow import FramelessWindow
 from ..gui.lineedit import LineEdit
 from ..gui.tooltree import ToolTree, FlattenedTreeItemModel
 from ..gui.utils import StyledWidget_paintEvent, create_css_gradient
-
+from ..utils import qtcompat
 from ..registry.qt import QtWidgetRegistry
 
 from ..resources import icon_loader
@@ -443,22 +444,21 @@ class TabButton(QToolButton):
                                       opt.iconSize, self)
         return hint
 
-_Tab = \
-    namedtuple(
-        "_Tab",
-        ["text",
-         "icon",
-         "toolTip",
-         "button",
-         "data",
-         "palette"])
+_Tab = namedtuple(
+    "_Tab",
+    ["text",
+     "icon",
+     "toolTip",
+     "button",
+     "data",
+     "palette"]
+)
 
 
 class TabBarWidget(QWidget):
     """
-    A tab bar widget using tool buttons as tabs.
+    A vertical tab bar widget using tool buttons as for tabs.
     """
-    # TODO: A uniform size box layout.
 
     currentChanged = Signal(int)
 
@@ -545,8 +545,11 @@ class TabBarWidget(QWidget):
         Remove a tab at `index`.
         """
         if index >= 0 and index < self.count():
-            self.layout().takeItem(index)
             tab = self.__tabs.pop(index)
+            layout_index = self.layout().indexOf(tab.button)
+            if layout_index != -1:
+                self.layout().takeAt(layout_index)
+
             self.__group.removeButton(tab.button)
 
             tab.button.removeEventFilter(self)
@@ -556,6 +559,7 @@ class TabBarWidget(QWidget):
                 self.__sloppyRegion = QRegion()
 
             tab.button.deleteLater()
+            tab.button.setParent(None)
 
             if self.currentIndex() == index:
                 if self.count():
@@ -815,6 +819,15 @@ class PagedMenu(QWidget):
         return self.__tab.button(index)
 
 
+def qvariant_to_qbrush(variant):
+    if qtcompat.HAS_QVARIANT:
+        variant = variant.toPyObject()
+
+    if isinstance(variant, QBrush):
+        return variant
+    else:
+        return None
+
 TAB_BUTTON_STYLE_TEMPLATE = """\
 TabButton {
     qproperty-flat_: false;
@@ -832,6 +845,10 @@ TabButton:checked {
     border-right: 1px solid #609ED7;
 }
 """
+
+# TODO: Cleanup the QuickMenu interface. It should not have a 'dual' public
+# interface (i.e. as an item model view (`setModel` method) and `addPage`,
+# ...)
 
 
 class QuickMenu(FramelessWindow):
@@ -858,7 +875,8 @@ class QuickMenu(FramelessWindow):
         self.__setupUi()
 
         self.__loop = None
-        self.__model = QStandardItemModel()
+        self.__model = None
+        self.setModel(QStandardItemModel())
         self.__triggeredAction = None
 
     def __setupUi(self):
@@ -945,13 +963,16 @@ class QuickMenu(FramelessWindow):
         The `page.icon()` will be used as the icon in the tab bar.
 
         """
+        return self.insertPage(self.__pages.count(), name, page)
+
+    def insertPage(self, index, name, page):
         icon = page.icon()
 
         tip = name
         if page.toolTip():
             tip = page.toolTip()
 
-        index = self.__pages.addPage(page, name, icon, tip)
+        index = self.__pages.insertPage(index, page, name, icon, tip)
 
         # Route the page's signals
         page.triggered.connect(self.__onTriggered)
@@ -991,30 +1012,86 @@ class QuickMenu(FramelessWindow):
         page.setToolTip(index.data(Qt.ToolTipRole).toPyObject())
         return page
 
+    def __clear(self):
+        for i in range(self.__pages.count() - 1, 0, -1):
+            self.__pages.removePage(i)
+
     def setModel(self, model):
         """
         Set the model containing the actions.
         """
+        if self.__model is not None:
+            self.__model.dataChanged.disconnect(self.__on_dataChanged)
+            self.__model.rowsInserted.disconnect(self.__on_rowsInserted)
+            self.__model.rowsRemoved.disconnect(self.__on_rowsRemoved)
+            self.__clear()
+
         for i in range(model.rowCount()):
             index = model.index(i, 0)
-            page = self.createPage(index)
-            page.setActionRole(QtWidgetRegistry.WIDGET_ACTION_ROLE)
-            i = self.addPage(page.title(), page)
-
-            brush = index.data(QtWidgetRegistry.BACKGROUND_ROLE)
-
-            if brush.isValid():
-                brush = brush.toPyObject()
-                base_color = brush.color()
-                button = self.__pages.tabButton(i)
-                button.setStyleSheet(
-                    TAB_BUTTON_STYLE_TEMPLATE %
-                    (create_css_gradient(base_color),
-                     create_css_gradient(base_color.darker(120)))
-                )
+            self.__insertPage(i + 1, index)
 
         self.__model = model
         self.__suggestPage.setModel(model)
+        if model is not None:
+            self.__model.dataChanged.connect(self.__on_dataChanged)
+            self.__model.rowsInserted.connect(self.__on_rowsInserted)
+            self.__model.rowsRemoved.connect(self.__on_rowsRemoved)
+
+    def __on_dataChanged(self, topLeft, bottomRight):
+        parent = topLeft.parent()
+        # Only handle top level item (categories).
+        if not parent.isValid():
+            for row in range(topLeft.row(), bottomRight.row() + 1):
+                index = topLeft.sibling(row, 0, parent)
+                # Note: the tab buttons are offest by 1 (to accommodate
+                # the Suggest Page).
+                button = self.__pages.tabButton(row + 1)
+                brush = index.data(QtWidgetRegistry.BACKGROUND_ROLE)
+                brush = qvariant_to_qbrush(brush)
+                if brush is not None:
+                    base_color = brush.color()
+                    button.setStyleSheet(
+                        TAB_BUTTON_STYLE_TEMPLATE %
+                        (create_css_gradient(base_color),
+                         create_css_gradient(base_color.darker(120)))
+                    )
+
+    def __on_rowsInserted(self, parent, start, end):
+        # Only handle top level item (categories).
+        if not parent.isValid():
+            for row in range(start, end + 1):
+                index = self.__model.index(row, 0)
+                self.__insertPage(row + 1, index)
+
+    def __on_rowsRemoved(self, parent, start, end):
+        # Only handle top level item (categories).
+        if not parent.isValid():
+            for row in range(end, start - 1, -1):
+                self.__removePage(row + 1)
+
+    def __insertPage(self, row, index):
+        page = self.createPage(index)
+        page.setActionRole(QtWidgetRegistry.WIDGET_ACTION_ROLE)
+
+        i = self.insertPage(row, page.title(), page)
+
+        brush = index.data(QtWidgetRegistry.BACKGROUND_ROLE)
+        brush = qvariant_to_qbrush(brush)
+        if brush is not None:
+            base_color = brush.color()
+            button = self.__pages.tabButton(i)
+            button.setStyleSheet(
+                TAB_BUTTON_STYLE_TEMPLATE %
+                (create_css_gradient(base_color),
+                 create_css_gradient(base_color.darker(120)))
+            )
+
+    def __removePage(self, row):
+        page = self.__pages.page(row)
+        page.triggered.disconnect(self.__onTriggered)
+        page.hovered.disconnect(self.hovered)
+        page.view().removeEventFilter(self)
+        self.__pages.removePage(row)
 
     def setFilterFunc(self, func):
         """
