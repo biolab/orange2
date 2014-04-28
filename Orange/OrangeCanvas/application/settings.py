@@ -5,9 +5,11 @@ User settings/preference dialog
 """
 import sys
 import logging
+from collections import namedtuple
 
 from .. import config
 from ..utils.settings import SettingChangedEvent
+from ..utils.qtcompat import QSettings
 from ..utils import toPyObject
 
 from ..utils.propertybindings import (
@@ -17,7 +19,7 @@ from ..utils.propertybindings import (
 from PyQt4.QtGui import (
     QWidget, QMainWindow, QComboBox, QCheckBox, QListView, QTabWidget,
     QToolBar, QAction, QStackedWidget, QVBoxLayout, QHBoxLayout,
-    QFormLayout, QStandardItemModel, QSizePolicy
+    QFormLayout, QStandardItemModel, QStandardItem, QSizePolicy
 )
 
 from PyQt4.QtCore import (
@@ -173,6 +175,9 @@ def container_widget_helper(orientation=Qt.Vertical, spacing=None, margin=0):
     widget.setLayout(layout)
 
     return widget
+
+
+_State = namedtuple("_State", ["visible", "position"])
 
 
 class UserSettingsDialog(QMainWindow):
@@ -417,6 +422,36 @@ class UserSettingsDialog(QMainWindow):
 
         tab.setLayout(form)
 
+        # Categories Tab
+        tab = QWidget()
+        layout = QVBoxLayout()
+        view = QListView()
+        from .. import registry
+        reg = registry.global_registry()
+        model = QStandardItemModel()
+        settings = QSettings()
+        for cat in reg.categories():
+            item = QStandardItem()
+            item.setText(cat.name)
+            item.setCheckable(True)
+            visible, _ = category_state(cat, settings)
+            item.setCheckState(Qt.Checked if visible else Qt.Unchecked)
+            model.appendRow([item])
+
+        view.setModel(model)
+        layout.addWidget(view)
+        tab.setLayout(layout)
+        model.itemChanged.connect(
+            lambda item:
+                save_category_state(
+                    reg.category(str(item.text())),
+                    _State(item.checkState() == Qt.Checked, -1),
+                    settings
+                )
+        )
+
+        self.addTab(tab, "Categories")
+
         if self.__macUnified:
             # Need some sensible size otherwise mac unified toolbar 'takes'
             # the space that should be used for layout of the contents
@@ -490,3 +525,29 @@ class UserSettingsDialog(QMainWindow):
     def __macOnToolBarAction(self, action):
         index, _ = action.data().toInt()
         self.stack.setCurrentIndex(index)
+
+
+def category_state(cat, settings):
+    visible = settings.value(
+        "mainwindow/categories/{0}/visible".format(cat.name),
+        defaultValue=not cat.hidden,
+        type=bool
+    )
+    position = settings.value(
+        "mainwindow/categories/{0}/position".format(cat.name),
+        defaultValue=-1,
+        type=int
+    )
+    return (visible, position)
+
+
+def save_category_state(cat, state, settings):
+    settings.setValue(
+        "mainwindow/categories/{0}/visible".format(cat.name),
+        state.visible
+    )
+
+    settings.setValue(
+        "mainwindow/categories/{0}/position".format(cat.name),
+        state.position
+    )

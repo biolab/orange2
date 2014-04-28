@@ -42,13 +42,15 @@ from ..help import HelpManager
 
 from .canvastooldock import CanvasToolDock, QuickCategoryToolbar, \
                             CategoryPopupMenu, popup_position_from_source
+from .widgettoolbox import item_text, qvariant_to_object
 from .aboutdialog import AboutDialog
 from .schemeinfo import SchemeInfoDialog
 from .outputview import OutputView
-from .settings import UserSettingsDialog
+from .settings import UserSettingsDialog, category_state
 from .addons import AddOnManagerDialog
 
 from ..document.schemeedit import SchemeEditWidget
+from ..document.quickmenu import SortFilterProxyModel
 
 from ..scheme import widgetsscheme
 from ..scheme.readwrite import scheme_load, sniff_version
@@ -181,6 +183,8 @@ class CanvasMainWindow(QMainWindow):
         self.__first_show = True
 
         self.widget_registry = None
+        # Proxy widget registry model
+        self.__proxy_model = None
 
         self.last_scheme_dir = QDesktopServices.StandardLocation(
             QDesktopServices.DocumentsLocation
@@ -748,19 +752,31 @@ class CanvasMainWindow(QMainWindow):
         """
         if self.widget_registry is not None:
             # Clear the dock widget and popup.
-            pass
+            self.widgets_tool_box.setModel(None)
+            self.quick_category.setModel(None)
+            self.scheme_widget.setRegistry(None)
+            self.help.set_registry(None)
+            self.__proxy_model.deleteLater()
+            self.__proxy_model = None
 
         self.widget_registry = widget_registry
-        self.widgets_tool_box.setModel(widget_registry.model())
-        self.quick_category.setModel(widget_registry.model())
+
+        # Restore category hidden/sort order state
+        proxy = SortFilterProxyModel(self)
+        proxy.setSourceModel(widget_registry.model())
+        self.__proxy_model = proxy
+        self.__update_registry_filters()
+
+        self.widgets_tool_box.setModel(proxy)
+        self.quick_category.setModel(proxy)
 
         self.scheme_widget.setRegistry(widget_registry)
+        self.scheme_widget.quickMenu().setModel(proxy)
 
         self.help.set_registry(widget_registry)
 
         # Restore possibly saved widget toolbox tab states
         settings = QSettings()
-
         state = settings.value("mainwindow/widgettoolbox/state",
                                 defaultValue=QByteArray(),
                                 type=QByteArray)
@@ -1939,6 +1955,20 @@ class CanvasMainWindow(QMainWindow):
             settings.value("toolbox-dock-use-popover-menu", defaultValue=True,
                            type=bool)
 
+        self.__update_registry_filters()
+
+    def __update_registry_filters(self):
+        if self.widget_registry is None:
+            return
+
+        settings = QSettings()
+        visible_state = {}
+        for cat in self.widget_registry.categories():
+            visible, _ = category_state(cat, settings)
+            visible_state[cat.name] = visible
+        self.__proxy_model.setFilterFunc(
+            category_filter_function(visible_state))
+
 
 def updated_flags(flags, mask, state):
     if state:
@@ -1966,3 +1996,23 @@ def index(sequence, *what, **kwargs):
         if predicate(what, item_key):
             return i
     raise ValueError("%r not in sequence" % what)
+
+from ..registry import qt
+
+
+def category_filter_function(state):
+    def category_filter(index):
+        if index.parent().isValid():
+            # Is not a category item
+            return True
+
+        # Get the default visibility state
+        desc = index.data(qt.QtWidgetRegistry.CATEGORY_DESC_ROLE)
+        desc = qvariant_to_object(desc)
+        if isinstance(desc, qt.CategoryDescription):
+            visible = not desc.hidden
+        else:
+            visible = True
+        category = item_text(index)
+        return state.get(category, visible)
+    return category_filter
