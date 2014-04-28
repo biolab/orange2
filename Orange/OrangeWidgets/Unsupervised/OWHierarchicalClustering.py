@@ -646,6 +646,10 @@ class OWHierarchicalClustering(OWWidget):
             "Scalable Vector Graphics (*.SVG)",
             ".png"
         )
+
+        if not filename:
+            return
+
         _, ext = os.path.splitext(filename)
         ext = ext.lower()
 
@@ -897,7 +901,7 @@ class DendrogramScene(QGraphicsScene):
 
     def mousePressEvent(self, event):
         QGraphicsScene.mousePressEvent(self, event)
-        if event.modifiers() == Qt.NoModifier:
+        if self.widget and event.modifiers() == Qt.NoModifier:
             pos = self.widget.mapFromScene(event.pos())
             if not self.widget.contains(pos) and self.widget.selected_items:
                 self.widget.set_selected_clusters([])
