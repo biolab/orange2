@@ -313,20 +313,16 @@ class OWHierarchicalClustering(OWWidget):
         elif isinstance(items, Orange.core.VarList):
             # Attribute list (for Attribute Distance)
             self.labels = ["None", "Attribute Name"]
-            self.Annotation = 1
         elif isinstance(items, list):
             # a list of items (most probably strings)
             self.labels = ["None", "Default"]
-            self.Annotation = 0
         else:
             self.labels = ["None", "Default"]
-            self.Annotation = 0
 
         self.labelCombo.clear()
         self.labelCombo.addItems(self.labels)
 
-        if len(self.labels) < self.Annotation - 1:
-            self.Annotation = 0
+        self.Annotation = min(self.Annotation, len(self.labels) - 1)
 
         self.labelCombo.setCurrentIndex(self.Annotation)
         if isinstance(items, Orange.data.Table):
