@@ -11,7 +11,7 @@ import logging
 
 from PyQt4.QtGui import (
     QAbstractButton, QSizePolicy, QAction, QApplication, QDrag, QPalette,
-    QBrush
+    QBrush, QIcon
 )
 
 from PyQt4.QtCore import (
@@ -26,6 +26,7 @@ from ..gui.toolgrid import ToolGrid
 from ..gui.quickhelp import StatusTipPromoter
 from ..gui.utils import create_gradient
 from ..registry.qt import QtWidgetRegistry
+from ..utils import qtcompat
 
 
 log = logging.getLogger(__name__)
@@ -39,6 +40,53 @@ def iter_item(item):
         yield item.child(i)
 
 
+def iter_index(model, index):
+    """
+    Iterate over child indexes of a `QModelIndex` in a `model`.
+    """
+    for row in range(model.rowCount(index)):
+        yield model.index(row, 0, index)
+
+
+def qvariant_to_string(variant):
+    if qtcompat.HAS_QVARIANT:
+        return unicode(variant.toString())
+    else:
+        return unicode(variant)
+
+
+def qvariant_to_icon(variant):
+    if qtcompat.HAS_QVARIANT:
+        value = variant.toPyObject()
+    else:
+        value = variant
+
+    if isinstance(value, QIcon):
+        return value
+    else:
+        return QIcon()
+
+
+def qvariant_to_object(variant):
+    if qtcompat.HAS_QVARIANT:
+        value = variant.toPyObject()
+    else:
+        value = variant
+    return value
+
+
+def item_text(index):
+    return qvariant_to_string(index.data(Qt.DisplayRole))
+
+
+def item_icon(index):
+    return qvariant_to_icon(index.data(Qt.DecorationRole))
+
+
+def item_tooltip(index):
+    return qvariant_to_string(index.data(Qt.DisplayRole))
+
+
 class WidgetToolGrid(ToolGrid):
     """
     A Tool Grid with widget buttons. Populates the widget buttons
@@ -50,8 +98,6 @@ class WidgetToolGrid(ToolGrid):
 
         self.__model = None
         self.__rootIndex = None
-        self.__rootItem = None
-        self.__rootItem = None
         self.__actionRole = QtWidgetRegistry.WIDGET_ACTION_ROLE
 
         self.__dragListener = DragStartEventListener(self)
@@ -136,26 +182,20 @@ class WidgetToolGrid(ToolGrid):
         """
         Initialize the grid from the model with rootIndex as the root.
         """
-        if not rootIndex.isValid():
-            rootItem = model.invisibleRootItem()
-        else:
-            rootItem = model.itemFromIndex(rootIndex)
-
-        self.__rootItem = rootItem
-
-        for i, item in enumerate(iter_item(rootItem)):
-            self.__insertItem(i, item)
+        for i, index in enumerate(iter_index(model, rootIndex)):
+            self.__insertItem(i, index)
 
     def __insertItem(self, index, item):
         """
-        Insert a widget action (from a `QStandardItem`) at index.
+        Insert a widget action from `item` (`QModelIndex`) at `index`.
         """
         value = item.data(self.__actionRole)
         if value.isValid():
             action = value.toPyObject()
         else:
-            action = QAction(item.text(), self)
-            action.setIcon(item.icon())
+            action = QAction(item_text(item), self)
+            action.setIcon(item_icon(item))
+            action.setToolTip(item_tooltip(item))
 
         self.insertAction(index, action)
 
@@ -167,18 +207,16 @@ class WidgetToolGrid(ToolGrid):
         """
         Insert items from range start:end into the grid.
         """
-        item = self.__model.itemForIndex(parent)
-        if item == self.__rootItem:
+        if parent == self.__rootIndex:
             for i in range(start, end + 1):
-                item = self.__rootItem.child(i)
-                self._insertItem(i, item)
+                item = self.__rootIndex.child(i, 0)
+                self.__insertItem(i, item)
 
     def __on_rowsRemoved(self, parent, start, end):
         """
         Remove items from range start:end from the grid.
         """
-        item = self.__model.itemForIndex(parent)
-        if item == self.__rootItem:
+        if parent == self.__rootIndex:
             for i in reversed(range(start - 1, end)):
                 action = self.actions()[i]
                 self.removeAction(action)
@@ -341,38 +379,37 @@ class WidgetToolBox(ToolBox):
 
         """
         if self.__model is not None:
-            self.__model.itemChanged.disconnect(self.__on_itemChanged)
+            self.__model.dataChanged.disconnect(self.__on_dataChanged)
             self.__model.rowsInserted.disconnect(self.__on_rowsInserted)
             self.__model.rowsRemoved.disconnect(self.__on_rowsRemoved)
 
         self.__model = model
         if self.__model is not None:
-            self.__model.itemChanged.connect(self.__on_itemChanged)
+            self.__model.dataChanged.connect(self.__on_dataChanged)
             self.__model.rowsInserted.connect(self.__on_rowsInserted)
             self.__model.rowsRemoved.connect(self.__on_rowsRemoved)
 
         self.__initFromModel(self.__model)
 
     def __initFromModel(self, model):
-        for cat_item in iter_item(model.invisibleRootItem()):
-            self.__insertItem(cat_item, self.count())
+        for row in range(model.rowCount()):
+            self.__insertItem(model.index(row, 0), self.count())
 
     def __insertItem(self, item, index):
         """
-        Insert category item at index.
+        Insert category item  (`QModelIndex`) at index.
         """
         grid = WidgetToolGrid()
-        grid.setModel(item.model(), item.index())
-
+        grid.setModel(item.model(), item)
         grid.actionTriggered.connect(self.triggered)
         grid.actionHovered.connect(self.hovered)
 
         grid.setIconSize(self.__iconSize)
         grid.setButtonSize(self.__buttonSize)
 
-        text = item.text()
-        icon = item.icon()
-        tooltip = item.toolTip()
+        text = item_text(item)
+        icon = item_icon(item)
+        tooltip = item_tooltip(item)
 
         # Set the 'tab-title' property to text.
         grid.setProperty("tab-title", text)
@@ -397,16 +434,15 @@ class WidgetToolBox(ToolBox):
         palette.setBrush(QPalette.Highlight, brush)
         button.setPalette(palette)
 
-    def __on_itemChanged(self, item):
-        """
-        Item contents have changed.
-        """
-        parent = item.parent()
-        if parent is self.__model.invisibleRootItem():
-            button = self.tabButton(item.row())
-            button.setIcon(item.icon())
-            button.setText(item.text())
-            button.setToolTip(item.toolTip())
+    def __on_dataChanged(self, topLeft, bottomRight):
+        parent = topLeft.parent()
+        if not parent.isValid():
+            for row in range(topLeft.row(), bottomRight.row() + 1):
+                item = topLeft.sibling(row, topLeft.column())
+                button = self.tabButton(row)
+                button.setIcon(item_icon(item))
+                button.setText(item_text(item))
+                button.setToolTip(item_tooltip(item))
 
     def __on_rowsInserted(self, parent, start, end):
         """
@@ -414,9 +450,8 @@ class WidgetToolBox(ToolBox):
         """
         # Only the top level items (categories) are handled here.
         if not parent.isValid():
-            root = self.__model.invisibleRootItem()
             for i in range(start, end + 1):
-                item = root.child(i)
+                item = self.__model.index(i, 0)
                 self.__insertItem(item, i)
 
     def __on_rowsRemoved(self, parent, start, end):

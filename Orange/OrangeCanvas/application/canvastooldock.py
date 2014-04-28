@@ -22,7 +22,7 @@ from ..gui.quickhelp import QuickHelp
 from ..gui.framelesswindow import FramelessWindow
 from ..document.quickmenu import MenuPage
 from ..document.quickmenu import create_css_gradient
-from .widgettoolbox import WidgetToolBox, iter_item
+from .widgettoolbox import WidgetToolBox, iter_index, item_text, item_icon, item_tooltip
 
 from ..registry.qt import QtWidgetRegistry
 from ..utils.qtcompat import toPyObject
@@ -268,14 +268,14 @@ class QuickCategoryToolbar(ToolGrid):
         """Set the registry model.
         """
         if self.__model is not None:
-            self.__model.itemChanged.disconnect(self.__on_itemChanged)
+            self.__model.dataChanged.disconnect(self.__on_dataChanged)
             self.__model.rowsInserted.disconnect(self.__on_rowsInserted)
             self.__model.rowsRemoved.disconnect(self.__on_rowsRemoved)
             self.clear()
 
         self.__model = model
         if self.__model is not None:
-            self.__model.itemChanged.connect(self.__on_itemChanged)
+            self.__model.dataChanged.connect(self.__on_dataChanged)
             self.__model.rowsInserted.connect(self.__on_rowsInserted)
             self.__model.rowsRemoved.connect(self.__on_rowsRemoved)
             self.__initFromModel(model)
@@ -283,17 +283,18 @@ class QuickCategoryToolbar(ToolGrid):
     def __initFromModel(self, model):
         """Initialize the toolbar from the model.
         """
-        root = model.invisibleRootItem()
-        for item in iter_item(root):
-            action = self.createActionForItem(item)
+        for index in iter_index(model, QModelIndex()):
+            action = self.createActionForItem(index)
             self.addAction(action)
 
-    def createActionForItem(self, item):
-        """Create the QAction instance for item.
+    def createActionForItem(self, index):
+        """Create the QAction instance for item at `index` (`QModelIndex`).
         """
-        action = QAction(item.icon(), item.text(), self,
-                         toolTip=item.toolTip())
-        action.setData(item)
+        action = QAction(
+            item_icon(index), item_text(index), self,
+            toolTip=item_tooltip(index)
+        )
+        action.setData(QPersistentModelIndex(index))
         return action
 
     def createButtonForAction(self, action):
@@ -301,7 +302,7 @@ class QuickCategoryToolbar(ToolGrid):
         """
         button = ToolGrid.createButtonForAction(self, action)
 
-        item = action.data().toPyObject()
+        item = action.data().toPyObject()  # QPersistentModelIndex
         if item.data(Qt.BackgroundRole).isValid():
             brush = item.background()
         elif item.data(QtWidgetRegistry.BACKGROUND_ROLE).isValid():
@@ -324,27 +325,26 @@ class QuickCategoryToolbar(ToolGrid):
 
         return button
 
-    def __on_itemChanged(self, item):
-        root = self.__model.invisibleRootItem()
-        if item.parentItem() == root:
-            row = item.row()
-            action = self._gridSlots[row].action
-            action.setText(item.text())
-            action.setIcon(item.icon())
-            action.setToolTip(item.toolTip())
+    def __on_dataChanged(self, topLeft, bottomRight):
+        parent = topLeft.parent()
+        if not parent.isValid():
+            for row in range(topLeft.row(), bottomRight.row() + 1):
+                item = self.__model.index(row, 0)
+                action = self.actions()[row]
+                action.setText(item_text(item))
+                action.setIcon(item_icon(item))
+                action.setToolTip(item_tooltip(item))
 
     def __on_rowsInserted(self, parent, start, end):
-        root = self.__model.invisibleRootItem()
-        if root == parent:
-            for index in range(start, end + 1):
-                item = parent.child(index)
-                self.addAction(self.createActionForItem(item))
+        if not parent.isValid():
+            for row in range(start, end + 1):
+                item = self.__model.index(row, 0)
+                self.insertAction(row, self.createActionForItem(item))
 
     def __on_rowsRemoved(self, parent, start, end):
-        root = self.__model.invisibleRootItem()
-        if root == parent:
-            for index in range(end, start - 1, -1):
-                action = self._gridSlots[index].action
+        if not parent.isValid():
+            for row in range(end, start - 1, -1):
+                action = self.actions()[row]
                 self.removeAction(action)
 
 

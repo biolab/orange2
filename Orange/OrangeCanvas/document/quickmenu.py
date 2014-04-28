@@ -995,10 +995,8 @@ class QuickMenu(FramelessWindow):
         """
         Set the model containing the actions.
         """
-        root = model.invisibleRootItem()
-        for i in range(root.rowCount()):
-            item = root.child(i)
-            index = item.index()
+        for i in range(model.rowCount()):
+            index = model.index(i, 0)
             page = self.createPage(index)
             page.setActionRole(QtWidgetRegistry.WIDGET_ACTION_ROLE)
             i = self.addPage(page.title(), page)
