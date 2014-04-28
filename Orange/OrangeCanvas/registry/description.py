@@ -478,6 +478,8 @@ class CategoryDescription(object):
         relative to `qualified_name`).
     background : str
         An background color for widgets in this category.
+    hidden : bool
+        Is this category (by default) hidden in the canvas gui.
 
     """
     def __init__(self, name=None, version=None,
@@ -487,7 +489,7 @@ class CategoryDescription(object):
                  maintainer=None, maintainer_email=None,
                  url=None, help=None, keywords=None,
                  widgets=None, priority=sys.maxint,
-                 icon=None, background=None
+                 icon=None, background=None, hidden=False
                  ):
 
         self.name = name
@@ -508,6 +510,7 @@ class CategoryDescription(object):
         self.priority = priority
         self.icon = icon
         self.background = background
+        self.hidden = hidden
 
     def __str__(self):
         return "CategoryDescription(name=%(name)r, ...)" % self.__dict__
@@ -546,6 +549,7 @@ class CategoryDescription(object):
         priority = getattr(package, "PRIORITY", sys.maxint - 1)
         icon = getattr(package, "ICON", None)
         background = getattr(package, "BACKGROUND", None)
+        hidden = getattr(package, "HIDDEN", None)
 
         if priority == sys.maxint - 1 and name.lower() == "prototypes":
             priority = sys.maxint
@@ -565,4 +569,5 @@ class CategoryDescription(object):
             widgets=widgets,
             priority=priority,
             icon=icon,
-            background=background)
+            background=background,
+            hidden=hidden)
