@@ -18,3 +18,4 @@ BACKGROUND = "#FFB7B1"
 ICON = "icons/Category-Visualize.svg"
 
 #PRIORITY = 2
+HIDDEN = True
