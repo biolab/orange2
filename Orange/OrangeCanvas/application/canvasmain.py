@@ -20,14 +20,14 @@ from PyQt4.QtGui import (
 )
 
 from PyQt4.QtCore import (
-    Qt, QEvent, QSize, QUrl, QTimer, QFile, QByteArray
+    Qt, QObject, QEvent, QSize, QUrl, QTimer, QFile, QByteArray
 )
 
 from PyQt4.QtNetwork import QNetworkDiskCache
 
 from PyQt4.QtWebKit import QWebView
 
-from PyQt4.QtCore import pyqtProperty as Property
+from PyQt4.QtCore import pyqtProperty as Property, pyqtSignal as Signal
 
 # Compatibility with PyQt < v4.8.3
 from ..utils.qtcompat import QSettings
@@ -236,6 +236,10 @@ class CanvasMainWindow(QMainWindow):
 
         self.scheme_widget = SchemeEditWidget()
         self.scheme_widget.setScheme(widgetsscheme.WidgetsScheme(parent=self))
+        dropfilter = UrlDropEventFilter(self)
+        dropfilter.urlDropped.connect(self.open_scheme_file)
+        self.scheme_widget.setAcceptDrops(True)
+        self.scheme_widget.installEventFilter(dropfilter)
 
         w.layout().addWidget(self.scheme_widget)
 
@@ -2016,3 +2020,30 @@ def category_filter_function(state):
         category = item_text(index)
         return state.get(category, visible)
     return category_filter
+
+
+class UrlDropEventFilter(QObject):
+    urlDropped = Signal(QUrl)
+
+    def eventFilter(self, obj, event):
+        etype = event.type()
+        if  etype == QEvent.DragEnter or etype == QEvent.DragMove:
+            mime = event.mimeData()
+            if mime.hasUrls() and len(mime.urls()) == 1:
+                url = mime.urls()[0]
+                if url.isLocalFile():
+                    filename = unicode(url.toLocalFile())
+                    _, ext = os.path.splitext(filename)
+                    if ext == ".ows":
+                        event.acceptProposedAction()
+                        return True
+
+        elif etype == QEvent.Drop:
+            mime = event.mimeData()
+            urls = mime.urls()
+            if urls:
+                url = urls[0]
+                self.urlDropped.emit(url)
+                return True
+
+        return QObject.eventFilter(self, obj, event)
