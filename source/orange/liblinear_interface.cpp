@@ -372,7 +372,8 @@ TFloatListList * extract_feature_weights(model * model, int nr_class_values) {
 				weights->at(labels[0])->at(j) = model->w[j];
 				weights->at(labels[1])->at(j) = - model->w[j];
 			} else {
-				weights->at(0)->at(j) = model->w[j];
+				// Return weights for the first Orange's class label.
+				weights->at(0)->at(j) = (labels[0] == 0 ? 1: -1) * model->w[j];
 			}
 		}
 	}
