@@ -18,7 +18,7 @@ from OWWidget import *
 from OWNomogramGraph import *
 from orngDataCaching import *
 import orngLR
-
+import Orange
 
 aproxZero = 0.0001
 
@@ -387,6 +387,94 @@ class OWNomogram(OWWidget):
         self.graph.setScene(self.bnomogram)
         self.bnomogram.show()
 
+    def lr2Classifier(self, cl):
+    
+        if len(cl.weights) == 1:
+            weights = list(cl.weights[0])
+            if self.TargetClassIndex > 0:
+                weights = [ -w for w in weights ]
+        else:
+            weights = list(cl.weights[self.TargetClassIndex])
+
+        if self.bnomogram:
+            self.bnomogram.destroy_and_init(self, AttValue('Constant', weights[-1]))
+        else:
+            self.bnomogram = BasicNomogram(self, AttValue('Constant', weights[-1]))
+
+        domain = cl.domain
+        if domain:
+            for at in domain.attributes:
+                at.setattr("visited",0)
+
+            order = []
+            multiple = defaultdict(list)
+            for iat,at in enumerate(domain.attributes):
+                if at.getValueFrom and hasattr(at.getValueFrom, "variable") \
+                    and isinstance(at.getValueFrom.variable, Orange.feature.Discrete):
+                        var = at.getValueFrom.variable
+                        if var not in multiple: 
+                            order.append((var,-1))
+                        multiple[var].append((at, iat))
+                else:
+                    order.append((at, iat)) #raw variable
+
+            for at,iat in order:
+                if at not in multiple:
+                    span = 1.
+                    average = 0.
+                    basevar = at
+                    #check if normalized
+                    if isinstance(at.getValueFrom, Orange.classification.ClassifierFromVar) \
+                        and isinstance(at.getValueFrom.variable, Orange.feature.Continuous) \
+                        and isinstance(at.getValueFrom.transformer, Orange.core.NormalizeContinuous):
+                        span = at.getValueFrom.transformer.span
+                        average = at.getValueFrom.transformer.average
+                        basevar = at.getValueFrom.variable
+                    name = basevar.name
+
+                    a = AttrLineCont(name, self.bnomogram)
+                    if self.data:
+                        bas = getCached(self.data, orange.DomainBasicAttrStat, (self.data,))
+                        maxAtValue = bas[basevar].max
+                        minAtValue = bas[basevar].min
+                    else:
+                        maxAtValue = 1.
+                        minAtValue = -1.
+                    numOfPartitions = 50.
+                    d = getDiff((maxAtValue-minAtValue)/numOfPartitions)
+
+                    # get curr_num = starting point for continuous att. sampling
+                    curr_num = getStartingPoint(d, minAtValue)
+                    rndFac = getRounding(d)
+
+                    while curr_num<maxAtValue+d:
+                        if abs(curr_num*weights[iat])<aproxZero:
+                            a.addAttValue(AttValue("0.0", 0))
+                        else:
+                            a.addAttValue(AttValue(str(curr_num), ((curr_num-average)/span)*weights[iat]))
+                        curr_num += d
+                    a.continuous = True
+                else:
+                    a = AttrLine(at.name, self.bnomogram)
+                    found_values = set()
+                    for ati, iati in multiple[at]:
+                        val = ati.getValueFrom.variable.values[ati.getValueFrom.transformer.value]
+                        a.addAttValue(AttValue(val, weights[iati]))
+                        found_values.add(val)
+                        
+                    excluded_values = list(set(at.values) - found_values)
+                    excluded_name = excluded_values[0] if len(excluded_values) == 1 else "other"
+                    a.addAttValue(AttValue(excluded_name, 0))
+ 
+                if len(a.attValues)>1:
+                    self.bnomogram.addAttribute(a)
+
+        self.alignRadio.setDisabled(True)
+        self.alignType = 0
+        self.graph.setScene(self.bnomogram)
+        self.bnomogram.show()
+
+
     def svmClassifier(self, cl):
         import orngLR_Jakulin
 
@@ -545,7 +633,7 @@ class OWNomogram(OWWidget):
         self.cl = None
         
         if cl:
-            for acceptable in (orange.BayesClassifier, orange.LogRegClassifier, orange.RuleClassifier_logit):
+            for acceptable in (orange.BayesClassifier, orange.LogRegClassifier, orange.RuleClassifier_logit, Orange.classification.svm.LinearClassifier):
                 if isinstance(cl, acceptable):
                     self.cl = cl
                     break
@@ -624,6 +712,8 @@ class OWNomogram(OWWidget):
                 self.lrClassifier(self.cl)
             else:
                 setNone()
+        elif isinstance(self.cl, Orange.classification.svm.LinearClassifier):
+            self.lr2Classifier(self.cl)
         else:
             setNone()
         if self.sort_type>0:
