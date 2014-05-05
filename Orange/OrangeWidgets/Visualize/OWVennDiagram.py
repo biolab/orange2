@@ -174,8 +174,13 @@ class OWVennDiagram(OWWidget):
         self.useequalityButton.setEnabled(samedomain)
         self.samedomain = samedomain
 
+        has_identifiers = all(source_attributes(input.table.domain)
+                              for input in self.data.values())
+
         if not samedomain and not self.useidentifiers:
             self.useidentifiers = 1
+        elif samedomain and not has_identifiers:
+            self.useidentifiers = 0
 
         incremental = all(inc for _, inc in self._queue)
 
