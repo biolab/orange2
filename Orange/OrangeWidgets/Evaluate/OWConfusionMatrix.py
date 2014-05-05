@@ -327,7 +327,10 @@ class OWConfusionMatrix(OWWidget):
                 for i, ex in zip(selectionIndices, data):
                     for id, p in zip(probIds, res.results[i].probabilities[learnerI]):
                         ex[id] = p
-    
+
+        if data is not None:
+            data.name = self.learnerNames[learnerI]
+
         self.send("Selected Data", data)
 
 
