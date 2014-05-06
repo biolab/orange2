@@ -432,7 +432,6 @@ class OWNomogram(OWWidget):
                         basevar = at.getValueFrom.variable
                     name = basevar.name
 
-                    a = AttrLineCont(name, self.bnomogram)
                     if self.data:
                         bas = getCached(self.data, orange.DomainBasicAttrStat, (self.data,))
                         maxAtValue = bas[basevar].max
@@ -447,6 +446,7 @@ class OWNomogram(OWWidget):
                     curr_num = getStartingPoint(d, minAtValue)
                     rndFac = getRounding(d)
 
+                    a = AttrLineCont(name, self.bnomogram)
                     while curr_num<maxAtValue+d:
                         if abs(curr_num*weights[iat])<aproxZero:
                             a.addAttValue(AttValue("0.0", 0))

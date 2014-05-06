@@ -77,7 +77,7 @@ class OWLogisticRegression2(OWWidget):
 
     def applyLearner(self):
         self.learner = Orange.classification.logreg.LibLinearLogRegLearner(solver_type=self.regularizations[self.regularization], C=self.C, eps=0.01, normalization=self.normalization,
-            bias=1.0, multinomial_treatment=Orange.data.continuization.DomainContinuizer.LowestIsBase)
+            bias=1.0, multinomial_treatment=Orange.data.continuization.DomainContinuizer.FrequentIsBase)
 
         if self.preprocessor:
             self.learner = self.preprocessor.wrapLearner(self.learner)
