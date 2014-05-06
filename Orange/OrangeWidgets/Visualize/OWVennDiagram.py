@@ -506,17 +506,6 @@ class OWVennDiagram(OWWidget):
             set()
         )
 
-        if not self.useidentifiers:
-            if selected_items:
-                selected_items = [item.inst for item in selected_items]
-                dom = selected_items[0].domain
-                dom = Orange.data.Domain(dom.attributes, dom.class_var)
-                data = Orange.data.Table(dom, selected_items)
-            else:
-                data = None
-            self.send("Data", data)
-            return
-
         def match(val):
             if val.is_special():
                 return False
@@ -532,11 +521,22 @@ class OWVennDiagram(OWWidget):
         names = uniquify(names)
 
         for i, (key, input) in enumerate(self.data.items()):
-            attr = self.itemsetAttr(key)
-            if attr is not None:
-                mask = map(match, (inst[attr] for inst in input.table))
+            if self.useidentifiers:
+                attr = self.itemsetAttr(key)
+                if attr is not None:
+                    mask = map(match, (inst[attr] for inst in input.table))
+                else:
+                    mask = [False] * len(input.table)
+
+                def instance_key(inst):
+                    return str(inst[attr])
             else:
-                mask = [False] * len(input.table)
+                mask = [ComparableInstance(inst) in selected_items
+                        for inst in input.table]
+                _map = {item: str(i) for i, item in enumerate(selected_items)}
+
+                def instance_key(inst):
+                    return _map[ComparableInstance(inst)]
 
             subset = Orange.data.Table(input.table.domain.clone(),
                                        input.table.select(mask))
@@ -550,7 +550,7 @@ class OWVennDiagram(OWWidget):
             subset.domain.add_meta(item_mid, item_id_var)
             subset.add_meta_attribute(item_mid)
             for inst in subset:
-                inst[item_id_var] = str(inst[attr])
+                inst[item_id_var] = instance_key(inst)
 
             if subset:
                 selected_subsets.append(subset)
