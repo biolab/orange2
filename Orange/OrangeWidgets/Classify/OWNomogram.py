@@ -22,6 +22,8 @@ import Orange
 
 aproxZero = 0.0001
 
+SHOW_BIGGEST = 100
+
 def getStartingPoint(d, min):
     if d == 0:
         return min
@@ -396,76 +398,117 @@ class OWNomogram(OWWidget):
         else:
             weights = list(cl.weights[self.TargetClassIndex])
 
-        if self.bnomogram:
-            self.bnomogram.destroy_and_init(self, AttValue('Constant', weights[-1]))
-        else:
-            self.bnomogram = BasicNomogram(self, AttValue('Constant', weights[-1]))
-
         domain = cl.domain
-        if domain:
-            for at in domain.attributes:
-                at.setattr("visited",0)
+        for at in domain.attributes:
+            at.setattr("visited",0)
 
-            order = []
-            multiple = defaultdict(list)
-            for iat,at in enumerate(domain.attributes):
-                if at.getValueFrom and hasattr(at.getValueFrom, "variable") \
-                    and isinstance(at.getValueFrom.variable, Orange.feature.Discrete):
-                        var = at.getValueFrom.variable
-                        if var not in multiple: 
-                            order.append((var,-1))
-                        multiple[var].append((at, iat))
+        order = []
+        multiple = defaultdict(list)
+        for iat,at in enumerate(domain.attributes):
+            if at.getValueFrom and hasattr(at.getValueFrom, "variable") \
+                and isinstance(at.getValueFrom.variable, Orange.feature.Discrete):
+                    var = at.getValueFrom.variable
+                    if var not in multiple: 
+                        order.append((var,-1))
+                    multiple[var].append((at, iat))
+            else:
+                order.append((at, iat)) #raw variable
+
+        candidateats = []
+
+        for at,iat in order:
+            if at not in multiple:
+                span = 1.
+                average = 0.
+                basevar = at
+                #check if normalized
+                if isinstance(at.getValueFrom, Orange.classification.ClassifierFromVar) \
+                    and isinstance(at.getValueFrom.variable, Orange.feature.Continuous) \
+                    and isinstance(at.getValueFrom.transformer, Orange.core.NormalizeContinuous):
+                    span = at.getValueFrom.transformer.span
+                    average = at.getValueFrom.transformer.average
+                    basevar = at.getValueFrom.variable
+                name = basevar.name
+
+                if self.data:
+                    bas = getCached(self.data, orange.DomainBasicAttrStat, (self.data,))
+                    maxAtValue = bas[basevar].max
+                    minAtValue = bas[basevar].min
+                    avgAtValue = bas[basevar].avg
                 else:
-                    order.append((at, iat)) #raw variable
+                    maxAtValue = 1.
+                    minAtValue = -1.
+                    avgAtValue = 0.
 
-            for at,iat in order:
-                if at not in multiple:
-                    span = 1.
-                    average = 0.
-                    basevar = at
-                    #check if normalized
-                    if isinstance(at.getValueFrom, Orange.classification.ClassifierFromVar) \
-                        and isinstance(at.getValueFrom.variable, Orange.feature.Continuous) \
-                        and isinstance(at.getValueFrom.transformer, Orange.core.NormalizeContinuous):
-                        span = at.getValueFrom.transformer.span
-                        average = at.getValueFrom.transformer.average
-                        basevar = at.getValueFrom.variable
-                    name = basevar.name
+                # get curr_num = starting point for continuous att. sampling
 
-                    if self.data:
-                        bas = getCached(self.data, orange.DomainBasicAttrStat, (self.data,))
-                        maxAtValue = bas[basevar].max
-                        minAtValue = bas[basevar].min
-                    else:
-                        maxAtValue = 1.
-                        minAtValue = -1.
+                w = weights[iat]
+                betas = [ ((minAtValue-average)/span)*w, ((maxAtValue-average)/span)*w  ]
+                rng = max(betas) - min(betas)
+
+                freqbase = ((avgAtValue-average)/span)*w
+
+                candidateats.append((at, name, "cont", minAtValue, maxAtValue, w, average, span, freqbase, rng))
+
+            else:
+                found_values = set()
+                values = []
+                for ati, iati in multiple[at]:
+                    val = ati.getValueFrom.variable.values[ati.getValueFrom.transformer.value]
+                    values.append((val, weights[iati]))
+                    found_values.add(val)
+                    
+                excluded_values = list(set(at.values) - found_values)
+                excluded_name = excluded_values[0] if len(excluded_values) == 1 else "other"
+                values.append((excluded_name, 0))
+
+                betas = [ a[1] for a in values ]
+                rng = max(betas) - min(betas)
+
+                #the most frequent item has weight 0.
+                candidateats.append((at, at.name, "disc", values, 0., rng))
+
+        self.warning(1011)
+
+        biggest_influence = set([a[0] for a in sorted(candidateats, key=lambda x: -x[-1]) ][:SHOW_BIGGEST])
+
+        if len(biggest_influence) < len(candidateats):
+            self.warning(1011, "Showing only %d features with highest influence (out of %d)." % (len(biggest_influence), len(candidateats) ))
+
+        hiddenbeta = 0.
+        for aaa in candidateats:
+            if aaa[0] not in biggest_influence:
+                hiddenbeta += aaa[-2]
+
+        if self.bnomogram:
+            self.bnomogram.destroy_and_init(self, AttValue('Constant', weights[-1]+hiddenbeta))
+        else:
+            self.bnomogram = BasicNomogram(self, AttValue('Constant', weights[-1]+hiddenbeta))
+
+        for aaa in candidateats:
+
+            if aaa[0] in biggest_influence:
+
+                if aaa[2] == "cont":
+                    _, name, _, minAtValue, maxAtValue, w, average, span, _, _ = aaa
                     numOfPartitions = 50.
                     d = getDiff((maxAtValue-minAtValue)/numOfPartitions)
-
-                    # get curr_num = starting point for continuous att. sampling
-                    curr_num = getStartingPoint(d, minAtValue)
-                    rndFac = getRounding(d)
-
                     a = AttrLineCont(name, self.bnomogram)
+                    curr_num = getStartingPoint(d, minAtValue)
                     while curr_num<maxAtValue+d:
-                        if abs(curr_num*weights[iat])<aproxZero:
+                        if abs(curr_num*w)<aproxZero:
                             a.addAttValue(AttValue("0.0", 0))
                         else:
-                            a.addAttValue(AttValue(str(curr_num), ((curr_num-average)/span)*weights[iat]))
+                            a.addAttValue(AttValue(str(curr_num), ((curr_num-average)/span)*w))
                         curr_num += d
                     a.continuous = True
-                else:
-                    a = AttrLine(at.name, self.bnomogram)
-                    found_values = set()
-                    for ati, iati in multiple[at]:
-                        val = ati.getValueFrom.variable.values[ati.getValueFrom.transformer.value]
-                        a.addAttValue(AttValue(val, weights[iati]))
-                        found_values.add(val)
-                        
-                    excluded_values = list(set(at.values) - found_values)
-                    excluded_name = excluded_values[0] if len(excluded_values) == 1 else "other"
-                    a.addAttValue(AttValue(excluded_name, 0))
- 
+
+                elif aaa[2] == "disc":
+                    _, name, _, values, _, _ = aaa
+                    a = AttrLine(name, self.bnomogram)
+                    for n, val in values:
+                        a.addAttValue(AttValue(n, val))
+               
                 if len(a.attValues)>1:
                     self.bnomogram.addAttribute(a)
 
