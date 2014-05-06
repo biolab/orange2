@@ -169,7 +169,8 @@ class OWVennDiagram(OWWidget):
         # Check if all inputs are from the same domain.
         domains = [input.table.domain for input in self.data.values()]
 
-        samedomain = all(d1 == d2 for d1, d2 in pairwise(domains))
+#         samedomain = all(d1 == d2 for d1, d2 in pairwise(domains))
+        samedomain = all(domain_eq(d1, d2) for d1, d2 in pairwise(domains))
 
         self.useequalityButton.setEnabled(samedomain)
         self.samedomain = samedomain
@@ -308,8 +309,8 @@ class OWVennDiagram(OWWidget):
                 return []
 
         def items_by_eq(key, input):
-            return list(input.table)
-#             return list(map(ComparableInstance, input.table))
+#             return list(input.table)
+            return list(map(ComparableInstance, input.table))
 
         input = self.data[key]
         if useidentifiers:
@@ -507,7 +508,10 @@ class OWVennDiagram(OWWidget):
 
         if not self.useidentifiers:
             if selected_items:
-                data = Orange.data.Table(list(selected_items))
+                selected_items = [item.inst for item in selected_items]
+                dom = selected_items[0].domain
+                dom = Orange.data.Domain(dom.attributes, dom.class_var)
+                data = Orange.data.Table(dom, selected_items)
             else:
                 data = None
             self.send("Data", data)
@@ -600,18 +604,20 @@ def domain_eq(d1, d2):
     return tuple(d1) == tuple(d2)
 
 
-# Comparing/hashing Orange.data.Instance across different domains.
+# Comparing/hashing Orange.data.Instance across domains ignoring metas.
 class ComparableInstance(object):
-    __slots__ = ["inst"]
+    __slots__ = ["inst", "domain"]
 
     def __init__(self, inst):
         self.inst = inst
+        self.domain = inst.domain
 
     def __hash__(self):
         return hash(self.inst)
 
     def __eq__(self, other):
-        return tuple(self.inst) == tuple(other)
+        return (domain_eq(self.domain, other.domain)
+                and tuple(self.inst) == tuple(other.inst))
 
     def __iter__(self):
         return iter(self.inst)
