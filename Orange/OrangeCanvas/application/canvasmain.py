@@ -1260,7 +1260,7 @@ class CanvasMainWindow(QMainWindow):
     def documentation(self, *args):
         """Show reference documentation.
         """
-        url = QUrl(LINKS["tutorial"])
+        url = QUrl(LINKS["start-using"])
         QDesktopServices.openUrl(url)
 
     def recent_scheme(self, *args):
