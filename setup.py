@@ -714,7 +714,7 @@ def get_package_data():
             ["orangerc.cfg" ] +\
              all_with_extension(path="datasets", extensions=("tab", "csv", "basket")) +\
              all_with_extension(path="testing/regression/tests_20", extensions=("net", "tab", "basket", "csv")),
-        "Orange.OrangeCanvas": ["icons/*.png", "icons/*.svg",
+        "Orange.OrangeCanvas": ["icons/*.png", "icons/*.svg", "icons/*.ico"
                                 "orngCanvas.pyw", "WidgetTabs.txt"],
         "Orange.OrangeCanvas.styles": ["*.qss", "orange/*.svg"],
         "Orange.OrangeCanvas.application.tutorials": ["*.ows"],
