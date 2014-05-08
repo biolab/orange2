@@ -105,7 +105,7 @@ def _connection(uri):
             'database':'db'
             }
         if schema == 'postgres':
-            argTrans["database"] = "db"
+            argTrans["database"] = "dbname"
         elif schema == 'odbc':
             argTrans["host"] = "server"
             argTrans["user"] = "uid"
