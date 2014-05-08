@@ -2031,7 +2031,7 @@ class UrlDropEventFilter(QObject):
             mime = event.mimeData()
             if mime.hasUrls() and len(mime.urls()) == 1:
                 url = mime.urls()[0]
-                if url.isLocalFile():
+                if url.scheme() == "file":
                     filename = unicode(url.toLocalFile())
                     _, ext = os.path.splitext(filename)
                     if ext == ".ows":
