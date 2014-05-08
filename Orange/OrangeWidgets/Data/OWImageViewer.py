@@ -220,10 +220,8 @@ class ThumbnailWidget(QGraphicsWidget):
 
         items = [layout.itemAt(i) for i in range(layout.count())]
 
-        # first remove all items from the layout
-        for item in items:
-            layout.removeItem(item)
-        # add them back in updated positions
+        # re-add the items them back in updated positions
+        # (QGraphicsGridLayout takes care of moving existing items)
         for i, item in enumerate(items):
             layout.addItem(item, i // ncol, i % ncol)
 
