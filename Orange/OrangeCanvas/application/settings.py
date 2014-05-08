@@ -19,7 +19,8 @@ from ..utils.propertybindings import (
 from PyQt4.QtGui import (
     QWidget, QMainWindow, QComboBox, QCheckBox, QListView, QTabWidget,
     QToolBar, QAction, QStackedWidget, QVBoxLayout, QHBoxLayout,
-    QFormLayout, QStandardItemModel, QStandardItem, QSizePolicy
+    QFormLayout, QStandardItemModel, QStandardItem, QSizePolicy,
+    QDialogButtonBox
 )
 
 from PyQt4.QtCore import (
@@ -226,9 +227,17 @@ class UserSettingsDialog(QMainWindow):
         else:
             self.tab = central = QTabWidget(self)
 
-        self.stack = central
+        # Add a close button to the bottom of the dialog
+        # (to satisfy GNOME 3 which shows the dialog  without a title bar).
+        container = container_widget_helper()
+        container.layout().addWidget(central)
+        buttonbox = QDialogButtonBox(QDialogButtonBox.Close)
+        buttonbox.rejected.connect(self.close)
+        container.layout().addWidget(buttonbox)
 
-        self.setCentralWidget(central)
+        self.setCentralWidget(container)
+
+        self.stack = central
 
         # General Tab
         tab = QWidget()
