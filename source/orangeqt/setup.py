@@ -293,7 +293,7 @@ else:
         include_dirs = [site_cfg.qt_conf.include_dir] + \
                    [pjoin(site_cfg.qt_conf.include_dir, lib)
                     for lib in qt_libs]
-    library_dirs += [site_cfg.qt_conf.library_dir]
+    library_dirs += site_cfg.qt_conf.library_dir
 
 if sys.platform == "win32":
     # Qt libs on windows have a 4 added
