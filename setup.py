@@ -729,6 +729,7 @@ def get_package_data():
         "Orange.OrangeWidgets.Unsupervised": ["icons/*.png", "icons/*.svg"],
         "Orange.OrangeWidgets.Visualize": ["icons/*.png", "icons/*.svg"],
         "Orange.OrangeWidgets.Visualize Qt": ["icons/*.png", "icons/*.svg"],
+        "Orange.OrangeWidgets.Utilities": ["icons/*.png", "icons/*.svg"],
         "Orange.OrangeWidgets.plot": ["*.gs", "*.vs"],
         "Orange.OrangeWidgets.plot.primitives": ["*.obj"],
     }

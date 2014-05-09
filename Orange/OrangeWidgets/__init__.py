@@ -8,11 +8,12 @@ import pkg_resources
 def widget_discovery(discovery):
     from . import (
         Associate, Classify, Data, Evaluate, Regression,
-        Unsupervised, Visualize, Prototypes, VisualizeQt
+        Unsupervised, Visualize, Prototypes, VisualizeQt,
+        Utilities
     )
     dist = pkg_resources.get_distribution("Orange")
     for pkg in [Data, Visualize, Classify, Regression, Evaluate, Unsupervised,
-                Associate, Prototypes, VisualizeQt ]:
+                Associate, Prototypes, VisualizeQt, Utilities]:
         discovery.process_category_package(pkg, distribution=dist)
 
 
