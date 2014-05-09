@@ -794,9 +794,9 @@ class AddOnManagerDialog(QDialog):
         self.lblVerAvailValue = OWGUI.label(pVerAvail, self, "")
         pVerAvail.layout().addSpacing(10)
         self.upgradeButton = OWGUI.button(pVerAvail, self, "Upgrade", callback = self.upgrade)
-        self.upgradeButton.setFixedHeight(lblVerAvail.height())
+#         self.upgradeButton.setFixedHeight(lblVerAvail.height())
         self.donotUpgradeButton = OWGUI.button(pVerAvail, self, "Do not upgrade", callback = self.donotUpgrade)
-        self.donotUpgradeButton.setFixedHeight(lblVerAvail.height())
+#         self.donotUpgradeButton.setFixedHeight(lblVerAvail.height())
         pVerAvail.layout().addStretch(1)
         
         pInfoBtns = OWGUI.widgetBox(infoPane, orientation="horizontal", sizePolicy=QSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed))
