@@ -24,22 +24,22 @@ python-numpy-dev' on Debian derived distributions.
 The following commands were tested on Ubuntu 12.04 and Ubuntu 14.04
 (requires administrative privileges).
 
-	apt-get update
-	apt-get install python-numpy libqt4-opengl-dev libqt4-dev cmake qt4-qmake python-sip-dev python-qt4 python-qt4-dev python-qwt5-qt4 python-sip graphviz python-networkx python-imaging python-qt4-gl build-essential python-pip python-scipy python-pyparsing ipython python-matplotlib
-	easy_install -U distribute # optional on Ubuntu 14.04
+    apt-get update
+    apt-get install python-numpy libqt4-opengl-dev libqt4-dev cmake qt4-qmake python-sip-dev python-qt4 python-qt4-dev python-qwt5-qt4 python-sip graphviz python-networkx python-imaging python-qt4-gl build-essential python-pip python-scipy python-pyparsing ipython python-matplotlib
+    easy_install -U distribute # optional on Ubuntu 14.04
 
 === Prerequisites on Fedora ===
 
 The following commands were tested on Fedore 20 (requires administrative
 privileges).
 
-	yum update
-	yum groupinstall "KDE Software Development"
-	yum install numpy scipy python-matplotlib ipython python-pandas sympy python-nose pyparsing python-pip gcc gcc-c++ python-networkx PyQwt
+    yum update
+    yum groupinstall "KDE Software Development"
+    yum install numpy scipy python-matplotlib ipython python-pandas sympy python-nose pyparsing python-pip gcc gcc-c++ python-networkx PyQwt
 
 Furthermore, before compilation you will have to modify your PATH.
 
-	export PATH=$PATH:/usr/lib64/qt4/bin/:/usr/lib/qt4/bin/
+    export PATH=$PATH:/usr/lib64/qt4/bin/:/usr/lib/qt4/bin/
 
 
 Obtaining source
@@ -51,7 +51,7 @@ Either:
 
 * Clone the Mercurial repository:
 
-	hg clone https://bitbucket.org/biolab/orange
+    hg clone https://bitbucket.org/biolab/orange
 
 
 Build and Install
@@ -62,16 +62,16 @@ Build and Install
 Installing with pip automatically downloads the package and builds it provided
 that you installed the relevant dependencies.
 
-	sudo pip install --global-option="build_pyqt_ext" orange
+    sudo pip install --global-option="build_pyqt_ext" orange
 
 === With setup.py (for developers) ===
 
 The easiest way to build Orange from source is to use the setup.py in
 the root Orange directory (requires administrative privileges). Just run:
 
-	python setup.py build_pyqt_ext
-	python setup.py build
-	python setup.py install 
+    python setup.py build_pyqt_ext
+    python setup.py build
+    python setup.py install 
 
 It the first command fails the scripting interface will still work
 perfectly, but some widgets will be missing.
@@ -107,8 +107,8 @@ the extensions in-place and does not support an install command).
 First change the working directory to the 'source' sub-directory then
 run make:
 
-	cd source
-	make
+    cd source
+    make
 
 This will build the orange core extensions in the root directory (i.e. the
 one you started in).  Useful environment variables:
@@ -139,5 +139,5 @@ library instead, try.
 * For make, pass the library names on the command line or through
   environment variables (listed in source/Makefile). Example:
 
-	make BLAS_LIB=atlas
+    make BLAS_LIB=atlas
 
