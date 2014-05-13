@@ -28,6 +28,6 @@ alias python="%PYTHONBASE%27\python.exe"
 
 alias nsis="c:\program files\nsis\makensis.exe"
 alias cmake="c:\program files\cmake 2.8\bin\cmake.exe"
-set QTVARS="e:\Qt\4.7.3\bin\qtvars.bat"
+set QTVARS="e:\Qt\4.8.4\bin\qtvars.bat"
 call "c:\Program Files\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
 REM alias vcexpress="c:\Program Files\Microsoft Visual Studio 8\Common7\IDE\devenv.exe"
