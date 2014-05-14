@@ -18,10 +18,12 @@ companion :class:`WidgetsSignalManager` class.
 """
 import sys
 import logging
+import traceback
 
 import sip
+
 from PyQt4.QtGui import (
-    QShortcut, QKeySequence, QWhatsThisClickedEvent, QWidget
+    QShortcut, QKeySequence, QWhatsThisClickedEvent, QWidget, QLabel
 )
 
 from PyQt4.QtCore import Qt, QObject, QCoreApplication, QEvent, SIGNAL
@@ -230,31 +232,69 @@ class WidgetManager(QObject):
     def create_widget_instance(self, node):
         """
         Create a OWWidget instance for the node.
+
+        If a widget cannot be created due to an error a dummy widget
+        with an error text is created in it's place.
+
         """
         desc = node.description
-        klass = name_lookup(desc.qualified_name)
+        klass = widget = None
+        initialized = False  # Was the widget already initialized
+        # First try to actually retrieve the class.
+        try:
+            klass = name_lookup(desc.qualified_name)
+        except (ImportError, AttributeError):
+            sys.excepthook(*sys.exc_info())
+            msg = traceback.format_exc()
+            msg = "Could not import {0!r}\n\n{1}".format(
+                node.description.qualified_name, msg
+            )
+            widget = DummyWidget.mock(node, msg)
+            initialized = True
 
-        log.info("Creating %r instance.", klass)
-        widget = klass.__new__(
-            klass,
-            _owInfo=True,
-            _owWarning=True,
-            _owError=True,
-            _owShowStatus=True,
-            _useContexts=True,
-            _category=desc.category,
-            _settingsFromSchema=node.properties
-        )
+        if widget is None:
+            log.info("Creating %r instance.", klass)
+            widget = klass.__new__(
+                klass,
+                _owInfo=True,
+                _owWarning=True,
+                _owError=True,
+                _owShowStatus=True,
+                _useContexts=True,
+                _category=desc.category,
+                _settingsFromSchema=node.properties
+            )
+            initialized = False
 
         # Init the node/widget mapping and state before calling __init__
         # Some OWWidgets might already send data in the constructor
         # (should this be forbidden? Raise a warning?) triggering the signal
         # manager which would request the widget => node mapping or state
+
         self.__widget_for_node[node] = widget
         self.__node_for_widget[widget] = node
         self.__widget_processing_state[widget] = 0
 
-        widget.__init__(None, self.signal_manager())
+        if not initialized:
+            try:
+                widget.__init__(None, self.signal_manager())
+            except Exception:
+                sys.excepthook(*sys.exc_info())
+                msg = traceback.format_exc()
+                msg = "Could not create {0!r}\n\n{1}".format(
+                    node.description.name, msg
+                )
+                # remove state tracking
+                del self.__widget_for_node[node]
+                del self.__node_for_widget[widget]
+                del self.__widget_processing_state[widget]
+
+                widget = DummyWidget.mock(node, msg)
+
+                self.__widget_for_node[node] = widget
+                self.__node_for_widget[widget] = node
+                self.__widget_processing_state[widget] = 0
+
         widget.setCaption(node.title)
         widget.widgetInfo = desc
 
@@ -815,3 +855,42 @@ class SignalWrapper(object):
         else:
             # Might be running stand alone without a manager.
             self.method(*args)
+
+from Orange.OrangeWidgets import OWWidget
+
+
+class DummyWidget(OWWidget.OWWidget):
+    def __init__(self, *args, **kwargs):
+        OWWidget.OWWidget.__init__(self, *args, **kwargs)
+        self.errorLabel = QLabel(textInteractionFlags=Qt.TextSelectableByMouse)
+        self.controlArea.layout().addWidget(self.errorLabel)
+
+    def setErrorMessage(self, message):
+        self.errorLabel.setText(message)
+        self.error(0, message)
+
+    @classmethod
+    def mock(cls, node, message):
+        """
+        Create a mock OWWidget instance for `node`.
+
+        :type node: SchemeNode
+
+        """
+        self = DummyWidget()
+        self.widgetInfo = node.description
+        self._settingsFromSchema = node.properties
+
+        for link in node.description.inputs:
+            handler = link.handler
+            if handler.startswith("self."):
+                _, handler = handler.split(".", 1)
+
+            setattr(self, handler, lambda *args: None)
+
+        self.setBlocking(True)
+        self.setErrorMessage(message)
+        return self
+
+    def getSettings(self, *args, **kwargs):
+        return getattr(self, "_settingsFromSchema", {})
