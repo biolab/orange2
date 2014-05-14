@@ -164,6 +164,7 @@ echo "=================="
 # upgrading flat installs.
 "$PIP" install --egg hg+https://bitbucket.org/biolab/orange-bioinformatics
 "$PIP" install --egg hg+https://bitbucket.org/biolab/orange-text
+"$PIP" install --egg Orange-Network
 
 echo "Installing optional dependencies"
 echo "================================"
