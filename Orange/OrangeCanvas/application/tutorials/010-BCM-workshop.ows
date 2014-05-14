@@ -1,5 +1,5 @@
 <?xml version='1.0' encoding='utf-8'?>
-<scheme description="This scheme downloads additional files that will be required for the workshop and tests if your installation has succeded. If it loads successfully, the installation worked!&#10;&#10;Note: the scheme requires network and bionformatics add-ons." title="BCM workshop preparation" version="2.0">
+<scheme description="This scheme downloads additional files that will be required for the workshop and tests if your installation has succeeded. If it loads successfully, the installation worked!&#10;&#10;Note: the scheme requires network and bioinformatics add-ons." title="BCM workshop preparation" version="2.0">
 	<nodes>
 		<node id="0" name="Databases Package" position="(226.0, 238.0)" project_name="Orange" qualified_name="Orange.OrangeWidgets.Utilities.OWDatabasesPack.OWDatabasesPack" title="Databases Package" version="" />
 		<node id="1" name="Scatter Plot" position="(164.0, 427.0)" project_name="Orange" qualified_name="Orange.OrangeWidgets.Visualize.OWScatterPlot.OWScatterPlot" title="Scatter Plot" version="" />
@@ -15,7 +15,7 @@ To see the progress double double-click the widget below.</text>
 	</annotations>
 	<thumbnail />
 	<node_properties>
-		<properties format="literal" node_id="0">{'widgetShown': 0, 'downloadmessage': 'Downloading a subset of available databases for a smoother ride through the workshop', 'fileslist': [('Taxonomy', 'ncbi_taxonomy.tar.gz')], 'savedWidgetGeometry': '\x01\xd9\xd0\xcb\x00\x01\x00\x00\x00\x00\x06\xfc\x00\x00\x01\xac\x00\x00\x08\x04\x00\x00\x02T\x00\x00\x06\xfd\x00\x00\x01\xad\x00\x00\x08\x03\x00\x00\x02S\x00\x00\x00\x00\x00\x00', 'downloadurl': 'http://us1.orange.biolab.si/download/serverfiles_try1.tar.gz', '__settingsDataVersion': None}</properties>
+		<properties format="literal" node_id="0">{'widgetShown': 0, 'downloadmessage': 'Downloading a subset of available databases for a smoother ride through the workshop', 'fileslist': [('Taxonomy', 'ncbi_taxonomy.tar.gz'), ('NCBI_geneinfo', 'gene_history.2104.db')], 'savedWidgetGeometry': '\x01\xd9\xd0\xcb\x00\x01\x00\x00\x00\x00\x06\xfc\x00\x00\x01\xac\x00\x00\x08\x04\x00\x00\x02T\x00\x00\x06\xfd\x00\x00\x01\xad\x00\x00\x08\x03\x00\x00\x02S\x00\x00\x00\x00\x00\x00', 'downloadurl': 'http://us1.orange.biolab.si/download/serverfiles_bcm1.tar.gz', '__settingsDataVersion': None}</properties>
 		<properties format="literal" node_id="1">{'autoSendSelection': 1, 'graph.showAxisScale': 1, 'graph.useAntialiasing': 1, 'selectedSchemaIndex': 0, 'graph.pointWidth': 8, 'graph.showFilledSymbols': 1, 'showGridlines': 0, 'graph.alphaValue': 255, 'savedWidgetGeometry': None, 'graph.jitterContinuous': 0, 'graph.jitterSize': 5, 'graph.showProbabilities': 0, 'graph.showXaxisTitle': 1, 'widgetShown': None, 'graph.showLegend': 1, '__settingsDataVersion': None, 'localContextsVersion': (100, 0), 'graph.showYLaxisTitle': 1, 'toolbarSelection': 0, 'graph.sendSelectionOnUpdate': 0, 'graph.showDistributions': None, 'colorSettings': None, 'VizRankLearnerName': None}</properties>
 		<properties format="pickle" node_id="2">(dp1
 S'lastTooltipColumns'
