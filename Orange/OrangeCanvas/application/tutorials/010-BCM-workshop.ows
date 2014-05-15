@@ -11,7 +11,7 @@
 		<text font-family="Helvetica" font-size="16" id="0" rect="(75.0, 41.0, 469.0, 124.0)">By opening this window you have instructed Orange to download data files that will be used during the workshop.
 
 The progress of the download should be visible in the progress bar around the icon "Databases Package" below. A window with progress bar should also open automatically. If not, you can open it by double-clicking the icon.</text>
-		<text font-family="Helvetica" font-size="16" id="1" rect="(76.0, 322.0, 558.0, 60.0)">The icons below test different aspects of the instalation. If all three icons (Scatter Plot, Nex Explorer, Differential Expression) are present the instalation went fine and you are ready for the Workshop.</text>
+		<text font-family="Helvetica" font-size="16" id="1" rect="(76.0, 322.0, 558.0, 60.0)">The icons below test different aspects of the installation. If all three icons (Scatter Plot, Nex Explorer, Differential Expression) are present the installation went fine and you are ready for the Workshop.</text>
 		<text font-family="Helvetica" font-size="22" id="2" rect="(74.0, 12.0, 297.0, 35.0)">CIBR Data Mining Workshop</text>
 		<text font-family="Helvetica" font-size="22" id="3" rect="(75.0, 171.0, 484.0, 62.0)">Please do not close this window before the download is 100% complete.</text>
 	</annotations>
