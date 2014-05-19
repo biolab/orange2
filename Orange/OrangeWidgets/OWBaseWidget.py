@@ -218,6 +218,7 @@ class OWBaseWidget(QDialog):
         self.__wasShown = False
         self.__progressBarValue = -1
         self.__progressState = 0
+        self.__statusMessage = ""
 
     @property
     def widgetDir(self):
@@ -835,6 +836,18 @@ class OWBaseWidget(QDialog):
         if self.__progressState != 0:
             self.__progressState = 0
             self.processingStateChanged.emit(0)
+
+    #: Widget's status message has changed.
+    statusMessageChanged = pyqtSignal(unicode)
+
+    def setStatusMessage(self, text):
+        if self.__statusMessage != text:
+            self.__statusMessage = text
+            print "Status", text
+            self.statusMessageChanged.emit(text)
+
+    def statusMessage(self):
+        return self.__statusMessage
 
     # handler must be a function, that receives 2 arguments.
     # First is the widget instance, the second is the value between
