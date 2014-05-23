@@ -178,14 +178,6 @@ class OWBaseWidget(QDialog):
         if savePosition:
             self.settingsList = getattr(self, "settingsList", []) + ["widgetShown", "savedWidgetGeometry"]
 
-        # directories are better defined this way, otherwise .ini files get written in many places
-        # XXX: What ???
-        self.__dict__.update(old_directory_names)
-        try:
-            self.__dict__["thisWidgetDir"] = os.path.dirname(sys.modules[self.__class__.__module__].__file__)
-        except:
-            pass
-
         self.setCaption(title)
         self.setFocusPolicy(Qt.StrongFocus)
 
@@ -226,6 +218,16 @@ class OWBaseWidget(QDialog):
         self.__wasShown = False
         self.__progressBarValue = -1
         self.__progressState = 0
+
+    @property
+    def widgetDir(self):
+        # This seems to be the only use of the orngEnviron.directoryNames
+        # usage (used in various ploting widget to access icons/Dlg_* png)
+        warnings.warn(
+            "widgetDir is deprecated. " +
+            "Use Orange.utils.environ.widget_install_dir",
+            DeprecationWarning)
+        return environ.widget_install_dir
 
     def setWidgetIcon(self, iconName):
         warnings.warn(
