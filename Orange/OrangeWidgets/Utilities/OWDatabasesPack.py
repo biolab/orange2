@@ -156,6 +156,12 @@ class OWDatabasesPack(OWWidget.OWWidget):
     def onDeleteWidget(self):
         super(OWDatabasesPack, self).onDeleteWidget()
         self._releaselocks()
+
+        if self.reply.isOpen():
+            self.reply.finished.disconnect(self._finished)
+            self.reply.error.disconnect(self._error)
+            self.reply.close()
+
         if self._tmpfile is not None:
             self._tmpfile.close()
             self._tmpfile = None
