@@ -1,5 +1,7 @@
 from OWWidget import *
 import OWGUI, OWDlgs, numpy, user, sys
+import OWGraphTools
+
 from orngVizRank import *
 from orngScaleData import getVariableValuesSorted
 
