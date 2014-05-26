@@ -843,7 +843,6 @@ class OWBaseWidget(QDialog):
     def setStatusMessage(self, text):
         if self.__statusMessage != text:
             self.__statusMessage = text
-            print "Status", text
             self.statusMessageChanged.emit(text)
 
     def statusMessage(self):

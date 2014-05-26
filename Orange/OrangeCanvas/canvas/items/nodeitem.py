@@ -1196,7 +1196,7 @@ class NodeItem(QGraphicsObject):
                 spec, _ = format_fields["progress"]
                 if spec != None:
                     progress_included = True
-                    progress_str = "{0}%".format(self.progress())
+                    progress_str = "{0:.0f}%".format(self.progress())
                     status_text.append(msg.format(progress=progress_str))
             else:
                 status_text.append(msg)
