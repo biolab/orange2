@@ -40,7 +40,7 @@ class OWDataSampler(OWWidget):
         # initialization of variables
         self.data = None                        # dataset (incoming stream)
         self.indices = None                     # indices that control sampling
-
+        1/0
         self.Stratified = 1                     # use stratified sampling if possible?
         self.Repeat = 0                         # can elements repeat in a sample?
         self.UseSpecificSeed = 0                # use a specific random seed?

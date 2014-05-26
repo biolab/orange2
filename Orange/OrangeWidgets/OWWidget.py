@@ -298,6 +298,24 @@ class OWWidget(OWBaseWidget):
                                 sender=self)
             self.__reportData = None
 
+
+class _DummyOWWidget(OWWidget):
+    """
+    Dummy OWWidget used to report import/init errors in the canvas.
+    """
+    def __init__(self, *args, **kwargs):
+        OWWidget.__init__(self, *args, **kwargs)
+        self.errorLabel = QLabel(textInteractionFlags=Qt.TextSelectableByMouse)
+        self.controlArea.layout().addWidget(self.errorLabel)
+
+    def setErrorMessage(self, message):
+        self.errorLabel.setText(message)
+        self.error(0, message)
+
+    def getSettings(self, *args, **kwargs):
+        return getattr(self, "_settingsFromSchema", {})
+
+
 import OWReport
 
 if __name__ == "__main__":

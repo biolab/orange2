@@ -23,7 +23,7 @@ import traceback
 import sip
 
 from PyQt4.QtGui import (
-    QShortcut, QKeySequence, QWhatsThisClickedEvent, QWidget, QLabel
+    QShortcut, QKeySequence, QWhatsThisClickedEvent, QWidget
 )
 
 from PyQt4.QtCore import Qt, QObject, QCoreApplication, QEvent, SIGNAL
@@ -249,7 +249,7 @@ class WidgetManager(QObject):
             msg = "Could not import {0!r}\n\n{1}".format(
                 node.description.qualified_name, msg
             )
-            widget = DummyWidget.mock(node, msg)
+            widget = mock_error_owwidget(node, msg)
             initialized = True
 
         if widget is None:
@@ -289,7 +289,7 @@ class WidgetManager(QObject):
                 del self.__node_for_widget[widget]
                 del self.__widget_processing_state[widget]
 
-                widget = DummyWidget.mock(node, msg)
+                widget = mock_error_owwidget(node, msg)
 
                 self.__widget_for_node[node] = widget
                 self.__node_for_widget[widget] = node
@@ -860,41 +860,28 @@ class SignalWrapper(object):
             # Might be running stand alone without a manager.
             self.method(*args)
 
-from Orange.OrangeWidgets import OWWidget
 
+def mock_error_owwidget(node, message):
+    """
+    Create a mock OWWidget instance for `node`.
 
-class DummyWidget(OWWidget.OWWidget):
-    def __init__(self, *args, **kwargs):
-        OWWidget.OWWidget.__init__(self, *args, **kwargs)
-        self.errorLabel = QLabel(textInteractionFlags=Qt.TextSelectableByMouse)
-        self.controlArea.layout().addWidget(self.errorLabel)
+    :type node: SchemeNode
 
-    def setErrorMessage(self, message):
-        self.errorLabel.setText(message)
-        self.error(0, message)
+    """
+    from Orange.OrangeWidgets.OWWidget import _DummyOWWidget
 
-    @classmethod
-    def mock(cls, node, message):
-        """
-        Create a mock OWWidget instance for `node`.
+    widget = _DummyOWWidget()
+    widget.widgetInfo = node.description
+    widget._settingsFromSchema = node.properties
 
-        :type node: SchemeNode
+    for link in node.description.inputs:
+        handler = link.handler
+        if handler.startswith("self."):
+            _, handler = handler.split(".", 1)
 
-        """
-        self = DummyWidget()
-        self.widgetInfo = node.description
-        self._settingsFromSchema = node.properties
+        setattr(widget, handler, lambda *args: None)
 
-        for link in node.description.inputs:
-            handler = link.handler
-            if handler.startswith("self."):
-                _, handler = handler.split(".", 1)
+    widget.setBlocking(True)
+    widget.setErrorMessage(message)
+    return widget
 
-            setattr(self, handler, lambda *args: None)
-
-        self.setBlocking(True)
-        self.setErrorMessage(message)
-        return self
-
-    def getSettings(self, *args, **kwargs):
-        return getattr(self, "_settingsFromSchema", {})
