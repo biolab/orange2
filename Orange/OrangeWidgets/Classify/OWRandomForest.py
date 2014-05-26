@@ -5,6 +5,7 @@
 <contact>Marko Toplak (marko.toplak(@at@)gmail.com)</contact>
 <priority>320</priority>
 """
+import random
 
 from OWWidget import *
 import orngTree, OWGUI
