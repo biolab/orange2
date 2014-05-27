@@ -1,7 +1,7 @@
 """<name>Quick Select</name>
 <description>Select examples based on values of a single attribute</description>
-<icon>icons/QuickSelect.png</icon>
-<priority>30</priority>
+<icon>icons/QuickSelect.svg</icon>
+<priority>1160</priority>
 <contact>Janez Demsar (janez.demsar@fri.uni-lj.si)</contact>"""
 
 from OWWidget import *
