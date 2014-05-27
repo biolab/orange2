@@ -25,7 +25,7 @@ Feature types
 -------------
  * discrete (or d) - imported as :obj:`Orange.feature.Discrete`
  * continuous (or c) - imported as :obj:`Orange.feature.Continuous`
- * string - imported as :obj:`Orange.feature.String`
+ * text (or string, s) - imported as :obj:`Orange.feature.String`
  * basket - used for storing sparse data. More on basket formats in a dedicated section.
 
 Optional flags

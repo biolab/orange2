@@ -25,6 +25,7 @@ const TTabDelimExampleGenerator::TIdentifierDeclaration TTabDelimExampleGenerato
  {{"discrete", 0, TValue::INTVAR},      {"d", 0, TValue::INTVAR},
   {"continuous", 0, TValue::FLOATVAR},  {"c", 0, TValue::FLOATVAR},
   {"string", 0, STRINGVAR},             {"s", 0, STRINGVAR},
+  {"text", 0, STRINGVAR},
   {"python", 0, PYTHONVAR},             {"python:", 7, PYTHONVAR},
   {NULL, 0}};
 
