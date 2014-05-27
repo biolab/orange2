@@ -79,11 +79,11 @@ BUNDLE_LITE=$SCRIPT_DIR_NAME/bundle-lite/Orange.app
 # Versions of included 3rd party software
 
 PYTHON_VER=2.7.6
-PIP_VER=1.4.1
-DISTRIBUTE_VER=0.6.49
-NUMPY_VER=1.8.0
-SCIPY_VER=0.13.1
-QT_VER=4.8.5
+PIP_VER=1.5.5
+SETUPTOOLS_VER=3.4.4
+NUMPY_VER=1.8.1
+SCIPY_VER=0.13.3
+QT_VER=4.8.6
 SIP_VER=4.14.6
 PYQT_VER=4.10.1
 PYQWT_VER=5.2.0
@@ -210,10 +210,10 @@ function install_pip() {
 	popd
 }
 
-function install_distribute() {
-	download_and_extract "https://pypi.python.org/packages/source/d/distribute/distribute-$DISTRIBUTE_VER.tar.gz"
+function install_setuptools() {
+	download_and_extract "https://pypi.python.org/packages/source/s/setuptools/setuptools-$SETUPTOOLS_VER.tar.gz"
 
-	pushd distribute-$DISTRIBUTE_VER
+	pushd setuptools-$SETUPTOOLS_VER
 
 	"$PYTHON" setup.py install
 	create_shell_start_script easy_install
@@ -222,6 +222,7 @@ function install_distribute() {
 
 	popd
 }
+
 
 function install_ipython {
 	# install with easy_install (does not work with pip)
@@ -414,7 +415,7 @@ function cleanup {
 }
 
 function make_standalone {
-	"$PIP" install macholib
+	"$PIP" install macholib==1.5.1
 	"$PYTHON" -m macholib standalone $APP
 	yes y | "$PIP" uninstall altgraph
 	yes y | "$PIP" uninstall macholib
@@ -429,7 +430,7 @@ create_template
 
 install_python
 
-install_distribute
+install_setuptools
 
 install_pip
 

@@ -169,7 +169,7 @@ echo "=================="
 echo "Installing optional dependencies"
 echo "================================"
 "$PIP" install slumber
-"$PIP" install PIL
+"$PIP" install --allow-external PIL --allow-unverified PIL PIL
 
 
 if [[ ! $INPLACE ]]; then
