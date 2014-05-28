@@ -330,6 +330,6 @@ class ExceptHook(QObject):
         else:
             stream = self.stream
 
-        stream.writelines([separator, header] + text)
+        stream.write("".join([separator, header] + text))
 
         self.handledException.emit()
