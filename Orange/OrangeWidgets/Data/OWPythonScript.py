@@ -209,6 +209,10 @@ class PythonConsole(QPlainTextEdit, code.InteractiveConsole):
         self.setTextCursor(cursor)
         self.ensureCursorVisible()
 
+    def writelines(self, lines):
+        for line in lines:
+            self.write(line)
+
     def push(self, line):
         if self.history[0] != line:
             self.history.insert(0, line)
