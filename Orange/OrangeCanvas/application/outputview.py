@@ -9,7 +9,9 @@ from PyQt4.QtGui import (
     QFont, QSizePolicy
 )
 
-from PyQt4.QtCore import Qt, QObject, QEvent, QCoreApplication, QThread, QSize
+from PyQt4.QtCore import (
+    Qt, QObject, QEvent, QCoreApplication, QThread, QSemaphore, QSize
+)
 from PyQt4.QtCore import pyqtSignal as Signal
 
 
@@ -201,14 +203,16 @@ class formater(object):
         self.charformat = None
 
 
+# QMetaCallEvent like event
 class QueuedCallEvent(QEvent):
     QueuedCall = QEvent.registerEventType()
 
-    def __init__(self, function, args, kwargs):
+    def __init__(self, function, args, kwargs, semaphore=None):
         QEvent.__init__(self, QueuedCallEvent.QueuedCall)
         self.function = function
         self.args = args
         self.kwargs = kwargs
+        self.semaphore = semaphore
         self._result = None
         self._exc_info = None
         self._state = 0
@@ -217,8 +221,12 @@ class QueuedCallEvent(QEvent):
         try:
             self._result = self.function(*self.args, **self.kwargs)
             self._state = 1
-        except Exception, ex:
+            if self.semaphore is not None:
+                self.semaphore.release()
+        except BaseException, ex:
             self._exc_info = (type(ex), ex.args, None)
+            if self.semaphore is not None:
+                self.semaphore.release()
             raise
 
     def result(self):
@@ -228,7 +236,7 @@ class QueuedCallEvent(QEvent):
             raise self._exc_info[0], self._exc_info[1]
         else:
             # Should this block, add timeout?
-            raise RuntimeError("Result not yet ready")
+            raise RuntimeError("Result of a QueuedCallEvent is not yet ready")
 
     def isready(self):
         return self._state == 1 or self._exc_info
@@ -254,9 +262,17 @@ def queued_blocking(method):
     """
     @wraps(method)
     def delay_method_call(self, *args, **kwargs):
-        event = QueuedCallEvent(method, (self,) + args, kwargs)
+        if self.thread() != QThread.currentThread():
+            semaphore = QSemaphore()
+        else:
+            semaphore = None
+        event = QueuedCallEvent(method, (self,) + args, kwargs, semaphore)
         QCoreApplication.postEvent(self, event)
-        QCoreApplication.sendPostedEvents()
+        if semaphore is None:
+            QCoreApplication.sendPostedEvents()
+        else:
+            # Wait until the other thread's event loop processes the event
+            semaphore.acquire()
         return event.result()
 
     return delay_method_call
