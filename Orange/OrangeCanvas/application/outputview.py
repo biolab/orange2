@@ -184,7 +184,7 @@ class formater(object):
         self.outputview.writeWithFormat(string, self.charformat)
 
     def writelines(self, lines):
-        self.outputview.writelines(lines, self.charformat)
+        self.outputview.writelinesWithFormat(lines, self.charformat)
 
     def flush(self):
         self.outputview.flush()
