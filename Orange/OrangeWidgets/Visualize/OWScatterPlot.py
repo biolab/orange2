@@ -386,6 +386,7 @@ class OWScatterPlot(OWWidget):
     def updateGraph(self, attrList = None, insideColors = None, **args):
         self.graph.zoomStack = []
         if not self.graph.haveData:
+            self.graph.replot()
             return
 
         if attrList and len(attrList) == 2:
