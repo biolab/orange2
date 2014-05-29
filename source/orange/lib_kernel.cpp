@@ -2670,6 +2670,7 @@ PyObject *ExampleGenerator_translate(TPyOrange *self, PyObject *args, PyObject *
     if (PyArg_ParseTuple(args, "O&|i", cc_Domain, &domain))
       return WrapOrange(PExampleTable(mlnew TExampleTable(domain, weg)));
 
+    PyErr_Clear();
     PyObject *pargs, *guard = NULL;
     int keepMeta = 0;
     if (args && ((PyTuple_Size(args)==1) || ((PyTuple_Size(args)==2) && PyInt_Check(PyTuple_GET_ITEM(args, 1))))) {
