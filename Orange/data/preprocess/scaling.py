@@ -121,7 +121,7 @@ def discretize_domain(data, remove_unused_values = 1, number_of_intervals = 2):
     equiN if we don't have a class or class is continuous).
     """
     entro_disc = preprocess.EntropyDiscretization()
-    equi_disc  = preprocess.EquiNDiscretization(number_of_intervals=number_of_intervals)
+    equi_disc = preprocess.EquiNDiscretization(n=number_of_intervals)
     disc_attrs = []
 
     classname = (data and len(data) > 0 and data.domain.class_var and
@@ -170,7 +170,8 @@ def discretize_domain(data, remove_unused_values = 1, number_of_intervals = 2):
             warnings.warn("Could not discretize %s attribute. %s" %
                           (attr.name, ex.message))
 
-    if classname: disc_attrs.append(data.domain.class_var)
+    if classname:
+        disc_attrs.append(data.domain.class_var)
     d2 = data.translate(disc_attrs, True)
     return d2
 
