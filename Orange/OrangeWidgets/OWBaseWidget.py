@@ -62,7 +62,7 @@ FALSE = 0
 
 def _deprecation_warning(name):
     warnings.warn(
-        "{0!r} is deprecated. It will be removed in Orange 2.8",
+        "{0!r} is deprecated. It will be removed in Orange 2.8".format(name),
         DeprecationWarning,
         stacklevel=2
     )
@@ -928,9 +928,9 @@ class OWBaseWidget(QDialog):
         if changed:
             if self.widgetStateHandler:
                 self.widgetStateHandler()
-            elif text: # and stateType != "Info":
-                self.printEvent(stateType + " - " + text)
-            
+            elif text:
+                _log.info(stateType + " - " + text)
+
             if type(id) == list:
                 for i in id:
                     self.emit(SIGNAL("widgetStateChanged(QString, int, QString)"),
