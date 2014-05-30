@@ -438,6 +438,11 @@ class OWDistributions(OWWidget):
         self.GeneralTab = self.SettingsTab = self.controlArea
 
         self.graph = OWDistributionGraph(self, self.mainArea)
+        # Set a fixed minimum width. This disables the dynamic minimumSizeHint
+        # from the layout, which can return a uselessly large width for the
+        # x axis when showing a discrete variable with many values.
+        self.graph.setMinimumWidth(250)
+
         self.mainArea.layout().addWidget(self.graph)
         self.graph.setYRlabels(None)
         self.graph.setAxisScale(QwtPlot.yRight, 0.0, 1.0, 0.1)

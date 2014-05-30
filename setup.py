@@ -154,9 +154,15 @@ try:
 except ImportError:
     orangeqt_setup = None
     build_pyqt_ext = None
+except Exception:
+    # should display a warning about this (configuraiton error ...)
+    orangeqt_setup = None
+    build_pyqt_ext = None
+
 
 class LibStatic(Extension):
     pass
+
 
 class PyXtractExtension(Extension):
     def __init__(self, *args, **kwargs):

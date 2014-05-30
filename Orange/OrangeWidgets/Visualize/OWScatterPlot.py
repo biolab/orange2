@@ -92,6 +92,10 @@ class OWScatterPlot(OWWidget):
         self.outputs = [("Selected Data", ExampleTable), ("Other Data", ExampleTable)]
 
         self.graph = OWScatterPlotGraph(self, self.mainArea, "ScatterPlot")
+        self.graph.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.graph.setMinimumSize(250, 200)
+        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+
         self.vizrank = OWVizRank(self, self.signalManager, self.graph, orngVizRank.SCATTERPLOT, "ScatterPlot")
         self.optimizationDlg = self.vizrank
 
@@ -386,6 +390,7 @@ class OWScatterPlot(OWWidget):
     def updateGraph(self, attrList = None, insideColors = None, **args):
         self.graph.zoomStack = []
         if not self.graph.haveData:
+            self.graph.replot()
             return
 
         if attrList and len(attrList) == 2:
