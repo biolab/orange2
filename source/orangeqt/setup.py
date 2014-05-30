@@ -66,6 +66,7 @@ qt_dir = None
 qt_include_dir = None
 qt_lib_dir = None
 qt_framework = False
+qt_framework_dir = None
 
 # use PyQt4 build time config if provided
 if pyqtconfig is not None:
@@ -91,7 +92,7 @@ if "QTDIR" in os.environ:
             # This is the standard Qt4 framework layout
             qt_framework = True
             qt_framework_dir = pjoin(qt_dir, "lib")
-        elif glob(pjoin(qt_dir, "Frameworks", "Qt*.framework")):
+        elif glob.glob(pjoin(qt_dir, "Frameworks", "Qt*.framework")):
             # Also worth checking (standard for bundled apps)
             qt_framework = True
             qt_framework_dir = pjoin(qt_dir, "Frameworks")
