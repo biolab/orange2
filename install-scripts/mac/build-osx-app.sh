@@ -142,6 +142,8 @@ echo "================="
 cat <<-'EOF' > "$TEMPLATE"/Contents/MacOS/Orange
 	#!/bin/bash
 
+	unset -v PYTHONPATH
+
 	DIRNAME=$(dirname "$0")
 	source "$DIRNAME"/ENV
 
