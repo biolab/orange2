@@ -128,6 +128,9 @@ import time, threading
 
 import os
 import shutil
+import tarfile
+import gzip
+import bz2
 import glob
 import datetime
 import tempfile
@@ -540,8 +543,8 @@ def download(domain, filename, serverfiles=None, callback=None,
     _save_file_info(target + '.info', info)
     
     if extract:
-        import tarfile, gzip, shutil
-        if specialtags.get("#compression") == "tar.gz" and specialtags.get("#files"):
+        if specialtags.get("#compression") in ["tar.gz", "tar.bz2"] and \
+                specialtags.get("#files"):
             f = tarfile.open(target + ".tmp")
             f.extractall(localpath(domain))
             shutil.copyfile(target + ".tmp", target)
@@ -554,6 +557,9 @@ def download(domain, filename, serverfiles=None, callback=None,
             f.extractall(target)
         elif specialtags.get("#compression") == "gz":
             f = gzip.open(target + ".tmp")
+            shutil.copyfileobj(f, open(target, "wb"))
+        elif specialtags.get("#compression") == "bz2":
+            f = bz2.BZ2File(target + ".tmp", "r")
             shutil.copyfileobj(f, open(target, "wb"))
         f.close()
         os.remove(target + ".tmp")
