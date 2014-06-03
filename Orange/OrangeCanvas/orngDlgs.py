@@ -694,8 +694,23 @@ class AddOnManagerSummary(QDialog):
         self.topLayout = QVBoxLayout(self)
         self.topLayout.setSpacing(10)
         self.resize(200, 0)
-        
-        OWGUI.label(self, self, "If you confirm, the following actions will take place:")
+
+        label = OWGUI.label(self, self, "Orange will now perform the following actions:")
+
+        action_type_count = sum(1 if actions else 0
+                                for actions in [add, remove, upgrade])
+        simple = action_type_count == 1
+        if simple:
+            if add:
+                action_text = "install"
+            elif remove:
+                action_text = "remove"
+            else:
+                action_text = "upgrade"
+
+            label.setText("Orange will now %s add-on%s: " %
+                          (action_text,
+                           "s" if len(add or remove or upgrade) > 1 else ""))
 
         self.memo = memo = QTextEdit(self)
         self.layout().addWidget(memo)
@@ -710,14 +725,17 @@ class AddOnManagerSummary(QDialog):
                        SIGNAL("documentSizeChanged(const QSizeF &)"),
                         lambda docSize: self.updateMinSize(docSize))
         actions = []
-        for ao in add:
-            actions.append("Install %s." % ao)
-        for ao in remove:
-            actions.append("Remove %s." % ao)
-        for ao in upgrade:
-            actions.append("Upgrade %s." % ao)
+        if simple:
+            actions.extend(ao for ao in (add or remove or upgrade))
+        else:
+            for ao in add:
+                actions.append("Install %s." % ao)
+            for ao in remove:
+                actions.append("Remove %s." % ao)
+            for ao in upgrade:
+                actions.append("Upgrade %s." % ao)
         memo.setText("\n".join(actions))
-        
+
         self.layout().addStretch(1)
         self.setSizePolicy( QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Minimum) )
 
