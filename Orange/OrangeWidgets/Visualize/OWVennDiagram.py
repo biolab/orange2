@@ -256,7 +256,7 @@ class OWVennDiagram(OWWidget):
 
         item = self.inputsBox.layout().itemAt(index)
         box = item.widget()
-        box.setTitle("Data set: {}".format(name))
+        box.setTitle(u"Data set: {}".format(as_text(name)))
 
     def _remove(self, key):
         index = self.data.keys().index(key)
@@ -276,9 +276,9 @@ class OWVennDiagram(OWWidget):
         for i in range(5):
             box, _ = self._controlAtIndex(i)
             if i < len(inputs):
-                title = "Data set: {}".format(inputs[i].name)
+                title = u"Data set: {}".format(as_text(inputs[i].name))
             else:
-                title = "Data set #{}".format(i + 1)
+                title = u"Data set #{}".format(i + 1)
             box.setTitle(title)
 
         self._invalidate([key], incremental=False)
@@ -295,7 +295,7 @@ class OWVennDiagram(OWWidget):
 
         item = self.inputsBox.layout().itemAt(index)
         box = item.widget()
-        box.setTitle("Data set: {}".format(name))
+        box.setTitle(u"Data set: {}".format(as_text(name)))
 
     def _itemsForInput(self, key):
         useidentifiers = self.useidentifiers or not self.samedomain
@@ -309,7 +309,6 @@ class OWVennDiagram(OWWidget):
                 return []
 
         def items_by_eq(key, input):
-#             return list(input.table)
             return list(map(ComparableInstance, input.table))
 
         input = self.data[key]
@@ -325,8 +324,9 @@ class OWVennDiagram(OWWidget):
             items = self._itemsForInput(key)
             item = self.itemsets[key]
             item = item._replace(items=items)
-            if item.name != input.name:
-                item = item._replace(name=input.name, title=input.name)
+            name = as_text(input.name)
+            if item.name != name:
+                item = item._replace(name=name, title=name)
             self.itemsets[key] = item
 
     def _createItemsets(self):
@@ -335,13 +335,14 @@ class OWVennDiagram(OWWidget):
 
         for key, input in self.data.items():
             items = self._itemsForInput(key)
-            title = input.name
-            if key in olditemsets and olditemsets[key].name == input.name:
+            name = as_text(input.name)
+            if key in olditemsets and olditemsets[key].name == name:
                 # Reuse the title (which might have been changed by the user)
                 title = olditemsets[key].title
+            else:
+                title = name
 
-            itemset = _ItemSet(key=key, name=input.name, title=title,
-                               items=items)
+            itemset = _ItemSet(key=key, name=name, title=title, items=items)
             self.itemsets[key] = itemset
 
     def _storeHints(self):
@@ -488,7 +489,7 @@ class OWVennDiagram(OWWidget):
         self._createDiagram()
 
     def _on_itemTextEdited(self, index, text):
-        text = str(text)
+        text = unicode(text)
         key = self.itemsets.keys()[index]
         self.itemsets[key] = self.itemsets[key]._replace(title=text)
 
@@ -545,7 +546,7 @@ class OWVennDiagram(OWWidget):
 
             # add a column with source table id to the data
             subset.domain.add_meta(source_mid, source_var)
-            subset.add_meta_attribute(source_var, str(names[i]))
+            subset.add_meta_attribute(source_var, as_bytes(names[i]))
             # add a column with instance set id
             subset.domain.add_meta(item_mid, item_id_var)
             subset.add_meta_attribute(item_mid)
@@ -580,6 +581,20 @@ class OWVennDiagram(OWWidget):
     def getSettings(self, *args, **kwargs):
         self._storeHints()
         return OWWidget.getSettings(self, *args, **kwargs)
+
+
+def as_text(bs):
+    if isinstance(bs, str):
+        return bs.decode("utf-8", errors="ignore")
+    else:
+        return bs
+
+
+def as_bytes(bs):
+    if isinstance(bs, unicode):
+        return bs.encode("utf-8", errors="ignore")
+    else:
+        return bs
 
 
 def pairwise(iterable):
@@ -1078,7 +1093,7 @@ class VennDiagram(QGraphicsWidget):
     # rect and petal are for future work
     Circle, Ellipse, Rect, Petal = 1, 2, 3, 4
 
-    TitleFormat = "<center><h4>{0}</h4>{1}</center>"
+    TitleFormat = u"<center><h4>{0}</h4>{1}</center>"
 
     selectionChanged = Signal()
     itemTextEdited = Signal(int, str)
