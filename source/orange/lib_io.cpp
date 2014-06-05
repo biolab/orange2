@@ -18,16 +18,17 @@ PyObject *encodeStatus(const vector<int> &Status);  // in cls_misc.cpp
 PyObject *encodeStatus(const vector<pair<int, int> > &metaStatus);
 
 
-/* Same as sys.getfilesystemencoding()
- * (the returned pointer points to a PyString_Object internal buffer
- * and should not be modified).
- */
-char* getFileSystemEncoding()
+/* Same as sys.getfilesystemencoding() */
+
+std::string getFileSystemEncoding()
 {
-    PyObject *fsencoding = PySys_GetObject("getfilesystemencoding"); // Borrowed ref
-    fsencoding = PyObject_CallObject(fsencoding, NULL); // This should be a string.
+    char name[] = "getfilesystemencoding";
+    PyObject *fsencoding = PySys_GetObject(name); // Borrowed ref
+    fsencoding = PyObject_CallObject(fsencoding, NULL); // This should return a string.
     assert(PyString_Check(fsencoding));
-    return PyString_AsString(fsencoding);
+    std::string encoding(PyString_AsString(fsencoding));
+    Py_DECREF(fsencoding);
+    return encoding;
 }
 
 /* ************ FILE EXAMPLE GENERATORS ************ */
@@ -212,8 +213,8 @@ PyObject *tabDelimBasedWrite(PyObject *args, PyObject *keyws, const char *defaul
 
     if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
     {
-        char *encoding = getFileSystemEncoding();
-        if (!PyArg_ParseTuple(args, "esO&", encoding, &filename, pt_ExampleGenerator, &gen))
+        std::string encoding = getFileSystemEncoding();
+        if (!PyArg_ParseTuple(args, "esO&", encoding.c_str(), &filename, pt_ExampleGenerator, &gen))
             PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL);
         PyErr_Clear();
         free_filename = true;
@@ -332,8 +333,8 @@ PyObject *saveBasket(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename
 
     if (!PyArg_ParseTuple(args, "sO&:saveBasket", &filename, pt_ExampleGenerator, &gen))
     {
-      char *encoding = getFileSystemEncoding();
-      if (!PyArg_ParseTuple(args, "esO&:saveBasket", encoding, &filename, pt_ExampleGenerator, &gen))
+      std::string encoding = getFileSystemEncoding();
+      if (!PyArg_ParseTuple(args, "esO&:saveBasket", encoding.c_str(), &filename, pt_ExampleGenerator, &gen))
           return PYNULL;
       PyErr_Clear();
       free_filename = true;

@@ -2762,7 +2762,7 @@ PyObject *ExampleGenerator_checksum(PyObject *self, PyObject *) PYARGS(METH_NOAR
 
 
 const char *getExtension(const char *name);
-char *getFileSystemEncoding(); // defined in lib_io.cpp
+std::string getFileSystemEncoding(); // defined in lib_io.cpp
 
 PyObject *saveTabDelimited(PyObject *, PyObject *args, PyObject *keyws);
 PyObject *saveC45(PyObject *, PyObject *args);
@@ -2777,8 +2777,8 @@ PyObject *ExampleGenerator_save(PyObject *self, PyObject *args, PyObject *keyws)
   if (!PyArg_ParseTuple(args, "s:ExampleGenerator.save", &filename))
   {
       // Try again, this time with the fs encoding.
-      char *encoding = getFileSystemEncoding();
-      if (!PyArg_ParseTuple(args, "es:ExampleGenerator.save", encoding, &filename))
+      std::string encoding = getFileSystemEncoding();
+      if (!PyArg_ParseTuple(args, "es:ExampleGenerator.save", encoding.c_str(), &filename))
           return PYNULL;
       free_filename = true;
       PyErr_Clear();
@@ -3170,7 +3170,6 @@ CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStor
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator - Orange.data.Table, "(filename | domain[, examples] | examples)")
 {
   PyTRY
-
     char *filename = NULL;
     if (PyArg_ParseTuple(argstuple, "s", &filename))
         return loadDataFromFile(type, filename, argstuple, keywords, false);
@@ -3180,8 +3179,8 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
     /*For a case where the unicode can't be converted to a default
      * encoding (on most platforms this is ASCII)
      */
-    char * coding = getFileSystemEncoding();
-    if (PyArg_ParseTuple(argstuple, "es", coding, &filename))
+    std::string coding = getFileSystemEncoding();
+    if (PyArg_ParseTuple(argstuple, "es", coding.c_str(), &filename))
     {
         PyObject *rval = loadDataFromFile(type, filename, argstuple, keywords, false);
         PyMem_Free(filename);
