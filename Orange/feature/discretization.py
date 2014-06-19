@@ -124,5 +124,5 @@ class DiscretizedLearner_Class:
 class DiscretizedClassifier:
   def __init__(self, **kwds):
     self.__dict__.update(kwds)
-  def __call__(self, example, resultType = orange.GetValue):
+  def __call__(self, example, resultType = Orange.classification.Classifier.GetValue):
     return self.classifier(example, resultType)

@@ -1,4 +1,4 @@
-from orange import\
+from Orange.core import\
     Filter as Filter,\
     FilterList as FilterList,\
     Filter_random as Random,\

@@ -1822,7 +1822,7 @@ class CrossValidation:
         self.random_generator = random_generator
 
     def __call__(self, learner, examples, weight):
-        res = orngTest.crossValidation([learner], (examples, weight), folds=self.folds, random_generator=self.random_generator)
+        res = Orange.evaluation.testing.cross_validation([learner], (examples, weight), folds=self.folds, random_generator=self.random_generator)
         return self.get_prob_from_res(res, examples)
 
     def get_prob_from_res(self, res, examples):

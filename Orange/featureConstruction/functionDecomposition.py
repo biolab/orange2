@@ -1,4 +1,4 @@
-from orange import \
+from Orange.core import \
          GeneralExampleClustering, \
               ColoredIG, \
               ExampleClusters, \

@@ -1,6 +1,5 @@
-from orangeom import *
-from orange import *
-
+from .orange import *
+from .orangeom import *
 
 __all__ = [
 # Imported from orange

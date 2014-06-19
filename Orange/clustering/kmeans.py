@@ -120,11 +120,12 @@ the maximal silhouette coefficient::
 
 import math
 import sys
-import orange
+
 import random
 from Orange import statc
 
 import Orange.clustering.hierarchical
+import Orange
 
 # miscellaneous functions 
 
@@ -142,15 +143,15 @@ def data_center(data):
     Returns a center of the instances in the data set (average across data instances for continuous attributes, most frequent value for discrete attributes).
     """
     atts = data.domain.attributes
-    astats = orange.DomainBasicAttrStat(data)
-    center = [astats[a].avg if a.varType == orange.VarTypes.Continuous \
+    astats = Orange.statistics.basic.Domain(data)
+    center = [astats[a].avg if a.varType == Orange.feature.Type.Continuous \
 #              else max(enumerate(orange.Distribution(a, data)), key=lambda x:x[1])[0] if a.varType == orange.VarTypes.Discrete
-              else _modus(orange.Distribution(a, data)) if a.varType == orange.VarTypes.Discrete
+              else _modus(Orange.statistics.distribution.Distribution(a, data)) if a.varType == Orange.feature.Type.Discrete
               else None
               for a in atts]
     if data.domain.classVar:
         center.append(0)
-    return orange.Example(data.domain, center)
+    return Orange.data.Instance(data.domain, center)
 
 def minindex(x):
     """Return the index of the minimum element"""
@@ -240,7 +241,7 @@ def compute_bic(km):
     numFreePar = (len(km.data.domain.attributes) + 1.) * km.k * math.log(R, 2.) / 2.
     # sigma**2
     s2 = 0.
-    cidx = [i for i, attr in enumerate(data.domain.attributes) if attr.varType in [orange.VarTypes.Continuous, orange.VarTypes.Discrete]]
+    cidx = [i for i, attr in enumerate(data.domain.attributes) if attr.varType in [Orange.feature.Type.Continuous, Orange.feature.Type.Discrete]]
     for x, midx in izip(data, mapping):
         medoid = medoids[midx] # medoids has a dummy element at the beginning, so we don't need -1 
         s2 += sum( [(float(x[i]) - float(medoid[i]))**2 for i in cidx] )
@@ -343,10 +344,10 @@ class init_hclustering():
         :param distfun: a distance function.
         :type distfun: :class:`Orange.distance.Distance`
         """
-        sample = orange.ExampleTable(random.sample(data, min(self.n, len(data))))
+        sample = Orange.data.Table(random.sample(data, min(self.n, len(data))))
         root = Orange.clustering.hierarchical.clustering(sample)
         cmap = Orange.clustering.hierarchical.top_clusters(root, k)
-        return [data_center(orange.ExampleTable([sample[e] for e in cl])) for cl in cmap]
+        return [data_center(Orange.data.Table([sample[e] for e in cl])) for cl in cmap]
 
 #    
 # k-means clustering, main implementation
@@ -425,7 +426,7 @@ class Clustering:
 
         self.data = data
         self.k = centroids if type(centroids)==int else len(centroids)
-        self.centroids = centroids if type(centroids) == orange.ExampleTable else None
+        self.centroids = centroids if type(centroids) == Orange.data.Table else None
         self.maxiters = maxiters
         self.minscorechange = minscorechange
         self.stopchanges = stopchanges

@@ -4,4 +4,4 @@ EVD
 ===
 """
 
-from orange import EVDist, EVDistGetter, EVDistGetter_Standard, EVDistList
+from Orange.core import EVDist, EVDistGetter, EVDistGetter_Standard, EVDistList

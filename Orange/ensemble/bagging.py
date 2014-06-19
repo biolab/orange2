@@ -103,7 +103,7 @@ class BaggedClassifier(orange.Classifier):
         self.class_var = class_var
         self.__dict__.update(kwds)
 
-    def __call__(self, instance, result_type=orange.GetValue):
+    def __call__(self, instance, result_type=Orange.classification.Classifier.GetValue):
         """
         :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
@@ -121,28 +121,28 @@ class BaggedClassifier(orange.Classifier):
                 freq[int(c(instance))] += 1
             index = freq.index(max(freq))
             value = Orange.data.Value(self.class_var, index)
-            if result_type == orange.GetValue:
+            if result_type == Orange.classification.Classifier.GetValue:
                 return value
             for i in range(len(freq)):
                 freq[i] = freq[i] / len(self.classifiers)
             freq = Orange.statistics.distribution.Discrete(
                     freq, variable=self.class_var)
 
-            if result_type == orange.GetProbabilities:
+            if result_type == Orange.classification.Classifier.GetProbabilities:
                 return freq
-            elif result_type == orange.GetBoth:
+            elif result_type == Orange.classification.Classifier.GetBoth:
                 return (value, freq)
             else:
                 return value
 
         elif self.class_var.var_type == Orange.feature.Type.Continuous:
-            votes = [c(instance, orange.GetBoth \
-                       if result_type == orange.GetProbabilities \
+            votes = [c(instance, Orange.classification.Classifier.GetBoth \
+                       if result_type == Orange.classification.Classifier.GetProbabilities \
                        else result_type) \
                      for c in self.classifiers]
 
             wsum = float(len(self.classifiers))
-            if result_type in [orange.GetBoth, orange.GetProbabilities]:
+            if result_type in [Orange.classification.Classifier.GetBoth, Orange.classification.Classifier.GetProbabilities]:
                 pred = sum([float(c) for c, p in votes]) / wsum
 #               prob = sum([float(p.modus()) for c, p in votes]) / wsum
                 from collections import defaultdict
@@ -155,10 +155,10 @@ class BaggedClassifier(orange.Classifier):
                             prob, variable=self.class_var)
 
                 return (self.class_var(pred), prob) \
-                        if result_type == orange.GetBoth\
+                        if result_type == Orange.classification.Classifier.GetBoth\
                         else prob
 
-            elif result_type == orange.GetValue:
+            elif result_type == Orange.classification.Classifier.GetValue:
                 pred = sum([float(c) for c in votes]) / wsum
                 return self.class_var(pred)
 

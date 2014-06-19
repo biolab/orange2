@@ -84,7 +84,6 @@ from functools import wraps
 import itertools
 from functools import partial
 
-import orange
 from Orange.data import preprocess
 
 TEST_CLASSIFICATION = 1
@@ -103,12 +102,12 @@ CONTINUIZE_DOMAIN = 32
 def open_data(name, flags=0):
     """ Open a named data-set return it. 
     """
-    dataset = orange.ExampleTable(name)
+    dataset = Orange.data.Table(name)
     if flags & CONTINUIZE_DOMAIN:
         preprocessor = preprocess.Continuize()
         dataset = preprocessor(dataset)
     elif flags & DISCRETIZE_DOMAIN:
-        preprocessor = preprocess.Discretize(method=orange.EquiNDiscretization(),
+        preprocessor = preprocess.Discretize(method=Orange.feature.discretization.EqualFreq(),
                                                discretize_class=False)
         dataset = preprocessor(dataset)
     dataset.name = name
@@ -418,14 +417,14 @@ class LearnerTestCase(DataTestCase):
         classifier_clone = clone(classifier)
         classifier_from_cloned = cloned_learner(dataset)
 
-        indices = orange.MakeRandomIndices2(p0=20)(dataset)
+        indices = Orange.data.sample.SubsetIndices2(p0=20)(dataset)
         test = dataset.select(indices, 0)
         class_var = dataset.domain.class_var
 
         for ex in test:
-            prediction1 = classifier(ex, orange.GetValue)
-            prediction2 = classifier_clone(ex, orange.GetValue)
-            prediction3 = classifier_from_cloned(ex, orange.GetValue)
+            prediction1 = classifier(ex, Orange.classification.Classifier.GetValue)
+            prediction2 = classifier_clone(ex, Orange.classification.Classifier.GetValue)
+            prediction3 = classifier_from_cloned(ex, Orange.classification.Classifier.GetValue)
 
             if isinstance(class_var, Orange.feature.Continuous):
                 # Test to third digit after the decimal point
@@ -529,7 +528,7 @@ class DistanceTestCase(DataTestCase):
     @test_on_data
     def test_distance_on(self, dataset):
         import numpy
-        indices = orange.MakeRandomIndices2(dataset, min(20, len(dataset)))
+        indices = Orange.data.sample.SubsetIndices2(dataset, min(20, len(dataset)))
         dataset = dataset.select(indices, 0)
         with member_set(self.distance_constructor, "ignore_class", True):
             mat = distance_matrix(dataset, self.distance_constructor)
@@ -544,7 +543,7 @@ class DistanceTestCase(DataTestCase):
             with member_set(self.distance_constructor, "ignore_class", False):
                 try:
                     mat = distance_matrix(dataset, self.distance_constructor)
-                except orange.KernelException, ex:
+                except Orange.core.KernelException, ex:
                     if "not supported" in str(ex):
                         return
                     else:

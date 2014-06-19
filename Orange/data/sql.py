@@ -1,7 +1,7 @@
 import os
 import urllib
 import Orange
-import orange
+
 from Orange.utils import deprecated_keywords, deprecated_members
 from Orange.feature import Descriptor
 
@@ -174,7 +174,7 @@ class SQLReader(object):
         if domain_depot is not None:
             self.domainDepot = domain_depot
         else:
-            self.domainDepot = orange.DomainDepot()
+            self.domainDepot = Orange.core.DomainDepot()
         self.exampleTable = None
         self._dirty = True
 

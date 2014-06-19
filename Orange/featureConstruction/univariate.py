@@ -1,4 +1,4 @@
-from orange import \
+from Orange.core import \
          FeatureByDistributions, \
          DistributionAssessor, \
               DistributionAssessor_Kramer, \

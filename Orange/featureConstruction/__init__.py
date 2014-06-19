@@ -1,1 +1,1 @@
-from orange import FeatureInducer
+from Orange.core import FeatureInducer

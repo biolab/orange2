@@ -123,7 +123,7 @@ class BoostedClassifier(orange.Classifier):
         self.class_var = class_var
         self.__dict__.update(kwds)
 
-    def __call__(self, instance, result_type = orange.GetValue):
+    def __call__(self, instance, result_type = Orange.classification.Classifier.GetValue):
         """
         :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
@@ -141,14 +141,14 @@ class BoostedClassifier(orange.Classifier):
         index = Orange.utils.selection.select_best_index(votes)
         # TODO
         value = Orange.data.Value(self.class_var, index)
-        if result_type == orange.GetValue:
+        if result_type == Orange.classification.Classifier.GetValue:
             return value
         sv = sum(votes)
         for i in range(len(votes)):
             votes[i] = votes[i]/sv
-        if result_type == orange.GetProbabilities:
+        if result_type == Orange.classification.Classifier.GetProbabilities:
             return votes
-        elif result_type == orange.GetBoth:
+        elif result_type == Orange.classification.Classifier.GetBoth:
             return (value, votes)
         else:
             return value

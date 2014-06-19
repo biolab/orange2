@@ -157,7 +157,7 @@ import sys, os
 
 import numpy
 import numpy.ma as ma
-import orange
+
 import random
 
 import Orange
@@ -373,7 +373,7 @@ class Solver(object):
         self.vectors[nonzero] = S[nonzero] / A[nonzero]
         
 
-class SOMLearner(orange.Learner):
+class SOMLearner(Orange.core.Learner):
     """Considers an input data set, projects the data instances
     onto a map, and returns a result in the form of a classifier
     holding  projection information together with an algorithm to
@@ -418,7 +418,7 @@ class SOMLearner(orange.Learner):
     @deprecated_keywords({"examples": "data",
                           "weightId": "weight_id"})
     def __new__(cls, data=None, weight_id=0, **kwargs):
-        self = orange.Learner.__new__(cls, **kwargs)
+        self = Orange.core.Learner.__new__(cls, **kwargs)
         if data is not None:
             self.__init__(**kwargs)
             return self.__call__(data, weight_id)
@@ -440,7 +440,7 @@ class SOMLearner(orange.Learner):
         self.solver = solver
         self.eps = 1e-4
         
-        orange.Learner.__init__(self, **kwargs)
+        Orange.core.Learner.__init__(self, **kwargs)
         
     @deprecated_keywords({"weightID": "weight_id",
                           "progressCallback": "progress_callback"})
@@ -456,7 +456,7 @@ class SOMLearner(orange.Learner):
                      epochs=self.epochs)(numdata, map, progress_callback=progress_callback)
         return SOMMap(map, data)
 
-class SOMMap(orange.Classifier):
+class SOMMap(Orange.core.Classifier):
     """Project the data onto the inferred self-organizing map.
     
     :param map: a trained self-organizing map
@@ -470,11 +470,11 @@ class SOMMap(orange.Classifier):
         self.map = map
         self.data = data
         for node in map:
-            node.reference_instance = orange.Example(orange.Domain(self.data.domain.attributes, False),
-                                                 [(var(value) if var.varType == orange.VarTypes.Continuous else var(int(value))) \
+            node.reference_instance = Orange.data.Instance(Orange.data.Domain(self.data.domain.attributes, False),
+                                                 [(var(value) if var.varType == Orange.feature.Type.Continuous else var(int(value))) \
                                                   for var, value in zip(self.data.domain.attributes, node.vector)])
             
-            node.instances = orange.ExampleTable(self.data.domain)
+            node.instances = Orange.data.Table(self.data.domain)
 
         for inst in self.data:
             node = self.get_best_matching_node(inst)
@@ -482,7 +482,7 @@ class SOMMap(orange.Classifier):
 
         if self.data and self.data.domain.class_var:
             for node in self.map:
-                node.classifier = orange.MajorityLearner(node.instances if node.instances else self.data)
+                node.classifier = Orange.classification.majority.MajorityLearner(node.instances if node.instances else self.data)
                      
             self.class_var = self.data.domain.class_var
         else:
@@ -494,7 +494,7 @@ class SOMMap(orange.Classifier):
     def get_best_matching_node(self, instance):
         """Return the best matching node for a given data instance
         """
-        instance, c, w = orange.ExampleTable([instance]).toNumpyMA()
+        instance, c, w = Orange.data.Table([instance]).toNumpyMA()
         vectors = self.map.vectors()
         Dist = vectors - instance
         bmu = ma.argmin(ma.sum(Dist**2, 1))
@@ -504,7 +504,7 @@ class SOMMap(orange.Classifier):
         deprecated_attribute("getBestMatchingNode",
                              "get_best_matching_node")
         
-    def __call__(self, instance, what=orange.GetValue):
+    def __call__(self, instance, what=Orange.classification.Classifier.GetValue):
         """Map `instance` onto the best matching node and predict
         its class using the majority/mean of the training data in
         that node. 
@@ -836,7 +836,7 @@ def __fill_rect(array, som):
 # Testing (deprecated, use regression tests instead  
 
 if __name__ == "__main__":
-    data = orange.ExampleTable("iris.tab")
+    data = Orange.data.Table("iris.tab")
     learner = SOMLearner()
     learner = SOMLearner(batch_train=True,
                          initialize=InitializeLinear, 

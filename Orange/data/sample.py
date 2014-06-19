@@ -1,4 +1,4 @@
-from orange import \
+from Orange.core import \
      MakeRandomIndices as SubsetIndices, \
      MakeRandomIndicesN as SubsetIndicesN, \
      MakeRandomIndicesCV as SubsetIndicesCV, \

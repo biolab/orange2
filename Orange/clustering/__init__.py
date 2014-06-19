@@ -1,13 +1,6 @@
-from __future__ import with_statement
 
-from orange import \
-    ExampleCluster, HierarchicalCluster, HierarchicalClusterList, HierarchicalClustering
+from ..core import \
+    ExampleCluster, HierarchicalCluster, HierarchicalClusterList, \
+    HierarchicalClustering
 
-import math
-import sys
-import orange
-import random
 from Orange import statc
-    
-__docformat__ = 'restructuredtext'
-

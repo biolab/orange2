@@ -359,9 +359,9 @@ Utility Functions
 
 """
 
-
-import orange
 import Orange
+import Orange.core
+
 from Orange.core import HierarchicalClustering, \
                         HierarchicalCluster, \
                         HierarchicalClusterList
@@ -445,8 +445,8 @@ def clustering_features(data, distance=None, linkage=AVERAGE, order=False, progr
     matrix = Orange.misc.SymMatrix(len(data.domain.attributes))
     for a1 in range(len(data.domain.attributes)):
         for a2 in range(a1):
-            matrix[a1, a2] = (1.0 - orange.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
-    root = orange.HierarchicalClustering(matrix, linkage=linkage, progress_callback=(lambda value, obj=None: progress_callback(value * 100.0 / (2 if order else 1))) if progress_callback else None)
+            matrix[a1, a2] = (1.0 - Orange.core.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
+    root = HierarchicalClustering(matrix, linkage=linkage, progress_callback=(lambda value, obj=None: progress_callback(value * 100.0 / (2 if order else 1))) if progress_callback else None)
     if order:
         order_leaves(root, matrix, progressCallback=(lambda value: progress_callback(50.0 + value / 2)) if progress_callback else None)
     return root
@@ -1037,7 +1037,7 @@ class DendrogramPlot(object):
         self.gamma = gamma
 
     def color_shema(self):
-        vals = [float(val) for ex in self.data for val in ex if not val.isSpecial() and val.variable.varType == orange.VarTypes.Continuous] or [0]
+        vals = [float(val) for ex in self.data for val in ex if not val.isSpecial() and val.variable.varType == Orange.core.VarTypes.Continuous] or [0]
         avg = sum(vals) / len(vals)
 
         maxVal = self.maxv if self.maxv else max(vals)
@@ -1046,9 +1046,9 @@ class DendrogramPlot(object):
         def _colorSchema(val):
             if val.isSpecial():
                 return self.color_palette(None)
-            elif val.variable.varType == orange.VarTypes.Continuous:
+            elif val.variable.varType == Orange.core.VarTypes.Continuous:
                 r, g, b = self.color_palette((float(val) - minVal) / abs(maxVal - minVal), gamma=self.gamma)
-            elif val.variable.varType == orange.VarTypes.Discrete:
+            elif val.variable.varType == Orange.core.VarTypes.Discrete:
                 r = g = b = int(255.0 * float(val) / len(val.variable.values))
             return (r, g, b)
         return _colorSchema
@@ -1435,7 +1435,7 @@ def feature_distance_matrix(data, distance=None, progress_callback=None):
     milestones = progress_bar_milestones(iter_count, 100)
 
     for count, ((i, a1), (j, a2)) in enumerate(_pairs(enumerate(attributes))):
-        matrix[i, j] = (1.0 - orange.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
+        matrix[i, j] = (1.0 - Orange.core.PearsonCorrelation(a1, a2, data, 0).r) / 2.0
         if progress_callback and count in milestones:
             progress_callback(100.0 * count / iter_count)
 

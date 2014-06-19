@@ -1,5 +1,4 @@
-import Orange.core as orange
-from orange import\
+from Orange.core import\
     Imputer as Imputer,\
     ImputerConstructor as Constructor,\
     ImputerConstructor_minimal as MinimalConstructor,\
@@ -15,10 +14,11 @@ from orange import\
     ImputeClassifier as Classifier
 
 import Orange.misc
+import Orange
 
-class ImputeLearner(orange.Learner):
+class ImputeLearner(Orange.classification.Learner):
     def __new__(cls, data=None, weight_id=0, **keyw):
-        self = orange.Learner.__new__(cls, **keyw)
+        self = Orange.classification.Learner.__new__(cls, **keyw)
         self.dont_impute_classifier = False
         self.__dict__.update(keyw)
         if data is not None:
@@ -44,13 +44,13 @@ ImputeLearner = Orange.utils.deprecated_members(
   })(ImputeLearner)
 
 
-class ImputeClassifier(orange.Classifier):
+class ImputeClassifier(Orange.classification.Classifier):
     def __init__(self, base_classifier, imputer, **argkw):
         self.base_classifier = base_classifier
         self.imputer = imputer
         self.__dict__.update(argkw)
 
-    def __call__(self, i, what=orange.GetValue):
+    def __call__(self, i, what=Orange.classification.Classifier.GetValue):
         return self.base_classifier(self.imputer(i), what)
 
 ImputeClassifier = Orange.utils.deprecated_members(

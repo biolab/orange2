@@ -6,6 +6,7 @@ import Orange.data
 import Orange.core as orange
 
 from Orange.feature.scoring import score_all
+import Orange
 
 
 def _select_features_subset(data, features):
@@ -101,7 +102,7 @@ def select_above_threshold(data, scores, threshold=0.0):
 selectAttsAboveThresh = select_above_threshold
 
 
-def select_relief(data, measure=orange.MeasureAttribute_relief(k=20, m=50), margin=0):
+def select_relief(data, measure=Orange.feature.scoring.Relief(k=20, m=50), margin=0):
     """Iteratively remove the worst scored feature until no feature
     has a score below the margin. The filter procedure was originally
     designed for measures such as Relief, which are context dependent,
@@ -138,7 +139,7 @@ class FilterAboveThreshold(object):
     """
 
     def __new__(cls, data=None,
-                measure=orange.MeasureAttribute_relief(k=20, m=50),
+                measure=Orange.feature.scoring.Relief(k=20, m=50),
                 threshold=0.0):
         if data is None:
             self = object.__new__(cls)
@@ -147,7 +148,7 @@ class FilterAboveThreshold(object):
             self = cls(measure=measure, threshold=threshold)
             return self(data)
 
-    def __init__(self, measure=orange.MeasureAttribute_relief(k=20, m=50), \
+    def __init__(self, measure=Orange.feature.scoring.Relief(k=20, m=50), \
                  threshold=0.0):
         self.measure = measure
         self.threshold = threshold
@@ -179,7 +180,7 @@ class FilterBestN(object):
 
     """
     def __new__(cls, data=None,
-                measure=orange.MeasureAttribute_relief(k=20, m=50),
+                measure=Orange.feature.scoring.Relief(k=20, m=50),
                 n=5):
 
         if data is None:
@@ -189,7 +190,7 @@ class FilterBestN(object):
             self = cls(measure=measure, n=n)
             return self(data)
 
-    def __init__(self, measure=orange.MeasureAttribute_relief(k=20, m=50),
+    def __init__(self, measure=Orange.feature.scoring.Relief(k=20, m=50),
                  n=5):
         self.measure = measure
         self.n = n
@@ -215,7 +216,7 @@ class FilterRelief(object):
 
     """
     def __new__(cls, data=None,
-                measure=orange.MeasureAttribute_relief(k=20, m=50),
+                measure=Orange.feature.scoring.Relief(k=20, m=50),
                 margin=0):
 
         if data is None:
@@ -225,7 +226,7 @@ class FilterRelief(object):
             self = cls(measure=measure, margin=margin)
             return self(data)
 
-    def __init__(self, measure=orange.MeasureAttribute_relief(k=20, m=50),
+    def __init__(self, measure=Orange.feature.scoring.Relief(k=20, m=50),
                  margin=0):
         self.measure = measure
         self.margin = margin
@@ -283,7 +284,7 @@ class FilteredClassifier:
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
 
-    def __call__(self, example, resultType=orange.GetValue):
+    def __call__(self, example, resultType=Orange.classification.Classifier.GetValue):
         return self.classifier(example, resultType)
 
     def atts(self):

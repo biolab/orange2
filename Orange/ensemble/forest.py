@@ -237,7 +237,7 @@ class RandomForestClassifier(orange.Classifier):
         self.__dict__.update(kwds)
         self.single_class = True if not class_vars else False
 
-    def __call__(self, instance, result_type = orange.GetValue):
+    def __call__(self, instance, result_type = Orange.classification.Classifier.GetValue):
         """
         :param instance: instance to be classified.
         :type instance: :class:`Orange.data.Instance`
@@ -251,7 +251,7 @@ class RandomForestClassifier(orange.Classifier):
         """
         instance = Orange.data.Instance(self.domain, instance)
         # get results to avoid multiple calls
-        res_both = [c(instance, orange.GetBoth) for c in self.classifiers]
+        res_both = [c(instance, Orange.classification.Classifier.GetBoth) for c in self.classifiers]
 
         # transform single class instance to match multi-target instances
         if self.single_class:
@@ -270,7 +270,7 @@ class RandomForestClassifier(orange.Classifier):
             if self.class_var.var_type == Orange.feature.Discrete.Discrete:
         
                 # voting for class probabilities
-                if result_type == orange.GetProbabilities or result_type == orange.GetBoth:
+                if result_type == Orange.classification.Classifier.GetProbabilities or result_type == Orange.classification.Classifier.GetBoth:
                     prob = [0.] * len(self.class_var.values)
                     for r in res_both:
                         a = [x for x in r[1][varn]]
@@ -283,15 +283,15 @@ class RandomForestClassifier(orange.Classifier):
                 # voting for crisp class membership, notice that
                 # this may not be the same class as one obtaining the
                 # highest probability through probability voting
-                if result_type == orange.GetValue or result_type == orange.GetBoth:
+                if result_type == Orange.classification.Classifier.GetValue or result_type == Orange.classification.Classifier.GetBoth:
                     cfreq = [0] * len(self.class_var.values)
                     for r in res_both:
                         cfreq[int(r[0][varn])] += 1
                     index = cfreq.index(max(cfreq))
                     cvalue = Orange.data.Value(self.class_var, index)
             
-                if result_type == orange.GetValue: mt_value.append(cvalue)
-                elif result_type == orange.GetProbabilities: mt_prob.append(cprob)
+                if result_type == Orange.classification.Classifier.GetValue: mt_value.append(cvalue)
+                elif result_type == Orange.classification.Classifier.GetProbabilities: mt_prob.append(cprob)
                 else: 
                     mt_value.append(cvalue)
                     mt_prob.append(cprob)
@@ -300,7 +300,7 @@ class RandomForestClassifier(orange.Classifier):
                 # Handle continuous class
         
                 # voting for class probabilities
-                if result_type == orange.GetProbabilities or result_type == orange.GetBoth:
+                if result_type == Orange.classification.Classifier.GetProbabilities or result_type == Orange.classification.Classifier.GetBoth:
                     probs = [ r for r in res_both]
                     cprob = dict()
       
@@ -314,25 +314,25 @@ class RandomForestClassifier(orange.Classifier):
                     cprob.normalize()
                 
                 # gather average class value
-                if result_type == orange.GetValue or result_type == orange.GetBoth:
+                if result_type == Orange.classification.Classifier.GetValue or result_type == Orange.classification.Classifier.GetBoth:
                     values = [r[0][varn] for r in res_both]
                     cvalue = Orange.data.Value(self.class_var, sum(values) / len(self.classifiers))
             
-                if result_type == orange.GetValue: mt_value.append(cvalue)
-                elif result_type == orange.GetProbabilities: mt_prob.append(cprob)
+                if result_type == Orange.classification.Classifier.GetValue: mt_value.append(cvalue)
+                elif result_type == Orange.classification.Classifier.GetProbabilities: mt_prob.append(cprob)
                 else: 
                     mt_value.append(cvalue)
                     mt_prob.append(cprob)
         
         # check for singleclass when returning
         if self.single_class:
-            if result_type == orange.GetValue: return mt_value[0]
-            elif result_type == orange.GetProbabilities: return mt_prob[0]
+            if result_type == Orange.classification.Classifier.GetValue: return mt_value[0]
+            elif result_type == Orange.classification.Classifier.GetProbabilities: return mt_prob[0]
             else: 
                 return [mt_value[0],mt_prob[0]] 
             
-        if result_type == orange.GetValue: return tuple(mt_value)
-        elif result_type == orange.GetProbabilities: return tuple(mt_prob)
+        if result_type == Orange.classification.Classifier.GetValue: return tuple(mt_value)
+        elif result_type == Orange.classification.Classifier.GetProbabilities: return tuple(mt_prob)
         else: 
             return [tuple(mt_value),tuple(mt_prob)]
 
@@ -342,7 +342,7 @@ class RandomForestClassifier(orange.Classifier):
 RandomForestClassifier = Orange.utils.deprecated_members({"resultType":"result_type", "classVar":"class_var", "example":"instance"})(RandomForestClassifier)
 ### MeasureAttribute_randomForests
 
-class ScoreFeature(orange.MeasureAttribute):
+class ScoreFeature(Orange.feature.scoring.Score):
     """
     :param trees: number of trees in the forest.
     :type trees: int
@@ -547,7 +547,7 @@ class ScoreFeature(orange.MeasureAttribute):
           return set([])
 
 
-class SplitConstructor_AttributeSubset(orange.TreeSplitConstructor):
+class SplitConstructor_AttributeSubset(Orange.classification.tree.SplitConstructor):
     def __init__(self, scons, attributes, rand = None):
         self.scons = scons           # split constructor of original tree
         self.attributes = attributes # number of features to consider

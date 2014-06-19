@@ -161,7 +161,6 @@ Utility Functions
 
 import numpy
 import numpy.linalg
-import orange
 import operator
 
 from Orange.utils import deprecation_warning
