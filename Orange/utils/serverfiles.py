@@ -124,6 +124,8 @@ import functools
 from contextlib import contextmanager
 
 from Orange.utils import ConsoleProgressBar
+from . import environ
+
 import time, threading
 
 import os
@@ -191,16 +193,12 @@ def _create_path(target):
 def localpath(domain=None, filename=None):
     """Return a path for the domain in the local repository. If 
     filename is given, return a path to corresponding file."""
-    import orngEnviron
     if not domain:
-        return os.path.join(orngEnviron.directoryNames["bufferDir"],
-            "bigfiles")
+        return os.path.join(environ.buffer_dir, "bigfiles")
     if filename:
-        return os.path.join(orngEnviron.directoryNames["bufferDir"],
-            "bigfiles", domain, filename)
+        return os.path.join(environ.buffer_dir, "bigfiles", domain, filename)
     else:
-        return os.path.join(orngEnviron.directoryNames["bufferDir"],
-            "bigfiles", domain)
+        return os.path.join(environ.buffer_dir, "bigfiles", domain)
 
 class ServerFiles(object):
     """
