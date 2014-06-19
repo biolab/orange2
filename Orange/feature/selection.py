@@ -3,7 +3,6 @@ __docformat__ = 'restructuredtext'
 from operator import itemgetter
 
 import Orange.data
-import Orange.core as orange
 
 from Orange.feature.scoring import score_all
 import Orange

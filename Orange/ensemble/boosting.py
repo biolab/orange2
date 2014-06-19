@@ -1,9 +1,9 @@
 import Orange
-import Orange.core as orange
+import Orange.core
 
 _inf = 100000
 
-class BoostedLearner(orange.Learner):
+class BoostedLearner(Orange.core.Learner):
     """
     Instead of drawing a series of bootstrap samples from the training set,
     bootstrap maintains a weight for each instance. When a classifier is 
@@ -27,7 +27,7 @@ class BoostedLearner(orange.Learner):
             :class:`Orange.ensemble.boosting.BoostedLearner`
     """
     def __new__(cls, learner, instances=None, weight_id=None, **kwargs):
-        self = orange.Learner.__new__(cls, **kwargs)
+        self = Orange.core.Learner.__new__(cls, **kwargs)
         if instances is not None:
             self.__init__(self, learner, **kwargs)
             return self.__call__(instances, weight_id)
@@ -97,7 +97,7 @@ class BoostedLearner(orange.Learner):
 
 BoostedLearner = Orange.utils.deprecated_members({"examples":"instances", "classVar":"class_var", "weightId":"weigth_id", "origWeight":"orig_weight"})(BoostedLearner)
 
-class BoostedClassifier(orange.Classifier):
+class BoostedClassifier(Orange.core.Classifier):
     """
     A classifier that uses a boosting technique. Usually the learner
     (:class:`Orange.ensemble.boosting.BoostedLearner`) is used to construct the

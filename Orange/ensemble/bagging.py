@@ -1,11 +1,12 @@
 import math
 import random
 
-import Orange.core as orange
 import Orange
+import Orange.core
+import Orange.classification
 
 
-class BaggedLearner(orange.Learner):
+class BaggedLearner(Orange.core.Learner):
     """
     BaggedLearner takes a learner and returns a bagged learner, which is
     essentially a wrapper around the learner passed as an argument. If
@@ -31,7 +32,7 @@ class BaggedLearner(orange.Learner):
             :class:`Orange.ensemble.bagging.BaggedLearner`
     """
     def __new__(cls, learner, instances=None, weight_id=None, **kwargs):
-        self = orange.Learner.__new__(cls, **kwargs)
+        self = Orange.core.Learner.__new__(cls, **kwargs)
         if instances is not None:
             self.__init__(self, learner, **kwargs)
             return self.__call__(instances, weight_id)
@@ -77,7 +78,7 @@ BaggedLearner = Orange.utils.deprecated_members(
     )(BaggedLearner)
 
 
-class BaggedClassifier(orange.Classifier):
+class BaggedClassifier(Orange.core.Classifier):
     """
     A classifier that uses a bagging technique. Usually the learner
     (:class:`Orange.ensemble.bagging.BaggedLearner`) is used to construct the

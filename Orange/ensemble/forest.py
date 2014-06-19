@@ -1,11 +1,12 @@
 from math import sqrt, floor
-import Orange.core as orange
+
 import Orange
 import Orange.feature.scoring
 import random
 import copy
 from Orange.utils import deprecated_keywords
 from operator import add
+import Orange.core
 
 def _default_small_learner(attributes=None, rand=None, base=None):
     # tree learner assembled as suggested by Breiman (2001)
@@ -202,7 +203,7 @@ class RandomForestLearner(Orange.core.Learner):
 
 RandomForestLearner = Orange.utils.deprecated_members({"examples":"instances"})(RandomForestLearner)
 
-class RandomForestClassifier(orange.Classifier):
+class RandomForestClassifier(Orange.core.Classifier):
     """
     Uses the trees induced by the :obj:`RandomForestLearner`. An input
     instance is classified into the class with the most frequent vote.

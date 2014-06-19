@@ -1,5 +1,4 @@
 import Orange
-import Orange.core as orange
 
 from Orange.core import \
     Discrete2Continuous, \
@@ -15,6 +14,8 @@ from Orange.core import \
     Discretization, \
     Preprocessor_discretize
 
+import Orange.core
+
 def entropyDiscretization_wrapper(data):
     """Discretize all continuous features in class-labeled data set with the entropy-based discretization
     :obj:`Entropy`.
@@ -29,7 +30,7 @@ def entropyDiscretization_wrapper(data):
     Returns a table that 
 
     """
-    orange.setrandseed(0)
+    Orange.core.setrandseed(0)
     data_new = Orange.data.preprocess.Discretize(data, method=Entropy())
     
     attrlist = []
