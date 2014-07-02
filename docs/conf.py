@@ -149,8 +149,8 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
-if os.environ['CUSTOM_THEME'] == 'orange_web_theme':
-    html_theme = 'orange_web_theme'
+if os.environ['SPHINX_HTML_THEME'] == 'orange_web_theme':
+    html_theme = os.environ['SPHINX_HTML_THEME']
 else:
     html_theme = 'orange_theme'
 
@@ -159,7 +159,7 @@ else:
 # documentation.
 html_theme_options = {"collapsiblesidebar": "false"}
 
-if "orange" in html_theme:
+if 'orange' in html_theme:
     html_theme_options.update({"orangeheaderfooter": "false"})
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -171,10 +171,10 @@ html_title = TITLE
 
 
 def construe_root_url(hostname='localhost', tls=False):
-    """Function for building root url of the site hosting the documentation"""
-    return 'http%s://%s' % ('s' if tls else '', hostname)
+    """Construe an url of the main webapp, which links to the documentation."""
+    return 'http{0}://{1}'.format('s' if tls else '', hostname)
 
-# A dictionary of values to pass into the template engine’s context for all pages. 
+# A dict of values to pass into the template engine’s context for all pages.
 html_context = {'root_url': construe_root_url('new.orange.biolab.si')}
 
 
