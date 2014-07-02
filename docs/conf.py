@@ -12,6 +12,11 @@
 # serve to show the default.
 
 import imp, inspect, sys, os
+from sphinx.writers.html import HTMLWriter
+
+# Rewriting initial header setting from h1 to h2 for html
+HTMLWriter.settings_spec[2][6][2]['default'] = 2
+
 
 class Mock(object):
     __all__ = []
@@ -73,7 +78,7 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphin
 
 # Numpydoc generates autosummary directives for all undocumented members. Orange documentation only includes documented
 # member, so _str_member_list is modified to return [] where a list of undocumented members is originally returned.
-numpydoc.docscrape_sphinx.SphinxDocString._str_member_list # if numpydoc changes, this line will cause an error
+numpydoc.docscrape_sphinx.SphinxDocString._str_member_list  # if numpydoc changes, this line will cause an error
 numpydoc.docscrape_sphinx.SphinxDocString._str_member_list = lambda x, y : []
 
 
@@ -144,14 +149,17 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
-html_theme = 'orange_theme'
+if os.environ['CUSTOM_THEME'] == 'orange_web_theme':
+    html_theme = 'orange_web_theme'
+else:
+    html_theme = 'orange_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {"collapsiblesidebar": "false"}
 
-if html_theme == "orange_theme":
+if "orange" in html_theme:
     html_theme_options.update({"orangeheaderfooter": "false"})
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -160,6 +168,15 @@ html_theme_path = [os.path.join(PATH, "sphinx-ext", "themes")]
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 html_title = TITLE
+
+
+def construe_root_url(hostname='localhost', tls=False):
+    """Function for building root url of the site hosting the documentation"""
+    return 'http%s://%s' % ('s' if tls else '', hostname)
+
+# A dictionary of values to pass into the template engine’s context for all pages. 
+html_context = {'root_url': construe_root_url('new.orange.biolab.si')}
+
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -228,8 +245,8 @@ htmlhelp_basename = 'referencedoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'reference.tex', TITLE,
-   AUTHOR, 'manual'),
+    ('index', 'reference.tex', TITLE,
+        AUTHOR, 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -294,6 +311,7 @@ intersphinx_mapping = {'http://docs.python.org/': None}
 import types
 from sphinx.ext import autodoc
 
+
 def maybe_skip_member(app, what, name, obj, skip, options):
     #print app, what, name, obj, skip, options
 
@@ -304,6 +322,7 @@ def maybe_skip_member(app, what, name, obj, skip, options):
         and name.endswith("__") \
         and (obj.__doc__ != None or options.get("undoc-members", False)):
             return False
+
 
 class SingletonDocumenter(autodoc.ModuleLevelDocumenter):
     """
@@ -323,6 +342,7 @@ class SingletonDocumenter(autodoc.ModuleLevelDocumenter):
 
     def add_content(self, more_content, no_docstring=False):
         self.add_line(u'Singleton instance of :py:class:`~%s`.' % (self.object.__class__.__name__,), '<autodoc>')
+
 
 def setup(app):
     app.connect('autodoc-skip-member', maybe_skip_member)
