@@ -22,7 +22,6 @@ Neural Network Learner  (``neural``)
 import Orange
 import random
 import numpy as np
-np.seterr('ignore') # set to ignore to disable overflow errors
 import scipy.sparse
 from scipy.optimize import fmin_l_bfgs_b
 
@@ -221,9 +220,10 @@ class NeuralNetworkLearner(Orange.classification.Learner):
        
         #initializes neural networks
         nn =  _NeuralNetwork([len(X[0]), self.n_mid,len(Y[0])], lambda_=self.reg_fact, maxfun=self.max_iter, iprint=-1)
-        
-        nn.fit(X,Y)
-               
+
+        with np.errstate(over="ignore"):
+            nn.fit(X, Y)
+
         return NeuralNetworkClassifier(domain=data.domain, nn=nn, normalize=self.normalize, mean=mean, std=std)
 
 
@@ -274,8 +274,11 @@ class NeuralNetworkClassifier(Orange.classification.Classifier):
             input -= self.mean
             input[:, self.std > 0] /= self.std[self.std > 0]
 
+        with np.errstate(over="ignore"):
+            results = self.nn.predict(input)
+
         # transform results from numpy
-        results = self.nn.predict(input).tolist()[0]
+        results = results.tolist()[0]
         if len(results) == 1:
             prob_positive = results[0]
             results = [1 - prob_positive, prob_positive]
