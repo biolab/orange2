@@ -137,6 +137,14 @@ from numpy.linalg import inv, pinv
 
 from Orange.utils import deprecated_members, deprecated_keywords
 
+
+@deprecated_members(
+    {"ridgeLambda": "ridge_lambda",
+     "computeStats": "compute_stats",
+     "useVars": "use_vars",
+     "addSig": "add_sig",
+     "removeSig": "remove_sig"},
+    wrap_methods=["__init__"])
 class LinearRegressionLearner(base.BaseRegressionLearner):
 
     """Fits the linear regression model, i.e. learns the regression parameters
@@ -306,14 +314,6 @@ class LinearRegressionLearner(base.BaseRegressionLearner):
                  ssr=ssr, std_coefficients=std_coefficients,
                  intercept=self.intercept)
 
-deprecated_members({"ridgeLambda": "ridge_lambda",
-                    "computeStats": "compute_stats",
-                    "useVars": "use_vars",
-                    "addSig": "add_sig",
-                    "removeSig": "remove_sig",
-                    }
-                   , ["__init__"],
-                   in_place=True)(LinearRegressionLearner)
 
 class LinearRegression(Orange.classification.Classifier):
 

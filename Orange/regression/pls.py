@@ -176,6 +176,11 @@ def select_attrs(table, attributes, class_var=None, metas=None):
     return Orange.data.Table(domain, table)
 
 
+@deprecated_members(
+    {"nComp": "n_comp",
+     "deflationMode": "deflation_mode",
+     "maxIter": "max_iter"},
+    wrap_methods=["__init__"])
 class PLSRegressionLearner(base.BaseRegressionLearner):
     """
     Fit the partial least squares regression model, i.e. learn the
@@ -359,12 +364,15 @@ class PLSRegressionLearner(base.BaseRegressionLearner):
                 "C": C, "P":P, "Q":Q, "x_rotations": xRotations,
                 "y_rotations": yRotations, "coefs": coefs}
 
-deprecated_members({"nComp": "n_comp",
-                    "deflationMode": "deflation_mode",
-                    "maxIter": "max_iter"},
-                   wrap_methods=["__init__"],
-                   in_place=True)(PLSRegressionLearner)
 
+@deprecated_members(
+    {"xVars": "x_vars",
+     "yVars": "y_vars",
+     "muX": "mu_x",
+     "muY": "mu_y",
+     "sigmaX": "sigma_x",
+     "sigmaY": "sigma_y"},
+    wrap_methods=["__init__"])
 class PLSRegression(Orange.classification.Classifier):
     """ Predict values of the response variables
     based on the values of independent variables.
@@ -488,16 +496,7 @@ class PLSRegression(Orange.classification.Classifier):
 
         return xScores
     """
-              
-deprecated_members({"xVars": "x_vars", 
-                    "yVars": "y_vars",
-                    "muX": "mu_x",
-                    "muY": "mu_y",
-                    "sigmaX": "sigma_x",
-                    "sigmaY": "sigma_y"},
-                   wrap_methods=["__init__"],
-                   in_place=True)(PLSRegression)
-                   
+
 if __name__ == "__main__":
 
     import Orange

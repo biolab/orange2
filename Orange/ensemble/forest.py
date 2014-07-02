@@ -29,7 +29,8 @@ def _wrap_learner(base, rand, randorange):
         return _default_small_learner(None, rand, base)
     else:
         notRightLearnerToWrap()
- 
+
+
 class _RandomForestSimpleTreeLearner(Orange.core.Learner):
     """A learner which wraps an ordinary SimpleTreeLearner.  Sets the
     skip_prob so that the number of randomly chosen features for each
@@ -41,7 +42,8 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
         self.base = base
         self.attributes = None
         self.rand = rand
-    
+
+    @deprecated_keywords({"examples": "instances", "weightID": "weight"})
     def __call__(self, instances, weight=0):
         osp,orand = self.base.skip_prob, self.base.random_generator
         self.base.skip_prob = 1-float(self.attributes)/len(instances.domain.attributes)
@@ -50,7 +52,6 @@ class _RandomForestSimpleTreeLearner(Orange.core.Learner):
         self.base.skip_prob, self.base.random_generator = osp, orand
         return r
 
-_RandomForestSimpleTreeLearner = Orange.utils.deprecated_members({"weightID":"weight_id", "examples":"instances"})(_RandomForestSimpleTreeLearner)
 
 class _RandomForestTreeLearner(Orange.core.Learner):
     """ A learner which wraps an ordinary TreeLearner with
@@ -66,7 +67,7 @@ class _RandomForestTreeLearner(Orange.core.Learner):
         if not self.rand: #for all the built trees
             self.rand = random.Random(0)
 
-    @deprecated_keywords({"examples":"instances"})
+    @deprecated_keywords({"examples": "instances"})
     def __call__(self, instances, weight=0):
         """ A current tree learner is copied, modified and then used.
         Modification: set a different split constructor, which uses
@@ -84,7 +85,6 @@ class _RandomForestTreeLearner(Orange.core.Learner):
             bcopy.split, self.attributes, self.rand)
 
         return bcopy(instances, weight=weight)
-
 
 
 class RandomForestLearner(Orange.core.Learner):
@@ -164,6 +164,7 @@ class RandomForestLearner(Orange.core.Learner):
            
         self.randstate = self.rand.getstate() #original state
 
+    @deprecated_keywords({"examples": "instances"})
     def __call__(self, instances, weight=0):
         """
         Learn from the given table of data instances.
@@ -201,8 +202,7 @@ class RandomForestLearner(Orange.core.Learner):
                     class_vars=instances.domain.class_vars)
 
 
-RandomForestLearner = Orange.utils.deprecated_members({"examples":"instances"})(RandomForestLearner)
-
+@Orange.utils.deprecated_members({"classVar": "class_var"})
 class RandomForestClassifier(Orange.core.Classifier):
     """
     Uses the trees induced by the :obj:`RandomForestLearner`. An input
@@ -238,6 +238,8 @@ class RandomForestClassifier(Orange.core.Classifier):
         self.__dict__.update(kwds)
         self.single_class = True if not class_vars else False
 
+    @Orange.utils.deprecated_keywords(
+        {"example": "instance", "resultType": "result_type"})
     def __call__(self, instance, result_type = Orange.classification.Classifier.GetValue):
         """
         :param instance: instance to be classified.
@@ -340,7 +342,6 @@ class RandomForestClassifier(Orange.core.Classifier):
     def __reduce__(self):
         return type(self), (self.classifiers, self.name, self.domain, self.class_var, self.class_vars), dict(self.__dict__)
 
-RandomForestClassifier = Orange.utils.deprecated_members({"resultType":"result_type", "classVar":"class_var", "example":"instance"})(RandomForestClassifier)
 ### MeasureAttribute_randomForests
 
 class ScoreFeature(Orange.feature.scoring.Score):

@@ -176,6 +176,44 @@ def discretize_domain(data, remove_unused_values = 1, number_of_intervals = 2):
     return d2
 
 
+@deprecated_members(
+    {"rawData": "raw_data",
+     "rawSubsetData": "raw_subset_data",
+     "attributeNames": "attribute_names",
+     "attributeNameIndex": "attribute_name_index",
+     "attributeFlipInfo": "attribute_flip_info",
+     "dataHasClass": "data_has_class",
+     "dataHasContinuousClass": "data_has_continuous_class",
+     "dataHasDiscreteClass": "data_has_discrete_class",
+     "dataClassName": "data_class_name",
+     "dataDomain": "data_domain",
+     "dataClassIndex": "data_class_index",
+     "haveData": "have_data",
+     "haveSubsetData": "have_subset_data",
+     "jitterSize": "jitter_size",
+     "jitterContinuous": "jitter_continuous",
+     "attrValues": "attr_values",
+     "domainDataStat": "domain_data_stat",
+     "originalData": "original_data",
+     "originalSubsetData": "original_subset_data",
+     "scaledData": "scaled_data",
+     "scaledSubsetData": "scaled_subset_data",
+     "noJitteringScaledData": "no_jittering_scaled_data",
+     "noJitteringScaledSubsetData": "no_jittering_scaled_subset_data",
+     "validDataArray": "valid_data_array",
+     "validSubsetDataArray": "valid_subset_data_array",
+     "mergeDataSets": "merge_data_sets",
+     "rescaleData": "rescale_data",
+     "setData": "set_data",
+     "scaleExampleValue": "scale_example_value",
+     "getAttributeLabel": "get_attribute_label",
+     "flipAttribute": "flip_attribute",
+     "getMinMaxVal": "get_min_max_val",
+     "getValidList": "get_valid_list",
+     "getValidSubsetList": "get_valid_subset_list",
+     "getValidIndices": "get_valid_indices",
+     "getValidSubsetIndices": "get_valid_subset_indices",
+     "rndCorrection": "rnd_correction"})
 class ScaleData:
     def __init__(self):
         self.raw_data = None           # input data
@@ -515,45 +553,6 @@ class ScaleData:
     
     rndCorrection = rnd_correction
 
-ScaleData = deprecated_members({"rawData": "raw_data",
-                                "rawSubsetData": "raw_subset_data",
-                                "attributeNames": "attribute_names",
-                                "attributeNameIndex": "attribute_name_index",
-                                "attributeFlipInfo": "attribute_flip_info",
-                                "dataHasClass": "data_has_class",
-                                "dataHasContinuousClass": "data_has_continuous_class",
-                                "dataHasDiscreteClass": "data_has_discrete_class",
-                                "dataClassName": "data_class_name",
-                                "dataDomain": "data_domain",
-                                "dataClassIndex": "data_class_index",
-                                "haveData": "have_data",
-                                "haveSubsetData": "have_subset_data",
-                                "jitterSize": "jitter_size",
-                                "jitterContinuous": "jitter_continuous",
-                                "attrValues": "attr_values",
-                                "domainDataStat": "domain_data_stat",
-                                "originalData": "original_data",
-                                "originalSubsetData": "original_subset_data",
-                                "scaledData": "scaled_data",
-                                "scaledSubsetData": "scaled_subset_data",
-                                "noJitteringScaledData": "no_jittering_scaled_data",
-                                "noJitteringScaledSubsetData": "no_jittering_scaled_subset_data",
-                                "validDataArray": "valid_data_array",
-                                "validSubsetDataArray": "valid_subset_data_array",
-                                "mergeDataSets": "merge_data_sets",
-                                "rescaleData": "rescale_data",
-                                "setData": "set_data",
-                                "scaleExampleValue": "scale_example_value",
-                                "getAttributeLabel": "get_attribute_label",
-                                "flipAttribute": "flip_attribute",
-                                "getMinMaxVal": "get_min_max_val",
-                                "getValidList": "get_valid_list",
-                                "getValidSubsetList": "get_valid_subset_list",
-                                "getValidIndices": "get_valid_indices",
-                                "getValidSubsetIndices": "get_valid_subset_indices",
-                                "rndCorrection": "rnd_correction",
-                                })(ScaleData)
-
 
 def jitter_array(array, ratio=0.01, axis=0, rand_seed=None):
     """
@@ -587,6 +586,20 @@ def jitter_array(array, ratio=0.01, axis=0, rand_seed=None):
     return array
 
 
+@deprecated_members(
+    {"setAnchors": "set_anchors",
+     "createAnchors": "create_anchors",
+     "createXAnchors": "create_xanchors",
+     "createYAnchors": "create_yanchors",
+     "saveProjectionAsTabData": "save_projection_as_tab_data",
+     "getProjectedPointPosition": "get_projected_point_position",
+     "createProjectionAsExampleTable": "create_projection_as_example_table",
+     "createProjectionAsNumericArray": "create_projection_as_numeric_array",
+     "_getSum_i": "_getsum_i",
+     "normalizeExamples": "normalize_examples",
+     "anchorData": "anchor_data",
+     "lastAttrIndices": "last_attr_indices",
+     "anchorDict": "anchor_dict"})
 class ScaleLinProjData(ScaleData):
     def __init__(self):
         ScaleData.__init__(self)
@@ -897,23 +910,20 @@ graph_deprecator = deprecated_members({"setData": "set_data",
                                        "updateData": "update_data",
                                        "scaleFactor": "scale_factor"})
 
-ScaleLinProjData = deprecated_members({"setAnchors": "set_anchors",
-                                       "createAnchors": "create_anchors",
-                                       "createXAnchors": "create_xanchors",
-                                       "createYAnchors": "create_yanchors",
-                                       "saveProjectionAsTabData": "save_projection_as_tab_data",
-                                       "getProjectedPointPosition":
-                                           "get_projected_point_position",
-                                       "createProjectionAsExampleTable":
-                                           "create_projection_as_example_table",
-                                       "createProjectionAsNumericArray":
-                                           "create_projection_as_numeric_array",
-                                       "_getSum_i": "_getsum_i",
-                                       "normalizeExamples": "normalize_examples",
-                                       "anchorData": "anchor_data",
-                                       "lastAttrIndices": "last_attr_indices",
-                                       "anchorDict": "anchor_dict"})(ScaleLinProjData)
 
+@deprecated_members(
+    {"setAnchors": "set_anchors",
+     "createAnchors": "create_anchors",
+     "saveProjectionAsTabData": "save_projection_as_tab_data",
+     "getProjectedPointPosition": "get_projected_point_position",
+     "createProjectionAsExampleTable": "create_projection_as_example_table",
+     "createProjectionAsNumericArray": "create_projection_as_numeric_array",
+     "_getSum_i": "_getsum_i",
+     "normalizeExamples": "normalize_examples",
+     "anchorData": "anchor_data",
+     "lastAttrIndices": "last_attr_indices",
+     "anchorDict": "anchor_dict",
+     "trueScaleFactor": "true_scale_factor"})
 class ScaleLinProjData3D(ScaleData):
     def __init__(self):
         ScaleData.__init__(self)
@@ -1259,23 +1269,11 @@ class ScaleLinProjData3D(ScaleData):
     
     _getSum_i = _getsum_i
 
-ScaleLinProjData3D = deprecated_members({"setAnchors": "set_anchors",
-                                       "createAnchors": "create_anchors",
-                                       "saveProjectionAsTabData": "save_projection_as_tab_data",
-                                       "getProjectedPointPosition":
-                                           "get_projected_point_position",
-                                       "createProjectionAsExampleTable":
-                                           "create_projection_as_example_table",
-                                       "createProjectionAsNumericArray":
-                                           "create_projection_as_numeric_array",
-                                       "_getSum_i": "_getsum_i",
-                                       "normalizeExamples": "normalize_examples",
-                                       "anchorData": "anchor_data",
-                                       "lastAttrIndices": "last_attr_indices",
-                                       "anchorDict": "anchor_dict",
-                                       "trueScaleFactor": "true_scale_factor"
-                                      })(ScaleLinProjData3D)
 
+@deprecated_members(
+    {"createProjectionAsExampleTable": "create_projection_as_example_table",
+     "createProjectionAsNumericArray": "create_projection_as_numeric_array",
+     "getProjectedPointPosition": "get_projected_point_position"})
 class ScalePolyvizData(ScaleLinProjData):
     def __init__(self):
         ScaleLinProjData.__init__(self)
@@ -1433,14 +1431,18 @@ class ScalePolyvizData(ScaleLinProjData):
     
     getProjectedPointPosition = get_projected_point_position
 
-ScalePolyvizData = deprecated_members({"createProjectionAsExampleTable":
-                                           "create_projection_as_example_table",
-                                       "createProjectionAsNumericArray":
-                                           "create_projection_as_numeric_array",
-                                       "getProjectedPointPosition":
-                                           "get_projected_point_position"
-                                       })(ScalePolyvizData)
 
+@deprecated_members(
+    {"getOriginalData": "get_original_data",
+     "getOriginalSubsetData": "get_original_subset_data",
+     "getXYDataPositions": "get_xy_data_positions",
+     "getXYSubsetDataPositions": "get_xy_subset_data_positions",
+     "getProjectedPointPosition": "get_projected_point_position",
+     "createProjectionAsExampleTable": "create_projection_as_example_table",
+     "createProjectionAsExampleTable3D": "create_projection_as_example_table_3D",
+     "createProjectionAsNumericArray": "create_projection_as_numeric_array",
+     "createProjectionAsNumericArray3D": "create_projection_as_numeric_array_3D",
+     "getOptimalClusters": "get_optimal_clusters"})
 class ScaleScatterPlotData(ScaleData):
     def get_original_data(self, indices):
         data = self.original_data.take(indices, axis = 0)
@@ -1706,15 +1708,3 @@ class ScaleScatterPlotData(ScaleData):
         self.scatterWidget.progressBarFinished()
     
     getOptimalClusters = get_optimal_clusters
-
-ScaleScatterPlotData = deprecated_members({"getOriginalData": "get_original_data",
-                                           "getOriginalSubsetData": "get_original_subset_data",
-                                           "getXYDataPositions": "get_xy_data_positions",
-                                           "getXYSubsetDataPositions": "get_xy_subset_data_positions",
-                                           "getProjectedPointPosition": "get_projected_point_position",
-                                           "createProjectionAsExampleTable": "create_projection_as_example_table",
-                                           "createProjectionAsExampleTable3D": "create_projection_as_example_table_3D",
-                                           "createProjectionAsNumericArray": "create_projection_as_numeric_array",
-                                           "createProjectionAsNumericArray3D": "create_projection_as_numeric_array_3D",
-                                           "getOptimalClusters": "get_optimal_clusters"
-                                           })(ScaleScatterPlotData)

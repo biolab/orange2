@@ -56,6 +56,21 @@ def center(matrix):
                                                                      axis=0)
 
 
+@deprecated_members(
+    {"attractG": "attract_g",
+     "repelG": "repel_g",
+     "forceBalancing": "force_balancing",
+     "forceSigma": "force_sigma",
+     "mirrorSymmetry": "mirror_symmetry",
+     "useGeneralizedEigenvectors": "use_generalized_eigenvectors",
+     "stepsBeforeUpdate": "steps_before_update",
+     "s2nSpread": "s2n_spread",
+     "s2nPlaceAttributes": "s2n_place_attributes",
+     "s2nMixData": "s2n_mix_data",
+     "autoSetParameters": "auto_set_parameters",
+     "classPermutationList": "class_permutation_list",
+     "attrsNum": "attrs_num",
+     "cancelOptimization": "cancel_optimization"})
 class FreeViz:
     """
     Contains an easy-to-use interface to the core of the method, which is
@@ -990,22 +1005,6 @@ class FreeViz:
     findProjection = find_projection
 
 
-FreeViz = deprecated_members({"attractG": "attract_g",
-                              "repelG": "repel_g",
-                              "forceBalancing": "force_balancing",
-                              "forceSigma": "force_sigma",
-                              "mirrorSymmetry": "mirror_symmetry",
-                              "useGeneralizedEigenvectors": "use_generalized_eigenvectors",
-                              "stepsBeforeUpdate": "steps_before_update",
-                              "s2nSpread": "s2n_spread",
-                              "s2nPlaceAttributes": "s2n_place_attributes",
-                              "s2nMixData": "s2n_mix_data",
-                              "autoSetParameters": "auto_set_parameters",
-                              "classPermutationList": "class_permutation_list",
-                              "attrsNum": "attrs_num",
-                              "cancelOptimization": "cancel_optimization"})(FreeViz)
-
-
 @deprecated_keywords({"X": "x", "Y": "y", "Ncomp": "ncomp"})
 def create_pls_projection(x, y, ncomp=2):
     """Predict y from x using first ncomp principal components"""
@@ -1061,8 +1060,10 @@ def create_pls_projection(x, y, ncomp=2):
 
 createPLSProjection = create_pls_projection
 
+
 # #############################################################################
 # class that represents freeviz classifier
+@deprecated_members({"FreeViz": "freeviz"})
 class FreeVizClassifier(classification.Classifier):
     """
     A kNN classifier on the 2D projection of the data, optimized by FreeViz.
@@ -1133,8 +1134,8 @@ class FreeVizClassifier(classification.Classifier):
     def __call__(self, instance, return_type=classification.Classifier.GetValue):
         return self.classifier(instance, return_type)
 
-FreeVizClassifier = deprecated_members({"FreeViz": "freeviz"})(FreeVizClassifier)
 
+@deprecated_members({"FreeViz": "freeviz"})
 class FreeVizLearner(classification.Learner):
     """
     A learner that builds a :class:`FreeVizClassifier` on given data. An
@@ -1164,9 +1165,8 @@ class FreeVizLearner(classification.Learner):
     def __call__(self, instances, weight_id=0):
         return FreeVizClassifier(instances, self.freeviz)
 
-FreeVizLearner = deprecated_members({"FreeViz": "freeviz"})(FreeVizLearner)
 
-
+@deprecated_members({"FreeViz": "freeviz"})
 class S2NHeuristicLearner(classification.Learner):
     """
     This class is not documented yet.
@@ -1191,8 +1191,6 @@ class S2NHeuristicLearner(classification.Learner):
     def __call__(self, instances, weight_id=0):
         return S2NHeuristicClassifier(instances, self.freeviz)
 
-S2NHeuristicLearner = deprecated_members({"FreeViz":
-                                              "freeviz"})(S2NHeuristicLearner)
 
 class Projector(object):
     """

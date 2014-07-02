@@ -37,6 +37,13 @@ The output::
 import Orange
 from Orange import statc
 
+
+@Orange.utils.deprecated_members(
+    {"setKNN": "set_knn",
+     "setExamples": "set_examples",
+     "setDistanceMatrix": "set_distance_matrix",
+     "distanceMatrix": "distance_matrix",
+     "zValues": "z_values"})
 class OutlierDetection:
     """
     A class for detecting outliers.
@@ -135,12 +142,3 @@ class OutlierDetection:
         """
         list = self._average_means()
         return [statc.z(list, e) for e in list]
-
-Orange.utils.deprecated_members(
-    {"setKNN": "set_knn",
-    "setExamples": "set_examples",
-    "setDistanceMatrix": "set_distance_matrix",
-    "distanceMatrix": "distance_matrix",
-    "zValues": "z_values"
-    })(OutlierDetection)
-

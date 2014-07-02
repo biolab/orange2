@@ -1684,6 +1684,25 @@ def _printTreeC45(tree):
 
 import Orange.feature.scoring as fscoring
 
+
+@Orange.utils.deprecated_members(
+    {"mForPruning": "m_pruning",
+     "sameMajorityPruning": "same_majority_pruning",
+     "reliefM": "relief_m",
+     "reliefK": "relief_k",
+     "storeDistributions": "store_distributions",
+     "storeContingencies": "store_contingencies",
+     "storeExamples": "store_instances",
+     "store_examples": "store_instances",
+     "storeNodeClassifier": "store_node_classifier",
+     "worstAcceptable": "worst_acceptable",
+     "minSubset": "min_subset",
+     "maxMajority": "max_majority",
+     "minExamples": "min_instances",
+     "maxDepth": "max_depth",
+     "nodeLearner": "node_learner",
+     "min_examples": "min_instances"},
+    wrap_methods=[])
 class TreeLearner(Orange.core.Learner):
     """
     A classification or regression tree learner. If a set of instances
@@ -2035,26 +2054,6 @@ class TreeLearner(Orange.core.Learner):
             "stop": [ _build_stop, ["max_majority", "min_instances" ] ]
         }
 
-
-
-TreeLearner = Orange.utils.deprecated_members({
-          "mForPruning": "m_pruning",
-          "sameMajorityPruning": "same_majority_pruning",
-          "reliefM": "relief_m",
-          "reliefK": "relief_k",
-          "storeDistributions": "store_distributions",
-          "storeContingencies": "store_contingencies",
-          "storeExamples": "store_instances",
-          "store_examples": "store_instances",
-          "storeNodeClassifier": "store_node_classifier",
-          "worstAcceptable": "worst_acceptable",
-          "minSubset": "min_subset",
-          "maxMajority": "max_majority",
-          "minExamples": "min_instances",
-          "maxDepth": "max_depth",
-          "nodeLearner": "node_learner",
-          "min_examples": "min_instances"
-}, wrap_methods=[])(TreeLearner)
 
 #
 # the following is for the output

@@ -33,6 +33,9 @@ def permute_responses(data):
         perm_data[i].set_class(data[perm[i]].get_class())
     return perm_data
 
+
+@deprecated_members({"nBoot": "n_boot", "nPerm": "n_perm"},
+                    wrap_methods=["__init__"])
 class LassoRegressionLearner(Orange.regression.base.BaseRegressionLearner):
     """Fits the lasso regression model using FISTA
     (Fast Iterative Shrinkage-Thresholding Algorithm).
@@ -178,11 +181,13 @@ class LassoRegressionLearner(Orange.regression.base.BaseRegressionLearner):
             coef0=coef0, coefficients=coefficients, std_errors=std_errors,
             p_vals=p_vals, model=model, mu_x=mu_x)
 
-deprecated_members({"nBoot": "n_boot",
-                    "nPerm": "n_perm"},
-                   wrap_methods=["__init__"],
-                   in_place=True)(LassoRegressionLearner)
 
+@deprecated_members(
+    {"muX": "mu_x",
+     "stdErrorsFixedT": "std_errors",
+     "pVals": "p_vals",
+     "dictModel": "model"},
+    wrap_methods=["__init__"])
 class LassoRegression(Orange.classification.Classifier):
     """Lasso regression predicts the value of the response variable
     based on the values of independent variables.
@@ -306,12 +311,6 @@ class LassoRegression(Orange.classification.Classifier):
     def __str__(self):
         return self.to_string(skip_zero=True)
 
-deprecated_members({"muX": "mu_x",
-                    "stdErrorsFixedT": "std_errors",
-                    "pVals": "p_vals",
-                    "dictModel": "model"},
-                   wrap_methods=["__init__"],
-                   in_place=True)(LassoRegression)
 
 if __name__ == "__main__":
     data = Orange.data.Table('housing')

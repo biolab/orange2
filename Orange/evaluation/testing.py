@@ -10,6 +10,9 @@ TEST_TYPE_SINGLE = 0
 TEST_TYPE_MLC = 1
 TEST_TYPE_MULTITARGET = 2
 
+
+@deprecated_members(
+    {"iterationNumber": "iteration_number", "actualClass": "actual_class"})
 class TestedExample:
     """
     TestedExample stores predictions of different classifiers for a
@@ -80,9 +83,6 @@ class TestedExample:
     def __repr__(self):
         return str(self.__dict__)
 
-TestedExample = deprecated_members({"iterationNumber": "iteration_number",
-                                    "actualClass": "actual_class"
-                                    })(TestedExample)
 
 def mt_vals(vals):
     """
@@ -91,6 +91,13 @@ def mt_vals(vals):
     return [val if val.is_DK() else int(val) if val.variable.var_type == Orange.feature.Type.Discrete
                                             else float(val) for val in vals]
 
+
+@deprecated_members(
+    {"classValues": "class_values",
+     "classifierNames": "classifier_names",
+     "baseClass": "base_class",
+     "numberOfIterations": "number_of_iterations",
+     "numberOfLearners": "number_of_learners"})
 class ExperimentResults(object):
     """
     ``ExperimentResults`` stores results of one or more repetitions of
@@ -246,14 +253,7 @@ class ExperimentResults(object):
     def __repr__(self):
         return str(self.__dict__)
 
-ExperimentResults = deprecated_members({"classValues": "class_values",
-                                        "classifierNames": "classifier_names",
-                                        "baseClass": "base_class",
-                                        "numberOfIterations": "number_of_iterations",
-                                        "numberOfLearners": "number_of_learners"
-})(ExperimentResults)
 
-    
 class Evaluation(object):
     """Common methods for learner evaluation."""
 

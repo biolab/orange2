@@ -72,6 +72,14 @@ def has_discrete_values(domain):
                for at in domain.features)
 
 
+@deprecated_members(
+    {"removeSingular": "remove_singular",
+     "weightID": "weight_id",
+     "stepwiseLR": "stepwise_lr",
+     "addCrit": "add_crit",
+     "deleteCrit": "delete_crit",
+     "numFeatures": "num_features",
+     "removeMissing": "remove_missing"})
 class LogRegLearner(Orange.classification.Learner):
     """ Logistic regression learner.
 
@@ -170,14 +178,6 @@ class LogRegLearner(Orange.classification.Learner):
             lr = learner.fit_model(data, weight)
         return lr
 
-LogRegLearner = deprecated_members({"removeSingular": "remove_singular",
-                                    "weightID": "weight_id",
-                                    "stepwiseLR": "stepwise_lr",
-                                    "addCrit": "add_crit",
-                                    "deleteCrit": "delete_crit",
-                                    "numFeatures": "num_features",
-                                    "removeMissing": "remove_missing"
-                                    })(LogRegLearner)
 
 class UnivariateLogRegLearner(Orange.classification.Learner):
     def __new__(cls, data=None, **argkw):
@@ -215,8 +215,9 @@ class UnivariateLogRegClassifier(Orange.classification.Classifier):
         # classification not implemented yet. For now its use is only to
         # provide regression coefficients and its statistics
         raise NotImplemented
-    
 
+
+@deprecated_members({"removeSingular": "remove_singular"})
 class LogRegLearnerGetPriors(object):
     def __new__(cls, data=None, weight_id=0, **argkw):
         self = object.__new__(cls)
@@ -340,10 +341,8 @@ class LogRegLearnerGetPriors(object):
         return (orig_model, betas_ap)
         #return (bayes_prior,orig_model.beta[examples.domain.class_var],logistic_prior)
 
-LogRegLearnerGetPriors = deprecated_members({"removeSingular":
-                                                 "remove_singular"}
-)(LogRegLearnerGetPriors)
 
+@deprecated_members({"removeSingular": "remove_singular"})
 class LogRegLearnerGetPriorsOneTable:
     @deprecated_keywords({"removeSingular": "remove_singular"})
     def __init__(self, remove_singular=0, **kwds):
@@ -442,10 +441,6 @@ class LogRegLearnerGetPriorsOneTable:
         # vrni originalni model in pripadajoce apriorne niclele
         return (orig_model, betas_ap)
         #return (bayes_prior,orig_model.beta[data.domain.class_var],logistic_prior)
-
-LogRegLearnerGetPriorsOneTable = deprecated_members({"removeSingular":
-                                                         "remove_singular"}
-)(LogRegLearnerGetPriorsOneTable)
 
 
 ######################################
@@ -703,9 +698,12 @@ def get_likelihood(fitter, data):
        return likelihood
     else:
        return -100*len(data)
-        
 
 
+@deprecated_members(
+    {"addCrit": "add_crit",
+     "deleteCrit": "delete_crit",
+     "numFeatures": "num_features"})
 class StepWiseFSS(object):
   """
   A learning algorithm for logistic regression that implements a
@@ -884,11 +882,11 @@ class StepWiseFSS(object):
 
     return attr
 
-StepWiseFSS = deprecated_members({"addCrit": "add_crit",
-                                   "deleteCrit": "delete_crit",
-                                   "numFeatures": "num_features"})(StepWiseFSS)
 
-
+@deprecated_members(
+    {"addCrit": "add_crit",
+     "deleteCrit": "delete_crit",
+     "numFeatures": "num_features"})
 class StepWiseFSSFilter(object):
     def __new__(cls, data=None, **argkw):
         self = object.__new__(cls)
@@ -910,11 +908,6 @@ class StepWiseFSSFilter(object):
         attr = StepWiseFSS(data, add_crit=self.add_crit,
             delete_crit= self.delete_crit, num_features= self.num_features)
         return data.select(Orange.data.Domain(attr, data.domain.class_var))
-
-StepWiseFSSFilter = deprecated_members({"addCrit": "add_crit",
-                                        "deleteCrit": "delete_crit",
-                                        "numFeatures": "num_features"})\
-    (StepWiseFSSFilter)
 
 
 ####################################

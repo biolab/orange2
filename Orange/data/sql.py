@@ -155,6 +155,11 @@ def _connection(uri):
             #print connectionString, dbArgDict
             return (quirks, dbmod.connect(connectionString,**dbArgDict))
 
+
+@deprecated_members(
+    {"discreteNames": "discrete_names",
+     "metaName": "meta_names",
+     "className": "class_name"})
 class SQLReader(object):
     """
     :obj:`~SQLReader` establishes a connection with a database and provides the methods needed
@@ -363,8 +368,6 @@ class SQLReader(object):
             return self.exampleTable
         return None
 
-SQLReader = deprecated_members({"discreteNames":"discrete_names", "metaName":"meta_names"\
-    , "className":"class_name"})(SQLReader)
 
 class SQLWriter(object):
     """

@@ -16,6 +16,8 @@ MSE = core.MeasureAttribute_MSE
 ######
 # from orngEvalAttr.py
 
+
+@deprecated_members({"measure": "score"}, wrap_methods=[])
 class OrderAttributes:
     """Orders features by their scores.
     
@@ -47,9 +49,6 @@ class OrderAttributes:
         measured.sort(lambda x, y: cmp(x[1], y[1]))
         return [x[0] for x in measured]
 
-OrderAttributes = deprecated_members({
-          "measure": "score",
-}, wrap_methods=[])(OrderAttributes)
 
 class Distance(Score):
     """The :math:`1-D` distance is defined as information gain divided

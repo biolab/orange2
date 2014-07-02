@@ -4,6 +4,12 @@ from Orange.core import BayesClassifier as _BayesClassifier
 from Orange.core import BayesLearner as _BayesLearner
 
 
+@Orange.utils.deprecated_members(
+    {"adjustThreshold": "adjust_threshold",
+     "estimatorConstructor": "estimator_constructor",
+     "conditionalEstimatorConstructor": "conditional_estimator_constructor",
+     "conditionalEstimatorConstructorContinuous": "conditional_estimator_constructor_continuous",
+     "weightID": "weight_id"})
 class NaiveLearner(Orange.classification.Learner):
     """
     Probabilistic classifier based on applying Bayes' theorem (from Bayesian
@@ -91,13 +97,6 @@ class NaiveLearner(Orange.classification.Learner):
         if self.adjust_threshold:
             bayes.adjust_threshold = self.adjust_threshold
         return NaiveClassifier(bayes(data, weight))
-NaiveLearner = Orange.utils.deprecated_members(
-{     "adjustThreshold": "adjust_threshold",
-      "estimatorConstructor": "estimator_constructor",
-      "conditionalEstimatorConstructor": "conditional_estimator_constructor",
-      "conditionalEstimatorConstructorContinuous":"conditional_estimator_constructor_continuous",
-      "weightID": "weight_id"
-})(NaiveLearner)
 
 
 class NaiveClassifier(Orange.classification.Classifier):

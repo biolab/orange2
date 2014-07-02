@@ -83,6 +83,13 @@ import random
 from Orange.utils import deprecated_members, deprecated_function_name, \
                         deprecated_keywords
 
+
+@deprecated_members(
+    {"callCompareOn1st": "call_compare_on_1st",
+     "winnerIndex": "winner_index",
+     "randomGenerator": "random_generator",
+     "bestIndex": "best_index"},
+    wrap_methods=["__init__"])
 class BestOnTheFly:
     """
     Finds the optimal object in a sequence of objects. The class is fed the
@@ -157,13 +164,6 @@ class BestOnTheFly:
             return self.best_index
         else:
             return None
-
-BestOnTheFly = deprecated_members({"callCompareOn1st": "call_compare_on_1st",
-                                   "winnerIndex": "winner_index",
-                                   "randomGenerator": "random_generator",
-                                   "bestIndex": "best_index"
-                                   },
-                                   wrap_methods=["__init__"])(BestOnTheFly)
 
 
 @deprecated_keywords({"callCompareOn1st": "call_compare_on_1st"})

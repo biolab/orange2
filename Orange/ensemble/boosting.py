@@ -3,6 +3,12 @@ import Orange.core
 
 _inf = 100000
 
+
+@Orange.utils.deprecated_members(
+    {"examples": "instances",
+     "classVar": "class_var",
+     "weightId": "weigth_id",
+     "origWeight": "orig_weight"})
 class BoostedLearner(Orange.core.Learner):
     """
     Instead of drawing a series of bootstrap samples from the training set,
@@ -26,6 +32,8 @@ class BoostedLearner(Orange.core.Learner):
     :rtype: :class:`Orange.ensemble.boosting.BoostedClassifier` or 
             :class:`Orange.ensemble.boosting.BoostedLearner`
     """
+    @Orange.utils.deprecated_keywords(
+        {"examples": "instances", "weightId": "weigth_id"})
     def __new__(cls, learner, instances=None, weight_id=None, **kwargs):
         self = Orange.core.Learner.__new__(cls, **kwargs)
         if instances is not None:
@@ -39,6 +47,8 @@ class BoostedLearner(Orange.core.Learner):
         self.name = name
         self.learner = learner
 
+    @Orange.utils.deprecated_keywords(
+        {"examples": "instances", "origWeight": "orig_weight"})
     def __call__(self, instances, orig_weight = 0):
         """
         Learn from the given table of data instances.
@@ -95,8 +105,8 @@ class BoostedLearner(Orange.core.Learner):
     def __reduce__(self):
         return type(self), (self.learner,), dict(self.__dict__)
 
-BoostedLearner = Orange.utils.deprecated_members({"examples":"instances", "classVar":"class_var", "weightId":"weigth_id", "origWeight":"orig_weight"})(BoostedLearner)
 
+@Orange.utils.deprecated_members({"classVar": "class_var"})
 class BoostedClassifier(Orange.core.Classifier):
     """
     A classifier that uses a boosting technique. Usually the learner
@@ -123,6 +133,7 @@ class BoostedClassifier(Orange.core.Classifier):
         self.class_var = class_var
         self.__dict__.update(kwds)
 
+    @Orange.utils.deprecated_keywords({"resultType": "result_type"})
     def __call__(self, instance, result_type = Orange.classification.Classifier.GetValue):
         """
         :param instance: instance to be classified.
@@ -155,5 +166,3 @@ class BoostedClassifier(Orange.core.Classifier):
         
     def __reduce__(self):
         return type(self), (self.classifiers, self.name, self.class_var), dict(self.__dict__)
-
-BoostedClassifier = Orange.utils.deprecated_members({"classVar":"class_var", "resultType":"result_type"})(BoostedClassifier)

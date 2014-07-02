@@ -7,6 +7,8 @@ import Orange.misc
 from Orange.utils import deprecated_class_attribute, deprecated_keywords, \
                          deprecated_members
 
+
+@deprecated_members({"returnWhat": "return_what", "object": "learner"})
 class TuneParameters(Orange.classification.Learner):
 
     """.. attribute:: data
@@ -109,11 +111,6 @@ class TuneParameters(Orange.classification.Learner):
         for i in names[:-1]:
             lastobj = getattr(lastobj, i)
         return lastobj, names[-1]
-
-TuneParameters = deprecated_members(
-    {"returnWhat": "return_what",
-     "object": "learner"},
-    )(TuneParameters)
 
 
 class Tune1Parameter(TuneParameters):
@@ -220,6 +217,8 @@ class Tune1Parameter(TuneParameters):
             classifier.setattr("fitted_parameter", bestpar)
             return classifier
 
+
+@deprecated_members({"progressCallback": "progress_callback"})
 class TuneMParameters(TuneParameters):
 
     """The use of :obj:`Orange.optimization.TuneMParameters` differs from 
@@ -308,10 +307,8 @@ class TuneMParameters(TuneParameters):
             classifier.fitted_parameters = bestpar
             return classifier
 
-TuneMParameters = deprecated_members(
-    {"progressCallback": "progress_callback"},
-    )(TuneMParameters)
 
+@deprecated_members({"storeCurve": "store_curve"}, wrap_methods=["__init__"])
 class ThresholdLearner(Orange.classification.Learner):
 
     """:obj:`Orange.optimization.ThresholdLearner` is a class that wraps 
@@ -372,10 +369,6 @@ class ThresholdLearner(Orange.classification.Learner):
         else:
             return ThresholdClassifier(classifier, threshold)
 
-ThresholdLearner = deprecated_members(
-    {"storeCurve": "store_curve"},
-    wrap_methods=["__init__"]
-    )(ThresholdLearner)
 
 class ThresholdClassifier(Orange.classification.Classifier):
 

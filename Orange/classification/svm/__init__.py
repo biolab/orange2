@@ -5,7 +5,7 @@ from operator import add
 
 import Orange.core
 import Orange.data
-import Orange.misc
+import Orange.utils
 import Orange.feature
 
 import kernels
@@ -56,6 +56,11 @@ def is_continuous(feature):
     return isinstance(feature, Orange.feature.Continuous)
 
 
+@Orange.utils.deprecated_members(
+    {"learnClassifier": "learn_classifier",
+     "tuneParameters": "tune_parameters",
+     "kernelFunc": "kernel_func"},
+    wrap_methods=["__init__", "tune_parameters"])
 class SVMLearner(_SVMLearner):
     """
     :param svm_type: the SVM type
@@ -272,14 +277,11 @@ class SVMLearner(_SVMLearner):
         return data.translate(newdomain)
 
 
-SVMLearner = Orange.utils.deprecated_members({
-    "learnClassifier": "learn_classifier",
-    "tuneParameters": "tune_parameters",
-    "kernelFunc": "kernel_func",
-    },
-    wrap_methods=["__init__", "tune_parameters"])(SVMLearner)
-
-
+@Orange.utils.deprecated_members(
+    {"classDistribution": "class_distribution",
+     "getDecisionValues": "get_decision_values",
+     "getModel": "get_model",
+    }, wrap_methods=[])
 class SVMClassifier(_SVMClassifier):
     def __new__(cls, *args, **kwargs):
         if args and isinstance(args[0], _SVMClassifier):
@@ -685,13 +687,6 @@ class SVMClassifier(_SVMClassifier):
 
         model.append("")
         return "\n".join(model)
-
-
-SVMClassifier = Orange.utils.deprecated_members({
-    "classDistribution": "class_distribution",
-    "getDecisionValues": "get_decision_values",
-    "getModel" : "get_model",
-    }, wrap_methods=[])(SVMClassifier)
 
 
 # Backwards compatibility (pickling)
@@ -1178,6 +1173,9 @@ class ScoreSVMWeights(Orange.feature.scoring.Score):
 MeasureAttribute_SVMWeights = ScoreSVMWeights
 
 
+@Orange.utils.deprecated_members(
+    {"getAttrScores": "get_attr_scores"},
+    wrap_methods=["get_attr_scores", "__call__"])
 class RFE(object):
     """
     Iterative feature elimination based on weights computed by a
@@ -1259,11 +1257,6 @@ class RFE(object):
         domain.addmetas(data.domain.getmetas())
         data = Orange.data.Table(domain, data)
         return data
-
-
-RFE = Orange.utils.deprecated_members({
-    "getAttrScores": "get_attr_scores"},
-    wrap_methods=["get_attr_scores", "__call__"])(RFE)
 
 
 def example_table_to_svm_format(table, file):

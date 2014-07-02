@@ -6,6 +6,8 @@ import Orange.core
 import Orange.classification
 
 
+@Orange.utils.deprecated_members(
+    {"weightId": "weight_id", "examples": "instances"})
 class BaggedLearner(Orange.core.Learner):
     """
     BaggedLearner takes a learner and returns a bagged learner, which is
@@ -73,11 +75,11 @@ class BaggedLearner(Orange.core.Learner):
     def __reduce__(self):
         return type(self), (self.learner,), dict(self.__dict__)
 
-BaggedLearner = Orange.utils.deprecated_members(
-    {"weightId": "weight_id", "examples": "instances"}
-    )(BaggedLearner)
 
-
+@Orange.utils.deprecated_members(
+    {"example": "instance",
+     "classVar": "class_var",
+     "resultType": "result_type"})
 class BaggedClassifier(Orange.core.Classifier):
     """
     A classifier that uses a bagging technique. Usually the learner
@@ -166,8 +168,3 @@ class BaggedClassifier(Orange.core.Classifier):
     def __reduce__(self):
         return (type(self), (self.classifiers, self.name, self.class_var),
                 dict(self.__dict__))
-
-BaggedClassifier = Orange.utils.deprecated_members(
-    {"example": "instance", "classVar": "class_var",
-     "resultType": "result_type"}
-    )(BaggedClassifier)

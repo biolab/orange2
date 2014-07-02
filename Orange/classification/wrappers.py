@@ -6,6 +6,10 @@ import Orange.evaluation.scoring
 
 from Orange.utils import deprecated_members
 
+
+@deprecated_members(
+    {"removeThreshold": "remove_threshold",
+     "addThreshold": "add_threshold"})
 class StepwiseLearner(Orange.core.Learner):
   def __new__(cls, data=None, weight_id=None, **kwargs):
       self = Orange.core.Learner.__new__(cls, **kwargs)
@@ -84,8 +88,3 @@ class StepwiseLearner(Orange.core.Learner):
             print "added", bestAttr.name
 
     return self.learner(Orange.data.Table(domain, data), weight_id)
-
-StepwiseLearner = deprecated_members(
-                    {"removeThreshold": "remove_threshold",
-                     "addThreshold": "add_threshold"},
-                    )(StepwiseLearner)
