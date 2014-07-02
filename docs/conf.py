@@ -149,7 +149,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
-if os.environ['SPHINX_HTML_THEME'] == 'orange_web_theme':
+if os.environ.get('SPHINX_HTML_THEME', None) == 'orange_web_theme':
     html_theme = os.environ['SPHINX_HTML_THEME']
 else:
     html_theme = 'orange_theme'
