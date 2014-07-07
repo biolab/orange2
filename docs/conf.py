@@ -12,10 +12,6 @@
 # serve to show the default.
 
 import imp, inspect, sys, os
-from sphinx.writers.html import HTMLWriter
-
-# Rewriting initial header setting from h1 to h2 for html
-HTMLWriter.settings_spec[2][6][2]['default'] = 2
 
 
 class Mock(object):
@@ -150,6 +146,9 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
 if os.environ.get('SPHINX_HTML_THEME', None) == 'orange_web_theme':
+    from sphinx.writers.html import HTMLWriter
+    # Rewriting initial header setting from h1 to h2 for html
+    HTMLWriter.settings_spec[2][6][2]['default'] = 2
     html_theme = os.environ['SPHINX_HTML_THEME']
 else:
     html_theme = 'orange_theme'
