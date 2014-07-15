@@ -157,7 +157,7 @@ class OWDatabasesPack(OWWidget.OWWidget):
         super(OWDatabasesPack, self).onDeleteWidget()
         self._releaselocks()
 
-        if self.reply.isOpen():
+        if self.reply is not None and self.reply.isOpen():
             self.reply.finished.disconnect(self._finished)
             self.reply.error.disconnect(self._error)
             self.reply.close()
