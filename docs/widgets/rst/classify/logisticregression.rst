@@ -12,23 +12,22 @@ Signals
 
 Inputs:
 
-
-   - Examples (ExampleTable)
-      A table with training examples
+   - Data
+      A table with training instances
 
 
 Outputs:
 
    - Learner
-      The logistic regression learning algorithm with settings as specified
-      in the dialog.
+      The logistic regression learning algorithm with settings as
+      specified in the dialog.
 
    - Logistic Regression Classifier
       Trained classifier (a subtype of Classifier)
 
 
 Signal :obj:`Logistic Regression Classifier` sends data only if the learning
-data (signal :obj:`Examples` is present.
+data (signal :obj:`Data`) is present.
 
 Description
 -----------
@@ -44,33 +43,20 @@ classifier (a subtype of a general classifier), built from the training
 examples on the input. If examples are not given, there is no classifier
 on the output.
 
-The widget requires - due to limitations of the learning algorithm - data with
-binary class.
-
 .. image:: images/LogisticRegression.png
    :alt: Logistic Regression Widget
 
-Learner can be given a name under which it will appear in, say,
-:ref:`Test Learners`. The default name is "Logistic Regression".
 
-If :obj:`Stepwise attribute selection` is checked, the learner will
-iteratively add and remove the attributes, one at a time, based on their
-significance. The thresholds for addition and removal of the attribute are
-set in :obj:`Add threshold` and :obj:`Remove threshold`. It is also possible
-to limit the total number of attributes in the model.
+.. rst-class:: stamp-list::
 
-Independent of these settings, the learner will always remove singular
-attributes, for instance the constant attributes or those which can be
-expressed as a linear combination of other attributes.
+   1. Learner can be given a name under which it will appear in, say,
+      :ref:`Test Learners`. The default name is "Logistic regression".
 
-Logistic regression has no internal mechanism for dealing with missing
-values. These thus need to be imputed. The widget offers a number of options:
-it can impute the average value of the attribute, its minimum and maximum or
-train a model to predict the attribute's values based on values of other
-attributes. It can also remove the examples with missing values.
+   2. Set the regularization type (L1 or L2 weight penalty).
 
-Note that there also exist a separate widget for missing data imputation,
-:ref:`Impute`.
+   3. Set error cost paramter (higher cost means less regularization).
+
+   4. Normalize the features before training.
 
 
 Examples
