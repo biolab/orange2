@@ -39,6 +39,10 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
         self.performanceLineCKey.setYAxis(QwtPlot.yRight)
         self.performanceLineCKey.setSymbol(QwtSymbol())
 
+        curves = self.mergedCKeys + self.mergedConvexCKeys
+        for curve in curves:
+            curve.setItemAttribute(QwtPlotItem.AutoScale, True)
+
     def setTestSetData(self, splitByIterations, targetClass):
         self.splitByIterations = splitByIterations
         ## generate the "base" unmodified Lift curves
