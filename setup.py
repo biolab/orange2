@@ -742,8 +742,11 @@ def get_package_data():
 
     return package_data
 
-def hg_revision():
-    # Copied from numpy setup.py and modified to work with hg
+def git_version():
+    """Return the git revision as a string.
+
+    Copied from numpy setup.py
+    """
     def _minimal_ext_cmd(cmd):
         # construct minimal environment
         env = {}
@@ -759,12 +762,12 @@ def hg_revision():
         return out
 
     try:
-        out = _minimal_ext_cmd(['hg', 'ide', '-i'])
-        HG_REVISION = str(out.strip().decode('ascii'))
+        out = _minimal_ext_cmd(['git', 'rev-parse', 'HEAD'])
+        GIT_REVISION = out.strip().decode('ascii')
     except OSError:
-        HG_REVISION = "Unknown"
+        GIT_REVISION = "Unknown"
 
-    return HG_REVISION
+    return GIT_REVISION
 
 def write_version_py(filename='Orange/version.py'):
     # Copied from numpy setup.py
@@ -773,30 +776,31 @@ def write_version_py(filename='Orange/version.py'):
 short_version = '%(version)s'
 version = '%(version)s'
 full_version = '%(full_version)s'
-hg_revision = '%(hg_revision)s'
+git_revision = '%(git_revision)s'
 release = %(isrelease)s
 
 if not release:
     version = full_version
+    short_version += ".dev"
 """
     FULLVERSION = VERSION
-    if os.path.exists('.hg'):
-        HG_REVISION = hg_revision()
+    if os.path.exists('.git'):
+        GIT_REVISION = git_version()
     elif os.path.exists('Orange/version.py'):
         # must be a source distribution, use existing version file
         version = imp.load_source("Orange.version", "Orange/version.py")
-        HG_REVISION = version.hg_revision
+        GIT_REVISION = version.git_revision
     else:
-        HG_REVISION = "Unknown"
+        GIT_REVISION = "Unknown"
 
     if not ISRELEASED:
-        FULLVERSION += '.dev-' + HG_REVISION[:7]
+        FULLVERSION += '.dev-' + GIT_REVISION[:7]
 
     a = open(filename, 'w')
     try:
         a.write(cnt % {'version': VERSION,
-                       'full_version' : FULLVERSION,
-                       'hg_revision' : HG_REVISION,
+                       'full_version': FULLVERSION,
+                       'git_revision': GIT_REVISION,
                        'isrelease': str(ISRELEASED)})
     finally:
         a.close()
