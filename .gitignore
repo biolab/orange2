@@ -1,9 +1,6 @@
 # Ignore files, generated during build.
-^source/.*/ppp$
-^source/.*/px$
-
-
-syntax: glob
+source/**/ppp
+source/**/px
 
 # Ignore dot files.
 .*
