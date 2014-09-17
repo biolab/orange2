@@ -1,20 +1,20 @@
 {% extends "basic/layout.html" %}
 
 {% block extrahead %}
+    <link href='http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Covered+By+Your+Grace' rel='stylesheet' type='text/css'>
     <link rel="stylesheet" href="{{ root_url }}/static/plugins/bootstrap/css/bootstrap.min.css">
     <link id="theme-style" rel="stylesheet" href="{{ root_url }}/static/css/styles.css">
     <link id="theme-style" rel="stylesheet" href="{{ root_url }}/static/css/custom.css">
 {% endblock %}
 
-
 {% block header %}
-	{% include 'header.html' %}
+    {% include 'header.html' %}
     <section id="features" class="features section custom-reduce-padding-2">
         <div class="container">
             <div class="row">
                 <div class="col-md-12 col-sm-12 col-xs-12">
 {% endblock %}
-
 
 {% block footer %}
                 </div>
@@ -23,10 +23,12 @@
     </section><!--//features-->
 	{# {{ super() }} #}
 	{% include 'footer.html' %}
-    <script type="text/javascript" src="{{ pathto('_static/copybutton.js', 1) }}"></script>
     <script type="text/javascript" src="{{ root_url }}/static/plugins/jquery-1.10.2.min.js"></script>
+    <script type="text/javascript" src="{{ root_url }}/static/plugins/jquery-migrate-1.2.1.min.js"></script>
     <script type="text/javascript" src="{{ root_url }}/static/plugins/bootstrap/js/bootstrap.min.js"></script>
+    {# <script type="text/javascript" src="{{ pathto('_static/copybutton.js', 1) }}"></script> #}
     <script type="text/javascript" src="{{ pathto('_static/custom.js', 1) }}"></script>
+    {# <script type="text/javascript" src="{{ pathto('_static/sidebar.js', 1) }}"></script> #}
 {% endblock %}
 
 {% set rellinks = () %}
@@ -36,5 +38,5 @@
 {% block relbar1 %}{% endblock %}
 {% block relbar2 %}  {% endblock %}
 
-{% block sidebar1 %} {% endblock %}
-{% block sidebar2 %} {% endblock %}
+{# {% block sidebar1 %} {% endblock %} #}
+{# {% block sidebar2 %} {% endblock %} #}

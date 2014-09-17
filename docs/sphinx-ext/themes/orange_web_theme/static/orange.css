@@ -46,11 +46,6 @@ div#header {
     padding-top:20px;
 }
 
-#header h1 {
-    margin: 0;
-    font-size: 1px;
-}
-
 div#orangeimg {
     float: left;
 	z-index:20;
@@ -223,11 +218,11 @@ tt {
     font-size: 13px;
 }
 
-h2.title > tt {
+h1.title > tt {
     font-size: 0.9em;
 }
 
-h3 > tt {
+h2 > tt {
     margin-left: 5px;
     font-size: 0.9em;
 }
@@ -285,10 +280,6 @@ dl.class > dt big, dl.class > dt .optional {
     font-weight: normal;
 }
 
-div.body h1 {
-    background-color: #ff8e00; /*#fe6612;*/ border-bottom: 2px #fe6612 solid;
-}
-
 P.section { font-weight: bold }
 
 DL.attributes DT { font-family: monospace; font-weight: bold; margin-top: 1em }
@@ -324,10 +315,6 @@ pre {
     text-align: left;
 }
 
-div.footer {
-    text-align: right;
-}
-
 div.note {
     margin: 20px 0;
     padding-bottom: 0;
@@ -347,7 +334,7 @@ div.sphinxsidebar ul {
     padding-left: 0;
 }
 
-div.sphinxsidebarwrapper h3 {
+div.sphinxsidebarwrapper h2 {
     margin-top: 5px !important;
 }
 
@@ -398,7 +385,7 @@ div.sphinxsidebar input {
     font-size: 13px;
 }
 
-div.sphinxsidebar h3 a {
+div.sphinxsidebar h2 a {
     color: #2F31FF;
 }
 
