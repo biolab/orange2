@@ -150,9 +150,6 @@ if os.environ.get('SPHINX_HTML_THEME', None) == 'orange_web_theme':
 else:
     html_theme = 'orange_theme'
 
-# TODO: Change back, delete
-html_theme = 'orange_web_theme'
-
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -174,9 +171,7 @@ def construe_root_url(hostname='localhost', tls=False):
     return 'http{0}://{1}'.format('s' if tls else '', hostname)
 
 # A dict of values to pass into the template engine’s context for all pages.
-# html_context = {'root_url': construe_root_url('new.orange.biolab.si')}
-# TODO: Change back
-html_context = {'root_url': '/home/crilix/git/orange-web/homepage'}
+html_context = {'root_url': construe_root_url('new.orange.biolab.si')}
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
