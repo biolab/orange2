@@ -146,9 +146,6 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
 if os.environ.get('SPHINX_HTML_THEME', None) == 'orange_web_theme':
-    from sphinx.writers.html import HTMLWriter
-    # Rewriting initial header setting from h1 to h2 for html
-    HTMLWriter.settings_spec[2][6][2]['default'] = 2
     html_theme = os.environ['SPHINX_HTML_THEME']
 else:
     html_theme = 'orange_theme'
@@ -176,7 +173,6 @@ def construe_root_url(hostname='localhost', tls=False):
 # A dict of values to pass into the template engine’s context for all pages.
 html_context = {'root_url': construe_root_url('new.orange.biolab.si')}
 
-
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
 
@@ -203,7 +199,7 @@ html_context = {'root_url': construe_root_url('new.orange.biolab.si')}
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
+html_sidebars = {'**': ['sourcelink.html', 'searchbox.html']}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
