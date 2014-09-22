@@ -13,4 +13,14 @@ $(document).ready(function() {
                 $('html,body').animate({scrollTop: targetOffset}, 100);
         }
     });
+
+    /* sidebar handling so it is aligned with the last element of the nav-bar */
+    function setSidebarRight() {
+        var navbar = $('ul.navbar-nav').find('li.nav-item');
+        var communityItem = navbar[navbar.length - 1];
+        var sidebarRight = $(window).width() - communityItem.offsetLeft - communityItem.offsetWidth + 15;
+        $('div.sphinxsidebar').css('right', sidebarRight);
+    }
+    setSidebarRight()
+    $(window).resize(setSidebarRight);
 });
