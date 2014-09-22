@@ -1,4 +1,4 @@
-{% extends "basic/layout.html" %}
+{% extends "default/layout.html" %}
 
 {% block extrahead %}
     <link href='http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic,700italic' rel='stylesheet' type='text/css'>
@@ -10,30 +10,63 @@
 
 {% block header %}
     {% include 'header.html' %}
-    <section id="features" class="features section custom-reduce-padding-2">
-        <div class="container">
-            <div class="row-fluid">
-                <div class="col-md-10 col-sm-10 col-xs-12">
 {% endblock %}
 
-{% block footer %}
+{%- block content %}
+    <section id="features" class="features section custom-reduce-padding-2">
+        <div class="container">
+            <div class="row">
+
+                {%- block sidebar1 %} {# possible location for sidebar #} {% endblock %}
+
+                <div class="document">
+
+                    {%- if render_sidebar %}
+                        <div class="col-md-9 col-sm-7 col-xs-12">
+                    {% else %}
+                        <div class="col-md-12 col-sm-12 col-xs-12">
+                    {%- endif %}
+
+                    {%- block document %}
+                        <div class="documentwrapper">
+                            {%- if render_sidebar %}
+                                <div class="bodywrapper">
+                            {%- endif %}
+                                <div class="body" role="main">
+                                    {% block body %} {% endblock %}
+                                </div>
+                            {%- if render_sidebar %}
+                                </div>
+                            {%- endif %}
+                        </div><!--//documentwrapper-->
+                    {%- endblock %}
+                    </div>
+
+                    {#- custom made sidebar block #}
+                    {%- block sidebar2 %}
+                        {%- if render_sidebar %}
+                            <div class="col-md-3 col-sm-5 col-xs-12">
+                                <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+                                    <div class="sphinxsidebarwrapper">
+                                    {%- for sidebartemplate in sidebars %}
+                                        {%- include sidebartemplate %}
+                                    {%- endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {%- endif %}
+                    {% endblock %}
+
+                    <div class="clearer"></div>
                 </div>
-                <div class="col-md-2 col-sm-2 col-xs-12">
-                    <!--<p><a class="uplink" href="{{ pathto(master_doc) }}">{{ shorttitle }}</a></p>-->
-                    <!--{{ toc }}-->
-                    {% block sidebar1 %}{% endblock %}
-                </div>
+
             </div><!--//row-->
         </div><!--//container-->
-    </section><!--//features-->
+    </section><!--//features section document-->
+{%- endblock %}
+
+{% block footer %}
 	{% include 'footer.html' %}
-    <script type="text/javascript" src="{{ root_url }}/static/plugins/jquery-1.10.2.min.js"></script>
-    <script type="text/javascript" src="{{ root_url }}/static/plugins/jquery-migrate-1.2.1.min.js"></script>
-    <script type="text/javascript" src="{{ root_url }}/static/plugins/bootstrap/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="{{ pathto('_static/custom.js', 1) }}"></script>
-    {# <script type="text/javascript" src="{{ pathto('_static/copybutton.js', 1) }}"></script> #}
-    {# <script type="text/javascript" src="{{ pathto('_static/sidebar.js', 1) }}"></script> #}
-    {{ super() }}
 {% endblock %}
 
 {% set rellinks = () %}
