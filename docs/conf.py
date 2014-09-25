@@ -142,21 +142,30 @@ pygments_style = 'sphinx'
 
 
 # -- Options for HTML output ---------------------------------------------------
+def construe_root_url(hostname='localhost', tls=False):
+    """Construe an url of the main webapp, which links to the documentation."""
+    return 'http{0}://{1}'.format('s' if tls else '', hostname)
+
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
 if os.environ.get('SPHINX_HTML_THEME', None) == 'orange_web_theme':
     html_theme = os.environ['SPHINX_HTML_THEME']
+
+    # load web theme-specific options
+    html_sidebars = {'**': ['localtoc.html', 'searchbox.html']}
+    html_context = {'root_url': construe_root_url('new.orange.biolab.si')}
 else:
     html_theme = 'orange_theme'
+
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {"collapsiblesidebar": "false"}
+html_theme_options = {}
 
 if 'orange' in html_theme:
-    html_theme_options.update({"orangeheaderfooter": "false"})
+    html_theme_options.update({"orangeheaderfooter": "true"})
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = [os.path.join(PATH, "sphinx-ext", "themes")]
@@ -165,13 +174,8 @@ html_theme_path = [os.path.join(PATH, "sphinx-ext", "themes")]
 # "<project> v<release> documentation".
 html_title = TITLE
 
-
-def construe_root_url(hostname='localhost', tls=False):
-    """Construe an url of the main webapp, which links to the documentation."""
-    return 'http{0}://{1}'.format('s' if tls else '', hostname)
-
 # A dict of values to pass into the template engine’s context for all pages.
-html_context = {'root_url': construe_root_url('new.orange.biolab.si')}
+# html_context = {}
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -199,7 +203,7 @@ html_context = {'root_url': construe_root_url('new.orange.biolab.si')}
 #html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-html_sidebars = {'**': ['sourcelink.html', 'searchbox.html']}
+#html_sidebars = {}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.

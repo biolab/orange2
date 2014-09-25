@@ -71,7 +71,7 @@ form#search-box {
 
 div#underimg {
 	border-bottom: 2px #ffcbaf solid;
-    z-index: 10;
+  z-index: 10;
 	position: relative;
 	height: 1px;
 	margin-left: 10px;
@@ -320,14 +320,20 @@ div.note {
     padding-bottom: 0;
 }
 
+/* -- document -------------------------------------------------------------- */
+
+div.documentwrapper {
+    text-align: left;
+}
+
 /* -- sidebar --------------------------------------------------------------- */
 
 div.sphinxsidebarwrapper {
-    padding: 2px 10px 0 10px;
+    padding: 0 10px;
     border: 1px solid #e8e8e8;
     border-radius: 3px;
     background-color: #f8f8f8;
-    margin: 10px 0 20px 20px;
+    margin: 50px 0 20px;
 }
 
 div.sphinxsidebar ul {
@@ -338,16 +344,29 @@ div.sphinxsidebarwrapper h2 {
     margin-top: 5px !important;
 }
 
+div.sphinxsidebarwrapper h3 {
+    padding: 0;
+}
+
+div.sphinxsidebarwrapper h3 > a {
+    color: #444444;
+}
+
 div.sphinxsidebar {
+    position: fixed;
     font-size: 90%;
     margin-left: 0;
     margin-top: 0;
-    padding: 0 0 10px 30px;
+    padding-left: 20px;
     text-align: left;
-    z-index: 10;
     background-color: white;
-    float: right;
-    width: 250px;
+}
+
+@media (max-width: 767px) {
+    div.sphinxsidebar {
+        position: static;
+        right: none;
+    }
 }
 
 div.sphinxsidebar ul {
@@ -433,6 +452,10 @@ img.image-float-left {
 	float:left;
 }
 
+p.searchtip {
+  width: 170px;
+}
+
 /* Lists for channel signals */
 
 .signal-list {
@@ -490,13 +513,14 @@ dd {
 }
 
 table.widget-catalog-table {
-    background-color: #FBFBFB;
-    border: 1px solid #E8E8E8;
+    background-color: #FFFFFF; /* prev: #FBFBFB */
+    /* border: 1px solid #E8E8E8; */
 }
 
 table.widget-catalog-table td {
     text-align: center;
-    border-bottom: 1px solid #E8E8E8;
+    border: none; /* border-bottom: 1px solid #E8E8E8; */
+    padding: 10px;
 }
 
 table.widget-catalog-table td a img,
