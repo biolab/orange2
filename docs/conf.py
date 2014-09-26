@@ -159,7 +159,6 @@ if os.environ.get('SPHINX_HTML_THEME', None) == 'orange_web_theme':
 else:
     html_theme = 'orange_theme'
 
-
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
