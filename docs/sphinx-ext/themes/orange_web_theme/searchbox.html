@@ -1,11 +1,12 @@
 {%- if builder != "singlehtml" %}
 <div id="searchbox" style="display: none">
   <h3>{{ _('Quick search') }}</h3>
-    <form class="search" action="{{ pathto('search') }}" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="{{ _('Go') }}" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
+    <form role="search" class="search" action="{{ pathto('search') }}" method="get">
+      <div class="form-group">
+        <label class="sr-only screen-reader-text">{{ _('Quick search') }}</label>
+        <input type="search" class="search-field" placeholder="{{ _('Search …') }}" name="q" title="{{ _('Quick search') }}" />
+        <input type="submit" class="search-submit" value="{{ _('Go') }}" />
+      </div>
     </form>
     <p class="searchtip" style="font-size: 90%">
     {{ _('Enter search terms or a module, class or function name.') }}
