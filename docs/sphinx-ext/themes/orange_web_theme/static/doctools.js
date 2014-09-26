@@ -164,7 +164,6 @@ var Documentation = {
    * highlight the search words provided in the url in the text
    */
   highlightSearchWords : function() {
-    console.log('debugging');
     var params = $.getQueryParameters();
     var terms = (params.highlight) ? params.highlight[0].split(/\s+/) : [];
     if (terms.length) {
@@ -235,6 +234,5 @@ var Documentation = {
 _ = Documentation.gettext;
 
 $(document).ready(function() {
-  console.log('two times');
   Documentation.init();
 });
