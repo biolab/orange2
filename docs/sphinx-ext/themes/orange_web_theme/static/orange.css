@@ -66,7 +66,7 @@ div#orangeimg img {
 
 form#search-box {
     text-align: right;
-	margin-bottom: 16px;
+	 margin-bottom: 16px;
 }
 
 div#underimg {
@@ -340,6 +340,18 @@ div.sphinxsidebar ul {
     padding-left: 0;
 }
 
+div.sphinxsidebar ul, div.sphinxsidebar ol {
+    padding-left: 20px;
+}
+
+div.sphinxsidebarwrapper ul li {
+    list-style-type: none;
+}
+
+div.sphinxsidebarwrapper ul li ul li {
+    list-style-type: square;
+}
+
 div.sphinxsidebarwrapper h2 {
     margin-top: 5px !important;
 }
@@ -353,6 +365,9 @@ div.sphinxsidebarwrapper h3 > a {
 }
 
 div.sphinxsidebar {
+    width: inherit;
+    min-width: 250px;
+    max-width: 320px;
     position: fixed;
     font-size: 90%;
     margin-left: 0;
@@ -364,6 +379,7 @@ div.sphinxsidebar {
 
 @media (max-width: 767px) {
     div.sphinxsidebar {
+        padding-left: 1px;
         position: static;
         right: none;
     }
@@ -398,10 +414,31 @@ div.sphinxsidebar form {
     margin-top: 10px;
 }
 
-div.sphinxsidebar input {
-    border: 1px solid #e0e0e0;
-    font-family: sans-serif;
-    font-size: 13px;
+div.sphinxsidebar button, div.sphinxsidebar #searchbox input[type="submit"] {
+  border: 1px solid;
+  border-color: #aaa #bbb #bbb;
+  border-radius: 3px;
+  background: #e6e6e6;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 15px 17px rgba(255, 255, 255, 0.5), inset 0 -5px 12px rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, .8);
+  cursor: pointer; /* Improves usability and consistency of cursor style between image-type 'input' and others */
+  -webkit-appearance: button; /* Corrects inability to style clickable 'input' types in iOS */
+  font-size: 12px;
+  font-size: 1.2rem;
+  line-height: 14px;
+  padding: .6em 1em .4em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  width: auto;
+}
+
+div.sphinxsidebar input[type="search"], div.sphinxsidebar textarea {
+  font-size: 14px;
+  width: 75%;
+  font-weight: normal;
+  color: #666;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 3px;
 }
 
 div.sphinxsidebar h2 a {
