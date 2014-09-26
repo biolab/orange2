@@ -154,7 +154,8 @@ if os.environ.get('SPHINX_HTML_THEME', None) == 'orange_web_theme':
 
     # load web theme-specific options
     html_sidebars = {'**': ['localtoc.html', 'searchbox.html']}
-    html_context = {'root_url': '/home/crilix/git/orange-web/homepage'}
+    html_context = {'root_url': '/home/crilix/git/orange-web/homepage',
+                    'docs_root_url': 'docs.orange.biolab.si'}
 else:
     html_theme = 'orange_theme'
 
