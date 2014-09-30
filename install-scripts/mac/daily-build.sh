@@ -4,7 +4,7 @@
 #
 
 function print_usage() {
-    echo 'nightly-build.sh [--bootstrap] [--repo HG_REPO] [--template TEMPLATE_URL] PUBLISH_DIR
+    echo 'daily-build.sh [--bootstrap] [--repo GIT_REPO] [--template TEMPLATE_URL] PUBLISH_DIR
 
 Note: This script should be run from the root source directory.
 
@@ -12,7 +12,7 @@ Options:
 
     --bootstrap              Bootstrap the build process (if present this flag must be the
                              in first position)
-    -R --repo                HG repository from which to clone/pull the sources in bootstrap mode
+    -R --repo                GIT repository from which to clone/pull the sources in bootstrap mode
     --template TEMPLATE_URL  Path or url to an application template as build
                              by "build-osx-app-template.sh. If not provided
                              a default one will be downloaded.
@@ -36,6 +36,10 @@ while [[ ${1:0:1} = "-" ]]; do
             TEMPLATE_URL=$2
             shift 2
             ;;
+        -h|--help)
+            print_usage
+            exit 0
+            ;;
         -*)
             echo "Invalid option $1"
             print_usage
@@ -44,7 +48,7 @@ while [[ ${1:0:1} = "-" ]]; do
     esac
 done
 
-REPO=${REPO:-"https://bitbucket.org/biolab/orange"}
+REPO=${REPO:-"https://github.com/biolab/orange.git"}
 
 PUBLISH_DIR=$1
 
@@ -55,17 +59,15 @@ TEMPLATE_URL=${TEMPLATE_URL:-"http://orange.biolab.si/download/bundle-templates/
 if [[ $BOOTSTRAP ]]; then
     mkdir -p "$WORK_DIR"
     cd "$WORK_DIR"
-    hg clone "$REPO" orange
+    git clone "$REPO" orange
     cd orange
     ./install-scripts/mac/daily-build.sh --template "$TEMPLATE_URL" "$PUBLISH_DIR"
     exit 0
 fi
 
-
 VER=$(python setup.py --version)
 
-NODE=$(hg parent --template={node})
-REV=$(hg parent --template={rev})
+REV=$(git rev-parse --short HEAD)
 
 ./install-scripts/mac/build-osx-app.sh --template "$TEMPLATE_URL" dist/Orange.app
 
