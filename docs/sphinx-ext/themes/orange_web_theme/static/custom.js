@@ -32,11 +32,16 @@ $(document).ready(function() {
             $('div.documentwrapper').css('width', docWrapWidth);
 
             /* if sidebar is too long, return to static */
-            if ( $(window).height() - $('div.sphinxsidebar').height() - $('header#top').height() < 50 ) {
+            if ($(window).height() - $('div.sphinxsidebar').height() - $('header#top').height() < 50 ) {
                 $('div.sphinxsidebar').css({'position': 'absolute', 'width': $('div.sphinxsidebar').parent().width()});
             }
         }
     }
-    setSidebar()
-    $(window).resize(setSidebar);
+    setSidebar();
+
+    /* resize handler */
+    function handleResizing() {
+        setSidebar();
+    }
+    $(window).resize(handleResizing);
 });
