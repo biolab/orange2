@@ -3,9 +3,11 @@ cdd e:\orange\scripts
  
 
 REM call hg clone https://bitbucket.org/biolab/orange snapshot
+REM call git clone https://github.com/biolab/orange.git snapshot
 cdd snapshot
-call hg pull
-call hg update --clean
+call git reset --hard HEAD
+call git fetch
+call git merge FETCH_HEAD --ff-only
 
 
 REM call hg clone https://bitbucket.org/biolab/orange-bioinformatics Bioinformatics
