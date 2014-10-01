@@ -29,7 +29,8 @@ $(document).ready(function() {
             /* prevent the documentwrapper from being too big */
             (docWrapParentWidth - sidebarRight < $('div.sphinxsidebar').width()) ?
             docWrapWidth = docWrapParentWidth : docWrapWidth = $('div.documentwrapper').parent().width() - sidebarRight;
-            $('div.documentwrapper').css('width', docWrapWidth);
+//             $('div.documentwrapper').css('width', docWrapWidth);
+            $('div.documentwrapper').css('width', 'inherit');
 
             /* if sidebar is too long, return to static */
             if ($(window).height() - $('div.sphinxsidebar').height() - $('header#top').height() < 50 ) {
