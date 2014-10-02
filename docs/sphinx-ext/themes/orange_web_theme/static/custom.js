@@ -16,25 +16,16 @@ $(document).ready(function() {
 
     /* sidebar handling so it is aligned with the last element of the nav-bar */
     function setSidebar() {
-        $('div.sphinxsidebar').removeAttr('style');
+        var $sphinxsidebar = $('div.sphinxsidebar').removeAttr('style');
         if ($(window).width() > 767) {
-            var navbar = $('ul.navbar-nav').find('li.nav-item');
-            var communityItem = navbar[navbar.length - 1];
-            var sidebarRight = $(window).width() - communityItem.offsetLeft - communityItem.offsetWidth + 15;
-            $('div.sphinxsidebar').css('right', sidebarRight);
-
-            /* set documentwrapper relative to new sphinxsidebar width */
-            var docWrapWidth;
-            var docWrapParentWidth = $('div.documentwrapper').parent().width();        
-            /* prevent the documentwrapper from being too big */
-            (docWrapParentWidth - sidebarRight < $('div.sphinxsidebar').width()) ?
-            docWrapWidth = docWrapParentWidth : docWrapWidth = $('div.documentwrapper').parent().width() - sidebarRight;
-//             $('div.documentwrapper').css('width', docWrapWidth);
-            $('div.documentwrapper').css('width', 'inherit');
+            var $navbar = $('ul.navbar-nav').find('li.nav-item');
+            var $communityItem = $navbar[$navbar.length - 1];
+            var sidebarRight = $(window).width() - $communityItem.offsetLeft - $communityItem.offsetWidth + 15;
+            $sphinxsidebar.css('right', sidebarRight);
 
             /* if sidebar is too long, return to static */
-            if ($(window).height() - $('div.sphinxsidebar').height() - $('header#top').height() < 50 ) {
-                $('div.sphinxsidebar').css({'position': 'absolute', 'width': $('div.sphinxsidebar').parent().width()});
+            if ($(window).height() - $sphinxsidebar.height() - $('header#top').height() < 35 ) {
+                $sphinxsidebar.removeAttr('style');
             }
         }
     }
