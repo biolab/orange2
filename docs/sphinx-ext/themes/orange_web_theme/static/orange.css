@@ -128,7 +128,6 @@ div.body p {
 
 div#main, div#footer {
     float: none;
-	margin-top: 8px;
 }
 
 div#maininner {
@@ -313,6 +312,7 @@ pre {
     border-left: none;
     border-right: none;
     text-align: left;
+    overflow-x: scroll;
 }
 
 div.note {
@@ -448,6 +448,10 @@ div.sphinxsidebar h2 a {
 img {
   border: 0;
 	max-width: 100%;
+}
+
+.section p {
+  font-weight: 300;
 }
 
 .section > img:not([class]) {
@@ -661,4 +665,19 @@ table.widget-catalog-table.widget-category-unsupervised object,
 object.widget-category-unsupervised.widget-icon {
     background: #CAE1EF;
     background: radial-gradient(#D4E5EF 0%, #D4E5EF 50%, #BBD8E9 100%);
+}
+
+
+/* custom */
+.footer-append-container {
+    min-height: 100%;
+    margin-bottom: -53px;
+}
+#main {
+    overflow: auto;
+    padding-bottom: 50px;
+}
+#main.container {
+    padding-right: 0;
+    padding-left: 0;
 }
