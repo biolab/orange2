@@ -10,6 +10,7 @@ from PyQt4.QtNetwork import (
     QNetworkAccessManager, QNetworkDiskCache, QNetworkRequest, QNetworkReply
 )
 
+from Orange.utils import serverfiles
 from OWWidget import *
 from OWItemModels import VariableListModel
 from OWConcurrent import Future, FutureWatcher
@@ -406,6 +407,12 @@ class OWImageViewer(OWWidget):
 
         self.loader = ImageLoader(self)
 
+        # Add the "orange-sf" path prefix for locating files
+        # distributed using `serverfiles`.
+        sfdir = serverfiles.localpath()
+        if sfdir not in [unicode(p) for p in QDir.searchPaths("orange-sf")]:
+            QDir.addSearchPath("orange-sf", sfdir)
+
     def setData(self, data):
         self.data = data
         self.closeContext("")
@@ -502,12 +509,6 @@ class OWImageViewer(OWWidget):
             self.thumbnailWidget.reflow(width)
             self.thumbnailWidget.setPreferredWidth(width)
             self.sceneLayout.activate()
-
-    def filenameFromValue(self, value):
-        variable = value.variable
-        origin = variable.attributes.get("origin", "")
-        name = str(value)
-        return os.path.join(origin, name)
 
     def urlFromValue(self, value):
         variable = value.variable
