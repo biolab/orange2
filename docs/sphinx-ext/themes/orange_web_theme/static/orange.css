@@ -128,7 +128,6 @@ div.body p {
 
 div#main, div#footer {
     float: none;
-	margin-top: 8px;
 }
 
 div#maininner {
@@ -313,6 +312,7 @@ pre {
     border-left: none;
     border-right: none;
     text-align: left;
+    overflow-x: scroll;
 }
 
 div.note {
@@ -365,24 +365,28 @@ div.sphinxsidebarwrapper h3 > a {
 }
 
 div.sphinxsidebar {
-    width: inherit;
-    min-width: 250px;
-    max-width: 320px;
-    position: fixed;
-    font-size: 90%;
-    margin-left: 0;
-    margin-top: 0;
-    padding-left: 20px;
-    text-align: left;
-    background-color: white;
+  width: inherit;
+  min-width: 250px;
+  max-width: 320px;
+  position: fixed;
+  font-size: 90%;
+  margin-left: 0;
+  margin-top: 0;
+  padding-left: 20px;
+  text-align: left;
 }
 
 @media (max-width: 767px) {
-    div.sphinxsidebar {
-        padding-left: 1px;
-        position: static;
-        right: none;
-    }
+  div.sphinxsidebar {
+    padding-left: 1px;
+    position: static;
+    left: 10px;
+  }
+}
+@media (min-width: 768px) {
+  div.documentwrapper {
+    width: 95%;
+  }
 }
 
 div.sphinxsidebar ul {
@@ -396,7 +400,7 @@ div.sphinxsidebarwrapper > ul {
 
 div.sphinxsidebarwrapper > ul > li > a {
     font-weight: normal;
-    font-size: 13px;
+    font-size: 14px;
 }
 
 div.sphinxsidebar ul ul,
@@ -446,8 +450,18 @@ div.sphinxsidebar h2 a {
 }
 
 img {
-    border: 0;
+  border: 0;
 	max-width: 100%;
+}
+
+.section p {
+  font-weight: 300;
+}
+
+.section > img:not([class]) {
+  width: inherit;
+  height: auto;
+  margin: 10px 0;
 }
 
 div#sidebarbutton {
@@ -655,4 +669,19 @@ table.widget-catalog-table.widget-category-unsupervised object,
 object.widget-category-unsupervised.widget-icon {
     background: #CAE1EF;
     background: radial-gradient(#D4E5EF 0%, #D4E5EF 50%, #BBD8E9 100%);
+}
+
+
+/* custom */
+.footer-append-container {
+    min-height: 100%;
+    margin-bottom: -53px;
+}
+#main {
+    overflow: auto;
+    padding-bottom: 50px;
+}
+#main.container {
+    padding-right: 0;
+    padding-left: 0;
 }

@@ -13,57 +13,63 @@
     {% include 'header.html' %}
 {% endblock %}
 
+
+
 {%- block content %}
-    <section id="features" class="features section custom-reduce-padding-2">
-        <div class="container">
-            <div class="row">
+    <div class="footer-append-container">
+        <div id="main" class="container clear-top">
+            <section id="features" class="features section custom-reduce-padding-2">
+                <div class="container">
+                    <div class="row">
 
-                {%- block sidebar1 %} {# possible location for sidebar #} {% endblock %}
+                        {%- block sidebar1 %} {# possible location for sidebar #} {% endblock %}
 
-                <div class="document">
+                        <div class="document">
 
-                    {%- if render_sidebar %}
-                        <div class="col-md-9 col-sm-7 col-xs-12">
-                    {% else %}
-                        <div class="col-md-12 col-sm-12 col-xs-12">
-                    {%- endif %}
-
-                    {%- block document %}
-                        <div class="documentwrapper">
                             {%- if render_sidebar %}
-                                <div class="bodywrapper">
+                                <div class="col-md-9 col-sm-7 col-xs-12">
+                            {% else %}
+                                <div class="col-md-12 col-sm-12 col-xs-12">
                             {%- endif %}
-                                <div class="body" role="main">
-                                    {% block body %} {% endblock %}
-                                </div>
-                            {%- if render_sidebar %}
-                                </div>
-                            {%- endif %}
-                        </div><!--//documentwrapper-->
-                    {%- endblock %}
-                    </div>
 
-                    {#- custom made sidebar block #}
-                    {%- block sidebar2 %}
-                        {%- if render_sidebar %}
-                            <div class="col-md-3 col-sm-5 col-xs-12">
-                                <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-                                    <div class="sphinxsidebarwrapper">
-                                    {%- for sidebartemplate in sidebars %}
-                                        {%- include sidebartemplate %}
-                                    {%- endfor %}
-                                    </div>
-                                </div>
+                            {%- block document %}
+                                <div class="documentwrapper">
+                                    {%- if render_sidebar %}
+                                        <div class="bodywrapper">
+                                    {%- endif %}
+                                        <div class="body" role="main">
+                                            {% block body %} {% endblock %}
+                                        </div>
+                                    {%- if render_sidebar %}
+                                        </div>
+                                    {%- endif %}
+                                </div><!--//documentwrapper-->
+                            {%- endblock %}
                             </div>
-                        {%- endif %}
-                    {% endblock %}
 
-                    <div class="clearer"></div>
-                </div>
+                            {#- custom made sidebar block #}
+                            {%- block sidebar2 %}
+                                {%- if render_sidebar %}
+                                    <div class="col-md-3 col-sm-5 col-xs-12">
+                                        <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+                                            <div class="sphinxsidebarwrapper">
+                                            {%- for sidebartemplate in sidebars %}
+                                                {%- include sidebartemplate %}
+                                            {%- endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {%- endif %}
+                            {% endblock %}
 
-            </div><!--//row-->
-        </div><!--//container-->
-    </section><!--//features section document-->
+                            <div class="clearer"></div>
+                        </div>
+
+                    </div><!--//row-->
+                </div><!--//container-->
+            </section><!--//features section document-->
+        </div>
+    </div>
 {%- endblock %}
 
 {% block footer %}
