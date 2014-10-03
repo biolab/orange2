@@ -14,7 +14,7 @@ if { ! mount -t fusefs | grep "$PUBLISH_DIR" > /dev/null; } then
     sleep 5
 fi
 
-curl --silent --fail -O https://bitbucket.org/biolab/orange/raw/default/install-scripts/mac/daily-build.sh
+curl --silent --fail --location --max-redirs 3 -O https://github.com/biolab/orange/raw/master/install-scripts/mac/daily-build.sh
 
 mkdir -p $(dirname "$LOG")
 

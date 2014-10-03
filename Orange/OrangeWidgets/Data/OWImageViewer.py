@@ -1,5 +1,6 @@
 import weakref
 import logging
+import itertools
 from xml.sax.saxutils import escape
 from collections import namedtuple
 from functools import partial
@@ -10,6 +11,7 @@ from PyQt4.QtNetwork import (
     QNetworkAccessManager, QNetworkDiskCache, QNetworkRequest, QNetworkReply
 )
 
+from Orange.utils import serverfiles
 from OWWidget import *
 from OWItemModels import VariableListModel
 from OWConcurrent import Future, FutureWatcher
@@ -220,8 +222,11 @@ class ThumbnailWidget(QGraphicsWidget):
 
         items = [layout.itemAt(i) for i in range(layout.count())]
 
-        # re-add the items them back in updated positions
-        # (QGraphicsGridLayout takes care of moving existing items)
+        # remove all items from the layout, then re-add them back in
+        # updated positions
+        for item in items:
+            layout.removeItem(item)
+
         for i, item in enumerate(items):
             layout.addItem(item, i // ncol, i % ncol)
 
@@ -406,6 +411,12 @@ class OWImageViewer(OWWidget):
 
         self.loader = ImageLoader(self)
 
+        # Add the "orange-sf" path prefix for locating files
+        # distributed using `serverfiles`.
+        sfdir = serverfiles.localpath()
+        if sfdir not in [unicode(p) for p in QDir.searchPaths("orange-sf")]:
+            QDir.addSearchPath("orange-sf", sfdir)
+
     def setData(self, data):
         self.data = data
         self.closeContext("")
@@ -502,12 +513,6 @@ class OWImageViewer(OWWidget):
             self.thumbnailWidget.reflow(width)
             self.thumbnailWidget.setPreferredWidth(width)
             self.sceneLayout.activate()
-
-    def filenameFromValue(self, value):
-        variable = value.variable
-        origin = variable.attributes.get("origin", "")
-        name = str(value)
-        return os.path.join(origin, name)
 
     def urlFromValue(self, value):
         variable = value.variable
@@ -693,6 +698,8 @@ class ImageLoader(QObject):
         # Future yielding a QNetworkReply when finished.
         reply = self._netmanager.get(request)
         future._reply = reply
+        # Redirection counter
+        redir_count = itertools.count()
 
         def on_reply_ready(reply, future):
             if reply.error() == QNetworkReply.OperationCanceledError:
@@ -704,6 +711,21 @@ class ImageLoader(QObject):
                 # XXX Maybe convert the error into standard
                 # http and urllib exceptions.
                 future.set_exception(Exception(reply.errorString()))
+                return
+
+            # Handle a possible redirection
+            location = reply.attribute(
+                QNetworkRequest.RedirectionTargetAttribute)
+            location = location.toPyObject()
+            if location is not None and next(redir_count) <= 1:
+                location = reply.url().resolved(location)
+                # Retry the original request with a new url.
+                request = QNetworkRequest(reply.request())
+                request.setUrl(location)
+                newreply = self._netmanager.get(request)
+                future._reply = newreply
+                newreply.finished.connect(
+                    partial(on_reply_ready, newreply, future))
                 return
 
             reader = QImageReader(reply)

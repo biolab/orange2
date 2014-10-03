@@ -1,19 +1,16 @@
-REM Popravki za doma:
-REM - set /r filenames.set
-REM - alias vcexpress in ostalo za vc8
-REM - pythonbase
 
-REM # set paths to orange sources and format date
+REM # set paths
 set SCRIPTDIR=%_CWD
-set TMPDIR=%SCRIPTDIR\%1
-set SOURCEDIR=%TMPDIR\source
+set WORKDIR=%SCRIPTDIR
+set DISTDIR=%SCRIPTDIR\dist
+set LOGDIR=%SCRIPTDIR\logs
 
 set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
 set nicedate=%_DAY %@INSTR[%@EVAL[3*%_MONTH-3],3,JanFebMarAprMayJunJulAugSepOctNovDec] %_YEAR
 
 echo "date: " %daystr
 
-REM # error signalling
+REM # error signaling
 REM set MAIL_TO="tomaz.curk@fri.uni-lj.si,janez.demsar@fri.uni-lj.si"
 set MAIL_TO="tomaz.curk@fri.uni-lj.si"
 set ERRORS=0

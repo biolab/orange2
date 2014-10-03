@@ -9,11 +9,10 @@ set THIRD_PARTY_DIR=%2
 set PURE_ORANGE=%3
 set ORANGE_W_PYTHON=%4
 
-cdd %TMPDIR
-del /syeqtx binaries
-copy /S %SCRIPTDIR\binaries.precompiled %TMPDIR\binaries
+set ORANGEDIR=%WORKDIR\orange
 
-cdd %TMPDIR\source
+cdd %ORANGEDIR\source
+
 call _pyxtract.bat
 
 for %pyver in (%PYTHONVERSIONS) do (
@@ -22,14 +21,14 @@ for %pyver in (%PYTHONVERSIONS) do (
   echo *** Compiling for Python %pyver
 
   set npver=%@LEFT[1,%pyver].%@RIGHT[-1,%pyver]
-  cdd %TMPDIR\source
-  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-core-compile-%npver.log
+  cdd %ORANGEDIR\source
+  set COMPILELOG=%LOGDIR\win-%PKG_TYPE-core-compile-%npver.log
   if exist %COMPILELOG del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   set OBJPOSTFIX=-%PKG_TYPE%
   REM # we expect Python to be on same drive
   set PYORANGEDIR=%PYTHON\lib\site-packages\Orange
-  set PARTY=%SCRIPTDIR\%THIRD_PARTY_DIR\%pyver
+  set PARTY=%WORKDIR\%THIRD_PARTY_DIR\%pyver
 
   REM # compile
   pushd
@@ -41,11 +40,11 @@ for %pyver in (%PYTHONVERSIONS) do (
 
   if %pyver == 27 (
   	echo *** Compiling orangeqt for Python 2.7 only ***
-    cdd %TMPDIR\source\orangeqt
+    cdd %ORANGEDIR\source\orangeqt
 	echo *deleting build directory*
     if direxist build rd /q/s build
     mkdir build
-    cdd  %TMPDIR\source\orangeqt\build
+    cdd  %ORANGEDIR\source\orangeqt\build
     call %QTVARS
 	echo *running cmake*
     call cmake -DCMAKE_BUILD_TYPE=Release -G "NMake Makefiles" ..
@@ -56,26 +55,26 @@ for %pyver in (%PYTHONVERSIONS) do (
     REM #break_on_error
   )
 
-  REM # Delete existing orangeqt.pyd in TMPDIR (It will be moved into place later)
-  if exist %TMPDIR\Orange\orangeqt.pyd del /q %TMPDIR\Orange\orangeqt.pyd
+  REM # Delete existing orangeqt.pyd in ORANGEDIR (It will be moved into place later)
+  if exist %ORANGEDIR\Orange\orangeqt.pyd del /q %ORANGEDIR\Orange\orangeqt.pyd
 
   cdd %PYORANGEDIR
   except (*_d.pyd) for %pydf in (*.pyd) do (
-    if exist %TMPDIR\Orange\%pydf del /q %TMPDIR\Orange\%pydf
-    copy %pydf %TMPDIR\Orange\
+    if exist %ORANGEDIR\Orange\%pydf del /q %ORANGEDIR\Orange\%pydf
+    copy %pydf %ORANGEDIR\Orange\
   )
 
   if direxist %PARTY (
     REM # pack
-    cdd %TMPDIR
-    rem "Make sure the egg.info dir is in TMPDIR
+    cdd %ORANGEDIR
+    rem "Make sure the egg.info dir is in ORANGEDIR
     %PYTHON\python.exe setup.py egg_info
 
     cdd %SCRIPTDIR
-    set COMMON_NSI_OPTIONS=/DORANGEDIR=%TMPDIR\Orange /DPYVER=%pyver /DNPYVER=%npver /DPARTY=%PARTY /DQTVER=%@SUBSTR[%THIRD_PARTY_DIR,2,2] install3.nsi
-    nsis /O%TMPDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-py%npver.log /DOUTFILENAME="%TMPDIR\%PURE_ORANGE-py%npver.exe" %COMMON_NSI_OPTIONS %+
+    set COMMON_NSI_OPTIONS=/DORANGEDIR=%ORANGEDIR\Orange /DPYVER=%pyver /DNPYVER=%npver /DPARTY=%PARTY /DQTVER=%@SUBSTR[%THIRD_PARTY_DIR,2,2] install3.nsi
+    nsis /O%LOGDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-py%npver.log /DOUTFILENAME="%DISTDIR\%PURE_ORANGE-py%npver.exe" %COMMON_NSI_OPTIONS %+
 	break_on_error
-    nsis /O%TMPDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-w-python-py%npver.log /DCOMPLETE /DOUTFILENAME="%TMPDIR\%ORANGE_W_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
+    nsis /O%LOGDIR\win-%PKG_TYPE-core-packWithNSIS-%THIRD_PARTY_DIR-w-python-py%npver.log /DCOMPLETE /DOUTFILENAME="%DISTDIR\%ORANGE_W_PYTHON-py%npver.exe" %COMMON_NSI_OPTIONS
 	break_on_error
   ) else (
     echo installation file was not built because no 3rd-party software available

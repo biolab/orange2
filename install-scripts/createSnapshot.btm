@@ -6,6 +6,7 @@ rem #    PUBLISH_URL - url (user@host) of the publish server
 rem #    ID_KEY - identity key file for logging into publish server
 
 call updateSetVariables__.btm snapshot
+
 set WIN_SNAPSHOT=orange-win-snapshot-hg-%daystr
 set WIN_PYTHON_SNAPSHOT=orange-win-w-python-snapshot-hg-%daystr
 set ADDON_BIOINFORMATICS_SNAPSHOT=orangeAddOn-bioinformatics-snapshot-hg-%daystr
@@ -23,21 +24,16 @@ call createCommonAddOns__.btm snapshot %ADDON_BIOINFORMATICS_SNAPSHOT %ADDON_TEX
 break_on_error
 
 rem # pack sources
-cdd %TMPDIR
-del /syeqtx sourcestopack
-
-call hg clone . sourcestopack
-
-cd sourcestopack
+cdd %WORKDIR\orange
 
 rem # build source distribution
 e:\Python27\python.exe setup.py sdist
 
 break_on_error
 
-move /z dist\Orange-?.*.zip %TMPDIR\%SOURCE_SNAPSHOT
+move /z dist\Orange-?.*.zip %DISTDIR\%SOURCE_SNAPSHOT
 
-cd %TMPDIR
+cd %DISTDIR%
 rem # remember new filenames
 call "%SCRIPTDIR\updateVersionsPy__.btm" filenames_win.set
 

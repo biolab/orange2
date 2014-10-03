@@ -1,33 +1,35 @@
 
 cdd e:\orange\scripts
- 
 
-REM call hg clone https://bitbucket.org/biolab/orange snapshot
-cdd snapshot
+REM call git clone https://github.com/biolab/orange.git
+cdd orange
+call git reset --hard HEAD
+call git fetch
+call git merge FETCH_HEAD --ff-only
+
+cdd e:\orange\scripts
+
+REM call hg clone https://bitbucket.org/biolab/orange-bioinformatics
+cdd orange-bioinformatics
 call hg pull
 call hg update --clean
 
+cdd  e:\orange\scripts
 
-REM call hg clone https://bitbucket.org/biolab/orange-bioinformatics Bioinformatics
-cdd Bioinformatics
-call hg pull
-call hg update --clean
-
-cdd  e:\orange\scripts\snapshot
-
-REM call hg clone https://bitbucket.org/biolab/orange-addon-text Text
-cdd Text
+REM call hg clone https://bitbucket.org/biolab/orange-text
+cdd orange-text
 call hg pull 
 call hg update --clean
 
 cdd e:\orange\scripts
 
-copy /q snapshot\LICENSES license.txt
+copy /q orange\LICENSES license.txt
 
-copy /q snapshot\install-scripts\* .
+REM # copy install scripts into this directory
+copy /q orange\install-scripts\* .
 
 REM # 3rd party packages should already be in qt44-3rdparty\%PYVER\ directories
 
-copy /q /s snapshot\install-scripts\qt44-3rdparty qt44-3rdparty
+copy /q /s orange\install-scripts\qt44-3rdparty qt44-3rdparty
 
 call callCreateSnapshot.btm

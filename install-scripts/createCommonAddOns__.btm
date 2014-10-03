@@ -17,17 +17,17 @@ for %pyver in (%PYTHONVERSIONS) do (
   echo *************************************
   echo *************************************
   echo *** Compiling Orange Bioinformatics for Python %pyver
-  cdd %TMPDIR\Bioinformatics
+  cdd %WORKDIR\orange-bioinformatics
   del /syeq build
   del /syeq dist
 
   REM # compile and pack
-  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-bioinformatics-compileAndPack-py%npver.log
+  set COMPILELOG=%LOGDIR\win-%PKG_TYPE-addOn-bioinformatics-compileAndPack-py%npver.log
   del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
-  %PYTHON\python setup.py build -c mingw32 bdist_wininst > %COMPILELOG
+  %PYTHON\python setup.py build bdist_wininst > %COMPILELOG
   break_on_error
-  move /z dist\*.win32.exe %TMPDIR\%PKG_BIOINFORMATICS-py%npver.exe
+  move /z dist\*.win32.exe %DISTDIR\%PKG_BIOINFORMATICS-py%npver.exe
 
 )
 
@@ -37,15 +37,15 @@ for %pyver in (%PYTHONVERSIONS_ADDONs) do (
   echo *************************************
   echo *************************************
   echo *** Compiling TEXT MINING for Python %pyver 
-  cdd %TMPDIR\Text
+  cdd %WORKDIR\orange-text
   del /syeq build
   del /syeq dist
 
   REM # compile and pack
-  set COMPILELOG=%TMPDIR\win-%PKG_TYPE-addOn-text-compileAndPack-py%npver.log
+  set COMPILELOG=%LOGDIR\win-%PKG_TYPE-addOn-text-compileAndPack-py%npver.log
   del /q %COMPILELOG
   set PYTHON=%PYTHONBASE%%pyver
   %PYTHON\python setup.py build -c mingw32 bdist_wininst > %COMPILELOG
   rem break_on_error
-  move /z dist\*.win32-py%npver.exe %TMPDIR\%PKG_TEXT-py%npver.exe
+  move /z dist\*.win32-py%npver.exe %DISTDIR\%PKG_TEXT-py%npver.exe
 )
