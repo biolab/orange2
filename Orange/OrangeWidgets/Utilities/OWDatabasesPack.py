@@ -64,6 +64,7 @@ class OWDatabasesPack(OWWidget.OWWidget):
         if set(self.fileslist) <= set(already_available):
             # All files are already downloaded
             self.statusinfo.setText("All files already available")
+            self.setStatusMessage("Done")
         else:
             for domain, filename in self.fileslist + [("_tmp_cache_", "pack")]:
                 manager = serverfiles._lock_file(domain, filename)
@@ -80,6 +81,7 @@ class OWDatabasesPack(OWWidget.OWWidget):
             QTimer.singleShot(0, self.run)
 
     def run(self):
+        self.setStatusMessage("Downloading")
         self.info.setText(self.downloadmessage)
 
         target_dir = os.path.join(environ.buffer_dir, "serverfiles_pack_cache")
@@ -118,6 +120,7 @@ class OWDatabasesPack(OWWidget.OWWidget):
             u"Error: {0}".format(error.errorString())
         )
         self.error(0, "Error: {0}".format(error.errorString()))
+        self.setStatusMessage("Error")
         self._releaselocks()
         self._removetmp()
         self.progressBarFinshed()
@@ -134,6 +137,7 @@ class OWDatabasesPack(OWWidget.OWWidget):
             return
 
         self.statusinfo.setText("Extracting")
+        self.setStatusMessage("Extracting")
         try:
             self._extract()
         except Exception:
@@ -141,6 +145,7 @@ class OWDatabasesPack(OWWidget.OWWidget):
             pass
 
         self.statusinfo.setText("Done")
+        self.setStatusMessage("Done")
         self.progressbar.reset()
         self.progressBarFinished()
 
