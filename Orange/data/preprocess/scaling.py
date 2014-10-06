@@ -403,10 +403,11 @@ class ScaleData:
 
         # Random generators for jittering
         random = numpy.random.RandomState(seed=self.jitter_seed)
-        rand_seeds = random.random_integers(0, 2 ** 32 - 1, size=len(data.domain))
+        rand_seeds = random.random_integers(0, sys.maxint - 1, size=len(data.domain))
         for index, rseed in zip(range(len(data.domain)), rand_seeds):
             # Need to use a different seed for each feature
-            random = numpy.random.RandomState(seed=rseed)
+            # Note in numpy 1.9.x the seed must fit in a uint32_t
+            random = numpy.random.RandomState(seed=rseed % (2 ** 32 - 1))
             attr = data.domain[index]
             if attr.var_type == Orange.core.VarTypes.Discrete:
                 scaled_data[index] += (self.jitter_size/(50.0*max(1,len(attr.values))))*\
