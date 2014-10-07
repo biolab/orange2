@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='utf-8'?>
+<scheme description="This schema downloads additional files that will be required for the Workshop and tests if the installation has succeeded. If the schema loaded successfully the installation worked fine!&#10;&#10;The schema requires network and bioinformatics add-ons to be installed." title="Functional Genomics Workshop 2014" version="2.0">
+	<nodes>
+		<node id="0" name="Databases Package" position="(162.0, 258.0)" project_name="Orange" qualified_name="Orange.OrangeWidgets.Utilities.OWDatabasesPack.OWDatabasesPack" title="Databases Package" version="" />
+		<node id="1" name="Scatter Plot" position="(163.0, 461.0)" project_name="Orange" qualified_name="Orange.OrangeWidgets.Visualize.OWScatterPlot.OWScatterPlot" title="Scatter Plot" version="" />
+		<node id="2" name="Net Explorer" position="(266.0, 460.0)" project_name="Orange-Network" qualified_name="orangecontrib.network.widgets.OWNxExplorer.OWNxExplorer" title="Net Explorer" version="" />
+		<node id="3" name="Differential Expression" position="(370.0, 461.0)" project_name="Orange-Bioinformatics" qualified_name="orangecontrib.bio.widgets.OWFeatureSelection.OWFeatureSelection" title="Differential expression" version="" />
+	</nodes>
+	<links />
+	<annotations>
+		<text font-family="Helvetica" font-size="16" id="0" rect="(75.0, 41.0, 469.0, 133.0)">By opening this window you have instructed Orange to download data files that will be used during the workshop.
+
+The progress of the download should be visible in the progress bar around the icon "Databases Package" below. A window with progress bar should also open automatically. If not, you can open it by double-clicking the icon.</text>
+		<text font-family="Helvetica" font-size="16" id="1" rect="(77.0, 343.0, 603.0, 108.0)">The icons below test different aspects of the installation. If all three icons (Scatter Plot, Net Explorer, Differential Expression) are present and do not have any red markings over them, the installation went fine and you are ready for the Workshop.</text>
+		<text font-family="Helvetica" font-size="22" id="2" rect="(75.0, 12.0, 576.0, 39.0)">Functional Genomics Workshop 2014</text>
+		<text font-family="Helvetica" font-size="22" id="3" rect="(75.0, 171.0, 484.0, 62.0)">Please do not close this window before the download is 100% complete.</text>
+	</annotations>
+	<thumbnail />
+	<node_properties>
+		<properties format="literal" node_id="0">{'downloadurl': 'http://orange.biolab.si/download/serverfiles_func_genom_workshop2014.tar.gz', 'downloadmessage': 'Downloading a subset of available databases for a smoother ride through the workshop', 'fileslist': [('Taxonomy', 'ncbi_taxonomy.tar.gz'), ('NCBI_geneinfo', 'gene_history.2104.db'), ('workshops', 'func-genom-workshop-2014')], 'savedWidgetGeometry': '\x01\xd9\xd0\xcb\x00\x01\x00\x00\x00\x00\x045\x00\x00\x02\x06\x00\x00\x05\xd5\x00\x00\x02\xc8\x00\x00\x045\x00\x00\x02\x1c\x00\x00\x05\xd5\x00\x00\x02\xc8\x00\x00\x00\x00\x00\x00', 'widgetShown': 0, '__settingsDataVersion': None}</properties>
+	</node_properties>
+</scheme>
