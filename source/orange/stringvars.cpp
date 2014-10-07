@@ -131,5 +131,7 @@ void TStringVariable::filestr2val(const string &valname, TValue &valu, TExample 
     }
 
     valu = TValue(mlnew TStringValue(valname), STRINGVAR);
+  } else {
+	  valu.varType = STRINGVAR;
   }
 }
