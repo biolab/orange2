@@ -731,6 +731,8 @@ class ImageLoader(QObject):
             reader = QImageReader(reply)
             image = reader.read()
 
+            reply.close()
+
             if image.isNull():
                 future.set_exception(Exception(reader.errorString()))
             else:
