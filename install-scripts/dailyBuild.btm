@@ -2,7 +2,7 @@ cdd E:\orange\scripts
 
 set PATH=C:\putty\bin;%PATH%
 set ID_KEY=%USERPROFILE%\ssh\id_rsa.ppk
-set PUBLISH_URL=download@biolab.si
+set PUBLISH_URL=download@orange.biolab.si
 
 call updateAndCall.btm
 

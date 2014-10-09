@@ -54,7 +54,7 @@ PUBLISH_DIR=$1
 
 PUBLISH_DIR=$(cd "$PUBLISH_DIR"; pwd)
 
-TEMPLATE_URL=${TEMPLATE_URL:-"http://orange.biolab.si/download/bundle-templates/Orange.app-template.tar.gz"}
+TEMPLATE_URL=${TEMPLATE_URL:-"http://orange.biolab.si/download/files/bundle-templates/Orange.app-template.tar.gz"}
 
 if [[ $BOOTSTRAP ]]; then
     mkdir -p "$WORK_DIR"

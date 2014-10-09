@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REMOTE=download@biolab.si:files
+REMOTE=download@orange.biolab.si:files
 PUBLISH_DIR="$HOME"/Volumes/download
 LOG="$PUBLISH_DIR"/buildLogs/osx/daily-build-osx-app.log
 
