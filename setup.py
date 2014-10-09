@@ -34,7 +34,7 @@ from distutils.extension import Extension
 
 NAME = 'Orange'
 
-VERSION = '2.7.6'
+VERSION = '2.7.8'
 ISRELEASED = False
 
 DESCRIPTION = 'Orange, a component-based data mining framework.'
