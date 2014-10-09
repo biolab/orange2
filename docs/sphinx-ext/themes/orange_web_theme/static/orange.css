@@ -333,8 +333,7 @@ div.sphinxsidebarwrapper {
     border: 1px solid #e8e8e8;
     border-radius: 3px;
     background-color: #f8f8f8;
-    /* margin: 50px 0 20px; */
-    margin: 50px 15px 20px 0;
+    margin: 50px 45px 0 20px;
 }
 
 div.sphinxsidebar ul {
@@ -366,26 +365,23 @@ div.sphinxsidebarwrapper h3 > a {
 }
 
 div.sphinxsidebar {
+  position: absolute;
+  top: 0;
   width: 100%;
-  position: fixed;
   min-width: 250px;
   max-width: 320px;
-  font-size: 90%;
+  font-size: 100%;
   margin-left: 0;
   margin-top: 0;
   text-align: left;
 }
 
 @media (max-width: 767px) {
+  div.sphinxsidebarwrapper {
+    margin-left: 0;
+  }
   div.sphinxsidebar {
     padding-left: 1px;
-    position: static;
-    left: 10px;
-  }
-}
-@media (min-width: 768px) {
-  div.documentwrapper {
-    width: 95%;
   }
 }
 
