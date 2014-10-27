@@ -97,8 +97,8 @@ class SVMLearner(_SVMLearner):
         :class:`~Orange.data.continuization.DomainContinuizer` class
         (default ``True``)
     :type normalization: bool
-    :param weight: a list of class weights
-    :type weight: list
+    :param class_weights: A list of (index, weight) class weights.
+    :type class_weights: list
     :param verbose: If `True` show training progress (default is `False`).
     :type verbose: bool
 
@@ -129,7 +129,7 @@ class SVMLearner(_SVMLearner):
                  kernel_func=None, C=1.0, nu=0.5, p=0.1, gamma=0.0, degree=3,
                  coef0=0, shrinking=True, probability=True, verbose=False,
                  cache_size=200, eps=0.001, normalization=True,
-                 weight=[], **kwargs):
+                 class_weights=[], **kwargs):
         self.svm_type = svm_type
         self.kernel_type = kernel_type
         self.kernel_func = kernel_func
@@ -148,9 +148,23 @@ class SVMLearner(_SVMLearner):
         for key, val in kwargs.items():
             setattr(self, key, val)
         self.learner = Orange.core.SVMLearner(**kwargs)
-        self.weight = weight
+
+        if "weight" in kwargs:
+            warnings.warn(
+                "'weight' parameter is deprecated, use "
+                "'class_weights' instead",
+                category=DeprecationWarning
+            )
+            if class_weights != []:
+                class_weights = kwargs.pop("weight")
+
+        self.class_weights = list(class_weights)
 
     max_nu = staticmethod(max_nu)
+
+    def set_weights(self, class_weights):
+        super(SVMLearner, self, ).set_weights(class_weights)
+        self.class_weights = class_weights
 
     def __call__(self, data, weight=0):
         """Construct a SVM classifier
@@ -194,7 +208,7 @@ class SVMLearner(_SVMLearner):
             setattr(self.learner, name, getattr(self, name))
 
         self.learner.nu = nu
-        self.learner.set_weights(self.weight)
+        self.learner.set_weights(self.class_weights)
 
         if self.svm_type == SVMLearner.OneClass and self.probability:
             self.learner.probability = False
