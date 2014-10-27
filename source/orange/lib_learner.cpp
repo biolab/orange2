@@ -1407,9 +1407,7 @@ PyObject *SVMLearner_setWeights(PyObject *self, PyObject* args, PyObject *keywor
 	PyTRY
 
 	PyObject *pyWeights;
-	if (!PyArg_ParseTuple(args, "O:SVMLearner.setWeights", &pyWeights)) {
-		//PyErr_Format(PyExc_TypeError, "SVMLearner.setWeights: an instance of Python List expected got '%s'", pyWeights->ob_type->tp_name);
-		PYERROR(PyExc_TypeError, "SVMLearner.setWeights: Python List of attribute weights expected", PYNULL);
+	if (!PyArg_ParseTuple(args, "O!:SVMLearner.setWeights", &PyList_Type, &pyWeights)) {
 		return PYNULL;
 	}
 
@@ -1434,7 +1432,23 @@ PyObject *SVMLearner_setWeights(PyObject *self, PyObject* args, PyObject *keywor
 	for (i = 0; i < size; i++) {
 		int l;
 		double w;
-		PyArg_ParseTuple(PyList_GetItem(pyWeights, i), "id:SVMLearner.setWeights", &l, &w);
+		bool error = false;
+		PyObject *item = PyList_GetItem(pyWeights, i);
+		if (!PyTuple_Check(item)) {
+			PyErr_Format(PyExc_TypeError, "A (class_index, weight) tuple expected at pos %i", i);
+			error = true;
+		}
+		if (!error && !PyArg_ParseTuple(PyList_GetItem(pyWeights, i), "id:SVMLearner.setWeights", &l, &w)){
+			error = true;
+		}
+		if (error) {
+			free(learner->weight_label);
+			free(learner->weight);
+			learner->weight_label = NULL;
+			learner->weight = NULL;
+			learner->nr_weight = 0;
+			return PYNULL;
+		}
 		learner->weight[i] = w;
 		learner->weight_label[i] = l;
 		//cout << "class: " << l << ", w: " << w << endl;
