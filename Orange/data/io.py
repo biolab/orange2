@@ -435,6 +435,9 @@ Currently not yet documented and not registered (needs testing).
 
 """
 
+import re
+
+
 def split_escaped_str(str, split_str=" ", escape="\\"):
     res = []
     index = 0
@@ -442,16 +445,24 @@ def split_escaped_str(str, split_str=" ", escape="\\"):
     find_start = 0
     while index != -1:
         index = str.find(split_str, find_start)
-        if index != -1 and index > 0:
+        if index == -1:
+            res.append(str[start:])
+        elif index == 0:
+            res.append("")
+            find_start += 1
+        else:
             if str[index - 1] == escape: # Skip the escaped split_str
                 find_start = index + 1
             else:
                 res.append(str[start:index])
                 start = find_start = index + 1
-
-        elif index == -1:
-            res.append(str[start:])
     return [r.replace(escape + split_str, split_str) for r in res]
+
+
+def split_escaped_str(string, sep, escapechar="\\"):
+    re_pattern = "(?<!%s)%s" % (re.escape(escapechar), re.escape(sep))
+    return re.split(re_pattern, string)
+
 
 def is_standard_var_def(cell):
     """Is the cell a standard variable definition (empty, cont, disc, string)
