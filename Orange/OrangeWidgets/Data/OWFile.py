@@ -705,7 +705,7 @@ class OWFile(OWWidget):
             return "{} ({})".format(format.name, ext_pattern)
 
         formats = [format_spec(format) for format in FILEFORMATS]
-        filters = "\n".join(formats + ["All files (*.*)"])
+        filters = ";;".join(formats + ["All files (*.*)"])
 
         path, selected_filter = QFileDialog.getOpenFileNameAndFilter(
             self, "Open Data File", startdir, filters
