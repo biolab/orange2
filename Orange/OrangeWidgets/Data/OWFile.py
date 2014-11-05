@@ -81,8 +81,6 @@ DEFAULT_OPTIONS = (
     CSV(csv.excel_tab, PlainHeader, None),
 )
 
-Loader = namedtuple("Loader", ["format", "load_func", "options"])
-
 
 def _call(f, *args, **kwargs):
     return f(*args, **kwargs)
@@ -166,8 +164,7 @@ def load_csv(filename, create_new_on=MakeStatus.NoRecognizedValues,
 #: :param list extensions: A list of extensions
 #: :param function load:
 #:     A (path: str, create_new_on=2: int, **extraparams) -> Table function.
-Format = namedtuple("Format", ["name", "extensions", "load"]
-)
+Format = namedtuple("Format", ["name", "extensions", "load"])
 
 FILEFORMATS = [
     Format("Tab-delimited files", [".tab"], load_tab),
@@ -511,16 +508,8 @@ class standard_icons(object):
 class OWFile(OWWidget):
     settingsList = ["selected_file", "recent_files", "show_advanced",
                     "create_new_on"]
-#     settingsDataVersion = (1,)
-    contextHandlers = {"": FileNameContextHandler()}
 
-    DELIMITERS = [
-        ("Tab", "\t"),
-        ("Comma", ","),
-        ("Semicolon", ";"),
-        ("Space", " "),
-        ("Others", None)
-    ]
+    contextHandlers = {"": FileNameContextHandler()}
 
     def __init__(self, parent=None, signalManager=None,
                  title="CSV File Import"):
@@ -671,20 +660,18 @@ class OWFile(OWWidget):
 
     @Slot(int)
     def activate_recent(self, index):
-        """
-        Load file from the recent list.
-        """
+        """Activate an item from the recent list."""
         if 0 <= index < len(self.recent_files):
             recent = self.recent_files[index]
             self.set_selected_file(recent)
         elif index == len(self.recent_files) + 1:
-            self.browse(Orange.utils.environ.dataset_install_dir)
-            if self.recent_combo.currentIndex() == index:
+            status = self.browse(Orange.utils.environ.dataset_install_dir)
+            if status == QDialog.Rejected:
                 self.recent_combo.setCurrentIndex(
                     min(0, len(self.recent_files) - 1)
                 )
         else:
-            assert False
+            self.recent_combo.setCurrentIndex(-1)
 
     @Slot()
     def browse(self, startdir=None):
@@ -728,9 +715,7 @@ class OWFile(OWWidget):
 
     @Slot()
     def reload(self):
-        """
-        Reload the current selected file.
-        """
+        """Reload the current selected file."""
         if self.selected_file:
             self.send_data()
 
@@ -754,8 +739,7 @@ class OWFile(OWWidget):
         dlg.open()
 
     def set_selected_file(self, filename, loader=None):
-        """Set the current filename path to be loaded.
-        """
+        """Set the current filename path to be loaded."""
         self.closeContext("")
 
         self.selected_file = filename
