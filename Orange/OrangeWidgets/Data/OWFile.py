@@ -822,11 +822,11 @@ class OWFile(OWWidget):
         if "DK" in loader.params._fields and self.symbol_DK:
             loader = loader._replace(
                 params=loader.params._replace(
-                    DK=self.symbol_DK,
-                    DC=self.symbol_DC)
+                    DK=str(self.symbol_DK),
+                    DC=str(self.symbol_DC))
             )
         try:
-            data = load_table(self.selected_file, self._loader,
+            data = load_table(self.selected_file, loader,
                               create_new_on=3 - self.create_new_on)
         except Exception as err:
             self.error(str(err))
