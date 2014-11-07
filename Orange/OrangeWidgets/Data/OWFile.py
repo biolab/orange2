@@ -70,6 +70,7 @@ class Dialect(csv.Dialect):
         self.lineterminator = "\r\n"
         csv.Dialect.__init__(self)
 
+#: Recognized header types
 NoHeader, PlainHeader, OrangeHeader, SimplifiedOrangeHeader = 0, 1, 2, 3
 
 DEFAULT_OPTIONS = (
@@ -231,9 +232,7 @@ class CSVOptionsWidget(QWidget):
 
         super(QWidget, self).__init__(parent, **kwargs)
 
-        layout = QVBoxLayout()
         # Dialect options
-
         form = QFormLayout()
         self.delimiter_cb = QComboBox()
         self.delimiter_cb.addItems(
@@ -248,7 +247,7 @@ class CSVOptionsWidget(QWidget):
         validator = QRegExpValidator(QRegExp("."))
         self.delimiteredit = QLineEdit(
             self._delimiter_custom,
-            enabled=False
+            enabled=False,
         )
         self.delimiteredit.setValidator(validator)
         self.delimiteredit.editingFinished.connect(self._on_delimiter_changed)
@@ -275,22 +274,21 @@ class CSVOptionsWidget(QWidget):
         form.addRow("Escape character", self.escapeedit)
 
         form.addRow(QFrame(self, frameShape=QFrame.HLine))
+
         # File format option
         self.missingedit = QLineEdit()
         self.missingedit.editingFinished.connect(self.format_changed)
 
         form.addRow("Missing values", self.missingedit)
-        layout.addLayout(form)
 
-        self.has_header_cb = QCheckBox("Has header")
-        self.has_header_cb.toggled.connect(self.format_changed)
-        self.has_type_defs_cb = QCheckBox("Has orange type definitions")
-        self.has_type_defs_cb.toggled.connect(self.format_changed)
+        self.header_format_cb = QComboBox()
+        self.header_format_cb.addItems(
+            ["No header", "Plain header", "Orange header"]
+        )
+        self.header_format_cb.currentIndexChanged.connect(self.format_changed)
+        form.addRow("Header", self.header_format_cb)
 
-        layout.addWidget(self.has_header_cb)
-        layout.addWidget(self.has_type_defs_cb)
-
-        self.setLayout(layout)
+        self.setLayout(form)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
 
     def dialect(self):
@@ -330,24 +328,12 @@ class CSVOptionsWidget(QWidget):
         self.skipinitialspace_cb.setChecked(dialect.skipinitialspace)
 
     def set_header_format(self, header_format):
+        """Set the current selected header format."""
         self._header_format = header_format
-        if header_format == NoHeader:
-            self.has_header_cb.setChecked(False)
-        elif header_format == PlainHeader:
-            self.has_header_cb.setChecked(True)
-            self.has_type_defs_cb.setChecked(False)
-        elif header_format == OrangeHeader:
-            self.has_header_cb.setChecked(True)
-            self.has_type_defs_cb.setChecked(True)
+        self.header_format_cb.setCurrentIndex(header_format)
 
     def header_format(self):
-        if self.has_header_cb.isChecked():
-            if self.has_type_defs_cb.isChecked():
-                return OrangeHeader
-            else:
-                return PlainHeader
-        else:
-            return NoHeader
+        return self.header_format_cb.currentIndex()
 
     def set_missing_values(self, missing):
         self.missingedit.setText(missing)
@@ -457,7 +443,10 @@ class CSVImportDialog(QDialog):
             )
             self._stack.setCurrentWidget(self._preview_error)
         except Exception as err:
-            self._preview.setModel(None)
+            self._preview_error.setText(
+                "Cannot load data preview:\n {!s}".format(err)
+            )
+            self._stack.setCurrentWidget(self._preview_error)
             raise
         else:
             model = ExampleTableModel(data, None, self)
