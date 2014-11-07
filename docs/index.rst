@@ -5,6 +5,7 @@ Visual programming
 ------------------
 
 - :doc:`Widget catalog <widgets/rst/index>`
+- :download:`Tutorial with examples from functional genomics <bio-tutorial.pdf>`
 
 Python Scripting
 ----------------
