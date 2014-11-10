@@ -167,18 +167,19 @@ The first example shows a straightforward use a logistic regression (:download:`
 Result::
 
     Classification accuracy: 0.778282598819
-
+   
     class attribute = survived
     class values = <no, yes>
 
-        Attribute       beta  st. error     wald Z          P OR=exp(beta)
+          Feature       beta  st. error     wald Z          P OR=exp(beta)
 
         Intercept      -1.23       0.08     -15.15      -0.00
-     status=first       0.86       0.16       5.39       0.00       2.36
-    status=second      -0.16       0.18      -0.91       0.36       0.85
-     status=third      -0.92       0.15      -6.12       0.00       0.40
-        age=child       1.06       0.25       4.30       0.00       2.89
-       sex=female       2.42       0.14      17.04       0.00      11.25
+     status=first       0.86       0.16       5.39       0.00 2.35e0
+    status=second      -0.16       0.18      -0.91       0.36 8.51e-1
+     status=third      -0.92       0.15      -6.12       0.00 3.98e-1
+        age=child       1.06       0.25       4.30       0.00 2.89e0
+       sex=female       2.42       0.14      17.04       0.00 1.12e1
+
 
 The next examples shows how to handle singularities in data sets
 (:download:`logreg-singularities.py <code/logreg-singularities.py>`).

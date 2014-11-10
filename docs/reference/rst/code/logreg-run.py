@@ -9,4 +9,4 @@ for ex in titanic:
     if lr(ex) == ex.getclass():
         correct += 1
 print "Classification accuracy:", correct / len(titanic)
-Orange.classification.logreg.dump(lr)
+print Orange.classification.logreg.dump(lr)
