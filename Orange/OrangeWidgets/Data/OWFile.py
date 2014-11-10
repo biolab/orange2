@@ -133,14 +133,16 @@ def load_basket(filename, create_new_on=MakeStatus.NoRecognizedValues):
 def load_csv(filename, create_new_on=MakeStatus.NoRecognizedValues,
              dialect=None, header_format=PlainHeader, missing_values=None):
 
+    has_simplified_header = False
     if header_format == NoHeader:
         has_header, has_orange_header = False, False
     elif header_format == PlainHeader:
         has_header, has_orange_header = True, False
     elif header_format == OrangeHeader:
         has_header, has_orange_header = True, True
-    else:
+    elif header_format == SimplifiedOrangeHeader:
         has_header, has_orange_header = True, False
+        has_simplified_header = True
 
     DK = ",,?,NA,~*"
     if missing_values is not None:
@@ -153,6 +155,7 @@ def load_csv(filename, create_new_on=MakeStatus.NoRecognizedValues,
         has_header=has_header,
         has_types=has_orange_header,
         has_annotations=has_orange_header,
+        has_simplified_header=has_simplified_header,
         skipinitialspace=True,
         create_new_on=create_new_on,
         DK=DK
@@ -283,7 +286,8 @@ class CSVOptionsWidget(QWidget):
 
         self.header_format_cb = QComboBox()
         self.header_format_cb.addItems(
-            ["No header", "Plain header", "Orange header"]
+            ["No header", "Plain header", "Orange header",
+             "Orange simplified header"]
         )
         self.header_format_cb.currentIndexChanged.connect(self.format_changed)
         form.addRow("Header", self.header_format_cb)
