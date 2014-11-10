@@ -16,7 +16,7 @@ from PyQt4.QtGui import (
     QFrame, QDialog, QDialogButtonBox, QTableView, QRegExpValidator,
     QFormLayout, QVBoxLayout, QHBoxLayout, QStackedLayout, QSizePolicy,
     QStandardItem, QStyle, QApplication, QFileIconProvider, QDesktopServices,
-    QFileDialog
+    QFileDialog, QIcon
 )
 from PyQt4.QtCore import Qt, QEvent, QRegExp, QFileInfo, QTimer
 from PyQt4.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
@@ -453,8 +453,9 @@ class CSVImportDialog(QDialog):
             self._stack.setCurrentWidget(self._preview_error)
             raise
         else:
-            model = ExampleTableModel(data, None, self)
+            model = TableModel(data, None, self)
             self._preview.setModel(model)
+            self._preview.resizeColumnsToContents()
             self._stack.setCurrentWidget(self._preview)
 
 
@@ -496,6 +497,18 @@ class standard_icons(object):
     @property
     def reload_icon(self):
         return self.style.standardIcon(QStyle.SP_BrowserReload)
+
+
+class TableModel(ExampleTableModel):
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if orientation == Qt.Horizontal and role == Qt.DecorationRole:
+            var = self.all_attrs[section]
+            return QIcon(OWGUI.getAttributeIcons()[var.varType])
+        elif orientation == Qt.Horizontal and role == Qt.TextAlignmentRole:
+            return Qt.AlignLeft
+        else:
+            return super(TableModel, self).headerData(section, orientation,
+                                                      role)
 
 
 class OWFile(OWWidget):
