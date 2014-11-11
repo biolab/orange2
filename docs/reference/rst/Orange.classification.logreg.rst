@@ -197,19 +197,19 @@ The first few lines of the output of this script are::
     class attribute = y
     class values = <>50K, <=50K>
 
-                               Attribute       beta  st. error     wald Z          P OR=exp(beta)
+                                 Feature       beta  st. error     wald Z          P OR=exp(beta)
 
-                               Intercept       6.62      -0.00       -inf       0.00
-                                     age      -0.04       0.00       -inf       0.00       0.96
-                                  fnlwgt      -0.00       0.00       -inf       0.00       1.00
-                           education-num      -0.28       0.00       -inf       0.00       0.76
-                 marital-status=Divorced       4.29       0.00        inf       0.00      72.62
-            marital-status=Never-married       3.79       0.00        inf       0.00      44.45
-                marital-status=Separated       3.46       0.00        inf       0.00      31.95
-                  marital-status=Widowed       3.85       0.00        inf       0.00      46.96
-    marital-status=Married-spouse-absent       3.98       0.00        inf       0.00      53.63
-        marital-status=Married-AF-spouse       4.01       0.00        inf       0.00      55.19
-                 occupation=Tech-support      -0.32       0.00       -inf       0.00       0.72
+                               Intercept       6.62       0.00        inf       0.00
+                                     age      -0.04       0.00       -inf       0.00 9.64e-1
+                                  fnlwgt      -0.00       0.00       -inf       0.00 9.99e-1
+                           education-num      -0.28       0.00       -inf       0.00 7.57e-1
+                 marital-status=Divorced       4.29       0.00        inf       0.00 7.26e1
+            marital-status=Never-married       3.79       0.00        inf       0.00 4.44e1
+                marital-status=Separated       3.46       0.00        inf       0.00 3.19e1
+                  marital-status=Widowed       3.85       0.00        inf       0.00 4.69e1
+    marital-status=Married-spouse-absent       3.98       0.00        inf       0.00 5.36e1
+        marital-status=Married-AF-spouse       4.01       0.00        inf       0.00 5.51e1
+                 occupation=Tech-support      -0.32       0.00       -inf       0.00 7.22e-1
 
 If :obj:`remove_singular` is set to 0, inducing a logistic regression
 classifier returns an error::

@@ -5,4 +5,4 @@ lr = Orange.classification.logreg.LogRegLearner(adult, remove_singular=1)
 
 for ex in adult[:5]:
     print ex.getclass(), lr(ex)
-Orange.classification.logreg.dump(lr)
+print Orange.classification.logreg.dump(lr)
