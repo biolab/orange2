@@ -10,3 +10,4 @@ kmeans-trace.py
 tree_c45.py
 tree_c45_printtree.py
 logreg-singularities.py
+freeviz-classify.py
