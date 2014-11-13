@@ -70,7 +70,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         self.shownXAttribute = xAttr
         self.shownYAttribute = yAttr
 
-        if self.scaledData == None or len(self.scaledData) == 0:
+        if self.scaledData is None or len(self.scaledData) == 0:
             self.setAxisScale(QwtPlot.xBottom, 0, 1, 1); self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
             self.setXaxisTitle(""); self.setYLaxisTitle("")
             self.oldLegendKeys = {}
@@ -430,7 +430,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
 
     def addTip(self, x, y, attrIndices = None, dataindex = None, text = None):
         if self.tooltipKind == DONT_SHOW_TOOLTIPS: return
-        if text == None:
+        if text is None:
             if self.tooltipKind == VISIBLE_ATTRIBUTES:  text = self.getExampleTooltipText(self.rawData[dataindex], attrIndices)
             elif self.tooltipKind == ALL_ATTRIBUTES:    text = self.getExampleTooltipText(self.rawData[dataindex], range(len(self.attributeNames)))
         self.tips.addToolTip(x, y, text)
@@ -474,7 +474,7 @@ class OWScatterPlotGraph(OWGraph, orngScaleScatterPlotData):
         if not self.haveData: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
-        if validData == None:
+        if validData is None:
             validData = self.getValidList(attrIndices)
 
         (xArray, yArray) = self.getXYDataPositions(xAttr, yAttr)

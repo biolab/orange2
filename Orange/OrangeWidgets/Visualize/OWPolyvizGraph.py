@@ -462,7 +462,7 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         validData = self.getValidList(attrIndices)
 
         array = self.createProjectionAsNumericArray(attrIndices, validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
-        if array == None:       # if all examples have missing values
+        if array is None:       # if all examples have missing values
             return (None, None)
 
         #selIndices, unselIndices = self.getSelectionsAsIndices(attrList, validData)
@@ -494,11 +494,11 @@ class OWPolyvizGraph(OWGraph, orngScalePolyvizData):
         if not self.haveData: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
-        if validData == None:
+        if validData is None:
             validData = self.getValidList(attrIndices)
 
         array = self.createProjectionAsNumericArray(attrIndices, validData = validData, scaleFactor = self.scaleFactor, removeMissingData = 0)
-        if array == None:
+        if array is None:
             return [], []
         array = numpy.transpose(array)
         return self.getSelectedPoints(array[0], array[1], validData)

@@ -249,10 +249,11 @@ class ScaleData:
         dataset.
         
         """
-        if data == None and subset_data == None: None
-        if subset_data == None:
+        if data is None and subset_data is None:
+            return None
+        if subset_data is None:
             full_data = data
-        elif data == None:
+        elif data is None:
             full_data = subset_data
         else:
             full_data = Orange.data.Table(data)
@@ -275,11 +276,11 @@ class ScaleData:
                           "sort_values_for_discrete_attrs"})
     def set_data(self, data, subset_data = None, **args):
         if args.get("skipIfSame", 1):
-            if (((data == None and self.raw_data == None) or
-                (self.raw_data != None and data != None and
+            if (((data is None and self.raw_data is None) or
+                (self.raw_data is not None and data is not None and
                  self.raw_data.checksum() == data.checksum())) and
-                ((subset_data == None and self.raw_subset_data == None) or
-                 (self.raw_subset_data != None and subset_data != None and
+                ((subset_data is None and self.raw_subset_data is None) or
+                 (self.raw_subset_data is not None and subset_data is not None and
                   self.raw_subset_data.checksum() == subset_data.checksum()))):
                     return
 
@@ -300,10 +301,11 @@ class ScaleData:
         self.data_class_name = None
         self.data_domain = None
         self.data_class_index = None
-                
-        if data == None: return
+
+        if data is None:
+            return
         full_data = self.merge_data_sets(data, subset_data)
-                
+
         self.raw_data = data
         self.raw_subset_data = subset_data
 
@@ -347,7 +349,7 @@ class ScaleData:
         # compute it. The scaled_data on the other hand has to be computed for
         # each widget separately because of different
         # jitter_continuous and jitter_size values
-        if caching.getCached(data, "visualizationData") and subset_data == None:
+        if caching.getCached(data, "visualizationData") and subset_data is None:
             self.original_data, self.no_jittering_scaled_data, self.valid_data_array = caching.getCached(data,"visualizationData")
             self.original_subset_data = self.no_jittering_scaled_subset_data = self.valid_subset_data_array = numpy.array([]).reshape([len(self.original_data), 0])
         else:
@@ -497,7 +499,7 @@ class ScaleData:
         Get array of 0 and 1 of len = len(self.raw_data). If there is a missing
         value at any attribute in indices return 0 for that instance.
         """
-        if self.valid_data_array == None or len(self.valid_data_array) == 0:
+        if self.valid_data_array is None or len(self.valid_data_array) == 0:
             return numpy.array([], numpy.bool)
         
         inds = indices[:]
@@ -515,7 +517,7 @@ class ScaleData:
         Get array of 0 and 1 of len = len(self.raw_subset_data). if there is a
         missing value at any attribute in indices return 0 for that instance.
         """
-        if self.valid_subset_data_array == None or len(self.valid_subset_data_array) == 0:
+        if self.valid_subset_data_array is None or len(self.valid_subset_data_array) == 0:
             return numpy.array([], numpy.bool)
         inds = indices[:]
         if also_class_if_exists and self.data_class_index: 
@@ -612,7 +614,7 @@ class ScaleLinProjData(ScaleData):
     @deprecated_keywords({"xAnchors": "xanchors", "yAnchors": "yanchors"})
     def set_anchors(self, xanchors, yanchors, attributes):
         if attributes:
-            if xanchors != None and yanchors != None:
+            if xanchors is not None and yanchors is not None:
                 self.anchor_data = [(xanchors[i], yanchors[i], attributes[i])
                                     for i in range(len(attributes))]
             else:
@@ -702,22 +704,22 @@ class ScaleLinProjData(ScaleData):
                   "set of attributes is not the same as when computing the "+\
                   "whole projection"
 
-        if xanchors != None and yanchors != None:
+        if xanchors is not None and yanchors is not None:
             xanchors = numpy.array(xanchors)
             yanchors = numpy.array(yanchors)
-            if anchor_radius == None: anchor_radius = numpy.sqrt(xanchors*xanchors +
-                                                                 yanchors*yanchors)
+            if anchor_radius is None:
+                anchor_radius = numpy.sqrt(xanchors*xanchors + yanchors*yanchors)
         elif use_anchor_data and self.anchor_data:
             xanchors = numpy.array([val[0] for val in self.anchor_data])
             yanchors = numpy.array([val[1] for val in self.anchor_data])
-            if anchor_radius == None: anchor_radius = numpy.sqrt(xanchors*xanchors +
-                                                                 yanchors*yanchors)
+            if anchor_radius is None:
+                anchor_radius = numpy.sqrt(xanchors*xanchors + yanchors*yanchors)
         else:
             xanchors = self.create_xanchors(len(attr_indices))
             yanchors = self.create_yanchors(len(attr_indices))
             anchor_radius = numpy.ones(len(attr_indices), numpy.float)
 
-        if normalize_example == 1 or (normalize_example == None
+        if normalize_example == 1 or (normalize_example is None
                                       and self.normalize_examples):
             m = min(values); M = max(values)
             if m < 0.0 or M > 1.0: 
@@ -761,7 +763,7 @@ class ScaleLinProjData(ScaleData):
                                          Orange.feature.Continuous("yVar")])
         data = self.create_projection_as_numeric_array(attr_indices,
                                                        **settings_dict)
-        if data != None:
+        if data is not None:
             return Orange.data.Table(domain, data)
         else:
             return Orange.data.Table(domain)
@@ -799,13 +801,13 @@ class ScaleLinProjData(ScaleData):
         if use_anchor_data and self.anchor_data:
             attr_indices = [self.attribute_name_index[val[2]] for val in self.anchor_data]
 
-        if valid_data == None:
+        if valid_data is None:
             if use_subset_data: valid_data = self.get_valid_subset_list(attr_indices)
             else:             valid_data = self.get_valid_list(attr_indices)
         if sum(valid_data) == 0:
             return None
 
-        if class_list == None and self.data_domain.class_var:
+        if class_list is None and self.data_domain.class_var:
             if use_subset_data: class_list = self.original_subset_data[self.data_class_index]
             else:             class_list = self.original_data[self.data_class_index]
 
@@ -820,17 +822,17 @@ class ScaleLinProjData(ScaleData):
         selectedData = numpy.take(data, attr_indices, axis = 0)
         if remove_missing_data:
             selectedData = numpy.compress(valid_data, selectedData, axis = 1)
-            if class_list != None and len(class_list) != numpy.shape(selectedData)[1]:
+            if class_list is not None and len(class_list) != numpy.shape(selectedData)[1]:
                 class_list = numpy.compress(valid_data, class_list)
 
         if use_anchor_data and self.anchor_data:
             xanchors = numpy.array([val[0] for val in self.anchor_data])
             yanchors = numpy.array([val[1] for val in self.anchor_data])
             r = numpy.sqrt(xanchors*xanchors + yanchors*yanchors)     # compute the distance of each anchor from the center of the circle
-            if normalize == 1 or (normalize == None and self.normalize_examples):
+            if normalize == 1 or (normalize is None and self.normalize_examples):
                 xanchors *= r
                 yanchors *= r
-        elif (xanchors != None and yanchors != None):
+        elif (xanchors is not None and yanchors is not None):
             xanchors = numpy.array(xanchors); yanchors = numpy.array(yanchors)
             r = numpy.sqrt(xanchors*xanchors + yanchors*yanchors)     # compute the distance of each anchor from the center of the circle
         else:
@@ -841,8 +843,8 @@ class ScaleLinProjData(ScaleData):
         x_positions = numpy.dot(xanchors, selectedData)
         y_positions = numpy.dot(yanchors, selectedData)
 
-        if normalize == 1 or (normalize == None and self.normalize_examples):
-            if sum_i == None:
+        if normalize == 1 or (normalize is None and self.normalize_examples):
+            if sum_i is None:
                 sum_i = self._getSum_i(selectedData, use_anchor_data, r)
             x_positions /= sum_i
             y_positions /= sum_i
@@ -880,7 +882,7 @@ class ScaleLinProjData(ScaleData):
             y_positions = y_positions.ravel()
 
         self.last_attr_indices = attr_indices
-        if class_list != None:
+        if class_list is not None:
             return numpy.transpose(numpy.array((x_positions, y_positions, class_list)))
         else:
             return numpy.transpose(numpy.array((x_positions, y_positions)))
@@ -896,7 +898,7 @@ class ScaleLinProjData(ScaleData):
         
         """
         if use_anchor_data:
-            if anchor_radius == None:
+            if anchor_radius is None:
                 anchor_radius = numpy.sqrt([a[0]**2+a[1]**2 for a in self.anchor_data])
             sum_i = numpy.add.reduce(numpy.transpose(numpy.transpose(data)*anchor_radius))
         else:
@@ -936,7 +938,7 @@ class ScaleLinProjData3D(ScaleData):
     @deprecated_keywords({"xAnchors": "xanchors", "yAnchors": "yanchors"})
     def set_anchors(self, xanchors, yanchors, zanchors, attributes):
         if attributes:
-            if xanchors != None and yanchors != None and zanchors != None:
+            if xanchors is not None and yanchors is not None and zanchors is not None:
                 self.anchor_data = [(xanchors[i], yanchors[i], zanchors[i], attributes[i])
                                     for i in range(len(attributes))]
             else:
@@ -1043,18 +1045,18 @@ class ScaleLinProjData3D(ScaleData):
                   "set of attributes is not the same as when computing the "+\
                   "whole projection"
 
-        if xanchors != None and yanchors != None and zanchors != None:
+        if xanchors is not None and yanchors is not None and zanchors is not None:
             xanchors = numpy.array(xanchors)
             yanchors = numpy.array(yanchors)
             zanchors = numpy.array(zanchors)
-            if anchor_radius == None: anchor_radius = numpy.sqrt(xanchors*xanchors +
+            if anchor_radius is None: anchor_radius = numpy.sqrt(xanchors*xanchors +
                                                                  yanchors*yanchors +
                                                                  zanchors*zanchors)
         elif use_anchor_data and self.anchor_data:
             xanchors = numpy.array([val[0] for val in self.anchor_data])
             yanchors = numpy.array([val[1] for val in self.anchor_data])
             zanchors = numpy.array([val[2] for val in self.anchor_data])
-            if anchor_radius == None: anchor_radius = numpy.sqrt(xanchors*xanchors +
+            if anchor_radius is None: anchor_radius = numpy.sqrt(xanchors*xanchors +
                                                                  yanchors*yanchors +
                                                                  zanchors*zanchors)
         else:
@@ -1064,7 +1066,7 @@ class ScaleLinProjData3D(ScaleData):
             zanchors = numpy.array([val[2] for val in self.anchor_data])
             anchor_radius = numpy.ones(len(attr_indices), numpy.float)
 
-        if normalize_example == 1 or (normalize_example == None
+        if normalize_example == 1 or (normalize_example is None
                                       and self.normalize_examples):
             m = min(values); M = max(values)
             if m < 0.0 or M > 1.0: 
@@ -1113,7 +1115,7 @@ class ScaleLinProjData3D(ScaleData):
                                          Orange.feature.Continuous("zVar")])
         data = self.create_projection_as_numeric_array(attr_indices,
                                                        **settings_dict)
-        if data != None:
+        if data is not None:
             return Orange.data.Table(domain, data)
         else:
             return Orange.data.Table(domain)
@@ -1153,13 +1155,13 @@ class ScaleLinProjData3D(ScaleData):
         if use_anchor_data and self.anchor_data:
             attr_indices = [self.attribute_name_index[val[3]] for val in self.anchor_data]
 
-        if valid_data == None:
+        if valid_data is None:
             if use_subset_data: valid_data = self.get_valid_subset_list(attr_indices)
             else:             valid_data = self.get_valid_list(attr_indices)
         if sum(valid_data) == 0:
             return None
 
-        if class_list == None and self.data_domain.class_var:
+        if class_list is None and self.data_domain.class_var:
             if use_subset_data: class_list = self.original_subset_data[self.data_class_index]
             else:             class_list = self.original_data[self.data_class_index]
 
@@ -1174,7 +1176,7 @@ class ScaleLinProjData3D(ScaleData):
         selected_data = numpy.take(data, attr_indices, axis=0)
         if remove_missing_data:
             selected_data = numpy.compress(valid_data, selected_data, axis=1)
-            if class_list != None and len(class_list) != numpy.shape(selected_data)[1]:
+            if class_list is not None and len(class_list) != numpy.shape(selected_data)[1]:
                 class_list = numpy.compress(valid_data, class_list)
 
         if use_anchor_data and self.anchor_data:
@@ -1182,11 +1184,11 @@ class ScaleLinProjData3D(ScaleData):
             yanchors = numpy.array([val[1] for val in self.anchor_data])
             zanchors = numpy.array([val[2] for val in self.anchor_data])
             r = numpy.sqrt(xanchors*xanchors + yanchors*yanchors + zanchors*zanchors)     # compute the distance of each anchor from the center of the circle
-            if normalize == 1 or (normalize == None and self.normalize_examples):
+            if normalize == 1 or (normalize is None and self.normalize_examples):
                 xanchors *= r
                 yanchors *= r
                 zanchors *= r
-        elif (xanchors != None and yanchors != None and zanchors != None):
+        elif (xanchors is not None and yanchors is not None and zanchors is not None):
             xanchors = numpy.array(xanchors)
             yanchors = numpy.array(yanchors)
             zanchors = numpy.array(zanchors)
@@ -1202,8 +1204,8 @@ class ScaleLinProjData3D(ScaleData):
         y_positions = numpy.dot(yanchors, selected_data)
         z_positions = numpy.dot(zanchors, selected_data)
 
-        if normalize == 1 or (normalize == None and self.normalize_examples):
-            if sum_i == None:
+        if normalize == 1 or (normalize is None and self.normalize_examples):
+            if sum_i is None:
                 sum_i = self._getSum_i(selected_data, use_anchor_data, r)
             x_positions /= sum_i
             y_positions /= sum_i
@@ -1243,7 +1245,7 @@ class ScaleLinProjData3D(ScaleData):
             z_positions += numpy.random.uniform(-jitter_size, jitter_size, len(z_positions))
 
         self.last_attr_indices = attr_indices
-        if class_list != None:
+        if class_list is not None:
             return numpy.transpose(numpy.array((x_positions, y_positions, z_positions, class_list)))
         else:
             return numpy.transpose(numpy.array((x_positions, y_positions, z_positions)))
@@ -1259,7 +1261,7 @@ class ScaleLinProjData3D(ScaleData):
         
         """
         if use_anchor_data:
-            if anchor_radius == None:
+            if anchor_radius is None:
                 anchor_radius = numpy.sqrt([a[0]**2+a[1]**2+a[2]**2 for a in self.anchor_data])
             sum_i = numpy.add.reduce(numpy.transpose(numpy.transpose(data)*anchor_radius))
         else:
@@ -1297,7 +1299,7 @@ class ScalePolyvizData(ScaleLinProjData):
                      Orange.data.Domain([Orange.feature.Continuous("xVar"),
                                          Orange.feature.Continuous("yVar")])
         data = self.create_projection_as_numeric_array(attr_list, **settings_dict)
-        if data != None:
+        if data is not None:
             return Orange.data.Table(domain, data)
         else:
             return Orange.data.Table(domain)
@@ -1326,12 +1328,12 @@ class ScalePolyvizData(ScaleLinProjData):
         jitter_size  = settings_dict.get("jitter_size", 0.0)
         remove_missing_data = settings_dict.get("remove_missing_data", 1)
         
-        if valid_data == None:
+        if valid_data is None:
             valid_data = self.get_valid_list(attr_indices)
         if sum(valid_data) == 0:
             return None
 
-        if class_list == None and self.data_has_class:
+        if class_list is None and self.data_has_class:
             class_list = self.original_data[self.data_class_index]
 
         if remove_missing_data:
@@ -1339,16 +1341,16 @@ class ScalePolyvizData(ScaleLinProjData):
                                           numpy.take(self.no_jittering_scaled_data,
                                                      attr_indices, axis = 0),
                                                      axis = 1)
-            if class_list != None and len(class_list) != numpy.shape(selected_data)[1]:
+            if class_list is not None and len(class_list) != numpy.shape(selected_data)[1]:
                 class_list = numpy.compress(valid_data, class_list)
         else:
             selected_data = numpy.take(self.no_jittering_scaled_data,
                                       attr_indices, axis = 0)
         
-        if sum_i == None:
+        if sum_i is None:
             sum_i = self._getSum_i(selected_data)
 
-        if xanchors == None or yanchors == None:
+        if xanchors is None or yanchors is None:
             xanchors = self.create_xanchors(len(attr_indices))
             yanchors = self.create_yanchors(len(attr_indices))
 
@@ -1376,7 +1378,7 @@ class ScalePolyvizData(ScaleLinProjData):
             x_positions += (numpy.random.random(len(x_positions)) - 0.5) * jitter_size
             y_positions += (numpy.random.random(len(y_positions)) - 0.5) * jitter_size
 
-        if class_list != None:
+        if class_list is not None:
             return numpy.transpose(numpy.array((x_positions, y_positions, class_list)))
         else:
             return numpy.transpose(numpy.array((x_positions, y_positions)))
@@ -1395,7 +1397,7 @@ class ScalePolyvizData(ScaleLinProjData):
         xanchors = settings_dict.get("xanchors")
         yanchors = settings_dict.get("yanchors")
     
-        if xanchors != None and yanchors != None:
+        if xanchors is not None and yanchors is not None:
             xanchors = numpy.array(xanchors)
             yanchors = numpy.array(yanchors)
         elif use_anchor_data:
@@ -1543,7 +1545,7 @@ class ScaleScatterPlotData(ScaleData):
 
         data = self.create_projection_as_numeric_array(attr_indices,
                                                        **settings_dict)
-        if data != None:
+        if data is not None:
             return Orange.data.Table(domain, data)
         else:
             return Orange.data.Table(domain)
@@ -1573,7 +1575,7 @@ class ScaleScatterPlotData(ScaleData):
 
         data = self.create_projection_as_numeric_array_3D(attr_indices,
                                                           **settings_dict)
-        if data != None:
+        if data is not None:
             return Orange.data.Table(domain, data)
         else:
             return Orange.data.Table(domain)
@@ -1590,12 +1592,12 @@ class ScaleScatterPlotData(ScaleData):
         class_list = settings_dict.get("class_list")
         jitter_size = settings_dict.get("jitter_size", 0.0)
 
-        if valid_data == None:
+        if valid_data is None:
             valid_data = self.get_valid_list(attr_indices)
         if sum(valid_data) == 0:
             return None
 
-        if class_list == None and self.data_has_class:
+        if class_list is None and self.data_has_class:
             class_list = self.original_data[self.data_class_index]
 
         xarray = self.no_jittering_scaled_data[attr_indices[0]]
@@ -1603,7 +1605,7 @@ class ScaleScatterPlotData(ScaleData):
         if jitter_size > 0.0:
             xarray += (numpy.random.random(len(xarray))-0.5)*jitter_size
             yarray += (numpy.random.random(len(yarray))-0.5)*jitter_size
-        if class_list != None:
+        if class_list is not None:
             data = numpy.compress(valid_data, numpy.array((xarray, yarray, class_list)), axis = 1)
         else:
             data = numpy.compress(valid_data, numpy.array((xarray, yarray)), axis = 1)
@@ -1622,12 +1624,12 @@ class ScaleScatterPlotData(ScaleData):
         class_list = settings_dict.get("class_list")
         jitter_size = settings_dict.get("jitter_size", 0.0)
 
-        if valid_data == None:
+        if valid_data is None:
             valid_data = self.get_valid_list(attr_indices)
         if sum(valid_data) == 0:
             return None
 
-        if class_list == None and self.data_has_class:
+        if class_list is None and self.data_has_class:
             class_list = self.original_data[self.data_class_index]
 
         xarray = self.no_jittering_scaled_data[attr_indices[0]]
@@ -1637,7 +1639,7 @@ class ScaleScatterPlotData(ScaleData):
             xarray += (numpy.random.random(len(xarray))-0.5)*jitter_size
             yarray += (numpy.random.random(len(yarray))-0.5)*jitter_size
             zarray += (numpy.random.random(len(zarray))-0.5)*jitter_size
-        if class_list != None:
+        if class_list is not None:
             data = numpy.compress(valid_data, numpy.array((xarray, yarray, zarray, class_list)), axis = 1)
         else:
             data = numpy.compress(valid_data, numpy.array((xarray, yarray, zarray)), axis = 1)

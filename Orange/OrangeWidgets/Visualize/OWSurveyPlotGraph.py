@@ -33,7 +33,7 @@ class OWSurveyPlotGraph(OWGraph, orngScaleData):
         self.length = len(labels)
         indices = [self.attributeNameIndex[label] for label in labels]
 
-        if self.noJitteringScaledData == None or len(self.noJitteringScaledData) == 0 or len(labels) == 0:
+        if self.noJitteringScaledData is None or len(self.noJitteringScaledData) == 0 or len(labels) == 0:
             self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
             self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
             return

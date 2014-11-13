@@ -172,7 +172,7 @@ class OWDistributionGraph(OWGraph):
 
     def calcHistogramAndProbGraph(self):
         "Calculates the histogram."
-        if self.data == None:
+        if self.data is None:
             return
         if self.pureHistogram:
             self.calcPureHistogram()
@@ -331,7 +331,7 @@ class OWDistributionGraph(OWGraph):
         self.refreshProbGraph()
 
     def refreshProbGraph(self):
-        if not self.data or self.targetValue == None:
+        if not self.data or self.targetValue is None:
             return
         
         if self.showProbabilities:
@@ -615,7 +615,7 @@ class OWDistributions(OWWidget):
     def setData(self, data):
         self.closeContext()
 
-        if data == None:
+        if data is None:
             self.variablesQCB.clear()
             self.targetQCB.clear()
             self.outcomes = []

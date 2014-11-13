@@ -120,7 +120,7 @@ class PCA(object):
         evalues, evectors = self._createPCAProjection(dataMatrix, classArray)
 
         #check if return status is None, None
-        if (evalues, evectors) == (None, None):
+        if evalues is None and evectors is None:
             print "Principal component could not be performed (complex eigenvalues or singular matrix if generalized eigenvectors were used)"
             return None
 
@@ -189,7 +189,7 @@ class PCA(object):
 
         n, d = numpy.shape(dataMatrix)
 
-        if classArray != None:
+        if classArray is not None:
             L = numpy.zeros((len(dataMatrix), len(dataMatrix)))
             for i in range(len(dataMatrix)):
                 for j in range(i + 1, len(dataMatrix)):
@@ -288,7 +288,7 @@ class PCAClassifier(object):
         dataMatrix, classArray, x = attrDataset.toNumpy()
 
         dataMatrix -= self.center
-        if self.deviation != None:
+        if self.deviation is not None:
             dataMatrix *= 1. / self.deviation
 
         #save transformed data
@@ -315,7 +315,7 @@ class PCAClassifier(object):
         summary += " %15s  " * len(self.domain) % tuple(self.domain) + "\n"
         summary += " %15.4f  " * len(self.center) % tuple(self.center) + "\n\n"
 
-        if self.deviation != None:
+        if self.deviation is not None:
             summary += "Deviation:\n\n"
             summary += " %15s  " * len(self.domain) % tuple(self.domain) + "\n"
             summary += " %15.4f  " * len(self.deviation) % tuple(self.deviation) + "\n\n"
@@ -381,7 +381,7 @@ class PCAClassifier(object):
         """
         import pylab as plt
 
-        if self._dataMatrix == None:
+        if self._dataMatrix is None:
             raise orange.KernelException, "No data available for biplot!"
 
         if len(choices) != 2:
@@ -419,7 +419,7 @@ class PCAClassifier(object):
         ax1.yaxis.set_label_position('left')
         ax1.yaxis.set_ticks_position('left')
 
-        if self._classArray == None:
+        if self._classArray is None:
             trDataMatrix = transpose(trDataMatrix)
             ax1.plot(trDataMatrix[0], trDataMatrix[1], Colors[0])
         else:

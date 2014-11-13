@@ -417,7 +417,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
             QMessageBox.critical(None,'No data','There is no data or no class value is selected in the Manage tab.',QMessageBox.Ok)
             return None, None
 
-        if example == None: example = self.visualizationWidget.subsetData[0]
+        if example is None: example = self.visualizationWidget.subsetData[0]
 
         self.findArgumentsButton.hide()
         self.stopArgumentationButton.show()
@@ -461,7 +461,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
     # save the list into a file - filename can be set if you want to call this function without showing the dialog
     def save(self, filename = None):
-        if filename == None:
+        if filename is None:
             # get file name
             datasetName = getattr(self.data, "name", "")
             if datasetName != "":
@@ -490,11 +490,11 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     # load projections from a file
     def load(self, name = None, ignoreCheckSum = 0):
         self.setStatusBarText("Loading visualizations")
-        if self.data == None:
+        if self.data is None:
             QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
             return
 
-        if name == None:
+        if name is None:
             name = QFileDialog.getOpenFileName(self, "Open a List of Visualizations", self.lastSaveDirName, "Interesting visualizations (*.mproj)")
             if name.isEmpty(): return
             name = unicode(name)
@@ -606,7 +606,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         if not selectedTreeItem: return
 
         # if this is the last element in the tree, then update the element's values
-        if selectedTreeItem.child(0) == None:
+        if selectedTreeItem.child(0) is None:
             selectedTreeItem.setText(0, self.attrsToString(attrList))
             selectedTreeItem.details.update(projDict)
             if selectedListItem:
@@ -629,7 +629,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     def mtSelectedTreeItemChanged(self, newSelection = None):
         if self.processingSubsetData:
             return
-        if newSelection == None:
+        if newSelection is None:
             items = self.subsetTree.selectedItems()
             if len(items) == 0: return
             newSelection = items[0]
@@ -686,7 +686,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.mtSelectedTreeItemChanged(treeItem)
 
     def mtClearTreeSelections(self, item = None):
-        if item == None:
+        if item is None:
             item  = self.subsetTree.invisibleRootItem()
         item.setSelected(0)
         for i in range(item.childCount()):
@@ -715,7 +715,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         if not items: return
 
         parent = items[0].parent()
-        if parent == None:
+        if parent is None:
             self.mtInitSubsetTree()
         else:
             self.mtRemoveTreeItem(item)
@@ -746,7 +746,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     def mtStrToItem(self, strItem, currItem = -1):
         if currItem == -1:
             currItem = self.subsetTree.invisibleRootItem()
-        if currItem == None:
+        if currItem is None:
             return None
         if currItem.text(0) == strItem:
             return currItem
@@ -760,7 +760,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
 
     # save tree to a file
     def mtSaveTree(self, name = None):
-        if name == None:
+        if name is None:
             qname = QFileDialog.getSaveFileName(self, "Save tree", os.path.join(self.lastSaveDirName, "explorer tree.tree"), "Explorer tree (*.tree)")
             if qname.isEmpty():
                 return
@@ -780,7 +780,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
         self.subsetTree.clear()
         self.treeRoot = None
 
-        if name == None:
+        if name is None:
             name = QFileDialog.getOpenFileName(self, "Load tree", self.lastSaveDirName, "Explorer tree (*.tree)")
             if name.isEmpty(): return
             name = unicode(name)
@@ -837,7 +837,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
                 #selectedItems = self.subsetTree.selectedItems()
                 selectedItem = self.subsetTree.currentItem()
 
-                if selectedItem and selectedItem.parent() != None:
+                if selectedItem and selectedItem.parent() is not None:
                     box = QMessageBox()
                     box.setIcon(QMessageBox.Question)
                     box.setWindowTitle("Tree Building")
@@ -867,7 +867,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
                     # if the selected item doesn't have any children we remove it and it will be replaced with the root of the tree that we generate
                     if not selectedItem:
                         self.subsetTree.clear()
-                    elif selectedItem.child(0) == None:
+                    elif selectedItem.child(0) is None:
                         self.mtRemoveTreeItem(selectedItem)
 
                     item = QTreeWidgetItem(parent, [self.attrsToString(root.attrs), str(len(root.branchSelector.data))])
@@ -898,7 +898,7 @@ class OWMosaicOptimization(OWWidget, orngMosaic):
     # remove a tree item and also remove selections dict from its parent
     def mtRemoveTreeItem(self, item):
         parent = item.parent()
-        if parent == None:
+        if parent is None:
             parent = self.subsetTree
         ind = parent.indexOfChild(item)
         parent.takeChild(ind)

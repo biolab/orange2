@@ -853,7 +853,7 @@ class VizRank:
                             attrNames = [self.graph.data_domain[attr].name for attr in attrIndices]
                         else:
                             projections = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, set_anchors = 0, percentDataUsed = self.percentDataUsed)
-                            if projections != None:
+                            if projections  is not None:
                                 xanchors, yanchors, (attrNames, newIndices) = projections
                                 table = self.graph.create_projection_as_example_table(newIndices, domain = domain, XAnchors = xanchors, YAnchors = yanchors)
                         if len(table) < self.minNumOfExamples: continue
@@ -935,7 +935,7 @@ class VizRank:
                     # if we use SPCA, PLS
                     if self.projOptimizationMethod != 0:
                         projections = self.freeviz.findProjection(self.projOptimizationMethod, attrIndices, set_anchors = 0, percentDataUsed = self.percentDataUsed)
-                        if projections != None:
+                        if projections  is not None:
                             xanchors, yanchors, zanchors, (attrNames, newIndices) = projections
                             table = self.graph.create_projection_as_example_table(newIndices,
                                                                                   domain = domain,
@@ -1455,7 +1455,7 @@ class VizRankOutliers:
         projCount = min(int(self.projectionCount), len(self.results))
         classCount = max(len(self.data.domain.classVar.values), 1)
         existing = 0
-        if self.matrixOfPredictions != None:
+        if self.matrixOfPredictions is not None:
             existing = numpy.shape(self.matrixOfPredictions)[0]/classCount
             if existing < projCount:
                 self.matrixOfPredictions = numpy.resize(self.matrixOfPredictions, (projCount*classCount, len(self.data)))

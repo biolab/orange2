@@ -382,7 +382,7 @@ class OWParallelGraph(OWGraph, orngScaleData):
 
         # we create a hash table of possible class values (happens only if we have a discrete class)
         classValueSorted = getVariableValuesSorted(self.dataDomain.classVar)
-        if self.domainContingency == None:
+        if self.domainContingency is None:
             self.domainContingency = orange.DomainContingency(self.rawData)
 
         maxVal = 1

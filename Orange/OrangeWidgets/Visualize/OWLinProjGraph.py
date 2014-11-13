@@ -88,7 +88,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         self.tooltipMarkers = []
 
         self.__dict__.update(args)
-        if labels == None: labels = [anchor[2] for anchor in self.anchorData]
+        if labels is None: labels = [anchor[2] for anchor in self.anchorData]
         self.shownAttributes = labels
         self.dataMap = {}   # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
         self.valueLineCurves = [{}, {}]    # dicts for x and y set of coordinates for unconnected lines
@@ -148,7 +148,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         validData = self.getValidList(indices)
         # jitter point if Radviz
         transProjData = self.createProjectionAsNumericArray(indices, validData = validData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = self.jitter_size if self.normalizeExamples else -1, useAnchorData = 1, removeMissingData = 0)
-        if transProjData == None:
+        if transProjData is None:
             return
         projData = transProjData.T
         x_positions = projData[0]
@@ -175,7 +175,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         # ##############################################################
         # show model quality
         # ##############################################################
-        if self.insideColors != None or self.showKNN and self.haveData:
+        if self.insideColors is not None or self.showKNN and self.haveData:
             # if we want to show knn classifications of the examples then turn the projection into example table and run knn
             if self.insideColors:
                 insideData, stringData = self.insideColors
@@ -461,7 +461,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
                 OWGraph.mouseMoveEvent(self, e)
                 if redraw: self.replot()
             else:
-                if self.selectedAnchorIndex != None:
+                if self.selectedAnchorIndex is not None:
                     if self.widget.freeVizDlg.restrain == 1:
                         rad = sqrt(xFloat**2 + yFloat**2)
                         xFloat /= rad
@@ -556,7 +556,7 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if len(validData) == 0: return (None, None)
 
         array = self.createProjectionAsNumericArray(attrList, scaleFactor = self.scaleFactor, useAnchorData = useAnchorData, removeMissingData = 0)
-        if array == None:       # if all examples have missing values
+        if array is None:       # if all examples have missing values
             return (None, None)
 
         #selIndices, unselIndices = self.getSelectionsAsIndices(attrList, useAnchorData, validData)
@@ -588,11 +588,11 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
         if not self.haveData: return [], []
 
         attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
-        if validData == None:
+        if validData is None:
             validData = self.getValidList(attrIndices)
 
         array = self.createProjectionAsNumericArray(attrList, scaleFactor = self.scaleFactor, useAnchorData = useAnchorData, removeMissingData = 0)
-        if array == None:
+        if array is None:
             return [], []
         array = numpy.transpose(array)
         return self.getSelectedPoints(array[0], array[1], validData)

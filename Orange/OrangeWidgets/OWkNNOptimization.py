@@ -561,7 +561,7 @@ class OWVizRank(VizRank, OWWidget):
             QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
             return
 
-        if name == None:
+        if name is None:
             name = QFileDialog.getOpenFileName(self, "Open Projections", self.lastSaveDirName, "Interesting projections (*.proj)")
             if name.isEmpty(): return
             name = unicode(name)
@@ -777,7 +777,7 @@ class OWVizRank(VizRank, OWWidget):
         self.clearArguments()
         self.arguments = [[] for i in range(len(self.graph.dataDomain.classVar.values))]
 
-        if not example and self.subsetData == None:
+        if not example and self.subsetData is None:
             QMessageBox.information( None, "VizRank Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. You can do this by sending the example through the "Example Subset" input signal. \n\nNext, you should press the "Start Evaluating Projections" button in the Main tab to evaluate some projections. \n\nBy pressing "Find Arguments" you will then find arguments why the given example should belong to a selected class.', QMessageBox.Ok + QMessageBox.Default)
             return (None,None)
         if len(self.shownResults) == 0:
@@ -1016,7 +1016,7 @@ class OWInteractionAnalysis(OWWidget):
                 elif bestDict.has_key((attributes[yy], attributes[x])):
                     accVal = bestDict[(attributes[yy], attributes[x])]
 
-                if countVal == bestVal == None:
+                if countVal == bestVal is None:
                     continue
 
                 if self.rectColoring == 0:
@@ -1232,7 +1232,7 @@ class OWGraphAttributeHistogram(OWWidget):
         white = QColor(255,255,255)
         self.graph.clear()
         #self.graph.removeMarkers()
-        if self.results == None: return
+        if self.results is None: return
         eps = 0.1 + self.progressLines * 0.1
         self.projectionCount = int(self.projectionCount)
         self.attributeCount = int(self.attributeCount)
@@ -1270,7 +1270,7 @@ class OWGraphAttributeHistogram(OWWidget):
         
         classVariableValues = getVariableValuesSorted(self.data.domain.classVar)
         classColors = ColorPaletteHSV(len(classVariableValues))
-        if self.colorAttributes and self.evaluatedAttributes == None and self.dialogType in [VIZRANK_POINT, CLUSTER_POINT]:
+        if self.colorAttributes and self.evaluatedAttributes is None and self.dialogType in [VIZRANK_POINT, CLUSTER_POINT]:
             evalAttrs, attrsByClass = orngVisFuncts.findAttributeGroupsForRadviz(self.data, orngVisFuncts.S2NMeasureMix())
             classColors = ColorPaletteHSV(len(classVariableValues))
             self.evaluatedAttributes = evalAttrs
@@ -1384,7 +1384,7 @@ class OWGraphProjectionQuality(OWWidget):
         #c = colors.getColor(0)
         c = QColor(0,0,0)
         self.graph.clear()
-        if self.results == None or self.dialogType not in [VIZRANK_POINT, CLUSTER_POINT, VIZRANK_MOSAIC]: return
+        if self.results is None or self.dialogType not in [VIZRANK_POINT, CLUSTER_POINT, VIZRANK_MOSAIC]: return
 
         yVals = [result[self.ACCURACY] for result in self.results]
         if not yVals: return
@@ -1630,7 +1630,7 @@ class OWGraphIdentifyOutliers(VizRankOutliers, OWWidget):
     def updateGraph(self):
         self.graph.clear()
         self.graph.tips.removeAll()
-        if not self.data or self.graphMatrix == None: return
+        if not self.data or self.graphMatrix is None: return
 
         classColors = ColorPaletteHSV(len(self.data.domain.classVar.values))
 

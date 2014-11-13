@@ -574,7 +574,7 @@ class ClusterOptimization(OWBaseWidget):
 
     # save the list into a file - filename can be set if you want to call this function without showing the dialog
     def save(self, filename = None):
-        if filename == None:
+        if filename is None:
             # get file name
             if self.datasetName != "":
                 filename = "%s - %s" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], self.parentName)
@@ -613,7 +613,7 @@ class ClusterOptimization(OWBaseWidget):
     def load(self):
         self.clearResults()
         self.clearArguments()
-        if self.rawData == None:
+        if self.rawData is None:
             QMessageBox.critical(None,'Load','There is no data. First load a data set and then load a cluster file',QMessageBox.Ok)
             return
 
@@ -775,7 +775,7 @@ class ClusterOptimization(OWBaseWidget):
         self.clearArguments()
         self.arguments = [[] for i in range(self.classValueList.count())]
 
-        if self.subsetdata == None:
+        if self.subsetdata is None:
             QMessageBox.information( None, "Cluster Dialog Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. \nYou can do this by sending the example to the visualization widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
             return
         if len(self.shownResults) == 0:
@@ -877,7 +877,7 @@ class ClusterOptimization(OWBaseWidget):
         if min(testExampleAttrVals) < 0.0 or max(testExampleAttrVals) > 1.0: return 0
 
         array = self.graph.createProjectionAsNumericArray([self.graph.attributeNameIndex[attr] for attr in attrList])
-        if array == None:
+        if array is None:
             return 0
         short = numpy.transpose(numpy.take(array, vertices))
 
@@ -927,7 +927,7 @@ class ClusterOptimization(OWBaseWidget):
         ind = self.classValueList.currentItem()
         for i in range(len(self.arguments[ind])):
             val = self.arguments[ind][i]
-            if val[0] != None:  self.argumentList.insertItem(val[0], "%.2f - %s" %(val[1], val[2]))
+            if val[0] is not None:  self.argumentList.insertItem(val[0], "%.2f - %s" %(val[1], val[2]))
             else:               self.argumentList.addItem("%.2f - %s" %(val[1], val[2]))
 
     def argumentSelected(self):
@@ -944,10 +944,10 @@ class clusterClassifier(orange.Classifier):
         self.data = data
 
         results = clusterOptimizationDlg.getAllResults()
-        if firstTime and results != None and len(results) > 0:
+        if firstTime and results is not None and len(results) > 0:
             computeProjections = QMessageBox.information(clusterOptimizationDlg, 'Cluster classifier', 'Do you want to classify examples based the projections that are currently in the projection list \n or do you want to compute new projections?','Current projections','Compute new projections', '', 0,1)
             #computeProjections = 0
-        elif results != None and len(results) > 0:
+        elif results is not None and len(results) > 0:
             computeProjections = 0
         else: computeProjections = 1
 
@@ -1170,7 +1170,7 @@ def computeDistance(x1, y1, x2, y2):
 
 # remove edges to different class values from the graph. set VALUE field of such edges to newVal
 def removeEdgesToDifferentClasses(graph, newVal):
-    if newVal == None:
+    if newVal is None:
         for (i,j) in graph.getEdges():
             if graph.objects[i].getclass() != graph.objects[j].getclass(): graph[i,j] = None
     else:
@@ -1204,7 +1204,7 @@ def removeSingleLines(graph, edgesDict, clusterDict, verticesDict, minimumValidI
             if merged[k] == merged[k+1] and graph[i, merged[k]][VALUE] >= minimumValidIndex and graph[j, merged[k]][VALUE] >= minimumValidIndex:
                 found = 1; break
         if not found:
-            if newVal == None: graph[i,j] = None            # delete the edge
+            if newVal is None: graph[i,j] = None            # delete the edge
             else:
                 graph[i,j][VALUE] = newVal   # set the edge value
                 graph[i,j][CLUSTER] = -1
@@ -1253,7 +1253,7 @@ def removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict,
                         if i==j: continue
                         if (i,j) in edges:
                             graph[i,j][CLUSTER] = -1
-                            if newVal == None:  graph[i,j] = None
+                            if newVal is None:  graph[i,j] = None
                             else:               graph[i,j][VALUE] = newVal
                             if i in verticesDict[key]: verticesDict[key].remove(i)
                             if j in verticesDict[key]: verticesDict[key].remove(j)
@@ -1265,7 +1265,7 @@ def removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict,
                 # remove the vertex from the closure
                 for n in graph.getNeighbours(vertex):
                     if int(graph.objects[n].getclass()) != correctClass or graph[vertex,n][CLUSTER] == -1: continue
-                    if newVal == None:  graph[vertex,n] = None
+                    if newVal is None:  graph[vertex,n] = None
                     else:               graph[vertex,n][VALUE] = newVal
                     if (n, vertex) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((n,vertex))
                     elif (vertex, n) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((vertex, n))
@@ -1370,7 +1370,7 @@ def fixDeletedEdges(graph, edgesDict, clusterDict, deletedEdgeValue, repairValue
                 graph[i,j][CLUSTER] = clusterDict[i]       # reset the edge value
                 edgesDict[clusterDict[i]].append((i,j))    # re-add the edge to the list of edges
             else:       # points belong to a different clusters. delete the values
-                if deleteValue == None: graph[i,j] = None
+                if deleteValue is None: graph[i,j] = None
                 else:                   graph[i,j][VALUE] = deleteValue
 
 

@@ -284,7 +284,7 @@ class Solver(object):
     def train_step_sequential(self, epoch, indices=None):
         """A single step of sequential training algorithm.
         """
-        indices = range(len(self.data)) if indices == None else indices
+        indices = range(len(self.data)) if indices is None else indices
         for ind in indices:
             x = self.data[ind]
             Dx = self.vectors - self.data[ind]

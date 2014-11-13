@@ -261,7 +261,7 @@ class OWMosaicDisplay(OWWidget):
         for combo in [self.attr1Combo, self.attr2Combo, self.attr3Combo, self.attr4Combo]:
             combo.clear()
 
-        if data == None: return
+        if data is None: return
 
         self.attr2Combo.addItem("(None)")
         self.attr3Combo.addItem("(None)")
@@ -403,7 +403,7 @@ class OWMosaicDisplay(OWWidget):
         if attrList == -1:
             attrList = [self.attr1, self.attr2, self.attr3, self.attr4]
 
-        if data == None : return
+        if data is None : return
 
         while "(None)" in attrList: attrList.remove("(None)")
         while "" in attrList:       attrList.remove("")
@@ -608,7 +608,7 @@ class OWMosaicDisplay(OWWidget):
         if not self.conditionalDict[attrVals]: return
 
         # we have to remember which conditions were new in this update so that when we right click we can only remove the last added selections
-        if self.selectionRectangle != None and self.selectionRectangle.collidesWithItem(outerRect) and tuple(usedVals) not in self.selectionConditions:
+        if self.selectionRectangle is not None and self.selectionRectangle.collidesWithItem(outerRect) and tuple(usedVals) not in self.selectionConditions:
             self.recentlyAdded = getattr(self, "recentlyAdded", []) + [tuple(usedVals)]
             self.selectionConditions = self.selectionConditions + [tuple(usedVals)]
 
@@ -845,9 +845,9 @@ class OWMosaicDisplay(OWWidget):
 
     # return examples in currently selected boxes as example table or array of 0/1 values
     def getSelectedExamples(self, asExampleTable = 1, negate = 0, selectionConditions = None, data = None, attrs = None):
-        if attrs == None:     attrs = self.getShownAttributeList()
-        if data == None:      data = self.data
-        if selectionConditions == None:    selectionConditions = self.selectionConditions
+        if attrs is None:     attrs = self.getShownAttributeList()
+        if data is None:      data = self.data
+        if selectionConditions is None:    selectionConditions = self.selectionConditions
 
         if attrs == [] or not data:
             return None

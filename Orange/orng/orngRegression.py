@@ -28,7 +28,7 @@ class LinearRegressionLearner(object):
         self.__dict__.update(kw)
 
     def __call__(self, data, weight=None):
-        if not self.use_attributes == None:
+        if not self.use_attributes is None:
             new_domain = orange.Domain(self.use_attributes, data.domain.classVar)
             new_domain.addmetas(data.domain.getmetas())
             data = orange.ExampleTable(new_domain, data)
@@ -61,14 +61,14 @@ class LinearRegressionLearner(object):
 
         # convertion to numpy
         A, y, w = data.toNumpy()        # weights ??
-        if A==None:
+        if A is None:
             n = len(data)
             m = 0
         else:
             n, m = numpy.shape(A)
      
         if self.beta0 == True:
-             if A==None:
+             if A is None:
                  X = numpy.ones([len(data),1])
              else:
                  X = numpy.insert(A,0,1,axis=1) # adds a column of ones
@@ -172,7 +172,7 @@ def printLinearRegression(lr):
             print fmt % (lr.domain.attributes[i].name, beta[i], err[i], t[i], sig[i])       
 
 def get_sig(m1, m2, n):
-    if m1==None or m2==None:
+    if m1 is None or m2 is None:
         return 1.0
     p1, p2 = len(m1.domain.attributes), len(m2.domain.attributes)
     RSS1, RSS2 = m1.statistics["model summary"]["ExplVar"], m2.statistics["model summary"]["ExplVar"]
@@ -249,9 +249,9 @@ class PLSRegressionLearner(object):
 
     def __call__(self, data, y=None, x=None, nc=None, weight=None, **kwds):
 
-        if y == None:
+        if y is None:
             y = [ data.domain.classVar ]
-        if x == None:
+        if x is None:
             x = [v for v in data.domain.variables if v not in y]
 
         Ncomp = nc if nc is not None else len(x)
