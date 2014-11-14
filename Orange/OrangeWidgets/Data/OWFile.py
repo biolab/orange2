@@ -12,13 +12,13 @@ from collections import namedtuple
 from StringIO import StringIO
 
 from PyQt4.QtGui import (
-    QWidget, QGroupBox, QCheckBox, QComboBox, QLineEdit, QPushButton, QLabel,
+    QWidget, QGroupBox, QComboBox, QLineEdit, QPushButton, QLabel,
     QFrame, QDialog, QDialogButtonBox, QTableView, QRegExpValidator,
     QFormLayout, QVBoxLayout, QHBoxLayout, QStackedLayout, QSizePolicy,
     QStandardItem, QStyle, QApplication, QFileIconProvider, QDesktopServices,
-    QFileDialog, QIcon
+    QFileDialog, QIcon, QStyleOptionFrameV3
 )
-from PyQt4.QtCore import Qt, QEvent, QRegExp, QFileInfo, QTimer
+from PyQt4.QtCore import Qt, QEvent, QRegExp, QFileInfo, QTimer, QSize
 from PyQt4.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
 
 import Orange.data
@@ -214,6 +214,74 @@ def load_table(filename, options, create_new_on=MakeStatus.NoRecognizedValues):
                      **options.params._asdict())
 
 
+def _kwargs_pop(d, key, default=None):
+    try:
+        return d.pop(key)
+    except KeyError:
+        return default
+
+
+class LineEdit(QLineEdit):
+    """
+    A line edit widget with a `minimumContentsLenght` property
+
+    Similar to QComboBox.minimumContentsLength
+    """
+    # These constants are taken from Qt's sources
+    _verticalMargin = 1
+    _horizontalMargin = 2
+
+    def __init__(self, *args, **kwargs):
+        self.__minimumContentsLength = \
+            _kwargs_pop(kwargs, "minimumContentsLength", 0)
+
+        super(LineEdit, self).__init__(*args, **kwargs)
+
+    def sizeHint(self):
+        # Most of this is taken from QLineEdit's sources, the difference
+        # is only in the use of minimumContentsLength instead of a
+        # hardcoded constant.
+        self.ensurePolished()
+        fm = self.fontMetrics()
+        textmargins = self.textMargins()
+        contentsmargins = self.contentsMargins()
+
+        h = (max(fm.height(), 14) + 2 * self._verticalMargin +
+             textmargins.top() + textmargins.bottom() +
+             contentsmargins.top() + contentsmargins.bottom())
+
+        nchar = self.__minimumContentsLength
+        if not nchar > 0:
+            nchar = 17
+
+        w = (fm.width("X") * nchar + 2 * self._horizontalMargin +
+             textmargins.left() + textmargins.right() +
+             contentsmargins.left() + contentsmargins.right())
+
+        opt = QStyleOptionFrameV3()
+        self.initStyleOption(opt)
+        size = self.style().sizeFromContents(
+            QStyle.CT_LineEdit, opt,
+            QSize(w, h).expandedTo(QApplication.globalStrut()),
+            self
+        )
+        return size
+
+    def minimumSizeHint(self):
+        if self.__minimumContentsLength > 0:
+            return self.sizeHint()
+        else:
+            return super(LineEdit, self).sizeHint()
+
+    def setMinimumContentsLength(self, characters):
+        if self.__minimumContentsLength != characters:
+            self.__minimumContentsLength = characters
+            self.updateGeometry()
+
+    def minimumContentsLength(self):
+        return self.__minimumContentsLength
+
+
 class CSVOptionsWidget(QWidget):
     _PresetDelimiters = [
         ("Comma", ","),
@@ -248,9 +316,10 @@ class CSVOptionsWidget(QWidget):
         self.delimiter_cb.activated.connect(self._on_delimiter_idx_changed)
 
         validator = QRegExpValidator(QRegExp("."))
-        self.delimiteredit = QLineEdit(
+        self.delimiteredit = LineEdit(
             self._delimiter_custom,
             enabled=False,
+            minimumContentsLength=2
         )
         self.delimiteredit.setValidator(validator)
         self.delimiteredit.editingFinished.connect(self._on_delimiter_changed)
@@ -260,20 +329,20 @@ class CSVOptionsWidget(QWidget):
         delimlayout.addWidget(self.delimiter_cb)
         delimlayout.addWidget(self.delimiteredit)
 
-        self.quoteedit = QLineEdit(self._quotechar)
+        self.quoteedit = LineEdit(self._quotechar, minimumContentsLength=2)
         self.quoteedit.setValidator(validator)
         self.quoteedit.editingFinished.connect(self._on_quotechar_changed)
 
-        self.escapeedit = QLineEdit(self._escapechar)
+        self.escapeedit = LineEdit(self._escapechar, minimumContentsLength=2)
         self.escapeedit.setValidator(validator)
         self.escapeedit.editingFinished.connect(self._on_escapechar_changed)
 
-        self.skipinitialspace_cb = QCheckBox(
-            checked=self._skipinitialspace
-        )
+#         self.skipinitialspace_cb = QCheckBox(
+#             checked=self._skipinitialspace
+#         )
 
         form.addRow("Cell delimiter", delimlayout)
-        form.addRow("Quote", self.quoteedit)
+        form.addRow("Quote character", self.quoteedit)
         form.addRow("Escape character", self.escapeedit)
 
         form.addRow(QFrame(self, frameShape=QFrame.HLine))
@@ -329,7 +398,7 @@ class CSVOptionsWidget(QWidget):
         self.delimiteredit.setText(delimiter)
         self.quoteedit.setText(dialect.quotechar or '"')
         self.escapeedit.setText(dialect.escapechar or "")
-        self.skipinitialspace_cb.setChecked(dialect.skipinitialspace)
+#         self.skipinitialspace_cb.setChecked(dialect.skipinitialspace)
 
     def set_header_format(self, header_format):
         """Set the current selected header format."""
