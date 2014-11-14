@@ -465,10 +465,17 @@ class CSVImportDialog(QDialog):
 
         buttons = QDialogButtonBox(
             orientation=Qt.Horizontal,
-            standardButtons=QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+            standardButtons=(QDialogButtonBox.Ok | QDialogButtonBox.Cancel |
+                             QDialogButtonBox.Reset)
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
+
+        def on_clicked(button):
+            if buttons.buttonRole(button) == QDialogButtonBox.ResetRole:
+                self.reset()
+
+        buttons.clicked.connect(on_clicked)
 
         self.layout().addWidget(self._optionswidget)
         self.layout().addWidget(prev_box)
@@ -488,9 +495,18 @@ class CSVImportDialog(QDialog):
                    missing_values=missing_values)
 
     def set_path(self, path):
+        """Set the preview path."""
         if self._path != path:
             self._path = path
             self._invalidate_preview()
+
+    def path(self):
+        """Return the preview path"""
+        return self._path
+
+    def reset(self):
+        """Reset the options to their default values."""
+        self.set_options(self._options)
 
     def _invalidate_preview(self):
         if not self.__update_pending:
