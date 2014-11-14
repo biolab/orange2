@@ -214,13 +214,6 @@ def load_table(filename, options, create_new_on=MakeStatus.NoRecognizedValues):
                      **options.params._asdict())
 
 
-def _kwargs_pop(d, key, default=None):
-    try:
-        return d.pop(key)
-    except KeyError:
-        return default
-
-
 class LineEdit(QLineEdit):
     """
     A line edit widget with a `minimumContentsLenght` property
@@ -232,8 +225,7 @@ class LineEdit(QLineEdit):
     _horizontalMargin = 2
 
     def __init__(self, *args, **kwargs):
-        self.__minimumContentsLength = \
-            _kwargs_pop(kwargs, "minimumContentsLength", 0)
+        self.__minimumContentsLength = kwargs.pop("minimumContentsLength", 0)
 
         super(LineEdit, self).__init__(*args, **kwargs)
 
