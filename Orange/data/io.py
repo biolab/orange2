@@ -761,7 +761,7 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
 
     # Process undefined variables now that we can deduce their type
     for ind, var_def in undefined_vars:
-        values = var_def.values - set(["?", ""])  # TODO: Other unknown strings
+        values = var_def.values - set(missing_flags)
         values = sorted(values)
         if isinstance(var_def, _disc_placeholder):
             variables[ind] = make(var_def.name, Orange.feature.Type.Discrete, [], values, create_new_on)
