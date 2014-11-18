@@ -579,7 +579,10 @@ def is_variable_cont(values, n=None, cutoff=0.5):
 def is_variable_discrete(values, n=None, cutoff=0.3):
     """Is variable with ``values`` in column (``n`` rows) a discrete variable.
     """
-    return not is_variable_cont(values, n, cutoff=1.0 - cutoff)
+    if len(set(values)) >= 20:
+        return False
+    else:
+        return not is_variable_cont(values, n, cutoff=1.0 - cutoff)
 
 
 def is_variable_string(values, n=None, cutoff=0.75):
