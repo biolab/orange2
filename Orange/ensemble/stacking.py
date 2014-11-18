@@ -64,6 +64,7 @@ class StackedClassifier:
         self.classifiers = classifiers
         self.meta_classifier = meta_classifier
         self.domain = Orange.data.Domain(self.meta_classifier.domain.features, False)
+        self.class_var = meta_classifier.class_var
         self.__dict__.update(kwds)
 
     def __call__(self, instance, resultType=Orange.core.GetValue):

@@ -40,6 +40,15 @@ class TestRandomForest(testing.LearnerTestCase):
         testing.LearnerTestCase.test_pickling_on(self, dataset)
 
 
+@datasets_driven(datasets=testing.CLASSIFICATION_DATASETS)
+class TestStacking(testing.LearnerTestCase):
+    def setUp(self):
+        from Orange.ensemble import stacking
+        from Orange.classification import tree, bayes
+        self.learner = stacking.StackedClassificationLearner(
+            [tree.TreeLearner(), bayes.NaiveLearner()], folds=5
+        )
+
 
 if __name__ == "__main__":
     import unittest
