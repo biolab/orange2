@@ -613,6 +613,10 @@ def parse_simplified_header(row):
     return names, types, var_attrs
 
 
+class CSVFormatError(Warning):
+    pass
+
+
 def load_csv(file, create_new_on=MakeStatus.Incompatible,
              delimiter=None, quotechar=None, escapechar=None,
              skipinitialspace=None, has_header=None, has_types=None,
@@ -750,10 +754,22 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
 
     data = []
     # Read all the rows
-    for row in reader:
+    for i, row in enumerate(reader):
         # check for final newline.
         if row:
             row = map(missing_translate, row)
+            if len(row) != len(header):
+                warnings.warn(
+                    "row {} has {} cells, expected {}.".format(
+                        i, len(row), len(header)),
+                    CSVFormatError, stacklevel=2
+                )
+            # Pad or strip the row to ensure it has the same length
+            if len(row) < len(header):
+                row += ["?"] * (len(header) - len(row))
+            elif len(row) > len(header):
+                row = row[:len(header)]
+
             data.append(row)
             # For undefined variables collect all their values
             for ind, var_def in undefined_vars:
