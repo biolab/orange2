@@ -49,6 +49,10 @@ class TestStacking(testing.LearnerTestCase):
             [tree.TreeLearner(), bayes.NaiveLearner()], folds=5
         )
 
+    @test_on_datasets(datasets=["iris"])
+    def test_pickling_on(self, dataset):
+        testing.LearnerTestCase.test_pickling_on(self, dataset)
+
 
 if __name__ == "__main__":
     import unittest
