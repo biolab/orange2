@@ -46,7 +46,7 @@ class StackedClassificationLearner(Orange.classification.Learner):
         return StackedClassifier(classifiers, meta_classifier, name=self.name)
 
     def __reduce__(self):
-        return type(self), (self.learner,), dict(self.__dict__)
+        return type(self), (self.learners,), dict(self.__dict__)
 
 
 class StackedClassifier:
