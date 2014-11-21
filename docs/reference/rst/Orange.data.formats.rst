@@ -8,32 +8,68 @@ Loading and saving data
 
 .. _tab-delimited:
 
-Tab-delimited format
-====================
-Orange prefers to open data files in its native, tab-delimited format. This format allows us to specify type of features
-and optional flags along with the feature names, which can ofter result in shorter loading times. This additional data
-is provided in a form of a 3-line header. First line contains variable
-names, followed by their types in the second line and optional
-flags in the third.
+Orange's tab-delimited format
+=============================
+Orange comes with its native, tab-delimited data format. This is a standard
+data format with a non-standard 3-line header that specifies the type of features
+and optional flags along with the feature names. The first header line contains
+feature (column) names, the second line specifies their types, and the third
+line provides optional flags. Default file extension of Orange's data files is
+".tab".
 
-Example of iris dataset in tab-delimited format (:download:`iris.tab <code/iris.tab>`)
+Example of iris dataset in Orange's format (:download:`iris.tab <code/iris.tab>`)
 
 .. literalinclude:: code/iris.tab
    :lines: 1-7
 
-Feature types
--------------
- * discrete (or d) - imported as :obj:`Orange.feature.Discrete`
- * continuous (or c) - imported as :obj:`Orange.feature.Continuous`
- * text (or string, s) - imported as :obj:`Orange.feature.String`
- * basket - used for storing sparse data. More on basket formats in a dedicated section.
+Three header lines thus include:
+     1. feature names (first header line). Feature names can include any combination
+        of characters.
+     2. feature types (second header line) report on type of the feature. The
+        type has to be provided for all features, and can be any of the
+        following:
+         * discrete (or d) - imported as :obj:`Orange.feature.Discrete`
+         * continuous (or c) - imported as :obj:`Orange.feature.Continuous`
+         * text (or string, s) - imported as :obj:`Orange.feature.String`
+         * basket - used for storing sparse data. More on basket formats in a
+           dedicated section.
+     3. optional flags (third header line) that are either empty (no flag) or
+        of the following:
+         * ignore (or i) - feature will not be imported
+         * class (or c) - feature will be imported as class variable. Only one feature can be marked as class.
+         * multiclass - feature is one of multiple classes. Data can have both, multiple classes and an ordinary class.
+         * meta (or m) - feature will be imported as a meta attribute.
 
-Optional flags
---------------
- * ignore (or i) - feature will not be imported
- * class (or c) - feature will be imported as class variable. Only one feature can be marked as class.
- * multiclass - feature is one of multiple classes. Data can have both, multiple classes and an ordinary class.
- * meta (or m) - feature will be imported as a meta attribute.
+Simplified header
+-----------------
+Instead of a three-line header a single-line header can be used with tags
+listed before feature names and separated from a feature name with a
+hash ("#") sign. Supported tags are:
+
+    * c for class feature
+    * i for feature to be ignored
+    * m for the meta attribute
+    * C for continuous-typed feature
+    * D for discrete feature
+    * S for string
+
+Files with simplified header should use extension ".csv".
+
+An example :download:`data file<code/abridged-iris.csv>` in this format is
+shown below:
+
+.. literalinclude:: code/abridged-iris.csv
+   :lines: 1-4
+
+Notice that we have ignored the second column (sepal width), and declared
+third and fourth column (features on petal leaves) as meta:
+
+    >>> import Orange.data
+    >>> data = Orange.load.Table("abridged-iris.csv")
+    >>> data[0]
+    [5.1, 'Iris-setosa'], {"petal length":1.4, "petal width":0.2}
+    >>> data.domain
+    [sepal length, iris], {-3:petal length, -4:petal width}
 
 Baskets
 -------
