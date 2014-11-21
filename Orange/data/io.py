@@ -617,6 +617,10 @@ class CSVFormatError(Warning):
     pass
 
 
+class VariableDefinitionError(ValueError):
+    pass
+
+
 def load_csv(file, create_new_on=MakeStatus.Incompatible,
              delimiter=None, quotechar=None, escapechar=None,
              skipinitialspace=None, has_header=None, has_types=None,
@@ -680,7 +684,11 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
         has_types = has_header and is_var_types_row(row)
 
     if has_types:
-        types = var_types(row)
+        try:
+            types = var_types(row)
+        except ValueError as err:
+            raise VariableDefinitionError(*err.args)
+
         # Eat this row and move to the next
         row = reader.next()
 
@@ -690,7 +698,10 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
                           is_var_attributes_row(row)
 
     if has_annotations:
-        var_attrs = var_attributes(row)
+        try:
+            var_attrs = var_attributes(row)
+        except ValueError as err:
+            raise VariableDefinitionError(*err.args)
         # Eat this row and move to the next
         row = reader.next()
 

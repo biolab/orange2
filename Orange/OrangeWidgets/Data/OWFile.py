@@ -523,6 +523,12 @@ class CSVImportDialog(QDialog):
                 "Cannot load data preview:\n {!s}".format(err)
             )
             self._stack.setCurrentWidget(self._preview_error)
+        except (Orange.data.io.CSVFormatError,
+                Orange.data.io.VariableDefinitionError) as err:
+            self._preview_error.setText(
+                "Data formating error:\n {!s}".format(err)
+            )
+            self._stack.setCurrentWidget(self._preview_error)
         except Exception as err:
             self._preview_error.setText(
                 "Cannot load data preview:\n {!s}".format(err)
