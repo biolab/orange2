@@ -442,7 +442,8 @@ import re
 
 def split_escaped_str(string, sep, escapechar="\\"):
     re_pattern = "(?<!%s)%s" % (re.escape(escapechar), re.escape(sep))
-    return re.split(re_pattern, string)
+    values = re.split(re_pattern, string)
+    return [val.replace(escapechar + sep, sep) for val in values]
 
 
 def is_standard_var_def(cell):
