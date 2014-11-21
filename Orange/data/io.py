@@ -87,6 +87,8 @@ Similar as above the ``**kwargs`` contains any additional arguments
   
 """
 import os
+import csv
+
 import warnings
 
 import Orange
@@ -435,23 +437,13 @@ Currently not yet documented and not registered (needs testing).
 
 """
 
-def split_escaped_str(str, split_str=" ", escape="\\"):
-    res = []
-    index = 0
-    start = 0
-    find_start = 0
-    while index != -1:
-        index = str.find(split_str, find_start)
-        if index != -1 and index > 0:
-            if str[index - 1] == escape: # Skip the escaped split_str
-                find_start = index + 1
-            else:
-                res.append(str[start:index])
-                start = find_start = index + 1
+import re
 
-        elif index == -1:
-            res.append(str[start:])
-    return [r.replace(escape + split_str, split_str) for r in res]
+
+def split_escaped_str(string, sep, escapechar="\\"):
+    re_pattern = "(?<!%s)%s" % (re.escape(escapechar), re.escape(sep))
+    return re.split(re_pattern, string)
+
 
 def is_standard_var_def(cell):
     """Is the cell a standard variable definition (empty, cont, disc, string)
@@ -459,16 +451,18 @@ def is_standard_var_def(cell):
     try:
         var_type(cell)
         return True
-    except ValueError, ex:
+    except ValueError:
         return False
 
+
 def is_var_types_row(row):
-    """ Is the row a variable type definition row (as in the orange .tab file)
+    """Is the row a variable type definition row (as in the orange .tab file)
     """
     return all(map(is_standard_var_def, row))
 
+
 def var_type(cell):
-    """ Return variable type from a variable type definition in cell. 
+    """Return variable type from a variable type definition in cell.
     """
     if cell in ["c", "continuous"]:
         return variable.Continuous
@@ -476,7 +470,7 @@ def var_type(cell):
         return variable.Discrete
     elif cell in ["s", "string"]:
         return variable.String
-    elif cell.startswith("pyhton"):
+    elif cell.startswith("python"):
         return variable.Python
     elif cell == "":
         return variable.Descriptor
@@ -485,40 +479,40 @@ def var_type(cell):
     else:
         raise ValueError("Unknown variable type definition %r." % cell)
 
+
 def var_types(row):
-    """ Return variable types from row. 
-    """
+    """Return variable types from row."""
     return map(var_type, row)
 
+
 def is_var_attributes_row(row):
-    """ Is the row an attribute definition row (i.e. the third row in the
+    """Is the row an attribute definition row (i.e. the third row in the
     standard orange .tab file format).
-    
     """
     return all(map(is_var_attributes_def, row))
 
+
 def is_var_attributes_def(cell):
-    """ Is the cell a standard variable attributes definition. 
+    """Is the cell a standard variable attributes definition.
     """
     try:
         var_attribute(cell)
         return True
-    except ValueError, ex:
-        raise
+    except ValueError:
         return False
 
+
 def _var_attribute_label_parse(cell):
-    """ 
-    """
     key_value = split_escaped_str(cell, "=")
     if len(key_value) == 2:
         return tuple(key_value)
     else:
         raise ValueError("Invalid attribute label definition %r." % cell)
 
+
 def var_attribute(cell):
-    """ Return variable specifier ("meta" or "class" or None) and attributes
-    labels dict. 
+    """Return variable specifier ("meta" or "class" or None) and attributes
+    labels dict.
     """
     items = split_escaped_str(cell, " ")
     if cell == "":
@@ -528,7 +522,7 @@ def var_attribute(cell):
         if items[0] in ["m", "meta"]:
             specifier = "meta"
             items = items[1:]
-        elif items[0] == "class":
+        elif items[0] in ["c", "class"]:
             specifier = "class"
             items = items[1:]
         elif items[0] == "multiclass":
@@ -541,35 +535,40 @@ def var_attribute(cell):
     else:
         raise ValueError("Unknown attribute label definition")
 
+
 def var_attributes(row):
-    """ Return variable specifiers and label definitions for row.
+    """Return variable specifiers and label definitions for row.
     """
     return map(var_attribute, row)
 
 
 class _var_placeholder(object):
-    """ A place holder for an arbitrary variable while it's values are still unknown.
+    """A place holder for an arbitrary variable while it's values are
+    still unknown.
     """
     def __init__(self, name="", values=[]):
         self.name = name
         self.values = set(values)
 
+
 class _disc_placeholder(_var_placeholder):
-    """ A place holder for discrete variables while their values are not yet known.
+    """A place holder for discrete variables while their values are
+    still unknown.
     """
     pass
 
+
 def is_val_cont(cell):
-    """ Is cell a string representing a real value.
-    """
+    """Is cell a string representing a real value."""
     try:
         float(cell)
         return True
     except ValueError:
         return False
 
+
 def is_variable_cont(values, n=None, cutoff=0.5):
-    """ Is variable with ``values`` in column (``n`` rows) a continuous variable. 
+    """Is variable with ``values`` in column (``n`` rows) a continuous variable.
     """
     cont = sum(map(is_val_cont, values)) or 1e-30
     if n is None:
@@ -578,24 +577,57 @@ def is_variable_cont(values, n=None, cutoff=0.5):
 
 
 def is_variable_discrete(values, n=None, cutoff=0.3):
-    """ Is variable with ``values`` in column (``n`` rows) a discrete variable. 
+    """Is variable with ``values`` in column (``n`` rows) a discrete variable.
     """
-    return not is_variable_cont(values, n, cutoff=1.0 - cutoff)
+    if len(set(values)) >= 20:
+        return False
+    else:
+        return not is_variable_cont(values, n, cutoff=1.0 - cutoff)
 
-def is_variable_string(values, n=None, cutuff=0.75):
-    """ Is variable with ``values`` in column (``n`` rows) a string variable. 
+
+def is_variable_string(values, n=None, cutoff=0.75):
+    """Is variable with ``values`` in column (``n`` rows) a string variable.
     """
     if n is None:
         n = len(values)
     return float(len(set(values))) / (n or 1.0) > cutoff
 
-def load_csv(file, create_new_on=MakeStatus.Incompatible, 
+
+def parse_simplified_header(row):
+    pattern = re.compile("^([cmi][DCS]|[cmi]|[DCS])#")
+    names, types, var_attrs = [], [], []
+    for string in row:
+        match = pattern.match(string)
+        name, type_def, annot_def = string, "", ""
+        if match:
+            spec, name = string.split("#", 1)
+            if spec[0] in "cmi":
+                annot_def = spec[0]
+            if spec[-1] in "DCS":
+                type_def = spec[-1].lower()
+
+        names.append(name)
+        types.append(var_type(type_def))
+        var_attrs.append(var_attribute(annot_def))
+
+    return names, types, var_attrs
+
+
+class CSVFormatError(Warning):
+    pass
+
+
+class VariableDefinitionError(ValueError):
+    pass
+
+
+def load_csv(file, create_new_on=MakeStatus.Incompatible,
              delimiter=None, quotechar=None, escapechar=None,
-             skipinitialspace=None, has_header=None, 
-             has_types=None, has_annotations=None, DK=None, **kwargs):
-    """ Load an Orange.data.Table from s csv file.
-    """
-    import csv, numpy
+             skipinitialspace=None, has_header=None, has_types=None,
+             has_annotations=None, has_simplified_header=False,
+             DK=None, **kwargs):
+    """Load an Orange.data.Table from a csv file."""
+
     file = as_open_file(file, "rU")
     snifer = csv.Sniffer()
 
@@ -634,28 +666,42 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
 
     row = first_row = reader.next()
 
-    if has_header:
+    if has_simplified_header == True and \
+            (has_types == True or has_annotations == True):
+        raise ValueError("'has_simplified_header' and 'has_types', "
+                         "'has_anotations' are exclusive'")
+
+    if has_header and not has_simplified_header:
         header = row
         # Eat this row and move to the next
         row = reader.next()
+    elif has_header and has_simplified_header:
+        header, types, var_attrs = parse_simplified_header(row)
+        row = reader.next()
 
     # Guess types row
-    if has_types is None:
+    if has_types is None and not has_simplified_header:
         has_types = has_header and is_var_types_row(row)
 
     if has_types:
-        types = var_types(row)
+        try:
+            types = var_types(row)
+        except ValueError as err:
+            raise VariableDefinitionError(*err.args)
+
         # Eat this row and move to the next
         row = reader.next()
 
     # Guess variable annotations row
-    if has_annotations is None:
+    if has_annotations is None and not has_simplified_header:
         has_annotations = has_header and has_types and \
                           is_var_attributes_row(row)
 
     if has_annotations:
-        labels_row = row
-        var_attrs = var_attributes(row)
+        try:
+            var_attrs = var_attributes(row)
+        except ValueError as err:
+            raise VariableDefinitionError(*err.args)
         # Eat this row and move to the next
         row = reader.next()
 
@@ -712,17 +758,29 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
             elif var_t == variable.Python:
                 # Python variables are not supported yet
                 raise NotImplementedError()
-        elif var_t is None:
+        elif var_t is None or var_t is variable.Descriptor:
             # Unknown variable type, to be deduced at the end
             variables.append(_var_placeholder(name))
             undefined_vars.append((i, variables[-1]))
 
     data = []
     # Read all the rows
-    for row in reader:
+    for i, row in enumerate(reader):
         # check for final newline.
         if row:
             row = map(missing_translate, row)
+            if len(row) != len(header):
+                warnings.warn(
+                    "row {} has {} cells, expected {}.".format(
+                        i, len(row), len(header)),
+                    CSVFormatError, stacklevel=2
+                )
+            # Pad or strip the row to ensure it has the same length
+            if len(row) < len(header):
+                row += ["?"] * (len(header) - len(row))
+            elif len(row) > len(header):
+                row = row[:len(header)]
+
             data.append(row)
             # For undefined variables collect all their values
             for ind, var_def in undefined_vars:
@@ -730,7 +788,7 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
 
     # Process undefined variables now that we can deduce their type
     for ind, var_def in undefined_vars:
-        values = var_def.values - set(["?", ""])  # TODO: Other unknown strings
+        values = var_def.values - set(missing_flags)
         values = sorted(values)
         if isinstance(var_def, _disc_placeholder):
             variables[ind] = make(var_def.name, Orange.feature.Type.Discrete, [], values, create_new_on)
@@ -755,7 +813,6 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
     class_vars = []
     metas = {}
     attribute_indices = []
-    variable_indices = []
     class_indices = []
     multiclass_indices = []
     meta_indices = []
