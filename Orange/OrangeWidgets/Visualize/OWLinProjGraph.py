@@ -708,9 +708,8 @@ class OWLinProjGraph(OWGraph, orngScaleLinProjData):
             else:
                 imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, ox, oy, self.squareGranularity, self.trueScaleFactor/2, self.spaceBetweenCells) # the last argument is self.trueScaleFactor (in LinProjGraph...)
                 palette = []
-                sortedClasses = getVariableValuesSorted(self.potentialsClassifier.domain.classVar)
-                for cls in self.potentialsClassifier.classVar.values:
-                    color = self.discPalette.getRGB(sortedClasses.index(cls))
+                for i in range(len(self.dataDomain.classVar.values)):
+                    color = self.discPalette.getRGB(i)
                     towhite = [255-c for c in color]
                     for s in range(nShades):
                         si = 1-float(s)/nShades
