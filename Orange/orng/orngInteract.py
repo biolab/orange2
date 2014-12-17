@@ -62,7 +62,6 @@ class InteractionMatrix:
         ### DISCRETIZE VARIABLES ###
 
         newatt = []
-        oldatt = []
         entroD = orange.EntropyDiscretization()
         equiD = orange.EquiNDiscretization(numberOfIntervals = 2)
         for i in t.domain.attributes:
@@ -75,9 +74,9 @@ class InteractionMatrix:
                 warnings.warn('Discretizing %s into %s with %d values.'%(i.name,d.name,len(d.values)))
                 newatt.append(d)
             else:
-                oldatt.append(i)
-        if len(newatt) > 0:
-            t = t.select(oldatt+newatt+[t.domain.classVar])
+                newatt.append(i)
+        if list(t.domain.attributes) != newatt:
+            t = t.select(newatt + ([t.domain.classVar] if t.domain.classVar else []))
 
         ### FIX MISSING VALUES ###
 
