@@ -176,7 +176,9 @@ class ReportWindow(OWWidget):
                          Qt.ItemIsDragEnabled | Qt.ItemIsEditable)
         widnode.elementId = elid
         widnode.widgetId = widgetId
-        widnode.time = time.strftime("%a %b %d %y, %H:%M:%S")
+        import locale
+        time_encoding = locale.getlocale(locale.LC_TIME)[1] or locale.getpreferredencoding()
+        widnode.time = time.strftime("%a %b %d %y, %H:%M:%S").decode(time_encoding)
         widnode.data = report
         widnode.name = name
         self.tree.addItem(widnode)
@@ -351,16 +353,16 @@ class ReportWindow(OWWidget):
 
         index = "<br/>".join('<a href="#%s">%s</a>' % (self.tree.item(i).elementId, self.re_h1.search(self.tree.item(i).content).group("name"))
                              for i in range(self.tree.count()))
-            
+
 ######## Rewrite this to go through individual tree nodes. For one reason: this code used to work
 ##       when the HTML stored in tree nodes included DIV and H1 tags, which it does not any more,
-##       so they have to be added here         
+##       so they have to be added here
 
         data = "\n".join(self.tree.item(i).content for i in range(self.tree.count()))
 
         tt = tt.replace("<body>", '<body><table width="100%%"><tr><td valign="top"><p style="padding-top:25px;">Index</p>%s</td><td>%s</td></tr></table>' % (index, data))
         tt = self.browser_re.sub("\\1", tt)
-        
+
         filepref = "file:///"+self.tempdir
         if filepref[-1] != os.sep:
             filepref += os.sep
@@ -371,7 +373,7 @@ class ReportWindow(OWWidget):
             imspos = tt.find(filepref, imspos+1)
             if imspos == -1:
                 break
-            
+
             if not subdir:
                 subdir = os.path.splitext(fname)[0]
                 if subdir == fname:
@@ -406,12 +408,12 @@ def printTree(item, level, depthRem, visibleColumns, expanded=True):
         for i in range(item.childCount()):
             res += printTree(item.child(i), level+1, depthRem-1, visibleColumns, expanded)
     return res
-    
-                    
+
+
 def reportTree(tree, expanded=True):
     tops = tree.topLevelItemCount()
     header = tree.headerItem()
-    visibleColumns = [i for i in range(1, tree.columnCount()) if not tree.isColumnHidden(i)] 
+    visibleColumns = [i for i in range(1, tree.columnCount()) if not tree.isColumnHidden(i)]
 
     depth = tops and max(getDepth(tree.topLevelItem(cc), expanded) for cc in range(tops))
     res = "<table>\n"
@@ -421,7 +423,7 @@ def reportTree(tree, expanded=True):
     res += ''.join(printTree(tree.topLevelItem(cc), 0, depth, visibleColumns, expanded) for cc in range(tops))
     res += "</table>\n"
     return res
- 
+
 
 def reportCell(item, tag, style):
     if not item:
@@ -432,7 +434,7 @@ def reportCell(item, tag, style):
         return '<%s style="%s; text-align: %s">%s</%s>' % (tag, style, alignment, text, tag)
     elif isinstance(item, QModelIndex):
         align = item.data(Qt.TextAlignmentRole)
-        align, ok = align.toInt() if align.isValid() else Qt.AlignLeft, True 
+        align, ok = align.toInt() if align.isValid() else Qt.AlignLeft, True
         alignment = {Qt.AlignLeft: "left", Qt.AlignRight: "right", Qt.AlignHCenter: "center"}.get(align & Qt.AlignHorizontal_Mask, "left")
         value = item.data(Qt.DisplayRole)
         if value.type() >= QVariant.UserType:
@@ -448,7 +450,7 @@ def reportCell(item, tag, style):
         alignment = {Qt.AlignLeft: "left", Qt.AlignRight: "right", Qt.AlignHCenter: "center"}.get(align & Qt.AlignHorizontal_Mask, "left")
         text = str(model.headerData(index, Qt.Horizontal, Qt.DisplayRole).toString()).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
         return '<%s style="%s; text-align: %s">%s</%s>' % (tag, style, alignment, text, tag)
-    
+
 def reportTable(table):
     ncols = table.model().columnCount()
     res = '<table style="border-bottom: thin solid black">\n'
@@ -466,7 +468,7 @@ def reportTable(table):
                 text = vhi.text() if vhi else ""
             else:
                 text = str(table.model().headerData(j, Qt.Vertical, Qt.DisplayRole).toString())
-                
+
             res += "<th>%s</th>" % text
         res += "".join(reportCell(table.item(j, i) if isinstance(table, QTableWidget) else table.model().index(j, i),
                                   "td", "") for i in shownColumns) + "</tr>\n"
