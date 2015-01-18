@@ -1,5 +1,5 @@
-Data Input
-==========
+Loading your Data
+=================
 
 Orange comes with its own
 :ref:`its own data format<tab-delimited>`, but can also handle standard
