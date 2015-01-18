@@ -22,14 +22,14 @@ In a Nutshell
   be preceded with a label followed by a hash. Use c for a class and m for
   meta attribute, i to ignore a column, and C, D, S to continuous, discrete
   and string attribute type. Examples: C#mpg, mS#name, i#dummy. Make sure
-  to set :obj:`Import Options` in :ref:`File` widget and set the header to
-  :obj:`Orange simplified header`.
+  to set **Import Options** in :ref:`File` widget and set the header to
+  **Orange simplified header**.
 
 - Orange's native format is a tab-delimited text file with three header rows.
   The first row contains attribute names, the second the domain
-  (:obj:`continuous`,
-  :obj:`discrete` or :obj:`string`), and the third optional type
-  (:obj:`class`, :obj:`meta` or :obj:`string`).
+  (**continuous**,
+  **discrete** or **string**), and the third optional type
+  (**class**, **meta** or **string**).
 
 Data from Excel
 ---------------
@@ -41,13 +41,13 @@ spreadsheet application, like Excel:
    :scale: 80%
 
 To move this data to Orange, we need to save the file in a tab or comma
-separated format. In Excel, we can use a :obj:`Save As ...`
-command from the :obj:`File` menu:
+separated format. In Excel, we can use a **Save As ...**
+command from the **File** menu:
 
 .. image:: save-as.png
    :scale: 80%
 
-and select :obj:`Comma Separated Values (.csv)` as an output format:
+and select **Comma Separated Values (.csv)** as an output format:
 
 .. image:: save-as-csv.png
    :scale: 80%
@@ -73,7 +73,7 @@ change the file type selector to csv,
    :scale: 80%
 
 locate the data file sample.csv which we have saved from Excel
-and open it. The :obj:`File` widget should now look something like this:
+and open it. The **File** widget should now look something like this:
 
 .. image:: file-widget.png
    :scale: 80%
@@ -108,15 +108,15 @@ and the other two are real-valued (continuous):
 .. image:: select-attributes-start.png
    :scale: 80%
 
-To correctly reassign attribute types, drag attribute named `function` to
-a :obj:`Class` box, and attribute named `gene` to a :obj:`Meta Attribute` box.
+To correctly reassign attribute types, drag attribute named ``function`` to
+a **Class** box, and attribute named ``gene`` to a **Meta Attribute** box.
 The :ref:`Select Attributes` widget should now look like this:
 
 .. image:: select-attributes-reassigned.png
    :scale: 80%
 
 Change of attribute types in :ref:`Select Attribute` widget should be confirmed by
-clicking the `Apply` button. The data from this widget is fed into
+clicking the **Apply** button. The data from this widget is fed into
 :ref:`Data Table`
 widget, that now renders the class and meta attribute in a color different
 from those for input features:
@@ -125,10 +125,10 @@ from those for input features:
    :scale: 80%
 
 We could also define the domain for this data set in some different way. Say,
-we could make the data set ready for regression, and use `heat 0` as
+we could make the data set ready for regression, and use ``heat 0`` as
 a continuous class variable,
 keep gene function and name as meta variables, and remove
-`heat 10` and heat 20` from the data set (making these two attributes
+``heat 10`` and ``heat 20`` from the data set (making these two attributes
 available for type assignment, but not including them in the data on the output
 of :ref:`Select Attributes` widget):
 
@@ -142,7 +142,7 @@ widget looks like the following:
    :scale: 80%
 
 Header with Attribute Type Information
-======================================
+--------------------------------------
 
 Information on attribute type may already be provided in the header of the
 Comma Separated Values file. Let us open the
@@ -170,8 +170,8 @@ This is how the header with augmented attribute names looks like in Excel:
 We can again use a :ref:`File` widget to read the data from
 the comma-separated file
 exported from Excel. We have to instruct Orange to interpret annotations in
-attribute names. We do so by choosing `Import Options ...` button in the File
-widget, and set the `Header` to `Orange simplified header`:
+attribute names. We do so by choosing **Import Options ...** button in the File
+widget, and set the **Header** to **Orange simplified header**:
 
 .. image:: file-widget-simplified-header.png
    :scale: 80%
@@ -180,7 +180,7 @@ Notice that the attributes that we have ignored (label "i" in the attribute
 name) are not present in the data set.
 
 Native Data Format of Orange
-============================
+----------------------------
 
 Orange's native data format is a tab-delimited text file with three header
 rows. The first row lists attribute names, the second row defines
@@ -193,7 +193,7 @@ example:
 
 The above screenshot is from Excel, but the file was actually saved in
 "Tab Delimited Text (.txt)" format. To open it in Orange, we have to rename
-the file such that it ends with ".tab" extension (say from `sample.txt` to
-`sample.tab`). In Windows, one can bypass this step
+the file such that it ends with ".tab" extension (say from sample.txt to
+sample.tab). In Windows, one can bypass this step
 by placing the name of the file and the .tab extension in quotes when using
-:obj:`Save As ...` command (e.g., "sample.tab").
+**Save As ...** command (e.g., "sample.tab").
