@@ -162,7 +162,8 @@ and abbreviations for the domain are:
 - D: Discrete
 - S: String
 
-This is how the header with augmented attribute names looks like in Excel:
+This is how the header with augmented attribute names looks like in Excel
+(:download:`sample-head.xlsx <sample-head.xlsx>`):
 
 .. image:: spreadsheet-simple-head.png
    :scale: 80%
@@ -191,9 +192,10 @@ example:
 .. image:: excel-with-tab.png
    :scale: 80%
 
-The above screenshot is from Excel, but the file was actually saved in
-"Tab Delimited Text (.txt)" format. To open it in Orange, we have to rename
+The above screenshot is from Excel, but the file was actually saved
+using "Tab Delimited Text (.txt)" format.
+To open it in Orange, we have to rename
 the file such that it ends with ".tab" extension (say from sample.txt to
-sample.tab). In Windows, one can bypass this step
+:download:`sample.tab <sample.tab>`). In Windows, one can bypass this step
 by placing the name of the file and the .tab extension in quotes when using
 **Save As ...** command (e.g., "sample.tab").
