@@ -131,7 +131,7 @@ def loadARFF_Weka(filename, create_on_new=MakeStatus.Incompatible, **kwargs):
     state = 0 # header
     data = []
     for l in f.readlines():
-        l = l.rstrip("\n") # strip \n
+        l = l.rstrip("\n\r") # strip trailing whitespace
         l = l.replace('\t', ' ') # get rid of tabs
         x = l.split('%')[0] # strip comments
         if len(x.strip()) == 0:
