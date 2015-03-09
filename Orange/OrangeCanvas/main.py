@@ -46,10 +46,11 @@ def running_in_ipython():
 
 def fix_osx_10_9_private_font():
     """Temporary fix for QTBUG-32789."""
-    from PyQt4.QtCore import QSysInfo
+    from PyQt4.QtCore import QSysInfo, QT_VERSION
     if sys.platform == "darwin":
         try:
-            if QSysInfo.MacintoshVersion > QSysInfo.MV_10_8:
+            if QSysInfo.MacintoshVersion > QSysInfo.MV_10_8 and \
+                    QT_VERSION < 0x40806:
                 QFont.insertSubstitution(".Lucida Grande UI", "Lucida Grande")
         except AttributeError:
             pass
