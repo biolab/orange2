@@ -44,13 +44,19 @@ def running_in_ipython():
         return False
 
 
-def fix_osx_10_9_private_font():
-    """Temporary fix for QTBUG-32789."""
+def fix_osx_private_font():
+    """Temporary fixes for QTBUG-32789 an QTBUG-40833"""
     from PyQt4.QtCore import QSysInfo, QT_VERSION
     if sys.platform == "darwin":
         try:
+            if QSysInfo.MacintoshVersion > 11 and \
+                    QT_VERSION < 0x40807:
+                # Fix for Yosemite
+                QFont.insertSubstitution(".Helvetica Neue DeskInterface",
+                                         "Helvetica Neue")
             if QSysInfo.MacintoshVersion > QSysInfo.MV_10_8 and \
                     QT_VERSION < 0x40806:
+                # Fix for Mavericks
                 QFont.insertSubstitution(".Lucida Grande UI", "Lucida Grande")
         except AttributeError:
             pass
@@ -121,8 +127,8 @@ def main(argv=None):
     # and write to the old file descriptors)
     fix_win_pythonw_std_stream()
 
-    # Try to fix fonts on OSX Mavericks
-    fix_osx_10_9_private_font()
+    # Try to fix fonts on OSX Mavericks/Yosemite
+    fix_osx_private_font()
 
     # File handler should always be at least INFO level so we need
     # the application root level to be at least at INFO.
