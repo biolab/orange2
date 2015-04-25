@@ -1022,6 +1022,15 @@ float TRuleEvaluator_mEVC::operator()(PRule rule, PExampleTable examples, const 
       futureQuality /= rule->classDistribution->atint(targetClass);
     }
   }
+
+  bool attsig = true;
+  if (attributeAlpha < 1.0)
+  {
+      attsig = ruleAttSignificant(rule, examples, weightID, targetClass, apriori, aprioriProb);
+  }
+  if (!attsig)
+      futureQuality = -1;
+
  
   // store best rule as best rule and return expected quality of this rule
   rule->quality = quality;
@@ -1195,7 +1204,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
     if ((*vi)->varType == TValue::INTVAR) {
       if (!*ui) {
         vector<float>::const_iterator idi((*di).AS(TDiscDistribution)->begin());
-        for(int v = 0, e = (*vi)->noOfValues(); v != e; v++)
+        for(int v = 0, e = (*vi)->noOfValues(); v != e; v++, idi++)
           if (*idi>0) {
             TRule *newRule = mlnew TRule(rule, false);
             ruleList->push_back(newRule);
