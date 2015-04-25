@@ -101,7 +101,7 @@ class MEstimateEvaluator(Evaluator):
     def __init__(self, m=2):
         self.m = m
     def __call__(self, rule, data, weight_id, target_class, apriori):
-        if not rule.class_distribution:
+        if not rule.class_distribution or rule.class_distribution == 0:
             return 0.
         sumDist = rule.class_distribution.abs
         if self.m == 0 and not sumDist:
@@ -602,7 +602,7 @@ class ABCN2(RuleLearner):
                 progress.start = progress.end
                 progress.end += step
 
-            if self.learn_for_class and not self.learn_for_class in [cl, cl_i]:
+            if self.learn_for_class != None and not self.learn_for_class in [cl, cl_i]:
                 continue
 
             # rules for this class only
