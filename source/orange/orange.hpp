@@ -193,6 +193,6 @@ typedef struct {
 
 ORANGE_API PyObject *unpickleConstant(TNamedConstantRecord const *, PyObject *args);
 
-PyObject *stringFromList(PyObject *self, TNamedConstantsDef const *ncs);
+ORANGE_API PyObject *stringFromList(PyObject *self, TNamedConstantsDef const *ncs);
 
 #endif
