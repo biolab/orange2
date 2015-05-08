@@ -101,7 +101,7 @@ class MEstimateEvaluator(Evaluator):
     def __init__(self, m=2):
         self.m = m
     def __call__(self, rule, data, weight_id, target_class, apriori):
-        if not rule.class_distribution or rule.class_distribution == 0:
+        if not rule.class_distribution:
             return 0.
         sumDist = rule.class_distribution.abs
         if self.m == 0 and not sumDist:
