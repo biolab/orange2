@@ -53,6 +53,7 @@ public:
   PVariable sourceVariable; //P The attribute that this attribute is computed from (when applicable)
   PClassifier getValueFrom; //P Function to compute the value from values of other variables
   bool getValueFromLocked;
+  
 
 protected:
   TValue DC_value;
@@ -68,6 +69,10 @@ public:
 
   string get_name() const {
     return name;
+  }
+  
+  const char * get_name_c() const {
+      return name.c_str();
   }
 
   void set_name(const string &a) {

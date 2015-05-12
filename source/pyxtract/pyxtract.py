@@ -1254,7 +1254,10 @@ if action.count("clean"):
   action.remove("clean")
 
 if len(action):
-  pyprops = pickle.load(open("../orange/ppp/stamp", "rt")) #home dir on linux is different from windows; changed ppp/stamp to ../orange/ppp/stamp
+  if modulename == "orangol":
+    pyprops = pickle.load(open("../orangol/ppp/stamp", "rt"))
+  else:
+    pyprops = pickle.load(open("../orange/ppp/stamp", "rt")) #home dir on linux is different from windows; changed ppp/stamp to ../orange/ppp/stamp
   newfiles=[]
   functions, constants, classdefs, aliases = parseFiles()
     

@@ -163,7 +163,7 @@ ORANGE_API TOrangeType *FindOrangeType(const type_info &);
 ORANGE_API bool PyOrange_CheckType(PyTypeObject *);
 
 // Ascends the hierarchy until it comes to a class that is from orange's hierarchy
-TOrangeType *PyOrange_OrangeBaseClass(PyTypeObject *);
+ORANGE_API TOrangeType *PyOrange_OrangeBaseClass(PyTypeObject *);
 
 ORANGE_API bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit = false);
 
@@ -193,6 +193,6 @@ typedef struct {
 
 ORANGE_API PyObject *unpickleConstant(TNamedConstantRecord const *, PyObject *args);
 
-PyObject *stringFromList(PyObject *self, TNamedConstantsDef const *ncs);
+ORANGE_API PyObject *stringFromList(PyObject *self, TNamedConstantsDef const *ncs);
 
 #endif

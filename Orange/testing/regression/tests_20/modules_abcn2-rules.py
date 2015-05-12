@@ -3,10 +3,10 @@
 # Classes:     ABCN2, ABCN2Ordered, ABCN2M
 # Uses:        titanic.tab
 
-import orange
+import Orange
 import orngABCN2
 import orngCN2
-data = orange.ExampleTable("titanic.tab")
+data = Orange.data.Table("titanic.tab")
 
 # create learner
 learner = orngABCN2.ABCN2()

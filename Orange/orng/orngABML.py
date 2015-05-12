@@ -313,7 +313,25 @@ def create_dichotomous_class(domain, att, value, negate, removeAtt=None):
     else:
         return (newDomain, positive)
 
-
+def select_key_examples(rules):
+    """ For each rule identify examples that are covered only by this rule and
+    their classvalue is the same as in the rule. """
+    key_examples = []
+    for r in rules:
+        r_key = []
+        for e in r.examples:
+            if int(e.getclass()) != int(r.classifier.defaultVal):
+                continue
+            # if e is covered only by this rule, add it to key_examples
+            for ro in rules:
+                if r == ro:
+                    continue
+                if ro(e) and int(ro.classifier.defaultVal) == int(e.getclass()) and ro.quality > r.quality:
+                    break # another rule is covering this example --> not a key example
+            else:
+                r_key.append(float(e["SerialNumberPE"]))
+        key_examples.append(r_key)
+    return key_examples
 
 def addErrors(test_data, classifier):
     """ Main task of this function is to add probabilistic errors to examples."""
@@ -323,7 +341,8 @@ def addErrors(test_data, classifier):
 
 def nCrossValidation(data, learner, weightID=0, folds=5, n=4, gen=0, argument_id="Arguments"):
     """ Function performs n x fold crossvalidation. For each classifier
-        test set is updated by calling function addErrors. """
+        test set is updated by calling function addErrors. It returns a set of rules
+        covering each learning example along with its key examples. """
     acc = 0.0
     rules = {}
     for d in data:
@@ -343,22 +362,50 @@ def nCrossValidation(data, learner, weightID=0, folds=5, n=4, gen=0, argument_id
             test_data = data.selectref(selection, folds_i, negate=0)
             classifier = learner(train_data, weightID)
             addErrors(test_data, classifier)
+            # find key examples for each rule
+            key_examples = select_key_examples(classifier.rules)
             # add rules
             for d in test_data:
-                for r in classifier.rules:
+                for ri, r in enumerate(classifier.rules):
                     if r(d):
-                        rules[float(d["SerialNumberPE"])].append(r)
+                        rules[float(d["SerialNumberPE"])].append((r, key_examples[ri]))
     # normalize prob errors
     for d in data:
         d["ProbError"] = d["ProbError"] / n
+    # sort all key examples by prob values; low values are first.
+    for s in rules:
+        for r, key_ex in rules[s]:
+            key_ex.sort(key = lambda x: float(data[int(x)]["ProbError"]))
     return rules
 
-def findProb(learner, examples, weightID=0, folds=5, n=4, gen=0, thr=0.5, argument_id="Arguments"):
-    """ General method for calling to find problematic example.
-        It returns all critial examples along with average probabilistic errors that ought to be higher then thr.
-        Taking the one with highest error is the same as taking the most
-        problematic example. """
+def onLearn(data, learner, weightID=0, folds=5, n=4, gen=0, argument_id="Arguments"):
+    """ Function performs learning and testing on the same data. For each classifier
+        test set is updated by calling function addErrors. It returns a set of rules
+        covering each learning example along with its key examples. """
+    acc = 0.0
+    rules = {}
+    for d in data:
+        rules[float(d["SerialNumberPE"])] = []
+    classifier = learner(data, weightID)
+    addErrors(data, classifier)
+    # find key examples for each rule
+    key_examples = select_key_examples(classifier.rules)
+    # add rules
+    for d in data:
+        for ri, r in enumerate(classifier.rules):
+            if r(d):
+                rules[float(d["SerialNumberPE"])].append((r, key_examples[ri]))
+    # sort all key examples by prob values; low values are first.
+    for s in rules:
+        for r, key_ex in rules[s]:
+            key_ex.sort(key = lambda x: float(data[int(x)]["ProbError"]))
+    return rules
 
+def findProb(learner, examples, weightID=0, folds=5, n=4, gen=0, thr=0.5, argument_id="Arguments", sampling=nCrossValidation):
+    """ A general method for finding problematic and critical examples. Each example is labeled with the average
+        probabilistic error and with rules of the opposing class that covers this example. Along to rules, key examples of rule are attached.
+        Key examples are examples that are covered by only this rule (for its class) and no other rule. 
+    """
     newDomain = Orange.core.Domain(examples.domain.attributes, examples.domain.classVar)
     newDomain.addmetas(examples.domain.getmetas())
     newExamples = Orange.core.ExampleTable(newDomain, examples)
@@ -375,6 +422,6 @@ def findProb(learner, examples, weightID=0, folds=5, n=4, gen=0, thr=0.5, argume
         newExamples[i]["ProbError"] = 0.
 
     # it returns a list of examples now: (index of example-starting with 0, example, prob error, rules covering example
-    rules = nCrossValidation(newExamples, learner, weightID=weightID, folds=folds, n=n, gen=gen, argument_id=argument_id)
+    rules = sampling(newExamples, learner, weightID=weightID, folds=folds, n=n, gen=gen, argument_id=argument_id)
     return [(ei, examples[ei], float(e["ProbError"]), rules[float(e["SerialNumberPE"])]) for ei, e in enumerate(newExamples) if e["ProbError"] > thr]
 

@@ -602,7 +602,7 @@ class ABCN2(RuleLearner):
                 progress.start = progress.end
                 progress.end += step
 
-            if self.learn_for_class and not self.learn_for_class in [cl, cl_i]:
+            if self.learn_for_class != None and not self.learn_for_class in [cl, cl_i]:
                 continue
 
             # rules for this class only
