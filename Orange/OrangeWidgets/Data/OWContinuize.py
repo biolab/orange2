@@ -17,7 +17,8 @@ OUTPUTS = [("Data", Orange.data.Table, ),
 
 class OWContinuize(OWWidget):
     settingsList = ["multinomialTreatment", "classTreatment", "zeroBased", "continuousTreatment", "autosend"]
-    contextHandlers = {"": ClassValuesContextHandler("", ["targetValue"])}
+    contextHandlers = {
+        "": ClassValuesContextHandler("", ["targetValue"], contextDataVersion=1)}
 
     multinomialTreats = (("Target or First value as base", orange.DomainContinuizer.LowestIsBase),
                          ("Most frequent value as base", orange.DomainContinuizer.FrequentIsBase),
@@ -99,7 +100,6 @@ class OWContinuize(OWWidget):
         if not data:
             self.data = None
             self.cbTargetValue.clear()
-            self.openContext("", self.data)
             self.send("Data", None)
         else:
             if not self.data or data.domain.classVar != self.data.domain.classVar:
@@ -112,7 +112,7 @@ class OWContinuize(OWWidget):
                 else:
                     self.ctreat.setDisabled(True)
             self.data = data
-            self.openContext("", self.data)
+            self.openContext("", self.data.domain.class_var)
             self.sendData()
 
     def sendDataIf(self):
