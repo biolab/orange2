@@ -1002,7 +1002,15 @@ class OWFile(OWWidget):
 def loader_for_path(path):
     _, ext = os.path.splitext(path)
     if ext in (".csv", ".tsv"):
-        dialect, has_header = sniff_csv(path)
+        try:
+            dialect, has_header = sniff_csv(path)
+        except csv.Error:
+            if ext == ".csv":
+                dialect = csv.excel
+            else:
+                dialect = csv.excel_tab
+            has_header = False
+
         header_format = PlainHeader if has_header else NoHeader
         options = CSV(dialect=dialect, header_format=header_format,
                       missing_values=None)
@@ -1019,13 +1027,13 @@ def sniff_csv(file):
     if isinstance(file, basestring):
         file = open(file, "rU")
 
-    snifer = csv.Sniffer()
+    sniffer = csv.Sniffer()
     sample = file.read(5 * 2 ** 20)  # max 5MB sample
-    dialect = snifer.sniff(sample)
+    dialect = sniffer.sniff(sample)
     dialect = Dialect(dialect.delimiter, dialect.quotechar,
                       dialect.escapechar, dialect.doublequote,
                       dialect.skipinitialspace, dialect.quoting)
-    has_header = snifer.has_header(sample)
+    has_header = sniffer.has_header(sample)
     return dialect, has_header
 
 
