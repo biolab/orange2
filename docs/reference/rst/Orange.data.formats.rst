@@ -65,7 +65,7 @@ Notice that we have ignored the second column (sepal width), and declared
 third and fourth column (features on petal leaves) as meta:
 
     >>> import Orange.data
-    >>> data = Orange.load.Table("abridged-iris.csv")
+    >>> data = Orange.data.Table("abridged-iris.csv")
     >>> data[0]
     [5.1, 'Iris-setosa'], {"petal length":1.4, "petal width":0.2}
     >>> data.domain
