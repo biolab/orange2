@@ -1,29 +1,24 @@
-<header id="top" class="header navbar-fixed-top">
-    <div class="container">
-        <h1 class="logo pull-left">
-            <a id="header-orangelogo" href="{{ root_url }}">
-                <img id="logo-image" class="logo-image" src="{{ pathto('_static/orange-logo-w.png', 1) }}" alt="Logo">
-            </a>
-        </h1><!--//logo-->
-        <nav id="main-nav" class="main-nav navbar-right" role="navigation">
-            <div class="navbar-header">
-                <button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#navbar-collapse">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button><!--//nav-toggle-->
-            </div><!--//navbar-header-->
-            <div class="navbar-collapse collapse" id="navbar-collapse">
-                <ul class="nav navbar-nav">
-                    <li class="active nav-item sr-only"><a d="header-home-link2" href="{{ root_url }}">Home</a></li>
-                    <li class="nav-item"><a id="header-home-link" href="{{ root_url }}">Home</a></li>
-                    <li class="nav-item"><a id="header-screenshots-link" href="{{ root_url }}/screenshots/">Screenshots</a></li>
-                    <li class="nav-item"><a id="header-download-link" href="{{ root_url }}/download/">Download</a></li>
-                    <li class="nav-item"><a id="header-docs-link" href="{{ docs_root_url }}">Docs</a></li>
-                    <li class="nav-item"><a id="header-community-link" href="http://blog.biolab.si">Blog</a></li>
-                </ul><!--//nav-->
-            </div><!--//navabr-collapse-->
-        </nav><!--//main-nav-->
+<div id="container">
+    <div class="border1"></div>
+    <div class="border2"></div>
+    <div class="borderv">
+        <div id="header">
+			<div id="orangeimg"><h1><a href="http://orange.biolab.si"><img src="{{ pathto('_static/orange-logo-w.png', 1) }}" alt="Orange" /></a></h1></div>
+
+            <div id="cse-search-box" style="height: 22px;"></div>
+            <div id="underimg"></div>
+        </div>
     </div>
-</header><!--//header-->
+    <div class="border2"></div>
+    <div class="border1"></div>
+
+    <div id="main">
+        <div class="border1"></div>
+        <div class="border2"></div>
+        <div class="borderv">
+            <div id="maininner">
+            <p style="font-size: 32px;">
+                This is documentation for Orange 2.7. For the latest documentation, 
+                <a href="http://orange.biolab.si/docs">
+                see Orange 3</a>.
+            </p>
