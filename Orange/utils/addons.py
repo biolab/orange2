@@ -132,7 +132,8 @@ def search_index(query):
 
 
 def refresh_available_addons(force=False, progress_callback=None):
-    pypi = xmlrpclib.ServerProxy('http://pypi.python.org/pypi')
+    pypi = xmlrpclib.ServerProxy('https://pypi.python.org/pypi',
+                                 transport=xmlrpclib.SafeTransport())
     if progress_callback:
         progress_callback(1, 0)
 
