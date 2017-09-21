@@ -104,6 +104,13 @@ from Orange.feature import Descriptor
 MakeStatus = Orange.feature.Descriptor.MakeStatus
 make = Orange.feature.Descriptor.make
 
+from pyparsing import (printables, originalTextFor, OneOrMore, 
+     quotedString, Word, delimitedList)
+
+# unquoted words can contain anything but a colon
+printables_no_colon = printables.replace(',', '')
+content = originalTextFor(OneOrMore(quotedString | Word(printables_no_colon)))
+
 def loadARFF(filename, create_on_new=MakeStatus.Incompatible, **kwargs):
     """Return class:`Orange.data.Table` containing data from file in Weka ARFF format
        if there exists no .xml file with the same name. If it does, a multi-label
@@ -136,21 +143,22 @@ def loadARFF_Weka(filename, create_on_new=MakeStatus.Incompatible, **kwargs):
         x = l.split('%')[0] # strip comments
         if len(x.strip()) == 0:
             continue
+        x = l # possible bug: ignoring % inside "" or \%
         if state == 0 and x[0] != '@':
             print "ARFF import ignoring:", x
         if state == 1:
-            if x[0] == '{':#sparse data format, begin with '{', ends with '}'
+            if x[0] == '{': # sparse data format, begin with '{', ends with '}'
                 r = [None] * len(attributes)
                 dd = x[1:-1]
-                dd = dd.split(',')
+                dd = delimitedList(content, ',').parseString(dd)
                 for xs in dd:
                     y = xs.split(" ")
                     if len(y) <> 2:
                         raise ValueError("the format of the data is error")
                     r[int(y[0])] = y[1]
                 data.append(r)
-            else:#normal data format, split by ','
-                dd = x.split(',')
+            else: # normal data format, split by ','
+                dd = delimitedList(content, ',').parseString(x)
                 r = []
                 for xs in dd:
                     y = xs.strip(" ")
@@ -167,9 +175,11 @@ def loadARFF_Weka(filename, create_on_new=MakeStatus.Incompatible, **kwargs):
                 data.append(r[:len(attributes)])
         else:
             y = []
+            maxidx = 0
             for cy in x.split(' '):
                 if len(cy) > 0:
                     y.append(cy)
+                    maxidx += 1
             if str.lower(y[0][1:]) == 'data':
                 state = 1
             elif str.lower(y[0][1:]) == 'relation':
@@ -180,8 +190,17 @@ def loadARFF_Weka(filename, create_on_new=MakeStatus.Incompatible, **kwargs):
                     idx = 1
                     while y[idx][-1] != "'":
                         idx += 1
+                        if idx == maxidx: break
                         atn += ' ' + y[idx]
                     atn = atn.strip("' ")
+                elif y[1][0] == '"':
+                    atn = y[1].strip('" ')
+                    idx = 1
+                    while y[idx][-1] != '"':
+                        idx += 1
+                        if idx == maxidx: break
+                        atn += ' ' + y[idx]
+                    atn = atn.strip('" ')
                 else:
                     atn = y[1]
                 z = x.split('{')
@@ -189,14 +208,20 @@ def loadARFF_Weka(filename, create_on_new=MakeStatus.Incompatible, **kwargs):
                 if len(z) > 1 and len(w) > 1:
                     # there is a list of values
                     vals = []
-                    for y in w[0].split(','):
+                    ws = delimitedList(content, ',').parseString(w[0])
+                    for y in ws:
                         sy = y.strip(" '\"")
                         if len(sy) > 0:
                             vals.append(sy)
                     a, s = make(atn, Orange.feature.Type.Discrete, vals, [], create_on_new)
                 else:
-                    # real...
-                    a, s = make(atn, Orange.feature.Type.Continuous, [], [], create_on_new)
+                    dtype = str.lower(y[-1])
+                    if dtype == 'string':
+                        a, s = make(atn, Orange.feature.Type.String, [], [], create_on_new)
+                    elif dtype == 'numeric' or dtype == 'integer' or dtype == 'real':
+                        a, s = make(atn, Orange.feature.Type.Continuous, [], [], create_on_new)
+                    else: # date, relational
+                        a, s = make(atn, Orange.feature.Type.String, [], [], create_on_new)
 
                 attributes.append(a)
                 attributeLoadStatus.append(s)
