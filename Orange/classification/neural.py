@@ -264,7 +264,7 @@ class NeuralNetworkClassifier(Orange.classification.Classifier):
         :rtype: :class:`Orange.data.Value`, 
               :class:`Orange.statistics.Distribution` or a tuple with both
         """
-        example = Orange.data.Instance(self.domain, example)
+        #example = Orange.data.Instance(self.domain, example)
         # transform example to numpy
         if not self.domain.class_vars:
             example = [example[i] for i in range(len(example)-1)]
