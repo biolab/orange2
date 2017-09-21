@@ -630,6 +630,7 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
     """Load an Orange.data.Table from a csv file."""
 
     file = as_open_file(file, "rU")
+    start=file.tell()
     snifer = csv.Sniffer()
 
     # Max 5MB sample
@@ -647,7 +648,7 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
         except csv.Error:
             has_header = False
 
-    file.seek(0)  # Rewind
+    file.seek(start)  # Rewind
 
     def kwparams(**kwargs):
         """Return not None kwargs.
@@ -724,7 +725,7 @@ def load_csv(file, create_new_on=MakeStatus.Incompatible,
             var_attrs += [None] * (len(header) - len(var_attrs))
 
     # start from the beginning
-    file.seek(0)
+    file.seek(start)
     reader = csv.reader(file, dialect=dialect, **fmtparam)
 
     for defined in [has_header, has_types, has_annotations]:

@@ -1,5 +1,6 @@
 """
 <name>CSV File import</name>
+<icon>icons/FileCSV.png</icon>
 <description>Import comma separated file</description>
 
 """
@@ -49,7 +50,7 @@ class standard_icons(object):
 
 
 class OWCSVFileImport(OWWidget):
-    settingsList = ["recent_files", "hints"]
+    settingsList = ["recent_files", "hints","ignore_first_lines"]
 
     DELIMITERS = [("Tab", "\t"),
                   ("Comma", ","),
@@ -75,6 +76,8 @@ class OWCSVFileImport(OWWidget):
         self.skipinitialspace = True
         self.has_header = True
         self.has_orange_header = True
+        self.ignore_first_lines = 0 #3    
+        self.add_simple_orange_header = False     #
 
         # List of recent opened files.
         self.recent_files = []
@@ -190,6 +193,12 @@ class OWCSVFileImport(OWWidget):
 
         form.addRow(self.skipinitialspace_check)
 
+        self.spin_sk_ln= OWGUI.spin(box, self, "ignore_first_lines", label="Skip first lines",   # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                   min=0, max=1000, step=1,
+                   callback=self.ignore_first_lines_changed,
+                   controlWidth=40,
+                   keyboardTracking=False)
+
         self.has_header_check = \
                 QCheckBox(objectName="has_header_check",
                           checked=self.has_header,
@@ -254,6 +263,16 @@ class OWCSVFileImport(OWWidget):
             self.quote = str(self.quote_edit.text())
             self.update_preview()
 
+    def ignore_first_lines_changed(self):       #    !!!!!!!!!!!!!!!!!!
+        #self.ignore_first_lines = self.spin_sk_ln.value()
+        if self.selected_file:
+            with open(self.selected_file, "rU") as f:
+                self.skipinitiallines(f)
+                self.selected_file_head=[]
+                for i, line in zip(range(30), f):
+                    self.selected_file_head.append(line)
+        self.update_preview()
+
     def missing_changed(self):
         self.missing = str(self.missing_edit.text())
         self.update_preview()
@@ -269,6 +288,20 @@ class OWCSVFileImport(OWWidget):
     def skipinitialspace_changed(self):
         self.skipinitialspace = self.skipinitialspace_check.isChecked()
         self.update_preview()
+
+    def skipinitiallines(self,file):      # !!!!!!!!!!!!!!
+        ignore=self.ignore_first_lines
+        while ignore and file.readline():
+            ignore-=1
+
+    def open_and_skiplines(self,file, mode="rb"):   # !!!!!!!!!!!!!!
+        if isinstance(file, basestring):
+            file = open(file, mode)
+        else:  # assuming it is file like with proper mode, could check for write, read
+            pass
+        self.skipinitiallines(file)
+        return file
+
 
     def set_selected_file(self, filename):
         basedir, name = os.path.split(filename)
@@ -291,7 +324,7 @@ class OWCSVFileImport(OWWidget):
             hints = self.hints[filename]
         else:
             try:
-                hints = sniff_csv(filename)
+                hints = self.sniff_csv(filename)
             except csv.Error, ex:
                 self.warning(1, str(ex))
                 hints = dict(DEFAULT_HINTS)
@@ -338,6 +371,7 @@ class OWCSVFileImport(OWWidget):
         self.selected_file = filename
         self.selected_file_head = []
         with open(self.selected_file, "rU") as f:
+            self.skipinitiallines(f)
             for i, line in zip(range(30), f):
                 self.selected_file_head.append(line)
 
@@ -357,7 +391,7 @@ class OWCSVFileImport(OWWidget):
             hints["skipinitialspace"] = self.skipinitialspace
             hints["DK"] = self.missing or None
             try:
-                data = Orange.data.io.load_csv(head, delimiter=self.delimiter,
+                 data = Orange.data.io.load_csv(head, delimiter=self.delimiter,
                                    quotechar=self.quote,
                                    has_header=self.has_header,
                                    has_types=self.has_orange_header,
@@ -379,7 +413,9 @@ class OWCSVFileImport(OWWidget):
         self.error(0)
         if self.selected_file:
             try:
-                data = Orange.data.io.load_csv(self.selected_file,
+               with open(self.selected_file, "rb") as f:
+                 self.skipinitiallines(f)
+                 data = Orange.data.io.load_csv(f,
                                    delimiter=self.delimiter,
                                    quotechar=self.quote,
                                    has_header=self.has_header,
@@ -397,26 +433,28 @@ class OWCSVFileImport(OWWidget):
         self.send("Data", self.data)
 
 
-def sniff_csv(file):
-    snifer = csv.Sniffer()
-    if isinstance(file, basestring):
-        file = open(file, "rU")
+    def sniff_csv(self,file):
+        snifer = csv.Sniffer()
+        if isinstance(file, basestring):
+            with open(file, "rb") as f:
+               self.skipinitiallines(f)
+               sample = f.read(2 ** 20)  # max 1MB sample self opened file
+        else:
+            sample = file.read(2 ** 20)  # max 1MB sample
+        dialect = snifer.sniff(sample)
+        has_header = snifer.has_header(sample)
 
-    sample = file.read(2 ** 20)  # max 1MB sample
-    dialect = snifer.sniff(sample)
-    has_header = snifer.has_header(sample)
-
-    return {"delimiter": dialect.delimiter,
-            "doublequote": dialect.doublequote,
-            "escapechar": dialect.escapechar,
-            "quotechar": dialect.quotechar,
-            "quoting": dialect.quoting,
-            "skipinitialspace": dialect.skipinitialspace,
-            "has_header": has_header,
-            "has_orange_header": False,
-            "skipinitialspace": True,
-            "DK": None,
-            }
+        return {"delimiter": dialect.delimiter,
+                "doublequote": dialect.doublequote,
+                "escapechar": dialect.escapechar,
+                "quotechar": dialect.quotechar,
+                "quoting": dialect.quoting,
+                "skipinitialspace": dialect.skipinitialspace,
+                "has_header": has_header,
+                "has_orange_header": False,
+                "skipinitialspace": True,
+                "DK": None,
+                }
 
 if __name__ == "__main__":
     import sys
