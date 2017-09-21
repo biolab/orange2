@@ -1,10 +1,10 @@
 """
 <name>Distance Map</name>
-<description>Displays distance matrix as a heat map.</description>
+<description>Displays distance matrix as a heat map with sorting by selected.</description>
 <icon>icons/DistanceMatrix.svg</icon>
 <contact>Blaz Zupan (blaz.zupan(@at@)fri.uni-lj.si)</contact>
 <priority>1200</priority>
-"""
+"""                                        ## + <name>Distance Map Ord</name>
 from __future__ import with_statement
 import orange, math, sys
 import OWGUI, OWToolbars
@@ -68,7 +68,7 @@ class OWDistanceMap(OWWidget):
                     "Grid", "savedGrid",
                     "ShowItemsInBalloon", "SendOnRelease", "colorSettings", "selectedSchemaIndex", "palette"]
 
-    def __init__(self, parent=None, signalManager = None):
+    def __init__(self, parent=None, signalManager = None):     ##### 'Distance Map Ord'   ???
         OWWidget.__init__(self, parent, signalManager, 'Distance Map', wantGraph=True)
 
         self.inputs = [("Distances", orange.SymMatrix, self.setMatrix)]
@@ -99,7 +99,7 @@ class OWDistanceMap(OWWidget):
         self.CutLow = 0
         self.CutHigh = 0
         self.CutEnabled = 0
-        self.Sort = 0
+        self.Sort = 0                                   #####   index of the sorting ???
         self.SquareCells = 0
         self.ShowLegend = 1
         self.ShowLabels = 1
@@ -110,13 +110,16 @@ class OWDistanceMap(OWWidget):
         self.loadSettings()
 
         self.maxHSize = 30; self.maxVSize = 30
-        self.sorting = [("No sorting", self.sortNone),
+        self.sorting = [("No sorting", self.sortNone),               ### all the sorting methods
                         ("Adjacent distance", self.sortAdjDist),
                         ("Random order", self.sortRandom),
                         ("Clustering", self.sortClustering),
-                        ("Clustering with ordered leafs", self.sortClusteringOrdered)]
+                        ("Clustering with ordered leafs", self.sortClusteringOrdered),
+                        ("by Selected", self.sortBySel),
+                        ("Inverse by Selected", self.sortInvBySel),
+                        ("by Label", self.sortLabel)]
 
-        self.matrix = self.order = None
+        self.matrix = self.order = None                  ##### self.order :   indexes of the sorting ???
         self.rootCluster = None
 
         # GUI definition
@@ -149,10 +152,10 @@ class OWDistanceMap(OWWidget):
                          callback=self.createDistanceMap, ticks=0)
         
         OWGUI.separator(tab)
-        self.labelCombo = OWGUI.comboBox(tab, self, "Sort", box="Sort",
-                         items=[x[0] for x in self.sorting],
+        self.labelCombo = OWGUI.comboBox(tab, self, "Sort", box="Sort",       ### comboBox to for sorting method
+                         items=[x[0] for x in self.sorting],                ##  items - list of the names of the sort methods
                          tooltip="Sorting method for items in distance matrix.",
-                         callback=self.sortItems)
+                         callback=self.sortItems)                   ### funtion to change the sort method
         OWGUI.rubber(tab)
 
         # FILTER TAB
@@ -231,12 +234,12 @@ class OWDistanceMap(OWWidget):
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
         self.selector.setZValue(20)
 
-        self.selection = SelectionManager()
+        self.selection = SelectionManager()   ###  cells selected by user
 
-        self.selectionLines = []
+        self.selectionLines = []            ###   ???
         self.annotationText = []
         self.clusterItems = []
-        self.selectionRects = []
+        self.selectionRects = []            # ?
 
         self.legendText1 = QGraphicsSimpleTextItem(None, self.scene)
         self.legendText2 = QGraphicsSimpleTextItem(None, self.scene)
@@ -255,7 +258,7 @@ class OWDistanceMap(OWWidget):
                                 [("Matrix dimension", self.matrix.dim)])
         self.reportSettings("Settings",
                             [("Merge", "%i elements in a cell" % self.Merge if self.Merge > 1 else "none"),
-                             ("Sorting", self.sorting[self.Sort][0].lower()),
+                             ("Sorting", self.sorting[self.Sort][0].lower()),            ## sort method name
                              ("Thresholds", "low %.1f, high %.1f" % (self.CutLow, self.CutHigh) if self.CutEnabled else "none"),
                              ("Gamma", "%.2f" % self.Gamma)])
         if self.matrix:
@@ -298,8 +301,8 @@ class OWDistanceMap(OWWidget):
         else:
             j = self.distanceMap.elementIndices[i]
 
-        if self.distanceMapConstructor.order:
-           j = self.distanceMapConstructor.order[j]
+        if self.distanceMapConstructor.order:           ## if distint of "no Order"
+           j = self.distanceMapConstructor.order[j]   ## convert index of item from "aparent" order to "real"
 
         return j
 
@@ -307,7 +310,7 @@ class OWDistanceMap(OWWidget):
         items = getattr(self.matrix, "items", None)
         if items is None or (not isinstance(items, orange.ExampleTable) and
                              not all(isinstance(item, orange.Variable)
-                                     for item in items)):
+                                     for item in items)):    ## continue only if all items are orange.Variable
             return
 
         selectedIndices = []
@@ -405,13 +408,13 @@ class OWDistanceMap(OWWidget):
     def setCutEnabled(self):
         self.sliderCutLow.box.setDisabled(not self.CutEnabled)
         self.sliderCutHigh.box.setDisabled(not self.CutEnabled)
-        self.drawDistanceMap()
+        self.drawDistanceMap()                                  ## to call afer order ??
 
-    def constructDistanceMap(self):
+    def constructDistanceMap(self):                      ## to call afer order ??
         if self.matrix:
             self.distanceMapConstructor = orange.DistanceMapConstructor(distanceMatrix = self.matrix)
-            self.sortItems()
-            self.createDistanceMap()
+            self.sortItems()                   ## to call afer ordering change ??
+            self.createDistanceMap()                ## to call afer order ??
 
     def createDistanceMap(self):
         """creates distance map objects"""
@@ -420,8 +423,8 @@ class OWDistanceMap(OWWidget):
         merge = min(self.Merge, float(self.matrix.dim))
         squeeze = 1. / merge
 
-        self.distanceMapConstructor.order = self.order
-        self.distanceMap, self.lowerBound, self.upperBound = self.distanceMapConstructor(squeeze)
+        self.distanceMapConstructor.order = self.order           ######   !!!!!!!
+        self.distanceMap, self.lowerBound, self.upperBound = self.distanceMapConstructor(squeeze)       ######   !!!!!!!
 
         self.sliderCutLow.setRange(self.lowerBound, self.upperBound, 0.1)
         self.sliderCutHigh.setRange(self.lowerBound, self.upperBound, 0.1)
@@ -430,8 +433,8 @@ class OWDistanceMap(OWWidget):
         self.sliderCutLow.setValue(self.CutLow)
         self.sliderCutHigh.setValue(self.CutHigh)
 
-        self.selection.clear()
-        self.drawDistanceMap()
+        self.selection.clear()       ######   !!!!!!!
+        self.drawDistanceMap()       ######   !!!!!!!
 
     def drawDistanceMap(self):
         """renders distance map object on canvas"""
@@ -726,10 +729,10 @@ class OWDistanceMap(OWWidget):
                 i = self.getItemFromPos(col)
                 j = self.getItemFromPos(row)
 
-                head = str(self.matrix[i, j])
+                head = str(self.matrix[i, j]) ## the value!
 
                 if self.ShowItemsInBalloon == 1:
-                    namei, namej = items[i], items[j]
+                    namei, namej = items[i], items[j]       # the example names
                     if isinstance(namei, (orange.Example, orange.Variable)):
                         namei = namei.name
                     else:
@@ -786,6 +789,8 @@ class OWDistanceMap(OWWidget):
             self.updateSelectionRect()
             if self.SendOnRelease==1:
                 self.sendOutput()
+            if self.sorting[self.Sort][0] in ("by Selected", "Inverse by Selected"):
+                 self.sortItems()
 
     def actionUndo(self):
         self.selection.undo()
@@ -797,10 +802,10 @@ class OWDistanceMap(OWWidget):
 
     # input signal management
 
-    def sortNone(self):
+    def sortNone(self):                               # !!!!!!!!!!!!!
         self.order = None
 
-    def sortAdjDist(self):
+    def sortAdjDist(self):                              # !!!!!!!!!!!!!!
         self.order = None
 
     def sortRandom(self):
@@ -832,6 +837,73 @@ class OWDistanceMap(OWWidget):
             self._clustering_cache["sort ordered clustering"] = cluster
         self.rootCluster = cluster
         self.order = list(self.rootCluster.mapping)
+
+    def itemCmp(self, l,r):
+        return 1 if l[1]>r[1]  else -1 if l[1]<r[1] else 0
+
+    def sortBySel(self, inverse=False):                        ##   new test     !!!!!!!!!!!!!!!!!!  ARIEL
+
+        # Get selected column x
+        selection = self.selection.getSelection()
+        if len(selection)!=1:
+            return 
+        s=max(selection[0].x() ,  selection[0].y())
+    
+        order=self.distanceMapConstructor.order         
+        if order:
+            s= order[s]                         ## if distint of "no Order"
+
+        # Get items and sort
+        #items=[(i,self.matrix[x,i]) for i in range(self.matrix.dim)]
+        #items.sort(cmp=self.itemCmp)
+        #self.order = [i for i,v in items]
+        #if inverse:
+        #    self.order.reverse()
+
+        self.order = range(self.matrix.dim)
+        self.order.sort(key= lambda i: self.matrix[s,i], reverse=inverse)
+
+        self.rootCluster = None
+
+    def sortInvBySel(self):                      ##   new test     !!!!!!!!!!!!!!!!!!  ARIEL
+        self.sortBySel(inverse=True)
+
+    def sortLabel(self, inverse=False):                        ##   new test     !!!!!!!!!!!!!!!!!!  ARIEL
+
+        # Get items and sort
+        labels = []
+        items = getattr(self.matrix, "items", range(self.matrix.dim))
+
+        if isinstance(items, orange.ExampleTable): 
+            #if any(ex.name for ex in items):
+               # return
+                                                  # Use instance names if present
+            if any(ex.name for ex in items):      # if some example have a name ?
+                labels = [ex.name for ex in items]
+            #else:
+                #pass #return
+
+        elif isinstance   (items, orange.VarList) or \
+            all(isinstance(item, orange.Variable) for item in items):
+            labels = [var.name for var in items]
+
+        #if not isinstance   (items, orange.VarList)  and \
+            #not all(isinstance(item, orange.Variable) for item in items): 
+                #return
+
+        assert labels, "No labels !!"+string(len(labels))
+        #labels = [var.name for var in items]
+        self.order=range(len(labels))
+        self.order.sort(key= lambda i: labels[i] , reverse=inverse)
+
+        #items=[(i,labels[i]) for i in range(len(labels))]
+        #items.sort(cmp=self.itemCmp)
+        #self.order = [i for i,label in items]
+        #if inverse:
+           # self.order.reverse()
+
+        self.rootCluster = None
+
 
     def sortItems(self):
         if not self.matrix:
@@ -908,8 +980,8 @@ class QCustomGraphicsText(QGraphicsSimpleTextItem):
 
 class SelectionManager:
     def __init__(self):
-        self.selection = []
-        self.selecting = False
+        self.selection = []                                   ### posible multiple selection !
+        self.selecting = False                         ## to test  !!
         self.currSelEnd = None
         self.currSel = None
 
@@ -937,10 +1009,10 @@ class SelectionManager:
         if len(self.selection) > 0:
             del self.selection[len(self.selection)-1]
     
-    def getSelection(self):
-        res = list(self.selection)
+    def getSelection(self):                              ##   to  use !!!!!!!!!!!!
+        res = list(self.selection)                          ## a copie !
         if self.selecting == True:
-            res += [self.currSel.united(self.currSelEnd).normalized()]
+            res += [self.currSel.united(self.currSelEnd).normalized()]  ##  all posible selection ????
         return res
 
 if __name__=="__main__":
