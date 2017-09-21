@@ -40,6 +40,8 @@ import pipes
 from collections import namedtuple, defaultdict
 from contextlib import closing
 
+from distutils.version import LooseVersion
+
 import Orange.utils.environ
 
 ADDONS_ENTRY_POINT = "orange.addons"
@@ -157,9 +159,20 @@ def refresh_available_addons(force=False, progress_callback=None):
     with closing(open_addons(flag="c")) as addons:
         for i, (name, (_, version)) in enumerate(pkg_dict.items()):
             installed = addons[name.lower()] if name.lower() in addons else None
+            # Workaround for PyPI bug
+            # https://bitbucket.org/pypa/pypi/issues/326/my-package-doesnt-appear-in-the-search
+            version = max(pypi.package_releases(name), key=LooseVersion)
+
             if force or not installed or installed.available_version != version:
                 try:
                     data = pypi.release_data(name, version)
+
+                    # Skip add-ons that are for Orange 3 only
+                    keywords = data.get('keywords') or ''
+                    if ('orange3 add-on' in keywords and
+                            'orange add-on' not in keywords):
+                        continue
+
                     urls = pypi.release_urls(name, version)
                     release_urls = \
                         [ReleaseUrl(url["filename"], url["url"],
