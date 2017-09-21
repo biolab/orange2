@@ -45,18 +45,18 @@ def running_in_ipython():
 
 
 def fix_osx_private_font():
-    """Temporary fixes for QTBUG-32789 an QTBUG-40833"""
-    from PyQt4.QtCore import QSysInfo, QT_VERSION
+    # Fix fonts on Os X (QTBUG 47206, 40833, 32789)
     if sys.platform == "darwin":
+        import platform
         try:
-            if QSysInfo.MacintoshVersion > 11 and \
-                    QT_VERSION < 0x40807:
-                # Fix for Yosemite
+            version = platform.mac_ver()[0]
+            version = float(version[:version.rfind(".")])
+            if version >= 10.11:  # El Capitan
+                QFont.insertSubstitution(".SF NS Text", "Helvetica Neue")
+            elif version >= 10.10:  # Yosemite
                 QFont.insertSubstitution(".Helvetica Neue DeskInterface",
                                          "Helvetica Neue")
-            if QSysInfo.MacintoshVersion > QSysInfo.MV_10_8 and \
-                    QT_VERSION < 0x40806:
-                # Fix for Mavericks
+            elif version >= 10.9:
                 QFont.insertSubstitution(".Lucida Grande UI", "Lucida Grande")
         except AttributeError:
             pass

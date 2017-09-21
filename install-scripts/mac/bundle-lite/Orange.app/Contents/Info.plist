@@ -2,12 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
 	<key>CFBundleExecutable</key>
 	<string>Orange</string>
 	<key>CFBundleIconFile</key>
 	<string>orange.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>si.ailab.Orange</string>
+	<string>si.biolab.Orange</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>

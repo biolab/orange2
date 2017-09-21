@@ -159,19 +159,73 @@ EOF
 chmod +x "$TEMPLATE"/Contents/MacOS/Orange
 
 
+VERSION=$(python setup.py --version)
+cat <<EOF > "$TEMPLATE"/Contents/Info.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>CFBundleExecutable</key>
+	<string>Orange</string>
+	<key>CFBundleIconFile</key>
+	<string>orange.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>si.biolab.Orange</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Orange</string>
+	<key>CFBundleGetInfoString</key>
+	<string>Orange, component-based data mining software</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>Orng</string>
+	<key>CFBundleShortVersionString</key>
+	<string>${VERSION}</string>
+	<key>CFBundleVersion</key>
+	<string>${VERSION}</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>ows</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>Orange Canvas Schema</string>
+			<key>CFBundleTypeOSTypes</key>
+			<array>
+				<string>OWSf</string>
+			</array>
+			<key>CFBundleTypeIconFile</key>
+			<string>schema.icns</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSIsAppleDefaultForType</key>
+			<true/>
+		</dict>
+	</array>
+</dict>
+</plist>
+EOF
 echo "Installing add ons"
 echo "=================="
 
 # Install as eggs. The application's Add-ons dialog has problem with
 # upgrading flat installs.
-"$PIP" install --egg hg+https://bitbucket.org/biolab/orange-bioinformatics
+"$PIP" install --egg orange-bioinformatics
+"$PIP" install --egg orange-network
 "$PIP" install --egg hg+https://bitbucket.org/biolab/orange-text
-"$PIP" install --egg Orange-Network
+
 
 echo "Installing optional dependencies"
 echo "================================"
 "$PIP" install slumber
-"$PIP" install --allow-external PIL --allow-unverified PIL PIL
 
 
 if [[ ! $INPLACE ]]; then
