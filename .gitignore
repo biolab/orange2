@@ -20,12 +20,8 @@ source/**/px
 # Ignore files created by make
 *.o
 *.a
-makefile.deps
-source/orangeqt/build
-source/_underscored
-source/orange/lib_vectors_auto.txt
-source/orangeom/lib_vectors.cpp
-source/orangeom/lib_vectors_auto.txt
+makefile.dependencies 
+must include studio.sh
 
 # Ignore files created by setup.py.
 _build
